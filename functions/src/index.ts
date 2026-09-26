@@ -4,7 +4,7 @@ import { getStorage } from "firebase-admin/storage";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { randomUUID, randomBytes } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
@@ -257,8 +257,12 @@ function cleanText(value: unknown, label: string, max = 180) {
   return value.trim();
 }
 
-function makeBusinessLicenseNumber() {
-  return `BL${new Date().getUTCFullYear()}${randomBytes(7).toString("hex").toUpperCase()}`;
+const BUSINESS_LICENSE_PREFIX = "BL01396902025-26000";
+const BUSINESS_LICENSE_COUNTER_ID = "BL01396902025-26000";
+const FIRST_BUSINESS_LICENSE_SUFFIX = 35809;
+
+function formatBusinessLicenseNumber(suffix: number) {
+  return `${BUSINESS_LICENSE_PREFIX}${String(suffix).padStart(5, "0")}`;
 }
 
 function addText(page: import("pdf-lib").PDFPage, text: string, x: number, y: number, size = 8.5, bold = false) {
@@ -312,14 +316,20 @@ export const generateBusinessLicense = onCall(async (request) => {
   if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new HttpsError("invalid-argument", "Malipo ya leseni si sahihi.");
   const issueDate = new Date().toISOString().slice(0, 10); const expiry = new Date(`${issueDate}T00:00:00`); expiry.setFullYear(expiry.getFullYear() + 1); expiry.setDate(expiry.getDate() - 1); const expiryDate = expiry.toISOString().slice(0, 10);
   const applicationId = `APP-${randomUUID().replaceAll("-", "").slice(0, 18).toUpperCase()}`;
-  const licenseNumber = makeBusinessLicenseNumber();
+  let licenseNumber = "";
   const balanceSnapshot = await db.collection("users").doc(uid).get();
   if (Number(balanceSnapshot.data()?.tokenBalance ?? 0) < 2) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
-  const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
   await db.runTransaction(async (transaction) => {
     const claim = await transaction.get(applicationRef);
     if (claim.exists) throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
+    const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
+    const counterSnapshot = await transaction.get(counterRef);
+    const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
+    if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 99999) throw new HttpsError("resource-exhausted", "Namba za leseni zimejaa.");
+    licenseNumber = formatBusinessLicenseNumber(nextSuffix);
+    const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
     transaction.create(applicationRef, applicationData);
+    transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   });
   try {
     const pdfBytes = await renderLicensePdf(form, licenseNumber, applicationId, issueDate, expiryDate);
