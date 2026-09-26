@@ -109,3 +109,10 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-qr-placeholder { padding: 0; border: 5px solid #fff; background: #fff; }
 .license-qr-placeholder .license-qr-image { position: absolute; inset: 0; width: 100% !important; height: 100%; padding: 0; border-radius: 0; object-fit: cover; }
 .license-qr-placeholder .license-qr-logo { position: absolute; width: 27% !important; height: auto; aspect-ratio: 1; padding: 4px; border-radius: 50%; background: #343434; object-fit: contain; }
+
+
+/* Official Tanzania crest and shield watermark from the supplied certificate reference. */
+.license-certificate { background: #f8fcfd url('/license-assets/tanzania-watermark.png') center 52% / 62% auto no-repeat; }
+.license-certificate__inner { position: relative; z-index: 1; }
+.license-certificate__header { position: relative; }
+.license-crest { width: 54px; height: 54px; object-fit: contain; display: block; margin: 0 auto 7px; mix-blend-mode: multiply; }

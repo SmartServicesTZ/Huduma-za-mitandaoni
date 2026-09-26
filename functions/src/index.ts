@@ -239,14 +239,14 @@ export const verifyUser = onCall(async (request) => {
 
 type LicenseRequest = {
   requestId?: unknown;
-  firstName?: unknown; lastName?: unknown; phone?: unknown; email?: unknown;
+  firstName?: unknown; middleName?: unknown; lastName?: unknown; phone?: unknown; email?: unknown;
   businessName?: unknown; businessType?: unknown; otherBusinessType?: unknown;
   licenseType?: unknown; principalBranch?: unknown; region?: unknown; district?: unknown;
   ward?: unknown; street?: unknown; tin?: unknown; licenseFee?: unknown;
 };
 
 type LicenseForm = {
-  firstName: string; lastName: string; phone: string; email: string;
+  firstName: string; middleName: string; lastName: string; phone: string; email: string;
   businessName: string; businessType: string; otherBusinessType: string;
   licenseType: "NEW LICENSE" | "RENEWED LICENSE"; principalBranch: "PRINCIPAL" | "BRANCH";
   region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
@@ -273,7 +273,7 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
   const regularFont = await pdf.embedFont(StandardFonts.Helvetica);
   const draw = (text: string, x: number, y: number, size = 8.5, bold = false) => page.drawText(text.slice(0, 70), { x, y, size, font: bold ? boldFont : regularFont, color: rgb(0.05, 0.08, 0.1) });
-  const owner = `${form.firstName} ${form.lastName}`.trim();
+  const owner = `${form.firstName} ${form.middleName} ${form.lastName}`.replace(/\s+/g, " ").trim();
   const businessType = form.businessType === "OTHER" ? form.otherBusinessType ?? "OTHER" : form.businessType;
   const office = form.district.toUpperCase().includes("CITY") ? `${form.district} CITY COUNCIL` : `${form.district} DISTRICT COUNCIL`;
   draw(licenseNumber, 275, 676, 8.5, true);
@@ -305,7 +305,7 @@ export const generateBusinessLicense = onCall(async (request) => {
     if (current.status === "PROCESSING") throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
   }
   const form = {
-    firstName: cleanText(data.firstName, "Jina la kwanza", 80), lastName: cleanText(data.lastName, "Jina la mwisho", 80), phone: cleanText(data.phone, "Namba ya simu", 40), email: cleanText(data.email, "Barua pepe", 160),
+    firstName: cleanText(data.firstName, "Jina la kwanza", 80), middleName: cleanText(data.middleName, "Jina la pili", 80), lastName: cleanText(data.lastName, "Jina la mwisho", 80), phone: cleanText(data.phone, "Namba ya simu", 40), email: cleanText(data.email, "Barua pepe", 160),
     businessName: cleanText(data.businessName, "Jina la biashara", 120), businessType: cleanText(data.businessType, "Aina ya biashara", 100), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100) : "", licenseType: data.licenseType === "RENEWED LICENSE" ? "RENEWED LICENSE" : "NEW LICENSE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80), district: cleanText(data.district, "Wilaya / Halmashauri", 100), ward: cleanText(data.ward, "Kata", 100), street: cleanText(data.street, "Mtaa / Kijiji", 140), tin: cleanText(data.tin, "TIN", 40), licenseFee: Number(data.licenseFee),
   } as const;
   if (form.businessType === "OTHER" && !form.otherBusinessType) throw new HttpsError("invalid-argument", "Eleza aina ya biashara.");
@@ -315,7 +315,7 @@ export const generateBusinessLicense = onCall(async (request) => {
   const licenseNumber = makeBusinessLicenseNumber();
   const balanceSnapshot = await db.collection("users").doc(uid).get();
   if (Number(balanceSnapshot.data()?.tokenBalance ?? 0) < 2) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
-  const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
+  const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
   await db.runTransaction(async (transaction) => {
     const claim = await transaction.get(applicationRef);
     if (claim.exists) throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
