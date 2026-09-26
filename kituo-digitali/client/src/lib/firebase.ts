@@ -208,3 +208,9 @@ export async function adminGetSiteSettings() {
   const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
   return snapshot.exists() ? snapshot.data() : null;
 }
+
+export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void) {
+  return onSnapshot(collection(firestore, name), (snapshot) => {
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+  });
+}

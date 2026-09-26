@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToTokenHistory, updatePassword } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, updatePassword } from "@/lib/firebase";
 import { announcementText, activitySeed, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import AdminDashboard from "./AdminDashboard";
 
@@ -110,12 +110,20 @@ function AccountPage() {
 }
 
 function PortalHome({ search, onUse, services }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[] }) {
+  const [liveServices, setLiveServices] = useState<ServiceCatalogItem[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  useEffect(() => {
+    const stopServices = subscribeToCollection("services", (rows) => setLiveServices(rows.filter((item) => item.isVisible !== false).map((item) => ({ slug: String(item.slug ?? item.id), name: String(item.name ?? ""), description: String(item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree ? "free" : "paid") as ServiceCatalogItem["kind"] }))));
+    const stopAnnouncements = subscribeToCollection("announcements", (rows) => setAnnouncements(rows.filter((item) => item.enabled !== false)));
+    return () => { stopServices(); stopAnnouncements(); };
+  }, []);
+  const displayedServices = liveServices.length ? liveServices : services;
   const lower = search.toLowerCase();
-  const matches = services.filter((service) => `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
+  const matches = displayedServices.filter((service) => `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
   const main = matches.filter((service) => service.category === "Huduma kuu" || service.category === "Huduma za bure");
   const locked = matches.filter((service) => service.kind === "locked");
   const tools = matches.filter((service) => service.category === "Zana za ziada");
-  return <main className="portal-main"><div className="welcome-strip"><div><span className="overline">Karibu HUDUMA ZA MTANDAONI</span><h1>Huduma zako, sehemu moja.</h1><p>Chagua huduma unayotaka. Tokeni hukatwa kwa usalama kwenye mfumo.</p></div><Sparkles size={44} /></div><TokenCard /><ServiceGrid title="HUDUMA ZOTE" services={main} onUse={onUse} /><ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} /><SpecialSection /><ServiceGrid title="ZANA ZA ZIADA" services={tools} onUse={onUse} /><TutorialsSection /></main>;
+  return <main className="portal-main"><div className="welcome-strip"><div><span className="overline">Karibu HUDUMA ZA MTANDAONI</span><h1>Huduma zako, sehemu moja.</h1><p>Chagua huduma unayotaka. Tokeni hukatwa kwa usalama kwenye mfumo.</p></div><Sparkles size={44} /></div>{announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}<TokenCard /><ServiceGrid title="HUDUMA ZOTE" services={main} onUse={onUse} /><ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} /><SpecialSection /><ServiceGrid title="ZANA ZA ZIADA" services={tools} onUse={onUse} /><TutorialsSection /></main>;
 }
 
 function BottomNav() { return <nav className="bottom-nav">{[{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma", icon: Zap }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Akaunti", icon: UserRound }].map(({ href, label, icon: ItemIcon }) => <Link href={href} key={href}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>; }
