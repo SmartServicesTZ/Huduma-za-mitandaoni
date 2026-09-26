@@ -4,7 +4,7 @@ import { getStorage } from "firebase-admin/storage";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
@@ -287,7 +287,8 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   draw(licenseNumber, 275, 676, 8.5, true);
   draw(office, 220, 558, 8, true); draw(form.tin, 220, 530, 8, true); draw(owner, 220, 504, 8, true); draw(businessType, 220, 478, 7.5, true); draw(form.licenseType, 220, 453, 8, true); draw(issueDate, 220, 427, 8, true); draw(expiryDate, 220, 402, 8, true); draw(form.principalBranch, 220, 376, 8, true);
   draw(form.region, 220, 302, 8, true); draw(form.ward, 220, 275, 8, true); draw(form.street, 220, 248, 8, true); draw(Number(form.licenseFee).toLocaleString("en-TZ", { minimumFractionDigits: 2 }), 220, 174, 8, true);
-  const qrPayload = JSON.stringify({ licenseNumber, businessName: form.businessName, ownerName: owner, tin: form.tin, businessType, region: form.region, district: form.district, ward: form.ward, street: form.street, licenseType: form.licenseType, principalBranch: form.principalBranch, dateOfIssue: issueDate, expiryDate, applicationId });
+  const hc = createHash("sha256").update(`${licenseNumber}|${form.tin}|${expiryDate}`).digest("hex").toUpperCase();
+  const qrPayload = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc });
   const qrData = await QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "H", margin: 1, width: 700 });
   const qr = await pdf.embedPng(Buffer.from(qrData.split(",")[1], "base64"));
   page.drawImage(qr, { x: 383, y: 150, width: 145, height: 145 });
