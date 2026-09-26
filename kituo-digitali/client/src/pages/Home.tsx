@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BadgeCheck, Baby, Bell, CarFront, ChevronRight, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, PlayCircle, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, X, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, updatePassword } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, updatePassword, uploadProfileImage } from "@/lib/firebase";
 import { announcementText, activitySeed, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import AdminDashboard from "./AdminDashboard";
 
@@ -100,9 +100,7 @@ function AccountPage() {
     const file = event.target.files?.[0]; if (!file || !firebaseUser) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error("Chagua picha ya JPG, PNG au WebP."); return; }
     if (file.size > 2 * 1024 * 1024) { toast.error("Picha isizidi MB 2."); return; }
-    setImageBusy(true); const reader = new FileReader();
-    reader.onload = async () => { try { await saveProfile({ profileImageUrl: String(reader.result) }); toast.success("Picha ya profile imehifadhiwa."); } catch { toast.error("Imeshindikana kuhifadhi picha."); } finally { setImageBusy(false); } };
-    reader.readAsDataURL(file);
+    setImageBusy(true); void uploadProfileImage(firebaseUser.uid, file).then(() => toast.success("Picha ya profile imehifadhiwa kwenye Storage.")).catch((error: any) => toast.error(error?.message ?? "Imeshindikana kuhifadhi picha.")).finally(() => setImageBusy(false));
   };
   const saveNames = async () => { try { await saveProfile({ firstName: names.firstName || profile?.firstName, lastName: names.lastName || profile?.lastName, name: `${names.firstName || profile?.firstName || ""} ${names.lastName || profile?.lastName || ""}`.trim() }); toast.success("Taarifa zimehifadhiwa."); } catch { toast.error("Imeshindikana kuhifadhi taarifa."); } };
   const saveNewPassword = async () => { if (!firebaseUser || newPassword.length < 6) { toast.error("Password iwe na angalau herufi 6."); return; } try { await updatePassword(firebaseUser, newPassword); setNewPassword(""); toast.success("Password imebadilishwa kwa usalama."); } catch { toast.error("Kwa usalama, ingia tena kabla ya kubadilisha password."); } };
@@ -147,10 +145,11 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const { isAuthenticated, firebaseUser } = useAuth();
+  const tokenOperationKeys = useRef(new Map<string, string>());
   const appearance = { data: null as null | { backgroundColor?: string; primaryColor?: string; secondaryColor?: string } };
   const servicesQuery = { data: null as null };
-  const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; try { const result = await consumeFirebaseTokens(firebaseUser.uid, service); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.open(service.actionUrl, "_blank", "noopener,noreferrer"); else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } } };
-  const handleUse = (service: ServiceCatalogItem) => { if (service.kind === "locked") { toast.error("Huduma hii imefungwa kwa sasa."); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } useService.mutate(service); };
+  const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.open(service.actionUrl, "_blank", "noopener,noreferrer"); else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
+  const handleUse = (service: ServiceCatalogItem) => { if (service.kind === "locked") { toast.error("Huduma hii imefungwa kwa sasa."); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const services = servicesQuery.data ? (servicesQuery.data as unknown as Array<Record<string, unknown>>).map((item) => ({ slug: String(item.slug), name: String(item.name), description: String(item.description), icon: String(item.icon), tokenCost: Number(item.tokenCost), category: String(item.category), kind: (item.isLocked ? "locked" : item.isFree ? "free" : "paid") as ServiceCatalogItem["kind"] })) : serviceCatalog;
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
   const selectedService = services.find((item) => item.slug === serviceSlug) ?? serviceCatalog.find((item) => item.slug === serviceSlug);

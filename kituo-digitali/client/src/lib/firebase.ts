@@ -1,4 +1,7 @@
 import { initializeApp } from "firebase/app";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
   getAuth,
@@ -12,6 +15,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -39,14 +43,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(app);
 export const firestore = getFirestore(app);
+export const firebaseStorage = getStorage(app);
+export const firebaseFunctions = getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION ?? "us-central1");
+const appCheckSiteKey = String(import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY ?? "").trim();
+export const firebaseAppCheck = appCheckSiteKey ? initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true }) : null;
 export { onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword };
 export type AdminPermissions = {
+  viewUsers?: boolean;
   manageUsers?: boolean;
   manageTokens?: boolean;
   manageServices?: boolean;
   manageContent?: boolean;
   manageMessages?: boolean;
-  manageSecurity?: boolean;
+  manageReports?: boolean;
+  manageSettings?: boolean;
+  manageLicenses?: boolean;
+  viewAuditLogs?: boolean;
 };
 
 export type FirebaseProfile = {
@@ -59,12 +71,19 @@ export type FirebaseProfile = {
   username: string;
   tokenBalance: number;
   verificationStatus: "pending" | "approved" | "rejected";
-  role: "user" | "admin" | "super_admin";
+  role: "user" | "admin" | "moderator" | "support" | "super_admin";
   permissions?: AdminPermissions;
   profileImageUrl?: string;
   language?: "sw" | "en";
   createdAt?: unknown;
 };
+
+const credentialFieldNames = ["password", "pin", "pinHash"] as const;
+export function sanitizeProfileData(data: DocumentData): FirebaseProfile {
+  const safe = { ...data } as Record<string, unknown>;
+  for (const field of credentialFieldNames) delete safe[field];
+  return safe as FirebaseProfile;
+}
 
 export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfile> = {}) {
   const ref = doc(firestore, "users", user.uid);
@@ -85,7 +104,9 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     role: current.role ?? "user",
     permissions: current.permissions ?? {},
     createdAt: current.createdAt ?? serverTimestamp(),
-    ...extra,
+    password: deleteField(),
+    language: extra.language ?? current.language ?? "sw",
+    profileImageUrl: extra.profileImageUrl ?? current.profileImageUrl,
     updatedAt: serverTimestamp(),
   }, { merge: true });
   return ref;
@@ -98,26 +119,18 @@ export async function registerFirebaseUser(input: { email: string; password: str
 }
 
 export function subscribeToProfile(uid: string, callback: (profile: FirebaseProfile | null) => void) {
-  return onSnapshot(doc(firestore, "users", uid), (snapshot) => callback(snapshot.exists() ? snapshot.data() as FirebaseProfile : null));
+  return onSnapshot(doc(firestore, "users", uid), (snapshot) => callback(snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null));
 }
 
 export async function saveFirebaseProfile(uid: string, values: Partial<FirebaseProfile>) {
   await setDoc(doc(firestore, "users", uid), { ...values, updatedAt: serverTimestamp() }, { merge: true });
 }
 
-export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string }) {
-  if (service.kind === "free" || service.tokenCost <= 0) return { balanceAfter: null, reference: `free-${Date.now()}` };
-  const userRef = doc(firestore, "users", uid);
-  const ledgerRef = doc(collection(firestore, "tokenTransactions"));
-  return runTransaction(firestore, async (transaction) => {
-    const snapshot = await transaction.get(userRef);
-    const before = Number(snapshot.data()?.tokenBalance ?? 0);
-    if (before < service.tokenCost) throw new Error("Huna tokeni za kutosha kwa huduma hii.");
-    const after = before - service.tokenCost;
-    transaction.update(userRef, { tokenBalance: after, updatedAt: serverTimestamp() });
-    transaction.set(ledgerRef, { userId: uid, serviceSlug: service.slug, description: service.name, amount: -service.tokenCost, balanceBefore: before, balanceAfter: after, reference: ledgerRef.id, createdAt: serverTimestamp(), status: "completed" });
-    return { balanceAfter: after, reference: ledgerRef.id };
-  });
+export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string }, requestId?: string) {
+  if (service.kind === "free" || service.tokenCost <= 0) return { balanceAfter: null, reference: requestId ?? `free-${Date.now()}`, duplicate: false };
+  const transactionId = requestId?.trim() || crypto.randomUUID();
+  const callable = httpsCallable<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>(firebaseFunctions, "consumeTokens");
+  return (await callable({ serviceId: service.slug, serviceName: service.name, tokenCost: service.tokenCost, requestId: transactionId })).data;
 }
 
 export async function createServiceRequest(uid: string, service: { slug: string; name: string }, details: string) {
@@ -150,7 +163,10 @@ function timestampValue(value: unknown) {
 
 export async function adminListUsers() {
   const snapshot = await getDocs(collection(firestore, "users"));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt), lastLoginAt: timestampValue(item.data().lastLoginAt) } as AdminUserRecord & { id: string }));
+  return snapshot.docs.map((item) => {
+    const { password: _password, pin: _pin, pinHash: _pinHash, ...safeData } = item.data();
+    return { id: item.id, ...safeData, createdAt: timestampValue(safeData.createdAt), lastLoginAt: timestampValue(safeData.lastLoginAt) } as AdminUserRecord & { id: string };
+  });
 }
 
 export async function adminListServices() {
@@ -169,63 +185,85 @@ export async function adminListCollection(name: "announcements" | "auditLogs" | 
 }
 
 export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string) {
-  if (!Number.isInteger(amount) || amount === 0) throw new Error("Kiasi cha tokeni si sahihi.");
-  const userRef = doc(firestore, "users", userId);
-  const ledgerRef = doc(collection(firestore, "tokenTransactions"));
-  return runTransaction(firestore, async (transaction) => {
-    const snapshot = await transaction.get(userRef);
-    if (!snapshot.exists()) throw new Error("Mtumiaji hakupatikana.");
-    const current = Number(snapshot.data().tokenBalance ?? 0);
-    const next = current + amount;
-    if (next < 0) throw new Error("Salio haliwezi kuwa chini ya sifuri.");
-    transaction.update(userRef, { tokenBalance: next, updatedAt: serverTimestamp() });
-    transaction.set(ledgerRef, { userId, serviceId: "admin-adjustment", serviceName: "Admin token adjustment", type: amount > 0 ? "credit" : "debit", amount, previousBalance: current, newBalance: next, description, reference: ledgerRef.id, adminId, createdAt: serverTimestamp(), status: "completed" });
-    transaction.set(doc(collection(firestore, "auditLogs")), { adminId, action: amount > 0 ? "tokens_added" : "tokens_removed", targetUserId: userId, amount, reason: description, createdAt: serverTimestamp() });
-    return next;
-  });
+  const callable = httpsCallable<{ userId: string; amount: number; description: string }, { balanceAfter: number; reference: string }>(firebaseFunctions, "adjustTokens");
+  return (await callable({ userId, amount, description })).data;
 }
 
 export async function adminUpdateUser(adminId: string, userId: string, values: Partial<AdminUserRecord>) {
-  await updateDoc(doc(firestore, "users", userId), { ...values, updatedAt: serverTimestamp() });
-  await addDoc(collection(firestore, "auditLogs"), { adminId, targetUserId: userId, action: "user_updated", changes: values, createdAt: serverTimestamp() });
+  if (values.role !== undefined || values.permissions !== undefined) {
+    const callable = httpsCallable(firebaseFunctions, "updateUserAccess");
+    await callable({ userId, role: values.role, permissions: values.permissions });
+  } else if (values.accountStatus !== undefined) {
+    const callable = httpsCallable(firebaseFunctions, "setAccountStatus");
+    await callable({ userId, status: values.accountStatus });
+  } else if (values.verificationStatus !== undefined) {
+    const callable = httpsCallable(firebaseFunctions, "verifyUser");
+    await callable({ userId, status: values.verificationStatus });
+  } else {
+    throw new Error("Mabadiliko haya ya admin hayaruhusiwi kupitia frontend.");
+  }
+}
+
+export async function uploadProfileImage(uid: string, file: File) {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error("Chagua picha ya JPG, PNG au WebP.");
+  if (file.size > 2 * 1024 * 1024) throw new Error("Picha isizidi MB 2.");
+  const objectRef = storageRef(firebaseStorage, `users/${uid}/profile/avatar`);
+  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "public,max-age=3600" });
+  const url = await getDownloadURL(objectRef);
+  await saveFirebaseProfile(uid, { profileImageUrl: url });
+  return url;
+}
+
+export async function recordAdminAction(actorId: string, action: string, targetType: string, targetId: string, details: Record<string, unknown> = {}) {
+  const actorSnapshot = await getDoc(doc(firestore, "users", actorId));
+  await addDoc(collection(firestore, "adminActions"), {
+    actorId,
+    actorRole: String(actorSnapshot.data()?.role ?? "unknown"),
+    action,
+    targetType,
+    targetId,
+    description: String(details.description ?? action),
+    before: details.before ?? null,
+    after: details.after ?? null,
+    details: Object.fromEntries(Object.entries(details).filter(([key]) => !["before", "after", "description"].includes(key))),
+    createdAt: serverTimestamp(),
+  });
 }
 
 export async function adminSaveService(adminId: string, values: Record<string, unknown>, id?: string) {
-  const payload = { ...values, updatedAt: serverTimestamp(), updatedBy: adminId };
-  if (id) await updateDoc(doc(firestore, "services", id), payload);
-  else await addDoc(collection(firestore, "services"), { ...payload, createdAt: serverTimestamp() });
+  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  return (await callable({ collection: "services", id, values })).data;
 }
 
 export async function adminDeleteService(adminId: string, id: string) {
-  await deleteDoc(doc(firestore, "services", id));
-  await addDoc(collection(firestore, "auditLogs"), { adminId, action: "service_deleted", targetId: id, createdAt: serverTimestamp() });
+  const callable = httpsCallable(firebaseFunctions, "adminDelete");
+  return (await callable({ collection: "services", id })).data;
 }
 
 export async function adminSaveAnnouncement(adminId: string, values: Record<string, unknown>, id?: string) {
-  const payload = { ...values, updatedAt: serverTimestamp(), updatedBy: adminId };
-  if (id) await updateDoc(doc(firestore, "announcements", id), payload);
-  else await addDoc(collection(firestore, "announcements"), { ...payload, createdAt: serverTimestamp() });
+  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  return (await callable({ collection: "announcements", id, values })).data;
 }
 
 export async function adminDeleteAnnouncement(adminId: string, id: string) {
-  await deleteDoc(doc(firestore, "announcements", id));
-  await addDoc(collection(firestore, "auditLogs"), { adminId, action: "announcement_deleted", targetId: id, createdAt: serverTimestamp() });
+  const callable = httpsCallable(firebaseFunctions, "adminDelete");
+  return (await callable({ collection: "announcements", id })).data;
 }
 
 
 export async function adminSaveCollectionItem(adminId: string, collectionName: string, values: Record<string, unknown>, id?: string) {
-  const payload = { ...values, updatedAt: serverTimestamp(), updatedBy: adminId };
-  if (id) await updateDoc(doc(firestore, collectionName, id), payload);
-  else await addDoc(collection(firestore, collectionName), { ...payload, createdAt: serverTimestamp() });
+  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  return (await callable({ collection: collectionName, id, values })).data;
 }
 
 export async function adminDeleteCollectionItem(adminId: string, collectionName: string, id: string) {
-  await deleteDoc(doc(firestore, collectionName, id));
-  await addDoc(collection(firestore, "auditLogs"), { adminId, action: `${collectionName}_deleted`, targetId: id, createdAt: serverTimestamp() });
+  const callable = httpsCallable(firebaseFunctions, "adminDelete");
+  return (await callable({ collection: collectionName, id })).data;
 }
 
 export async function adminSaveSiteSettings(adminId: string, values: Record<string, unknown>) {
-  await setDoc(doc(firestore, "siteSettings", "public"), { ...values, updatedAt: serverTimestamp(), updatedBy: adminId }, { merge: true });
+  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  return (await callable({ collection: "siteSettings", id: "public", values })).data;
 }
 
 export async function adminGetSiteSettings() {

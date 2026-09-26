@@ -5,50 +5,74 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function isSuperAdmin() { return signedIn() && profile().role == 'super_admin'; }
-    function isAdmin() { return signedIn() && (isSuperAdmin() || profile().role == 'admin'); }
+    function isPrivileged() { return signedIn() && profile().role in ['admin', 'moderator', 'support', 'super_admin']; }
+    function isAdmin() { return isPrivileged(); }
     function hasPermission(name) { return isSuperAdmin() || (isAdmin() && profile().permissions[name] == true); }
+    function hasNoCredentialFields(data) { return !data.keys().hasAny(['password', 'pin', 'pinHash']); }
     function canManageUsers() { return hasPermission('manageUsers'); }
     function canManageTokens() { return hasPermission('manageTokens'); }
     function canManageServices() { return hasPermission('manageServices'); }
     function canManageContent() { return hasPermission('manageContent'); }
     function canManageMessages() { return hasPermission('manageMessages'); }
+    function canViewUsers() { return hasPermission('viewUsers') || hasPermission('manageUsers'); }
+    function canViewAuditLogs() { return hasPermission('viewAuditLogs'); }
 
     match /users/{userId} {
-      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow read: if signedIn() && (request.auth.uid == userId || canViewUsers());
       allow create: if signedIn() && request.auth.uid == userId
         && request.resource.data.role == 'user'
-        && request.resource.data.tokenBalance == 0;
-      allow update: if signedIn() && (
+        && request.resource.data.tokenBalance == 0
+        && hasNoCredentialFields(request.resource.data);
+      allow update: if signedIn() && hasNoCredentialFields(request.resource.data) && (
         (request.auth.uid == userId
           && request.resource.data.role == resource.data.role
           && request.resource.data.tokenBalance == resource.data.tokenBalance
           && request.resource.data.verificationStatus == resource.data.verificationStatus
-          && request.resource.data.permissions == resource.data.permissions)
-        || isSuperAdmin()
+          && request.resource.data.permissions == resource.data.permissions
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['password', 'pin', 'pinHash']))
+        || (isSuperAdmin()
+          && request.resource.data.role in ['user', 'admin', 'moderator', 'support', 'super_admin']
+          && !(request.auth.uid == userId
+            && resource.data.role == 'super_admin'
+            && (request.resource.data.role != resource.data.role
+              || request.resource.data.permissions != resource.data.permissions
+              || request.resource.data.accountStatus == 'blocked')))
         || (canManageUsers()
+          && resource.data.role != 'super_admin'
+          && request.resource.data.role != 'super_admin'
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'permissions', 'tokenBalance']))
         || (canManageTokens()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tokenBalance', 'updatedAt']))
       );
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin()
+        && request.auth.uid != userId
+        && resource.data.role != 'super_admin';
     }
 
     match /services/{id} {
       allow read: if true;
-      allow create, update, delete: if canManageServices();
+      allow create, update, delete: if false;
     }
     match /tokenTransactions/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if canManageTokens() || (signedIn() && request.resource.data.userId == request.auth.uid);
+      allow create: if (canManageTokens() && request.resource.data.actorId == request.auth.uid)
+        || (signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.actorId == request.auth.uid
+          && request.resource.data.amount < 0
+          && request.resource.data.balanceAfter >= 0
+          && request.resource.data.balanceAfter == request.resource.data.balanceBefore + request.resource.data.amount
+          && request.resource.data.transactionId == id
+          && request.resource.data.reference == id);
       allow update, delete: if false;
     }
     match /announcements/{id} {
       allow read: if true;
-      allow create, update, delete: if canManageContent();
+      allow create, update, delete: if false;
     }
     match /tutorialVideos/{id} {
       allow read: if true;
-      allow create, update, delete: if canManageContent();
+      allow create, update, delete: if false;
     }
     match /serviceRequests/{id} {
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
@@ -58,23 +82,30 @@ service cloud.firestore {
     }
     match /licenseTemplates/{id} {
       allow read: if signedIn() && (resource.data.status == 'active' || isAdmin());
-      allow create, update, delete: if isSuperAdmin();
+      allow create, update, delete: if false;
     }
     match /siteSettings/{id} {
       allow read: if true;
-      allow create, update: if isSuperAdmin();
+      allow create, update: if false;
       allow delete: if false;
     }
     match /messages/{id} {
       allow read: if isAdmin() || (signedIn() && resource.data.recipientId == request.auth.uid);
-      allow create, update, delete: if canManageMessages();
+      allow create, update, delete: if false;
     }
     match /adminActions/{id} {
-      allow read, create: if isAdmin();
+      allow read: if canViewAuditLogs();
+      allow create: if isAdmin()
+        && request.resource.data.actorId == request.auth.uid
+        && request.resource.data.actorRole == profile().role
+        && request.resource.data.action is string
+        && request.resource.data.targetType is string
+        && request.resource.data.targetId is string
+        && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }
     match /auditLogs/{id} {
-      allow read, create: if isAdmin();
+      allow read, create: if false;
       allow update, delete: if false;
     }
     match /systemSettings/{id} {
