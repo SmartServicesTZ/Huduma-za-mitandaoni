@@ -272,14 +272,18 @@ function addText(page: import("pdf-lib").PDFPage, text: string, x: number, y: nu
 async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applicationId: string, issueDate: string, expiryDate: string) {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([612, 800]);
-  const template = await pdf.embedJpg(await readFile(path.join(functionsRoot, "../assets/license-template.jpg")));
+  const template = await pdf.embedJpg(await readFile(path.join(functionsRoot, "../assets/license-template-final.jpg")));
   page.drawImage(template, { x: 0, y: 0, width: 612, height: 800 });
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
   const regularFont = await pdf.embedFont(StandardFonts.Helvetica);
   const draw = (text: string, x: number, y: number, size = 8.5, bold = false) => page.drawText(text.slice(0, 70), { x, y, size, font: bold ? boldFont : regularFont, color: rgb(0.05, 0.08, 0.1) });
+  const cover = (x: number, y: number, width: number, height: number) => page.drawRectangle({ x, y, width, height, color: rgb(1, 1, 1), opacity: 0.78, borderWidth: 0 });
   const owner = `${form.firstName} ${form.middleName} ${form.lastName}`.replace(/\s+/g, " ").trim();
   const businessType = form.businessType === "OTHER" ? form.otherBusinessType ?? "OTHER" : form.businessType;
   const office = form.district.toUpperCase().includes("CITY") ? `${form.district} CITY COUNCIL` : `${form.district} DISTRICT COUNCIL`;
+  cover(250, 664, 290, 22);
+  for (const y of [548, 520, 494, 468, 443, 417, 392, 366, 292, 265, 238, 164, 86]) cover(205, y - 3, 335, 18);
+  cover(372, 140, 170, 170);
   draw(licenseNumber, 275, 676, 8.5, true);
   draw(office, 220, 558, 8, true); draw(form.tin, 220, 530, 8, true); draw(owner, 220, 504, 8, true); draw(businessType, 220, 478, 7.5, true); draw(form.licenseType, 220, 453, 8, true); draw(issueDate, 220, 427, 8, true); draw(expiryDate, 220, 402, 8, true); draw(form.principalBranch, 220, 376, 8, true);
   draw(form.region, 220, 302, 8, true); draw(form.ward, 220, 275, 8, true); draw(form.street, 220, 248, 8, true); draw(Number(form.licenseFee).toLocaleString("en-TZ", { minimumFractionDigits: 2 }), 220, 174, 8, true);

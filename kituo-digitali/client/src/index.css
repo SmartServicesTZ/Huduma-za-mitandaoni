@@ -81,9 +81,9 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-draft-badge { padding: 5px 8px; border-radius: 999px; color: #9a5500; background: #fff0c7; font-size: 9px; font-weight: 900; }
 .license-preview-card { padding: 18px; background: #f8fafc; }
 .license-preview-heading { margin-bottom: 13px; }
-.license-certificate { position: relative; overflow: hidden; padding: 13px; border: 1px solid #d8e0e7; background: #eaf2f5; }
+.license-certificate { position: relative; overflow: hidden; padding: 13px; border: 1px solid #d8e0e7; background: #fff; }
 .license-certificate::before { content: ""; position: absolute; inset: 13px; border: 3px solid #2a83a7; pointer-events: none; }
-.license-certificate__inner { position: relative; z-index: 1; min-height: 720px; padding: 31px 35px 25px; background: linear-gradient(rgba(240,249,250,.89), rgba(238,248,249,.89)), url('/license-assets/license-template.jpg') center / cover; color: #111827; font-family: Arial, sans-serif; }
+.license-certificate__inner { position: relative; z-index: 1; min-height: 720px; padding: 31px 35px 25px; background: linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url('/license-assets/final-license-reference.jpg') center / cover; color: #111827; font-family: Arial, sans-serif; }
 .license-certificate__header { display: grid; justify-items: center; gap: 6px; text-align: center; }
 .license-crest-placeholder { display: grid; place-items: center; width: 43px; height: 43px; color: #fff; border-radius: 50%; background: linear-gradient(135deg, #1f7d4c, #b99b2b); font-size: 9px; font-weight: 900; }
 .license-certificate__header strong { font-size: clamp(13px, 1.6vw, 18px); font-weight: 500; }
