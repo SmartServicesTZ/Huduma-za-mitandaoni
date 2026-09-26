@@ -24,6 +24,9 @@ function Router() {
       <Route path={"/admin/videos"} component={Home} />
       <Route path={"/admin/transactions"} component={Home} />
       <Route path={"/admin/announcements"} component={Home} />
+      <Route path={"/admin/cms"} component={Home} />
+      <Route path={"/admin/licenses"} component={Home} />
+      <Route path={"/admin/security"} component={Home} />
       <Route path={"/admin/settings"} component={Home} />
       <Route path={"/admin/roles"} component={Home} />
       <Route path={"/admin/messages"} component={Home} />

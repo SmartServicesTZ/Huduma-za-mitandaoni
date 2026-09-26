@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="sw">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUDUMA ZA MTANDAONI</title>
+    <script>
+      (function () {
+        var base = "/Huduma-za-mtandao";
+        var path = location.pathname.indexOf(base) === 0 ? location.pathname.slice(base.length) : location.pathname;
+        var route = path + location.search + location.hash;
+        location.replace(base + "/?route=" + encodeURIComponent(route));
+      })();
+    </script>
+  </head>
+  <body>Inafungua ukurasa...</body>
+</html>

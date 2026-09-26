@@ -8,6 +8,13 @@ import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
 
+// GitHub Pages serves 404.html for direct SPA routes. The fallback redirects
+// here with the original path so Wouter can render it after the 200 response.
+if (typeof window !== "undefined") {
+  const route = new URLSearchParams(window.location.search).get("route");
+  if (route) window.history.replaceState({}, "", decodeURIComponent(route));
+}
+
 const queryClient = new QueryClient();
 const configuredApiBase = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 const apiUrl = `${configuredApiBase}/api/trpc`;
