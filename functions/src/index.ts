@@ -1,5 +1,12 @@
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore, type Transaction } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { randomUUID, randomBytes } from "node:crypto";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import QRCode from "qrcode";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 
@@ -7,6 +14,8 @@ initializeApp();
 setGlobalOptions({ region: process.env.FUNCTIONS_REGION ?? "us-central1", maxInstances: 20 });
 
 const db = getFirestore();
+const bucket = getStorage().bucket();
+const functionsRoot = path.dirname(fileURLToPath(import.meta.url));
 const roles = ["user", "admin", "moderator", "support", "super_admin"] as const;
 type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
@@ -226,4 +235,107 @@ export const verifyUser = onCall(async (request) => {
     recordAudit(transaction, uid, String(actor.role), "VERIFY_USER", "user", userId, { verificationStatus: target.verificationStatus ?? "pending" }, { verificationStatus: status });
     return { ok: true };
   });
+});
+
+type LicenseRequest = {
+  requestId?: unknown;
+  firstName?: unknown; lastName?: unknown; phone?: unknown; email?: unknown;
+  businessName?: unknown; businessType?: unknown; otherBusinessType?: unknown;
+  licenseType?: unknown; principalBranch?: unknown; region?: unknown; district?: unknown;
+  ward?: unknown; street?: unknown; tin?: unknown; licenseFee?: unknown;
+};
+
+type LicenseForm = {
+  firstName: string; lastName: string; phone: string; email: string;
+  businessName: string; businessType: string; otherBusinessType: string;
+  licenseType: "NEW LICENSE" | "RENEWED LICENSE"; principalBranch: "PRINCIPAL" | "BRANCH";
+  region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
+};
+
+function cleanText(value: unknown, label: string, max = 180) {
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > max || /[\r\n]/.test(value)) throw new HttpsError("invalid-argument", `${label} si sahihi.`);
+  return value.trim();
+}
+
+function makeBusinessLicenseNumber() {
+  return `BL${new Date().getUTCFullYear()}${randomBytes(7).toString("hex").toUpperCase()}`;
+}
+
+function addText(page: import("pdf-lib").PDFPage, text: string, x: number, y: number, size = 8.5, bold = false) {
+  page.drawText(text.slice(0, 70), { x, y, size, font: bold ? undefined : undefined, color: rgb(0.05, 0.08, 0.1) });
+}
+
+async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applicationId: string, issueDate: string, expiryDate: string) {
+  const pdf = await PDFDocument.create();
+  const page = pdf.addPage([612, 800]);
+  const template = await pdf.embedJpg(await readFile(path.join(functionsRoot, "../assets/license-template.jpg")));
+  page.drawImage(template, { x: 0, y: 0, width: 612, height: 800 });
+  const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const regularFont = await pdf.embedFont(StandardFonts.Helvetica);
+  const draw = (text: string, x: number, y: number, size = 8.5, bold = false) => page.drawText(text.slice(0, 70), { x, y, size, font: bold ? boldFont : regularFont, color: rgb(0.05, 0.08, 0.1) });
+  const owner = `${form.firstName} ${form.lastName}`.trim();
+  const businessType = form.businessType === "OTHER" ? form.otherBusinessType ?? "OTHER" : form.businessType;
+  const office = form.district.toUpperCase().includes("CITY") ? `${form.district} CITY COUNCIL` : `${form.district} DISTRICT COUNCIL`;
+  draw(licenseNumber, 275, 676, 8.5, true);
+  draw(office, 220, 558, 8, true); draw(form.tin, 220, 530, 8, true); draw(owner, 220, 504, 8, true); draw(businessType, 220, 478, 7.5, true); draw(form.licenseType, 220, 453, 8, true); draw(issueDate, 220, 427, 8, true); draw(expiryDate, 220, 402, 8, true); draw(form.principalBranch, 220, 376, 8, true);
+  draw(form.region, 220, 302, 8, true); draw(form.ward, 220, 275, 8, true); draw(form.street, 220, 248, 8, true); draw(Number(form.licenseFee).toLocaleString("en-TZ", { minimumFractionDigits: 2 }), 220, 174, 8, true);
+  const qrPayload = JSON.stringify({ licenseNumber, businessName: form.businessName, ownerName: owner, tin: form.tin, businessType, region: form.region, district: form.district, ward: form.ward, street: form.street, licenseType: form.licenseType, principalBranch: form.principalBranch, dateOfIssue: issueDate, expiryDate, applicationId });
+  const qrData = await QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "H", margin: 1, width: 700 });
+  const qr = await pdf.embedPng(Buffer.from(qrData.split(",")[1], "base64"));
+  page.drawImage(qr, { x: 383, y: 150, width: 145, height: 145 });
+  const logo = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tausi-logo.png")));
+  page.drawImage(logo, { x: 432, y: 199, width: 47, height: 47 });
+  draw(applicationId, 420, 91, 5.5, false);
+  return pdf.save();
+}
+
+export const generateBusinessLicense = onCall(async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new HttpsError("permission-denied", "Akaunti hii imezuiwa.");
+  if (profile.verificationStatus !== "approved") throw new HttpsError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
+  const data = (request.data ?? {}) as LicenseRequest;
+  const requestId = cleanText(data.requestId ?? randomUUID(), "Request ID", 160);
+  const applicationRef = db.collection("licenseApplications").doc(requestId);
+  const existing = await applicationRef.get();
+  if (existing.exists) {
+    const current = existing.data()!;
+    if (current.userId !== uid) throw new HttpsError("already-exists", "Request ID si sahihi.");
+    if (current.status === "COMPLETED") return { status: "COMPLETED", applicationId: current.applicationId, downloadUrl: current.downloadUrl, reference: current.reference, duplicate: true };
+    if (current.status === "PROCESSING") throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
+  }
+  const form = {
+    firstName: cleanText(data.firstName, "Jina la kwanza", 80), lastName: cleanText(data.lastName, "Jina la mwisho", 80), phone: cleanText(data.phone, "Namba ya simu", 40), email: cleanText(data.email, "Barua pepe", 160),
+    businessName: cleanText(data.businessName, "Jina la biashara", 120), businessType: cleanText(data.businessType, "Aina ya biashara", 100), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100) : "", licenseType: data.licenseType === "RENEWED LICENSE" ? "RENEWED LICENSE" : "NEW LICENSE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80), district: cleanText(data.district, "Wilaya / Halmashauri", 100), ward: cleanText(data.ward, "Kata", 100), street: cleanText(data.street, "Mtaa / Kijiji", 140), tin: cleanText(data.tin, "TIN", 40), licenseFee: Number(data.licenseFee),
+  } as const;
+  if (form.businessType === "OTHER" && !form.otherBusinessType) throw new HttpsError("invalid-argument", "Eleza aina ya biashara.");
+  if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new HttpsError("invalid-argument", "Malipo ya leseni si sahihi.");
+  const issueDate = new Date().toISOString().slice(0, 10); const expiry = new Date(`${issueDate}T00:00:00`); expiry.setFullYear(expiry.getFullYear() + 1); expiry.setDate(expiry.getDate() - 1); const expiryDate = expiry.toISOString().slice(0, 10);
+  const applicationId = `APP-${randomUUID().replaceAll("-", "").slice(0, 18).toUpperCase()}`;
+  const licenseNumber = makeBusinessLicenseNumber();
+  const balanceSnapshot = await db.collection("users").doc(uid).get();
+  if (Number(balanceSnapshot.data()?.tokenBalance ?? 0) < 2) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
+  await applicationRef.set({ applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+  try {
+    const pdfBytes = await renderLicensePdf(form, licenseNumber, applicationId, issueDate, expiryDate);
+    const filePath = `license-documents/${uid}/${applicationId}.pdf`;
+    const file = bucket.file(filePath);
+    await file.save(Buffer.from(pdfBytes), { metadata: { contentType: "application/pdf", metadata: { userId: uid, applicationId } } });
+    const [downloadUrl] = await file.getSignedUrl({ action: "read", expires: Date.now() + 15 * 60 * 1000 });
+    const userRef = db.collection("users").doc(uid); const ledgerRef = db.collection("tokenTransactions").doc(); const usageRef = db.collection("serviceUsage").doc(); const now = FieldValue.serverTimestamp();
+    const result = await db.runTransaction(async (transaction) => {
+      const userSnapshot = await transaction.get(userRef); const user = userSnapshot.data() as Profile; const before = Number(user.tokenBalance ?? 0); const cost = 2;
+      if (before < cost) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
+      const after = before - cost; transaction.update(userRef, { tokenBalance: after, updatedAt: now });
+      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, type: "service_usage", amount: -cost, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: now, status: "completed", applicationId });
+      transaction.set(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId, tokensUsed: cost, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: now, reference: ledgerRef.id });
+      transaction.update(applicationRef, { status: "COMPLETED", downloadUrl, storagePath: filePath, reference: ledgerRef.id, updatedAt: now });
+      recordAudit(transaction, uid, String(profile.role), "GENERATE_BUSINESS_LICENSE_PDF", "licenseApplication", applicationId, { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: cost, reference: ledgerRef.id });
+      return { before, after, reference: ledgerRef.id };
+    });
+    return { status: "COMPLETED", applicationId, licenseNumber, downloadUrl, reference: result.reference, duplicate: false };
+  } catch (error) {
+    await applicationRef.update({ status: "FAILED", failureReason: error instanceof HttpsError ? error.message : "PDF generation failed", updatedAt: FieldValue.serverTimestamp() }).catch(() => undefined);
+    throw error instanceof HttpsError ? error : new HttpsError("internal", "Imeshindikana kutengeneza PDF.");
+  }
 });

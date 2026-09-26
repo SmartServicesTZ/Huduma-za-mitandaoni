@@ -133,6 +133,19 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
   return (await callable({ serviceId: service.slug, serviceName: service.name, tokenCost: service.tokenCost, requestId: transactionId })).data;
 }
 
+export type BusinessLicensePayload = {
+  requestId: string;
+  firstName: string; lastName: string; phone: string; email: string;
+  businessName: string; businessType: string; otherBusinessType?: string;
+  licenseType: "NEW LICENSE" | "RENEWED LICENSE"; principalBranch: "PRINCIPAL" | "BRANCH";
+  region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
+};
+
+export async function generateBusinessLicense(payload: BusinessLicensePayload) {
+  const callable = httpsCallable<BusinessLicensePayload, { status: string; applicationId: string; licenseNumber: string; downloadUrl: string; reference: string; duplicate: boolean }>(firebaseFunctions, "generateBusinessLicense");
+  return (await callable(payload)).data;
+}
+
 export async function createServiceRequest(uid: string, service: { slug: string; name: string }, details: string) {
   const requestRef = await addDoc(collection(firestore, "serviceRequests"), {
     userId: uid,

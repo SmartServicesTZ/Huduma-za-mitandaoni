@@ -55,16 +55,16 @@ service cloud.firestore {
     }
     match /tokenTransactions/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if (canManageTokens() && request.resource.data.actorId == request.auth.uid)
-        || (signedIn()
-          && request.resource.data.userId == request.auth.uid
-          && request.resource.data.actorId == request.auth.uid
-          && request.resource.data.amount < 0
-          && request.resource.data.balanceAfter >= 0
-          && request.resource.data.balanceAfter == request.resource.data.balanceBefore + request.resource.data.amount
-          && request.resource.data.transactionId == id
-          && request.resource.data.reference == id);
+      allow create: if false;
       allow update, delete: if false;
+    }
+    match /licenseApplications/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || hasPermission('manageReports'));
+      allow create, update, delete: if false;
+    }
+    match /serviceUsage/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || hasPermission('manageReports'));
+      allow create, update, delete: if false;
     }
     match /announcements/{id} {
       allow read: if true;
