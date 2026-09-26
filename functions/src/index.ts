@@ -239,14 +239,14 @@ export const verifyUser = onCall(async (request) => {
 
 type LicenseRequest = {
   requestId?: unknown;
-  firstName?: unknown; middleName?: unknown; lastName?: unknown; phone?: unknown; email?: unknown;
+  firstName?: unknown; middleName?: unknown; lastName?: unknown; email?: unknown;
   businessName?: unknown; businessType?: unknown; otherBusinessType?: unknown;
   licenseType?: unknown; principalBranch?: unknown; region?: unknown; district?: unknown;
   ward?: unknown; street?: unknown; tin?: unknown; licenseFee?: unknown;
 };
 
 type LicenseForm = {
-  firstName: string; middleName: string; lastName: string; phone: string; email: string;
+  firstName: string; middleName: string; lastName: string; email: string;
   businessName: string; businessType: string; otherBusinessType: string;
   licenseType: "NEW LICENSE" | "RENEWED LICENSE"; principalBranch: "PRINCIPAL" | "BRANCH";
   region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
@@ -333,10 +333,11 @@ export const generateBusinessLicense = onCall(async (request) => {
     if (current.status === "PROCESSING") throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
   }
   const form = {
-    firstName: cleanText(data.firstName, "Jina la kwanza", 80), middleName: cleanText(data.middleName, "Jina la pili", 80), lastName: cleanText(data.lastName, "Jina la mwisho", 80), phone: cleanText(data.phone, "Namba ya simu", 40), email: cleanText(data.email, "Barua pepe", 160),
+    firstName: cleanText(data.firstName, "Jina la kwanza", 80), middleName: cleanText(data.middleName, "Jina la pili", 80), lastName: cleanText(data.lastName, "Jina la mwisho", 80), email: cleanText(data.email, "Barua pepe", 160),
     businessName: cleanText(data.businessName, "Jina la biashara", 120), businessType: cleanText(data.businessType, "Aina ya biashara", 100), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100) : "", licenseType: data.licenseType === "RENEWED LICENSE" ? "RENEWED LICENSE" : "NEW LICENSE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80), district: cleanText(data.district, "Wilaya / Halmashauri", 100), ward: cleanText(data.ward, "Kata", 100), street: cleanText(data.street, "Mtaa / Kijiji", 140), tin: cleanText(data.tin, "TIN", 40), licenseFee: Number(data.licenseFee),
   } as const;
   if (form.businessType === "OTHER" && !form.otherBusinessType) throw new HttpsError("invalid-argument", "Eleza aina ya biashara.");
+  if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin)) throw new HttpsError("invalid-argument", "Format ya TIN si sahihi. Tumia mfumo 123-123-123.");
   if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new HttpsError("invalid-argument", "Malipo ya leseni si sahihi.");
   const issueDate = new Date().toISOString().slice(0, 10); const expiry = new Date(`${issueDate}T00:00:00`); expiry.setFullYear(expiry.getFullYear() + 1); expiry.setDate(expiry.getDate() - 1); const expiryDate = expiry.toISOString().slice(0, 10);
   const applicationId = `APP-${randomUUID().replaceAll("-", "").slice(0, 18).toUpperCase()}`;
@@ -361,7 +362,7 @@ export const generateBusinessLicense = onCall(async (request) => {
       transaction.create(reservationRef, { reservationId: requestId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
       transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
-    const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
+    const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
     transaction.create(applicationRef, applicationData);
   });
   try {
