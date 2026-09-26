@@ -239,15 +239,15 @@ export const verifyUser = onCall(async (request) => {
 
 type LicenseRequest = {
   requestId?: unknown;
-  firstName?: unknown; middleName?: unknown; lastName?: unknown; email?: unknown;
-  businessName?: unknown; businessType?: unknown; otherBusinessType?: unknown;
+  firstName?: unknown; middleName?: unknown; lastName?: unknown;
+  businessType?: unknown; otherBusinessType?: unknown;
   licenseType?: unknown; principalBranch?: unknown; region?: unknown; district?: unknown;
   ward?: unknown; street?: unknown; tin?: unknown; licenseFee?: unknown;
 };
 
 type LicenseForm = {
-  firstName: string; middleName: string; lastName: string; email: string;
-  businessName: string; businessType: string; otherBusinessType: string;
+  firstName: string; middleName: string; lastName: string;
+  businessType: string; otherBusinessType: string;
   licenseType: "NEW LICENCE" | "RENEWED LICENCE"; principalBranch: "PRINCIPAL" | "BRANCH";
   region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
 };
@@ -296,7 +296,6 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   label("Issuing Office:", 552); value(office, 552);
   label("Tax Identification No:", 526); value(form.tin, 526);
   label("License Issued To:", 500); value(owner, 500);
-  label("Business Name:", 474); value(form.businessName, 474);
   label("For the Business of:", 448); value(businessType, 448, 7.5);
   label("Business Licensing:", 422); value(form.licenseType, 422);
   label("Date of Issue:", 396); value(issueDate, 396);
@@ -365,8 +364,8 @@ export const generateBusinessLicense = onCall(async (request) => {
     if (current.status === "PROCESSING") throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
   }
   const form = {
-    firstName: cleanText(data.firstName, "Jina la kwanza", 80).toUpperCase(), middleName: cleanText(data.middleName, "Jina la pili", 80).toUpperCase(), lastName: cleanText(data.lastName, "Jina la mwisho", 80).toUpperCase(), email: cleanText(data.email, "Barua pepe", 160),
-    businessName: cleanText(data.businessName, "Jina la biashara", 120).toUpperCase(), businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "", licenseType: data.licenseType === "RENEWED LICENCE" ? "RENEWED LICENCE" : "NEW LICENCE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80).toUpperCase(), district: "DAR ES SALAAM", ward: cleanText(data.ward, "Kata", 100).toUpperCase(), street: cleanText(data.street, "Mtaa / Kijiji", 140).toUpperCase(), tin: cleanText(data.tin, "TIN", 40).toUpperCase(), licenseFee: Number(data.licenseFee),
+    firstName: cleanText(data.firstName, "Jina la kwanza", 80).toUpperCase(), middleName: cleanText(data.middleName, "Jina la pili", 80).toUpperCase(), lastName: cleanText(data.lastName, "Jina la mwisho", 80).toUpperCase(),
+    businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "", licenseType: data.licenseType === "RENEWED LICENCE" ? "RENEWED LICENCE" : "NEW LICENCE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80).toUpperCase(), district: "DAR ES SALAAM", ward: cleanText(data.ward, "Kata", 100).toUpperCase(), street: cleanText(data.street, "Mtaa / Kijiji", 140).toUpperCase(), tin: cleanText(data.tin, "TIN", 40).toUpperCase(), licenseFee: Number(data.licenseFee),
   } as const;
   if (form.businessType === "OTHER" && !form.otherBusinessType) throw new HttpsError("invalid-argument", "Eleza aina ya biashara.");
   if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin)) throw new HttpsError("invalid-argument", "Format ya TIN si sahihi. Tumia mfumo 123-123-123.");
@@ -394,7 +393,7 @@ export const generateBusinessLicense = onCall(async (request) => {
       transaction.create(reservationRef, { reservationId: requestId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
       transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
-    const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
+    const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName }, businessData: { businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: "DAR ES SALAAM CITY COUNCIL", dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
     transaction.create(applicationRef, applicationData);
   });
   try {

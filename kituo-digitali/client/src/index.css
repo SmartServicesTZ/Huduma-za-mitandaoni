@@ -116,3 +116,25 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-certificate__inner { position: relative; z-index: 1; }
 .license-certificate__header { position: relative; }
 .license-crest { width: 54px; height: 54px; object-fit: contain; display: block; margin: 0 auto 7px; mix-blend-mode: multiply; }
+
+/* Supplied blank license template preview: one image layer with live values over it. */
+.license-template-preview { position: relative; width: 100%; aspect-ratio: 1176 / 1536; background-position: center; background-size: cover; background-repeat: no-repeat; overflow: hidden; }
+.license-template-overlay { position: absolute; inset: 0; color: #111827; font-family: Arial, sans-serif; font-size: clamp(7px, 1.05vw, 11px); font-weight: 700; }
+.license-template-value { position: absolute; left: 35.2%; max-width: 43%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transform: translateY(-50%); }
+.license-template-value.license-number { left: 46%; top: 20.8%; color: #257f99; font-size: .98em; }
+.license-template-value.issuing-office { top: 28.0%; }
+.license-template-value.tin { top: 32.1%; }
+.license-template-value.issued-to { top: 36.2%; }
+.license-template-value.business-type { top: 40.3%; }
+.license-template-value.license-type { top: 44.4%; }
+.license-template-value.issue-date { top: 48.5%; }
+.license-template-value.expiry-date { top: 52.6%; }
+.license-template-value.principal-branch { top: 56.7%; }
+.license-template-value.region { top: 63.7%; }
+.license-template-value.ward { top: 67.8%; }
+.license-template-value.street { top: 71.9%; }
+.license-template-value.fee { top: 78.7%; }
+.license-template-qr { position: absolute; left: 60.2%; top: 60.2%; width: 29%; aspect-ratio: 1; background: #fff; }
+.license-template-qr img:first-child { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.license-template-qr img:last-child { position: absolute; left: 50%; top: 50%; width: 25%; height: 25%; padding: 3px; transform: translate(-50%, -50%); border-radius: 50%; background: #343434; object-fit: contain; }
+@media (max-width: 600px) { .license-template-overlay { font-size: 7px; } }
