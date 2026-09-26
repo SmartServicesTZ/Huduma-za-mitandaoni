@@ -4,8 +4,14 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function isAdmin() { return signedIn() && profile().role in ['admin', 'super_admin']; }
     function isSuperAdmin() { return signedIn() && profile().role == 'super_admin'; }
+    function isAdmin() { return signedIn() && (isSuperAdmin() || profile().role == 'admin'); }
+    function hasPermission(name) { return isSuperAdmin() || (isAdmin() && profile().permissions[name] == true); }
+    function canManageUsers() { return hasPermission('manageUsers'); }
+    function canManageTokens() { return hasPermission('manageTokens'); }
+    function canManageServices() { return hasPermission('manageServices'); }
+    function canManageContent() { return hasPermission('manageContent'); }
+    function canManageMessages() { return hasPermission('manageMessages'); }
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
@@ -16,28 +22,33 @@ service cloud.firestore {
         (request.auth.uid == userId
           && request.resource.data.role == resource.data.role
           && request.resource.data.tokenBalance == resource.data.tokenBalance
-          && request.resource.data.verificationStatus == resource.data.verificationStatus)
-        || (isAdmin() && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isSuperAdmin()))
+          && request.resource.data.verificationStatus == resource.data.verificationStatus
+          && request.resource.data.permissions == resource.data.permissions)
+        || isSuperAdmin()
+        || (canManageUsers()
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'permissions', 'tokenBalance']))
+        || (canManageTokens()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tokenBalance', 'updatedAt']))
       );
       allow delete: if isSuperAdmin();
     }
 
     match /services/{id} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if canManageServices();
     }
     match /tokenTransactions/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAdmin() || (signedIn() && request.resource.data.userId == request.auth.uid);
+      allow create: if canManageTokens() || (signedIn() && request.resource.data.userId == request.auth.uid);
       allow update, delete: if false;
     }
     match /announcements/{id} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if canManageContent();
     }
     match /tutorialVideos/{id} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if canManageContent();
     }
     match /serviceRequests/{id} {
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
@@ -56,8 +67,7 @@ service cloud.firestore {
     }
     match /messages/{id} {
       allow read: if isAdmin() || (signedIn() && resource.data.recipientId == request.auth.uid);
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin();
+      allow create, update, delete: if canManageMessages();
     }
     match /adminActions/{id} {
       allow read, create: if isAdmin();
@@ -68,8 +78,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     match /systemSettings/{id} {
-      allow read: if isSuperAdmin();
-      allow create, update, delete: if isSuperAdmin();
+      allow read, create, update, delete: if isSuperAdmin();
     }
   }
 }

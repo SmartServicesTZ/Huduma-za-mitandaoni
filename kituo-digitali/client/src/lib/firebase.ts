@@ -40,6 +40,15 @@ const app = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(app);
 export const firestore = getFirestore(app);
 export { onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword };
+export type AdminPermissions = {
+  manageUsers?: boolean;
+  manageTokens?: boolean;
+  manageServices?: boolean;
+  manageContent?: boolean;
+  manageMessages?: boolean;
+  manageSecurity?: boolean;
+};
+
 export type FirebaseProfile = {
   uid: string;
   email: string;
@@ -51,6 +60,7 @@ export type FirebaseProfile = {
   tokenBalance: number;
   verificationStatus: "pending" | "approved" | "rejected";
   role: "user" | "admin" | "super_admin";
+  permissions?: AdminPermissions;
   profileImageUrl?: string;
   language?: "sw" | "en";
   createdAt?: unknown;
@@ -73,6 +83,7 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     tokenBalance: typeof current.tokenBalance === "number" ? current.tokenBalance : 0,
     verificationStatus: current.verificationStatus ?? "pending",
     role: current.role ?? "user",
+    permissions: current.permissions ?? {},
     createdAt: current.createdAt ?? serverTimestamp(),
     ...extra,
     updatedAt: serverTimestamp(),
