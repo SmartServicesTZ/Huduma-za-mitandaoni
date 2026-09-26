@@ -248,7 +248,7 @@ type LicenseRequest = {
 type LicenseForm = {
   firstName: string; middleName: string; lastName: string; email: string;
   businessName: string; businessType: string; otherBusinessType: string;
-  licenseType: "NEW LICENSE" | "RENEWED LICENSE"; principalBranch: "PRINCIPAL" | "BRANCH";
+  licenseType: "NEW LICENCE" | "RENEWED LICENCE"; principalBranch: "PRINCIPAL" | "BRANCH";
   region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
 };
 
@@ -285,9 +285,9 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   const draw = (text: string, x: number, y: number, size = 8.5, bold = false, color = ink) => page.drawText(text.slice(0, 70), { x, y, size, font: bold ? boldFont : regularFont, color });
   const label = (text: string, y: number) => draw(text, 56, y, 8, false, rgb(0.22, 0.28, 0.3));
   const value = (text: string, y: number, size = 8) => draw(text || "—", 220, y, size, true);
-  const owner = `${form.firstName} ${form.middleName} ${form.lastName}`.replace(/\s+/g, " ").trim();
-  const businessType = form.businessType === "OTHER" ? form.otherBusinessType ?? "OTHER" : form.businessType;
-  const office = form.district.toUpperCase().includes("CITY") ? `${form.district} CITY COUNCIL` : `${form.district} DISTRICT COUNCIL`;
+  const owner = `${form.firstName} ${form.middleName} ${form.lastName}`.replace(/\s+/g, " ").trim().toUpperCase();
+  const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "OTHER" : form.businessType).toUpperCase();
+  const office = "DAR ES SALAAM CITY COUNCIL";
   draw("THE UNITED REPUBLIC OF TANZANIA", 185, 674, 15, false);
   draw("BUSINESS LICENSE", 247, 650, 13, true);
   draw(`B.L. NO: ${licenseNumber}`, 232, 628, 9, true, blue);
@@ -308,7 +308,7 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   label("Ward:", 230); value(form.ward, 230);
   label("Street:", 204); value(form.street, 204);
   draw("Payment Details", 45, 166, 12, true);
-  label("Amount of Fee Paid:", 140); value(Number(form.licenseFee).toLocaleString("en-TZ", { minimumFractionDigits: 2 }), 140);
+  label("Amount of Fee Paid:", 140); value(`${Number(form.licenseFee).toLocaleString("en-TZ", { maximumFractionDigits: 2 })} TZS`, 140);
   const hc = createHash("sha256").update(`${licenseNumber}|${form.tin}|${expiryDate}`).digest("hex").toUpperCase();
   const qrPayload = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc });
   const qrData = await QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "H", margin: 1, width: 700 });
@@ -365,13 +365,13 @@ export const generateBusinessLicense = onCall(async (request) => {
     if (current.status === "PROCESSING") throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
   }
   const form = {
-    firstName: cleanText(data.firstName, "Jina la kwanza", 80), middleName: cleanText(data.middleName, "Jina la pili", 80), lastName: cleanText(data.lastName, "Jina la mwisho", 80), email: cleanText(data.email, "Barua pepe", 160),
-    businessName: cleanText(data.businessName, "Jina la biashara", 120), businessType: cleanText(data.businessType, "Aina ya biashara", 100), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100) : "", licenseType: data.licenseType === "RENEWED LICENSE" ? "RENEWED LICENSE" : "NEW LICENSE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80), district: cleanText(data.district, "Wilaya / Halmashauri", 100), ward: cleanText(data.ward, "Kata", 100), street: cleanText(data.street, "Mtaa / Kijiji", 140), tin: cleanText(data.tin, "TIN", 40), licenseFee: Number(data.licenseFee),
+    firstName: cleanText(data.firstName, "Jina la kwanza", 80).toUpperCase(), middleName: cleanText(data.middleName, "Jina la pili", 80).toUpperCase(), lastName: cleanText(data.lastName, "Jina la mwisho", 80).toUpperCase(), email: cleanText(data.email, "Barua pepe", 160),
+    businessName: cleanText(data.businessName, "Jina la biashara", 120).toUpperCase(), businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "", licenseType: data.licenseType === "RENEWED LICENCE" ? "RENEWED LICENCE" : "NEW LICENCE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80).toUpperCase(), district: "DAR ES SALAAM", ward: cleanText(data.ward, "Kata", 100).toUpperCase(), street: cleanText(data.street, "Mtaa / Kijiji", 140).toUpperCase(), tin: cleanText(data.tin, "TIN", 40).toUpperCase(), licenseFee: Number(data.licenseFee),
   } as const;
   if (form.businessType === "OTHER" && !form.otherBusinessType) throw new HttpsError("invalid-argument", "Eleza aina ya biashara.");
   if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin)) throw new HttpsError("invalid-argument", "Format ya TIN si sahihi. Tumia mfumo 123-123-123.");
   if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new HttpsError("invalid-argument", "Malipo ya leseni si sahihi.");
-  const issueDate = new Date().toISOString().slice(0, 10); const expiry = new Date(`${issueDate}T00:00:00`); expiry.setFullYear(expiry.getFullYear() + 1); expiry.setDate(expiry.getDate() - 1); const expiryDate = expiry.toISOString().slice(0, 10);
+  const now = new Date(); const issueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; const expiry = new Date(`${issueDate}T00:00:00`); expiry.setFullYear(expiry.getFullYear() + 1); const expiryDate = `${expiry.getFullYear()}-${String(expiry.getMonth() + 1).padStart(2, "0")}-${String(expiry.getDate()).padStart(2, "0")}`;
   const applicationId = `APP-${randomUUID().replaceAll("-", "").slice(0, 18).toUpperCase()}`;
   let licenseNumber = "";
   const balanceSnapshot = await db.collection("users").doc(uid).get();

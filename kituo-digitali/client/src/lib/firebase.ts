@@ -137,7 +137,7 @@ export type BusinessLicensePayload = {
   requestId: string;
   firstName: string; middleName: string; lastName: string; email: string;
   businessName: string; businessType: string; otherBusinessType?: string;
-  licenseType: "NEW LICENSE" | "RENEWED LICENSE"; principalBranch: "PRINCIPAL" | "BRANCH";
+  licenseType: "NEW LICENCE" | "RENEWED LICENCE"; principalBranch: "PRINCIPAL" | "BRANCH";
   region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
 };
 
