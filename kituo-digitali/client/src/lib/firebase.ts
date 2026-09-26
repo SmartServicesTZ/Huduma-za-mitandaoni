@@ -139,7 +139,7 @@ export async function adminListTransactions() {
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
-export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements") {
+export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings") {
   const snapshot = await getDocs(collection(firestore, name));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
 }
@@ -186,4 +186,25 @@ export async function adminSaveAnnouncement(adminId: string, values: Record<stri
 export async function adminDeleteAnnouncement(adminId: string, id: string) {
   await deleteDoc(doc(firestore, "announcements", id));
   await addDoc(collection(firestore, "auditLogs"), { adminId, action: "announcement_deleted", targetId: id, createdAt: serverTimestamp() });
+}
+
+
+export async function adminSaveCollectionItem(adminId: string, collectionName: string, values: Record<string, unknown>, id?: string) {
+  const payload = { ...values, updatedAt: serverTimestamp(), updatedBy: adminId };
+  if (id) await updateDoc(doc(firestore, collectionName, id), payload);
+  else await addDoc(collection(firestore, collectionName), { ...payload, createdAt: serverTimestamp() });
+}
+
+export async function adminDeleteCollectionItem(adminId: string, collectionName: string, id: string) {
+  await deleteDoc(doc(firestore, collectionName, id));
+  await addDoc(collection(firestore, "auditLogs"), { adminId, action: `${collectionName}_deleted`, targetId: id, createdAt: serverTimestamp() });
+}
+
+export async function adminSaveSiteSettings(adminId: string, values: Record<string, unknown>) {
+  await setDoc(doc(firestore, "siteSettings", "public"), { ...values, updatedAt: serverTimestamp(), updatedBy: adminId }, { merge: true });
+}
+
+export async function adminGetSiteSettings() {
+  const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
+  return snapshot.exists() ? snapshot.data() : null;
 }

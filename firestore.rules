@@ -2,62 +2,68 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return signedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin'];
-    }
-
-    function isSuperAdmin() {
-      return signedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
-    }
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function isAdmin() { return signedIn() && profile().role in ['admin', 'super_admin']; }
+    function isSuperAdmin() { return signedIn() && profile().role == 'super_admin'; }
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if signedIn()
-        && request.auth.uid == userId
+      allow create: if signedIn() && request.auth.uid == userId
         && request.resource.data.role == 'user'
         && request.resource.data.tokenBalance == 0;
       allow update: if signedIn() && (
-        (
-          request.auth.uid == userId
+        (request.auth.uid == userId
           && request.resource.data.role == resource.data.role
           && request.resource.data.tokenBalance == resource.data.tokenBalance
-          && request.resource.data.verificationStatus == resource.data.verificationStatus
-        )
-        || (isAdmin() && (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
-          || isSuperAdmin()
-        ))
+          && request.resource.data.verificationStatus == resource.data.verificationStatus)
+        || (isAdmin() && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isSuperAdmin()))
       );
       allow delete: if isSuperAdmin();
     }
 
-    match /services/{serviceId} {
+    match /services/{id} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();
     }
-
-    match /announcements/{announcementId} {
+    match /tokenTransactions/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAdmin() || (signedIn() && request.resource.data.userId == request.auth.uid);
+      allow update, delete: if false;
+    }
+    match /announcements/{id} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();
     }
-
-    match /auditLogs/{logId} {
+    match /tutorialVideos/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    match /licenseTemplates/{id} {
+      allow read: if signedIn() && (resource.data.status == 'active' || isAdmin());
+      allow create, update, delete: if isSuperAdmin();
+    }
+    match /siteSettings/{id} {
+      allow read: if signedIn();
+      allow create, update: if isSuperAdmin();
+      allow delete: if false;
+    }
+    match /messages/{id} {
+      allow read: if isAdmin() || (signedIn() && resource.data.recipientId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+    match /adminActions/{id} {
       allow read, create: if isAdmin();
       allow update, delete: if false;
     }
-
-    match /tokenTransactions/{transactionId} {
-      allow read: if signedIn()
-        && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if signedIn()
-        && (request.resource.data.userId == request.auth.uid || isAdmin());
+    match /auditLogs/{id} {
+      allow read, create: if isAdmin();
       allow update, delete: if false;
+    }
+    match /systemSettings/{id} {
+      allow read: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin();
     }
   }
 }
