@@ -315,7 +315,12 @@ export const generateBusinessLicense = onCall(async (request) => {
   const licenseNumber = makeBusinessLicenseNumber();
   const balanceSnapshot = await db.collection("users").doc(uid).get();
   if (Number(balanceSnapshot.data()?.tokenBalance ?? 0) < 2) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
-  await applicationRef.set({ applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+  const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
+  await db.runTransaction(async (transaction) => {
+    const claim = await transaction.get(applicationRef);
+    if (claim.exists) throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
+    transaction.create(applicationRef, applicationData);
+  });
   try {
     const pdfBytes = await renderLicensePdf(form, licenseNumber, applicationId, issueDate, expiryDate);
     const filePath = `license-documents/${uid}/${applicationId}.pdf`;

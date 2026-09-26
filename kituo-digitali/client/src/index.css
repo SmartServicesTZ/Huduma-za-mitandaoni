@@ -105,3 +105,7 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-conditions p { margin: 4px 0; }
 @media (max-width: 1000px) { .license-layout { grid-template-columns: 1fr; } .license-preview-card { order: 2; } .license-form-card { order: 1; } .license-certificate__inner { min-height: 760px; } }
 @media (max-width: 600px) { .license-page { padding-top: 20px; } .license-topbar { align-items: flex-start; } .license-security { font-size: 9px; } .license-form-card, .license-preview-card { padding: 15px; border-radius: 13px; } .license-form-grid, .license-auto-fields { grid-template-columns: 1fr; } .license-actions { flex-direction: column; } .license-certificate { padding: 7px; } .license-certificate::before { inset: 7px; border-width: 2px; } .license-certificate__inner { min-height: 590px; padding: 24px 22px 18px; } .license-block { margin-top: 19px; } .license-row { grid-template-columns: 42% 58%; margin: 5px 0; } .license-location { min-height: 125px; } .license-copy-note { margin-top: 15px; } }
+
+.license-qr-placeholder { padding: 0; border: 5px solid #fff; background: #fff; }
+.license-qr-placeholder .license-qr-image { position: absolute; inset: 0; width: 100% !important; height: 100%; padding: 0; border-radius: 0; object-fit: cover; }
+.license-qr-placeholder .license-qr-logo { position: absolute; width: 27% !important; height: auto; aspect-ratio: 1; padding: 4px; border-radius: 50%; background: #343434; object-fit: contain; }
