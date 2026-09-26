@@ -293,6 +293,30 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   return pdf.save();
 }
 
+export const reserveBusinessLicenseNumber = onCall(async (request) => {
+  const uid = authUid(request);
+  const reservationId = cleanText((request.data as { reservationId?: unknown } | undefined)?.reservationId ?? randomUUID(), "Reservation ID", 160);
+  const reservationRef = db.collection("licenseNumberReservations").doc(reservationId);
+  let licenseNumber = "";
+  await db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(reservationRef);
+    if (existing.exists) {
+      const current = existing.data()!;
+      if (current.userId !== uid) throw new HttpsError("already-exists", "Reservation ID si sahihi.");
+      licenseNumber = String(current.licenseNumber);
+      return;
+    }
+    const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
+    const counterSnapshot = await transaction.get(counterRef);
+    const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
+    if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 99999) throw new HttpsError("resource-exhausted", "Namba za leseni zimejaa.");
+    licenseNumber = formatBusinessLicenseNumber(nextSuffix);
+    transaction.create(reservationRef, { reservationId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
+    transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  });
+  return { reservationId, licenseNumber };
+});
+
 export const generateBusinessLicense = onCall(async (request) => {
   const uid = authUid(request);
   const profile = await profileFor(uid);
@@ -322,14 +346,23 @@ export const generateBusinessLicense = onCall(async (request) => {
   await db.runTransaction(async (transaction) => {
     const claim = await transaction.get(applicationRef);
     if (claim.exists) throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
-    const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
-    const counterSnapshot = await transaction.get(counterRef);
-    const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
-    if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 99999) throw new HttpsError("resource-exhausted", "Namba za leseni zimejaa.");
-    licenseNumber = formatBusinessLicenseNumber(nextSuffix);
+    const reservationRef = db.collection("licenseNumberReservations").doc(requestId);
+    const reservationSnapshot = await transaction.get(reservationRef);
+    if (reservationSnapshot.exists) {
+      const reservation = reservationSnapshot.data()!;
+      if (reservation.userId !== uid) throw new HttpsError("permission-denied", "Reservation ID si sahihi.");
+      licenseNumber = String(reservation.licenseNumber);
+    } else {
+      const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
+      const counterSnapshot = await transaction.get(counterRef);
+      const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
+      if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 99999) throw new HttpsError("resource-exhausted", "Namba za leseni zimejaa.");
+      licenseNumber = formatBusinessLicenseNumber(nextSuffix);
+      transaction.create(reservationRef, { reservationId: requestId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
+      transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
     const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName, phone: form.phone, email: form.email }, businessData: { businessName: form.businessName, businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: form.district, dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
     transaction.create(applicationRef, applicationData);
-    transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   });
   try {
     const pdfBytes = await renderLicensePdf(form, licenseNumber, applicationId, issueDate, expiryDate);

@@ -284,6 +284,11 @@ export async function adminGetSiteSettings() {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
+export async function reserveBusinessLicenseNumber(reservationId: string) {
+  const callable = httpsCallable<{ reservationId: string }, { reservationId: string; licenseNumber: string }>(firebaseFunctions, "reserveBusinessLicenseNumber");
+  return (await callable({ reservationId })).data;
+}
+
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
   return onSnapshot(collection(firestore, name), (snapshot) => {
     callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));

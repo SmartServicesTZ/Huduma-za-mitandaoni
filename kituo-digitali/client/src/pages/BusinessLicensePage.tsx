@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { generateBusinessLicense } from "@/lib/firebase";
+import { generateBusinessLicense, reserveBusinessLicenseNumber } from "@/lib/firebase";
 import locations from "@/data/tanzaniaLocations.json";
 
 type FormState = {
@@ -68,9 +68,9 @@ function CertificatePreview({ form, issueDate, expiryDate, licenseNumber }: { fo
   const type = form.businessType === "OTHER" ? form.otherBusinessType || "—" : form.businessType || "—";
   const [qrDataUrl, setQrDataUrl] = useState("");
   useEffect(() => {
-    const payload = JSON.stringify({ licenseNumber: "GENERATED_ON_PDF", businessName: form.businessName, ownerName: owner, tin: form.tin, businessType: type, region: form.region, district: form.district, ward: form.ward, street: form.street, licenseType: form.licenseType, principalBranch: form.principalBranch, dateOfIssue: issueDate, expiryDate, applicationId: "PREVIEW" });
+    const payload = JSON.stringify({ licenseNumber: licenseNumber || "BL01396902025-26000XXXXX", businessName: form.businessName, ownerName: owner, tin: form.tin, businessType: type, region: form.region, district: form.district, ward: form.ward, street: form.street, licenseType: form.licenseType, principalBranch: form.principalBranch, dateOfIssue: issueDate, expiryDate, applicationId: "PREVIEW" });
     void QRCode.toDataURL(payload, { errorCorrectionLevel: "H", margin: 1, width: 420 }).then(setQrDataUrl).catch(() => setQrDataUrl(""));
-  }, [expiryDate, form, issueDate, owner, type]);
+  }, [expiryDate, form, issueDate, licenseNumber, owner, type]);
   return <section className="license-preview-card"><div className="license-preview-heading"><div><span className="overline">MUONEKANO WA HATI</span><h2>LIVE DOCUMENT PREVIEW</h2></div><span className="license-draft-badge">DRAFT PREVIEW</span></div><div className="license-certificate" aria-label="Muonekano wa hati ya leseni ya biashara"><div className="license-certificate__inner"><div className="license-certificate__header"><img className="license-crest" src="/license-assets/tanzania-crest.png" alt="Nembo ya Taifa la Tanzania" /><strong>THE UNITED REPUBLIC OF TANZANIA</strong><b>BUSINESS LICENSE</b><span>B.L. NO: {licenseNumber || "ITATENGENEZWA KWA USALAMA"}</span><small>The Business Licensing Act (Act No. 25 of 1972)</small></div><div className="license-block"><h3>License Details</h3><div className="license-row"><span>Issuing Office:</span><b>{issuingOffice(form.district)}</b></div><div className="license-row"><span>Tax Identification No:</span><b>{form.tin || "—"}</b></div><div className="license-row"><span>License Issued To:</span><b>{owner}</b></div><div className="license-row"><span>Business Name:</span><b>{form.businessName || "—"}</b></div><div className="license-row"><span>For the Business of:</span><b>{type}</b></div><div className="license-row"><span>Business Licensing:</span><b>{form.licenseType}</b></div><div className="license-row"><span>Date of Issue:</span><b>{displayDate(issueDate)}</b></div><div className="license-row"><span>Expiring Date:</span><b>{displayDate(expiryDate)}</b></div><div className="license-row"><span>Principal/Branch:</span><b>{form.principalBranch}</b></div></div><div className="license-block license-location"><h3>Business Location</h3><div className="license-row"><span>Region:</span><b>{form.region || "—"}</b></div><div className="license-row"><span>District/Council:</span><b>{form.district || "—"}</b></div><div className="license-row"><span>Ward:</span><b>{form.ward || "—"}</b></div><div className="license-row"><span>Street:</span><b>{form.street || "—"}</b></div><div className="license-qr-placeholder">{qrDataUrl && <img className="license-qr-image" src={qrDataUrl} alt="QR code ya preview ya leseni" />}<img className="license-qr-logo" src="/license-assets/tausi-logo.png" alt="Tausi logo" /></div></div><div className="license-block license-payment"><h3>Payment Details</h3><div className="license-row"><span>Amount of Fee Paid:</span><b>TZS {Number(form.licenseFee || 0).toLocaleString("en-TZ", { minimumFractionDigits: 2 })}</b></div></div><p className="license-copy-note">This digital copy does not require a signature of authority</p><div className="license-conditions"><b>CONDITIONS & NOTES:</b><p>1. This license shall be conspicuously displayed at the place of business.</p><p>2. Renewal applications must be submitted within 21 days of the license expiry; Otherwise, penalties begin at 25% of the license fee and rise by 2% for each additional month, up to 47%.</p></div></div></div></section>;
 }
 
@@ -80,7 +80,13 @@ export default function BusinessLicensePage() {
   const [form, setForm] = useState<FormState>({ firstName: "", middleName: "", lastName: "", phone: "", email: "", businessName: "", businessType: "", otherBusinessType: "", licenseType: "NEW LICENSE", principalBranch: "PRINCIPAL", region: "", district: "", ward: "", street: "", tin: "", licenseFee: 80000 });
   const [submitted, setSubmitted] = useState(false);
   const [licenseNumber, setLicenseNumber] = useState("");
+  const [requestId] = useState(() => crypto.randomUUID());
   const [downloadBusy, setDownloadBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || licenseNumber) return;
+    void reserveBusinessLicenseNumber(requestId).then((result) => setLicenseNumber(result.licenseNumber)).catch(() => undefined);
+  }, [isAuthenticated, licenseNumber, requestId]);
 
 
   const regionData = form.region ? locations.regions[form.region as keyof typeof locations.regions] : undefined;
@@ -107,7 +113,7 @@ export default function BusinessLicensePage() {
     if (!validate() || downloadBusy) return;
     setDownloadBusy(true);
     try {
-      const result = await generateBusinessLicense({ requestId: crypto.randomUUID(), ...form });
+      const result = await generateBusinessLicense({ requestId, ...form });
       setSubmitted(true);
       setLicenseNumber(result.licenseNumber ?? "");
       window.open(result.downloadUrl, "_blank", "noopener,noreferrer");
