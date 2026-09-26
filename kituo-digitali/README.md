@@ -4,10 +4,9 @@ HUDUMA ZA MTANDAONI ni full-stack application ya Kiswahili ya kusimamia huduma z
 
 ## Vipengele vya production
 
-- Usajili wa mtumiaji kwa jina, simu na PIN ya tarakimu sita.
-- PIN haihifadhiwi plain text; inatumia salted `scrypt` hash na secure comparison.
-- Login ya simu/PIN, session cookie ya HTTP-only, lockout baada ya majaribio matano na logout ya sessions zote.
-- Manus OAuth bado ipo kama njia mbadala ya authentication.
+- Usajili na login ya mtumiaji kwa Firebase Authentication email/password, pamoja na jina na simu kwenye profile.
+- Firebase Authentication inasimamia password hashing, session persistence, logout na credentials za user.
+- Profile, token balance na token history zinawekwa kwenye Firestore kwa user isolation.
 - User isolation kupitia `protectedProcedure`: profile, tokeni, history, notifications na ujumbe huonekana kwa mmiliki pekee.
 - Roles tano: `super_admin`, `admin`, `moderator`, `support`, `user`.
 - Tables za roles, permissions, role permissions na user permissions kwa granular access control.
@@ -40,13 +39,21 @@ pnpm build
 
 ## API na GitHub Pages
 
-Frontend hutumia tRPC endpoint `POST /api/trpc/auth.login` kwa login na `POST /api/trpc/auth.register` kwa registration. Hizi si routes za HTML `/login` au `/register`. GitHub Pages ni static hosting na haiwezi kuendesha Express/tRPC; bila backend URL, request ya `/api/trpc` hurudisha HTML/405 badala ya JSON.
+Frontend hutumia Firebase Authentication moja kwa moja kwa login na registration. GitHub Pages ni static hosting, kwa hiyo login/profile/token flows hazitegemei tena Express/tRPC au `DATABASE_URL`.
 
-Weka URL ya server inayotumia `server/_core/index.ts` kwenye GitHub repository variable `VITE_API_BASE_URL`, kwa mfano `https://api.example.com` bila slash ya mwisho. Workflow ya Pages huiingiza wakati wa build. Usiiweke URL ya `steward-tz.github.io` kama API URL. Kwa local development, acha variable tupu ili kutumia `/api/trpc` kwenye server ya local.
+Firebase config iko kwenye `client/src/lib/firebase.ts` na inatumia project `huduma-za-mtandaoni-b1c0c`. Kwenye Firebase Console, washa Email/Password chini ya Authentication na tengeneza Firestore database.
 
 Tazama `.env.example` kwa variables zinazohitajika. `DATABASE_URL`, `JWT_SECRET`, `SUPER_ADMIN_PHONE`, Forge URL na Forge key ni server-only secrets; usiziweke kwenye `VITE_*` variables wala frontend.
 
-API client hukagua `Content-Type` kabla ya kutegemea JSON. Ikiwa hosting inarudisha HTML, console huhifadhi URL/status/body preview kwa debugging na mtumiaji huona ujumbe unaodhibitiwa badala ya `Unexpected token '<'`.
+`firestore.rules` ina rules za user isolation na admin role. Deploy rules hizo kupitia Firebase CLI ukiwa ume-login kwenye project husika.
+
+## Firebase Auth na Firestore
+
+Login na registration za portal zinatumia Firebase Authentication kwa email/password; hazitumii tena `trpc.auth.login`, `trpc.auth.register`, Node/Express API au `DATABASE_URL`. Baada ya registration, profile inaandikwa kwenye `users/{uid}` ikiwa na `tokenBalance: 0`, `verificationStatus: "pending"` na `role: "user"`.
+
+Token consumption hutumia Firestore transaction: salio linasomwa, linakaguliwa lisishuke chini ya sifuri, kisha user document na `tokenTransactions` ledger vinaandikwa pamoja. Historia ya tokeni inasomwa kutoka Firestore. Profile, password na picha ya profile zinasimamiwa kupitia Firebase client. Firestore rules ziko kwenye `firestore.rules`; deploy rules hizo kupitia Firebase CLI baada ya ku-login kwenye project `huduma-za-mtandaoni`.
+
+Kwenye Firebase Console, washa **Authentication → Sign-in method → Email/Password** na tengeneza Firestore database. Role ya admin iandikwe server-side/admin-only kwenye `users/{uid}`; usiweke password ya admin au role ya admin ndani ya React.
 
 ## Database
 

@@ -1,98 +1,51 @@
-import { startLogin } from "@/const";
-import { trpc } from "@/lib/trpc";
-import { TRPCClientError } from "@trpc/client";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ensureUserProfile, firebaseAuth, onAuthStateChanged, saveFirebaseProfile, signOut, subscribeToProfile, type FirebaseProfile } from "@/lib/firebase";
+import type { User } from "firebase/auth";
 
-type UseAuthOptions = {
-  redirectOnUnauthenticated?: boolean;
-  redirectPath?: string;
-};
+type UseAuthOptions = { redirectOnUnauthenticated?: boolean; redirectPath?: string };
 
 export function useAuth(options?: UseAuthOptions) {
-  // Login is started via startLogin() in the effect below, only when we actually
-  // navigate — never during render. startLogin() mints a one-time nonce + writes
-  // the state cookie, so calling it per render would overwrite the cookie and
-  // desync it from an in-flight login's `state`.
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
-  const utils = trpc.useUtils();
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<FirebaseProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
-  const meQuery = trpc.auth.me.useQuery(undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      utils.auth.me.setData(undefined, null);
-    },
-  });
-
-  const logout = useCallback(async () => {
-    try {
-      await logoutMutation.mutateAsync();
-    } catch (error: unknown) {
-      if (
-        error instanceof TRPCClientError &&
-        error.data?.code === "UNAUTHORIZED"
-      ) {
-        return;
-      }
-      throw error;
-    } finally {
-      // Clear the Preview auto-login token mirrored into sessionStorage, so
-      // header-based sessions (Safari ITP / WebView) are logged out too. The
-      // backend cookie is cleared by the logout mutation.
-      try {
-        sessionStorage.removeItem("manus-cookie");
-      } catch {}
-      utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
-    }
-  }, [logoutMutation, utils]);
-
-  const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
-    return {
-      user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
-      error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
-    };
-  }, [
-    meQuery.data,
-    meQuery.error,
-    meQuery.isLoading,
-    logoutMutation.error,
-    logoutMutation.isPending,
-  ]);
+  useEffect(() => onAuthStateChanged(firebaseAuth, async (nextUser) => {
+    setLoading(true);
+    setError(null);
+    setFirebaseUser(nextUser);
+    if (!nextUser) { setProfile(null); setLoading(false); return; }
+    try { await ensureUserProfile(nextUser); setLoading(false); }
+    catch (cause) { setError(cause); setLoading(false); }
+  }), []);
 
   useEffect(() => {
-    if (!redirectOnUnauthenticated) return;
-    if (meQuery.isLoading || logoutMutation.isPending) return;
-    if (state.user) return;
-    if (typeof window === "undefined") return;
-    if (redirectPath && window.location.pathname === redirectPath) return;
+    if (!firebaseUser) return;
+    return subscribeToProfile(firebaseUser.uid, (nextProfile) => {
+      setProfile(nextProfile);
+      if (nextProfile) localStorage.setItem("firebase-user-profile", JSON.stringify(nextProfile));
+    });
+  }, [firebaseUser]);
 
-    // Navigate at this moment only. startLogin() mints the nonce + cookie itself.
-    if (redirectPath) {
-      window.location.href = redirectPath;
-    } else {
-      startLogin();
-    }
-  }, [
-    redirectOnUnauthenticated,
-    redirectPath,
-    logoutMutation.isPending,
-    meQuery.isLoading,
-    state.user,
-  ]);
+  const logout = useCallback(async () => {
+    await signOut(firebaseAuth);
+    localStorage.removeItem("firebase-user-profile");
+  }, []);
+
+  const user = useMemo(() => profile ? { ...profile, id: profile.uid, email: profile.email, name: profile.name, phone: profile.phone, role: profile.role } : null, [profile]);
+
+  useEffect(() => {
+    if (!redirectOnUnauthenticated || loading || user || typeof window === "undefined") return;
+    if (redirectPath && window.location.pathname === redirectPath) return;
+    if (redirectPath) window.location.href = redirectPath;
+  }, [redirectOnUnauthenticated, redirectPath, loading, user]);
 
   return {
-    ...state,
-    refresh: () => meQuery.refetch(),
+    user, firebaseUser, profile, loading, error,
+    isAuthenticated: Boolean(firebaseUser && profile),
+    refresh: async () => { if (firebaseUser) await ensureUserProfile(firebaseUser); },
+    updateProfile: async (values: Partial<FirebaseProfile>) => { if (firebaseUser) await saveFirebaseProfile(firebaseUser.uid, values); },
     logout,
   };
 }
