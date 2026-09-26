@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [drawer, setDrawer] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [dataError, setDataError] = useState("");
   const [users, setUsers] = useState<(AdminUserRecord & { id: string })[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -48,12 +49,21 @@ export default function AdminDashboard() {
   const refresh = async () => {
     if (!canManage) return;
     setLoadingData(true);
+    setDataError("");
     try {
-      const [u, s, t, v, a, m, l, logs] = await Promise.all([
+      const results = await Promise.allSettled([
         adminListUsers(), adminListServices(), adminListTransactions(), adminListCollection("tutorialVideos"), adminListCollection("announcements"), adminListCollection("messages"), adminListCollection("licenseTemplates"), adminListCollection("adminActions"),
       ]);
-      setUsers(u); setServices(s); setTransactions(t); setVideos(v); setAnnouncements(a); setMessages(m); setLicenses(l); setAudit(logs);
-    } catch (error) { toast.error(safeError(error)); } finally { setLoadingData(false); }
+      const [u, s, t, v, a, m, l, logs] = results;
+      if (u.status === "fulfilled") setUsers(u.value); else setDataError("Watumiaji: " + safeError(u.reason));
+      if (s.status === "fulfilled") setServices(s.value); else setDataError((current) => current || "Huduma: " + safeError(s.reason));
+      if (t.status === "fulfilled") setTransactions(t.value); else setDataError((current) => current || "Transactions: " + safeError(t.reason));
+      if (v.status === "fulfilled") setVideos(v.value); else setDataError((current) => current || "Video: " + safeError(v.reason));
+      if (a.status === "fulfilled") setAnnouncements(a.value); else setDataError((current) => current || "Matangazo: " + safeError(a.reason));
+      if (m.status === "fulfilled") setMessages(m.value); else setDataError((current) => current || "Ujumbe: " + safeError(m.reason));
+      if (l.status === "fulfilled") setLicenses(l.value); else setDataError((current) => current || "Leseni: " + safeError(l.reason));
+      if (logs.status === "fulfilled") setAudit(logs.value); else setDataError((current) => current || "Audit: " + safeError(logs.reason));
+    } finally { setLoadingData(false); }
   };
   useEffect(() => { void refresh(); }, [canManage]);
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); } catch (error) { toast.error(safeError(error)); } finally { setBusy(false); } };
@@ -72,6 +82,7 @@ export default function AdminDashboard() {
     {drawer && <div className="admin-drawer-backdrop" onClick={() => setDrawer(false)} />}
     <section className="admin-content"><header className="admin-header"><button className="admin-menu" onClick={() => setDrawer(true)}><Menu size={21} /></button><div><span className="admin-kicker">$TEWARD TZ CONTROL</span><h1>{panel === "overview" ? "Muhtasari wa $TEWARD TZ" : title}</h1></div><div className="admin-header-actions"><span className="admin-auth-status"><i /> Firebase authenticated</span><button className="admin-icon-button" onClick={() => void refresh()} disabled={loadingData}><RefreshCw size={17} className={loadingData ? "spin" : ""} /></button><Link className="admin-portal-link" href="/">← Portal</Link></div></header>
       {loadingData && <div className="admin-loading">Inapakia data halisi kutoka Firestore...</div>}
+      {dataError && <div className="admin-loading admin-loading--error">{dataError} — Hakikisha role ya account hii ipo kwenye users/{firebaseUser?.uid} na rules zimetumwa kwenye project sahihi.</div>}
       {panel === "overview" && <><div className="admin-stat-grid">{stats.map(([label, value, Icon]) => <div className="admin-stat-card" key={label}><div className="admin-stat-icon"><Icon size={18} /></div><span>{label}</span><strong>{value.toLocaleString()}</strong><small>Live Firestore data</small></div>)}</div><div className="admin-two-col"><section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">HATUA ZA HARAKA</span><h2>Simamia mfumo</h2></div><SlidersHorizontal size={19} /></div><div className="quick-actions"><Link href="/admin/tokens"><Plus size={17} /> Ongeza tokeni</Link><Link href="/admin/services"><Plus size={17} /> Ongeza huduma</Link><Link href="/admin/announcements"><Plus size={17} /> Ongeza tangazo</Link></div></section><section className="admin-security-card"><div className="admin-card-heading"><div><span className="admin-kicker">USALAMA WA MFUMO</span><h2>Session salama</h2></div><ShieldCheck size={20} /></div><p><strong>{user?.name ?? "Admin"}</strong> · {String(user?.role ?? "admin").replace("_", " ").toUpperCase()}</p><small>Auth: Firebase Authentication · Last login: {dateText((user as any)?.lastLoginAt) !== "—" ? dateText((user as any)?.lastLoginAt) : "Session ya sasa"}</small></section></div><section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">TRANSACTIONS ZA HIVI KARIBUNI</span><h2>Ledger</h2></div><Link href="/admin/transactions">Tazama zote</Link></div><TransactionTable rows={transactions.slice(0, 6)} /></section></>}
       {panel === "users" && <UsersPanel users={visibleUsers} search={search} setSearch={setSearch} onSelect={setSelectedUser} onRefresh={refresh} onRun={run} adminId={firebaseUser!.uid} isSuper={isSuper} busy={busy} />}
       {panel === "tokens" && <TokensPanel users={users} form={tokenForm} setForm={setTokenForm} onRun={run} adminId={firebaseUser!.uid} busy={busy} />}

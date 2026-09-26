@@ -23,7 +23,7 @@ service cloud.firestore {
     }
 
     match /services/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
     match /tokenTransactions/{id} {
@@ -32,19 +32,25 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     match /announcements/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
     match /tutorialVideos/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
+    }
+    match /serviceRequests/{id} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if isSuperAdmin();
     }
     match /licenseTemplates/{id} {
       allow read: if signedIn() && (resource.data.status == 'active' || isAdmin());
       allow create, update, delete: if isSuperAdmin();
     }
     match /siteSettings/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update: if isSuperAdmin();
       allow delete: if false;
     }

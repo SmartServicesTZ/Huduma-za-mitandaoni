@@ -109,6 +109,19 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
   });
 }
 
+export async function createServiceRequest(uid: string, service: { slug: string; name: string }, details: string) {
+  const requestRef = await addDoc(collection(firestore, "serviceRequests"), {
+    userId: uid,
+    serviceSlug: service.slug,
+    serviceName: service.name,
+    details: details.trim(),
+    status: "pending",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return requestRef.id;
+}
+
 export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void) {
   const tokenQuery = query(collection(firestore, "tokenTransactions"), where("userId", "==", uid));
   return onSnapshot(tokenQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData) as DocumentData).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")))));
@@ -209,8 +222,8 @@ export async function adminGetSiteSettings() {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
-export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void) {
+export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
   return onSnapshot(collection(firestore, name), (snapshot) => {
     callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
-  });
+  }, onError);
 }

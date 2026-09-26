@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, updatePassword } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, updatePassword } from "@/lib/firebase";
 import { announcementText, activitySeed, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import AdminDashboard from "./AdminDashboard";
 
@@ -126,6 +126,20 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   return <main className="portal-main"><div className="welcome-strip"><div><span className="overline">Karibu HUDUMA ZA MTANDAONI</span><h1>Huduma zako, sehemu moja.</h1><p>Chagua huduma unayotaka. Tokeni hukatwa kwa usalama kwenye mfumo.</p></div><Sparkles size={44} /></div>{announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}<TokenCard /><ServiceGrid title="HUDUMA ZOTE" services={main} onUse={onUse} /><ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} /><SpecialSection /><ServiceGrid title="ZANA ZA ZIADA" services={tools} onUse={onUse} /><TutorialsSection /></main>;
 }
 
+function ServiceWorkspace({ service }: { service: ServiceCatalogItem }) {
+  const { firebaseUser } = useAuth();
+  const [details, setDetails] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (!firebaseUser || !details.trim()) { toast.error("Andika maelezo ya ombi lako kwanza."); return; }
+    setBusy(true);
+    try { const reference = await createServiceRequest(firebaseUser.uid, service, details); setDetails(""); toast.success("Ombi limepokelewa.", { description: `Rejea: ${reference}` }); }
+    catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutuma ombi."); }
+    finally { setBusy(false); }
+  };
+  return <main className="portal-main"><div className="page-heading"><div><span className="overline">WORKSPACE YA HUDUMA</span><h1>{service.name}</h1><p>{service.description}</p></div><Icon name={service.icon} size={42} /></div><section className="account-panel service-workspace"><Notice tone="success">Tokeni ya huduma hii imekatwa kwa mafanikio. Weka taarifa zako hapa ili ombi liende kwa admin.</Notice><label className="control-field"><span>Maelezo ya ombi / taarifa muhimu</span><textarea value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Andika jina, namba ya simu, TIN, au maelezo yanayohitajika..." rows={8} /></label><button className="button button--green" disabled={busy} onClick={submit}>{busy ? "INATUMA..." : "TUMA OMBI LA HUDUMA"}</button></section></main>;
+}
+
 function BottomNav() { return <nav className="bottom-nav">{[{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma", icon: Zap }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Akaunti", icon: UserRound }].map(({ href, label, icon: ItemIcon }) => <Link href={href} key={href}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>; }
 
 export default function Home() {
@@ -135,9 +149,11 @@ export default function Home() {
   const { isAuthenticated, firebaseUser } = useAuth();
   const appearance = { data: null as null | { backgroundColor?: string; primaryColor?: string; secondaryColor?: string } };
   const servicesQuery = { data: null as null };
-  const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; try { const result = await consumeFirebaseTokens(firebaseUser.uid, service); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } } };
+  const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; try { const result = await consumeFirebaseTokens(firebaseUser.uid, service); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.open(service.actionUrl, "_blank", "noopener,noreferrer"); else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } } };
   const handleUse = (service: ServiceCatalogItem) => { if (service.kind === "locked") { toast.error("Huduma hii imefungwa kwa sasa."); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } useService.mutate(service); };
   const services = servicesQuery.data ? (servicesQuery.data as unknown as Array<Record<string, unknown>>).map((item) => ({ slug: String(item.slug), name: String(item.name), description: String(item.description), icon: String(item.icon), tokenCost: Number(item.tokenCost), category: String(item.category), kind: (item.isLocked ? "locked" : item.isFree ? "free" : "paid") as ServiceCatalogItem["kind"] })) : serviceCatalog;
-  const page = location.startsWith("/admin") ? <AdminPage /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Nunua tokeni kupitia WhatsApp ili admin aweze kukuwekea tokeni kwenye akaunti yako.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={services} />;
+  const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
+  const selectedService = services.find((item) => item.slug === serviceSlug) ?? serviceCatalog.find((item) => item.slug === serviceSlug);
+  const page = location.startsWith("/admin") ? <AdminPage /> : selectedService ? <ServiceWorkspace service={selectedService} /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Nunua tokeni kupitia WhatsApp ili admin aweze kukuwekea tokeni kwenye akaunti yako.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={services} />;
   return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}><div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} /><div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div><div className="portal-content"><AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />{page}<footer className="portal-footer">Programu hii ilitengenezwa na Bw. Zoom Cotex Limited <span>© Haki zote zimehifadhiwa 2026</span></footer></div><BottomNav /></div>;
 }
