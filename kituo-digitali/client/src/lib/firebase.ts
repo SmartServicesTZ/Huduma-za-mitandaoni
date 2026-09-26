@@ -9,9 +9,12 @@ import {
   type User,
 } from "firebase/auth";
 import {
+  addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
   getFirestore,
   increment,
   onSnapshot,
@@ -19,6 +22,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
   type DocumentData,
 } from "firebase/firestore";
@@ -108,4 +112,78 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
 export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void) {
   const tokenQuery = query(collection(firestore, "tokenTransactions"), where("userId", "==", uid));
   return onSnapshot(tokenQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData) as DocumentData).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")))));
+}
+
+
+export type AdminUserRecord = FirebaseProfile & { accountStatus?: "active" | "blocked"; lastLoginAt?: unknown; totalTokensReceived?: number; totalTokensUsed?: number };
+
+function timestampValue(value: unknown) {
+  if (value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function") {
+    return (value as { toDate: () => Date }).toDate().toISOString();
+  }
+  return value ?? null;
+}
+
+export async function adminListUsers() {
+  const snapshot = await getDocs(collection(firestore, "users"));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt), lastLoginAt: timestampValue(item.data().lastLoginAt) } as AdminUserRecord & { id: string }));
+}
+
+export async function adminListServices() {
+  const snapshot = await getDocs(collection(firestore, "services"));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+export async function adminListTransactions() {
+  const snapshot = await getDocs(collection(firestore, "tokenTransactions"));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+}
+
+export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements") {
+  const snapshot = await getDocs(collection(firestore, name));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
+}
+
+export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string) {
+  if (!Number.isInteger(amount) || amount === 0) throw new Error("Kiasi cha tokeni si sahihi.");
+  const userRef = doc(firestore, "users", userId);
+  const ledgerRef = doc(collection(firestore, "tokenTransactions"));
+  return runTransaction(firestore, async (transaction) => {
+    const snapshot = await transaction.get(userRef);
+    if (!snapshot.exists()) throw new Error("Mtumiaji hakupatikana.");
+    const current = Number(snapshot.data().tokenBalance ?? 0);
+    const next = current + amount;
+    if (next < 0) throw new Error("Salio haliwezi kuwa chini ya sifuri.");
+    transaction.update(userRef, { tokenBalance: next, updatedAt: serverTimestamp() });
+    transaction.set(ledgerRef, { userId, serviceId: "admin-adjustment", serviceName: "Admin token adjustment", type: amount > 0 ? "credit" : "debit", amount, previousBalance: current, newBalance: next, description, reference: ledgerRef.id, adminId, createdAt: serverTimestamp(), status: "completed" });
+    transaction.set(doc(collection(firestore, "auditLogs")), { adminId, action: amount > 0 ? "tokens_added" : "tokens_removed", targetUserId: userId, amount, reason: description, createdAt: serverTimestamp() });
+    return next;
+  });
+}
+
+export async function adminUpdateUser(adminId: string, userId: string, values: Partial<AdminUserRecord>) {
+  await updateDoc(doc(firestore, "users", userId), { ...values, updatedAt: serverTimestamp() });
+  await addDoc(collection(firestore, "auditLogs"), { adminId, targetUserId: userId, action: "user_updated", changes: values, createdAt: serverTimestamp() });
+}
+
+export async function adminSaveService(adminId: string, values: Record<string, unknown>, id?: string) {
+  const payload = { ...values, updatedAt: serverTimestamp(), updatedBy: adminId };
+  if (id) await updateDoc(doc(firestore, "services", id), payload);
+  else await addDoc(collection(firestore, "services"), { ...payload, createdAt: serverTimestamp() });
+}
+
+export async function adminDeleteService(adminId: string, id: string) {
+  await deleteDoc(doc(firestore, "services", id));
+  await addDoc(collection(firestore, "auditLogs"), { adminId, action: "service_deleted", targetId: id, createdAt: serverTimestamp() });
+}
+
+export async function adminSaveAnnouncement(adminId: string, values: Record<string, unknown>, id?: string) {
+  const payload = { ...values, updatedAt: serverTimestamp(), updatedBy: adminId };
+  if (id) await updateDoc(doc(firestore, "announcements", id), payload);
+  else await addDoc(collection(firestore, "announcements"), { ...payload, createdAt: serverTimestamp() });
+}
+
+export async function adminDeleteAnnouncement(adminId: string, id: string) {
+  await deleteDoc(doc(firestore, "announcements", id));
+  await addDoc(collection(firestore, "auditLogs"), { adminId, action: "announcement_deleted", targetId: id, createdAt: serverTimestamp() });
 }
