@@ -76,6 +76,10 @@ export const adminWrite = onCall(async (request) => {
   const policy = writePolicy[collectionName];
   if (!policy) throw new HttpsError("invalid-argument", "Collection hairuhusiwi.");
   requirePermission(actor, policy.permission);
+  if (collectionName === "siteSettings" && actor.role !== "super_admin" && typeof data.values === "object" && data.values !== null && !Array.isArray(data.values)) {
+    const values = data.values as Record<string, unknown>;
+    if ("serviceOrder" in values || "homepageSectionOrder" in values) throw new HttpsError("permission-denied", "Mpangilio wa ukurasa wa mwanzo unaweza kubadilishwa na Super Admin pekee.");
+  }
   if (collectionName === "licenseTemplates" && actor.role !== "super_admin") throw new HttpsError("permission-denied", "Leseni zinasimamiwa na Super Admin pekee.");
   const id = data.id === undefined || data.id === null || data.id === "" ? db.collection(collectionName).doc().id : text(data.id, 180);
   if (collectionName === "siteSettings" && id !== "public") throw new HttpsError("invalid-argument", "Site settings ID si sahihi.");
@@ -87,6 +91,42 @@ export const adminWrite = onCall(async (request) => {
     transaction.set(targetRef, { ...patch, updatedBy: uid, updatedAt: FieldValue.serverTimestamp(), ...(existing.exists ? {} : { createdAt: FieldValue.serverTimestamp() }) }, { merge: true });
     recordAudit(transaction, uid, String(actor.role), existing.exists ? "UPDATE_CONTENT" : "CREATE_CONTENT", policy.targetType, id, before, patch, { collection: collectionName });
     return { id };
+  });
+});
+
+const homepageSections = ["services", "locked", "special", "tools", "tutorials"] as const;
+
+export const setHomepageServiceOrder = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  if (actor.role !== "super_admin") throw new HttpsError("permission-denied", "Mpangilio wa huduma unaweza kubadilishwa na Super Admin pekee.");
+
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  if (!Array.isArray(data.serviceOrder) || data.serviceOrder.length === 0 || data.serviceOrder.length > 300) {
+    throw new HttpsError("invalid-argument", "Mpangilio wa huduma si sahihi.");
+  }
+  const serviceOrder = data.serviceOrder.map((value) => {
+    const slug = text(value, 120);
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/.test(slug)) throw new HttpsError("invalid-argument", "Kitambulisho cha huduma si sahihi.");
+    return slug;
+  });
+  if (new Set(serviceOrder).size !== serviceOrder.length) throw new HttpsError("invalid-argument", "Mpangilio una huduma zilizorudiwa.");
+
+  if (!Array.isArray(data.homepageSectionOrder) || data.homepageSectionOrder.length !== homepageSections.length) throw new HttpsError("invalid-argument", "Mpangilio wa makundi ya ukurasa wa mwanzo si sahihi.");
+  const homepageSectionOrder = data.homepageSectionOrder.map((value) => text(value, 40));
+  if (new Set(homepageSectionOrder).size !== homepageSections.length || homepageSectionOrder.some((id) => !homepageSections.includes(id as (typeof homepageSections)[number]))) {
+    throw new HttpsError("invalid-argument", "Makundi ya ukurasa wa mwanzo lazima yawe ya kipekee na sahihi.");
+  }
+
+  const settingsRef = db.collection("siteSettings").doc("public");
+  return db.runTransaction(async (transaction) => {
+    const settingsSnapshot = await transaction.get(settingsRef);
+    const existing = settingsSnapshot.data() ?? {};
+    const before = { serviceOrder: existing.serviceOrder ?? [], homepageSectionOrder: existing.homepageSectionOrder ?? [] };
+    const after = { serviceOrder, homepageSectionOrder };
+    transaction.set(settingsRef, after, { merge: true });
+    recordAudit(transaction, uid, String(actor.role), "UPDATE_HOMEPAGE_SERVICE_ORDER", "siteSettings", "public", before, after, { itemCount: serviceOrder.length, sectionCount: homepageSectionOrder.length });
+    return { savedServices: serviceOrder.length, savedSections: homepageSectionOrder.length };
   });
 });
 

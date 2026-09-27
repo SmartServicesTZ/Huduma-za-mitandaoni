@@ -279,6 +279,11 @@ export async function adminSaveSiteSettings(adminId: string, values: Record<stri
   return (await callable({ collection: "siteSettings", id: "public", values })).data;
 }
 
+export async function setHomepageServiceOrder(serviceOrder: string[], homepageSectionOrder: string[]) {
+  const callable = httpsCallable<{ serviceOrder: string[]; homepageSectionOrder: string[] }, { savedServices: number; savedSections: number }>(firebaseFunctions, "setHomepageServiceOrder");
+  return (await callable({ serviceOrder, homepageSectionOrder })).data;
+}
+
 export async function adminGetSiteSettings() {
   const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
   return snapshot.exists() ? snapshot.data() : null;

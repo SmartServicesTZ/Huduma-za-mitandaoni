@@ -104,3 +104,20 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-clean-conditions { margin-top: 12px; font-size: clamp(8px, .95vw, 11px); line-height: 1.45; }
 .license-clean-conditions p { margin: 4px 0; }
 @media (max-width: 600px) { .license-clean-paper { padding: 15px 12px; } .license-clean-row { grid-template-columns: 42% minmax(0, 58%); column-gap: 8px; font-size: 8px; } .license-clean-lower { grid-template-columns: 1fr; gap: 8px; } .license-clean-qr-area { min-height: 135px; } }
+
+.admin-ordering { display: grid; gap: 16px; }
+.admin-ordering-help { max-width: 780px; margin: 0 0 13px; color: #64748b; font-size: 12px; line-height: 1.6; }
+.admin-order-list { display: grid; gap: 7px; margin-top: 14px; }
+.admin-order-row { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
+.admin-order-rank { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 auto; border-radius: 8px; color: #08723f; background: #d8f9e6; font-size: 11px; font-weight: 900; }
+.admin-order-copy { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.admin-order-copy strong { color: #0f172a; font-size: 12px; line-height: 1.4; }
+.admin-order-copy small { color: #64748b; font-size: 10px; }
+.admin-order-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.admin-order-actions button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #dbe3eb; border-radius: 8px; color: #0b2447; background: #f8fafc; }
+.admin-order-actions button:hover:not(:disabled) { border-color: #65e69b; color: #08723f; background: #d8f9e6; }
+.admin-order-actions button:disabled { cursor: not-allowed; opacity: .42; }
+.admin-secondary { display: inline-flex; align-items: center; justify-content: center; width: fit-content; min-height: 40px; padding: 9px 13px; border: 1px solid #b8e9cc; border-radius: 9px; color: #08723f; background: #e9fbf0; font-size: 11px; font-weight: 900; }
+.admin-secondary:hover:not(:disabled) { background: #d8f9e6; }
+.admin-secondary:disabled { cursor: not-allowed; opacity: .5; }
+@media (max-width: 600px) { .admin-order-row { gap: 8px; padding: 9px; } .admin-order-copy strong { font-size: 11px; } .admin-order-actions { gap: 4px; } .admin-order-actions button { width: 32px; height: 32px; } }
