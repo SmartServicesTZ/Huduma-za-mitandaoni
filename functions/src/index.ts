@@ -9,6 +9,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
+import { defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 
 initializeApp();
 setGlobalOptions({ region: process.env.FUNCTIONS_REGION ?? "us-central1", maxInstances: 20 });
@@ -18,10 +19,10 @@ const bucket = getStorage().bucket();
 const functionsRoot = path.dirname(fileURLToPath(import.meta.url));
 const roles = ["user", "admin", "moderator", "support", "super_admin"] as const;
 type Role = (typeof roles)[number];
-const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
+const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
-type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string };
+type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; name?: string; email?: string; phone?: string };
 
 function authUid(request: CallableRequest<unknown>) {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Ingia kwanza.");
@@ -62,6 +63,7 @@ function recordAudit(transaction: Transaction, actorId: string, actorRole: strin
 
 const writePolicy: Record<string, { permission: string; targetType: string }> = {
   services: { permission: "manageServices", targetType: "service" },
+  lipaServices: { permission: "manageServices", targetType: "lipaService" },
   announcements: { permission: "manageContent", targetType: "announcement" },
   tutorialVideos: { permission: "manageContent", targetType: "tutorialVideo" },
   messages: { permission: "manageMessages", targetType: "message" },
@@ -77,6 +79,28 @@ function safePatch(value: unknown) {
   return patch;
 }
 
+const formFieldTypes = new Set(["TEXT", "NUMBER", "PHONE", "TIN", "NIDA", "DROPDOWN", "TEXTAREA", "IMAGE_UPLOAD", "FILE_UPLOAD", "DATE"]);
+function validateConfiguredFields(value: unknown) {
+  if (!Array.isArray(value) || value.length > 40) throw new HttpsError("invalid-argument", "Orodha ya fields si sahihi.");
+  const names = new Set<string>();
+  return value.map((raw, index) => {
+    const field = objectValue(raw, "Field");
+    const fieldName = text(field.fieldName, 64);
+    const label = text(field.label, 100);
+    const type = text(field.type, 30);
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName) || names.has(fieldName)) throw new HttpsError("invalid-argument", "Jina la field limejirudia au si sahihi.");
+    if (!formFieldTypes.has(type)) throw new HttpsError("invalid-argument", `Aina ya field ${type} haijaruhusiwa.`);
+    names.add(fieldName);
+    const options = field.options === undefined ? undefined : Array.isArray(field.options) ? field.options.map((item) => text(item, 120)).slice(0, 80) : (() => { throw new HttpsError("invalid-argument", `Options za ${label} si sahihi.`); })();
+    if (type === "DROPDOWN" && (!options || options.length === 0)) throw new HttpsError("invalid-argument", `Weka options za ${label}.`);
+    const validation = field.validation === undefined || field.validation === "" ? undefined : text(field.validation, 200);
+    if (validation) { try { new RegExp(validation); } catch { throw new HttpsError("invalid-argument", `Regex ya ${label} si sahihi.`); } }
+    const maxSizeMb = field.maxSizeMb === undefined ? undefined : Number(field.maxSizeMb);
+    if (maxSizeMb !== undefined && (!Number.isFinite(maxSizeMb) || maxSizeMb <= 0 || maxSizeMb > 10)) throw new HttpsError("invalid-argument", `Ukubwa wa juu wa ${label} lazima uwe 1–10 MB.`);
+    return { fieldName, label, type, placeholder: typeof field.placeholder === "string" ? field.placeholder.slice(0, 200) : "", required: field.required === true, helpText: typeof field.helpText === "string" ? field.helpText.slice(0, 300) : "", order: Number.isFinite(Number(field.order)) ? Number(field.order) : index, ...(options ? { options } : {}), ...(validation ? { validation } : {}), ...(maxSizeMb ? { maxSizeMb } : {}), ...(Array.isArray(field.accept) ? { accept: field.accept.filter((item): item is string => typeof item === "string" && item.length <= 100).slice(0, 10) } : {}) };
+  });
+}
+
 export const adminWrite = onCall(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
@@ -85,6 +109,7 @@ export const adminWrite = onCall(async (request) => {
   const policy = writePolicy[collectionName];
   if (!policy) throw new HttpsError("invalid-argument", "Collection hairuhusiwi.");
   requirePermission(actor, policy.permission);
+  if (collectionName === "lipaServices" && actor.role !== "super_admin") throw new HttpsError("permission-denied", "Mipangilio ya mitandao ya Lipa inabadilishwa na Super Admin pekee.");
   if (collectionName === "siteSettings" && actor.role !== "super_admin" && typeof data.values === "object" && data.values !== null && !Array.isArray(data.values)) {
     const values = data.values as Record<string, unknown>;
     if ("serviceOrder" in values || "homepageSectionOrder" in values) throw new HttpsError("permission-denied", "Mpangilio wa ukurasa wa mwanzo unaweza kubadilishwa na Super Admin pekee.");
@@ -94,6 +119,22 @@ export const adminWrite = onCall(async (request) => {
   if (collectionName === "siteSettings" && id !== "public") throw new HttpsError("invalid-argument", "Site settings ID si sahihi.");
   const targetRef = db.collection(collectionName).doc(id);
   const patch = safePatch(data.values);
+  if (collectionName === "services" || collectionName === "lipaServices") {
+    const slug = text(patch.slug ?? patch.id ?? id, 120);
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/.test(slug)) throw new HttpsError("invalid-argument", "Slug si sahihi.");
+    patch.slug = slug;
+    if (patch.name !== undefined) patch.name = text(patch.name, 120);
+    if (patch.tokenCost !== undefined) {
+      const tokenCost = Number(patch.tokenCost);
+      if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) throw new HttpsError("invalid-argument", "Gharama ya tokeni si sahihi.");
+      patch.tokenCost = tokenCost;
+    }
+    if (patch.fields !== undefined) patch.fields = validateConfiguredFields(patch.fields);
+    if (patch.statusOptions !== undefined && (!Array.isArray(patch.statusOptions) || patch.statusOptions.length > 12 || patch.statusOptions.some((status) => typeof status !== "string" || status.length > 40))) throw new HttpsError("invalid-argument", "Status options si sahihi.");
+    if (patch.active !== undefined && typeof patch.active !== "boolean") throw new HttpsError("invalid-argument", "Hali ya huduma si sahihi.");
+    if (patch.isVisible !== undefined && typeof patch.isVisible !== "boolean") throw new HttpsError("invalid-argument", "Hali ya kuonekana si sahihi.");
+    if (patch.reward !== undefined && (!Number.isFinite(Number(patch.reward)) || Number(patch.reward) < 0 || Number(patch.reward) > 100000000)) throw new HttpsError("invalid-argument", "Taarifa ya zawadi si sahihi.");
+  }
   return db.runTransaction(async (transaction) => {
     const existing = await transaction.get(targetRef);
     const before = existing.exists ? existing.data() : null;
@@ -147,6 +188,7 @@ export const adminDelete = onCall(async (request) => {
   const policy = writePolicy[collectionName];
   if (!policy || collectionName === "siteSettings") throw new HttpsError("invalid-argument", "Delete hairuhusiwi kwa collection hii.");
   requirePermission(actor, policy.permission);
+  if (collectionName === "lipaServices" && actor.role !== "super_admin") throw new HttpsError("permission-denied", "Mipangilio ya mitandao ya Lipa inasimamiwa na Super Admin pekee.");
   if (collectionName === "licenseTemplates" && actor.role !== "super_admin") throw new HttpsError("permission-denied", "Leseni zinasimamiwa na Super Admin pekee.");
   const id = text(data.id, 180);
   const targetRef = db.collection(collectionName).doc(id);
@@ -163,10 +205,9 @@ export const consumeTokens = onCall(async (request) => {
   const uid = authUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
   const serviceId = text(data.serviceId, 120);
-  const serviceName = text(data.serviceName, 180);
   const requestId = text(data.requestId, 160);
-  const cost = Number(data.tokenCost);
-  if (!Number.isInteger(cost) || cost <= 0 || cost > 100000) throw new HttpsError("invalid-argument", "Gharama ya tokeni si sahihi.");
+  const requestedCost = Number(data.tokenCost);
+  if (!Number.isInteger(requestedCost) || requestedCost <= 0 || requestedCost > 100000) throw new HttpsError("invalid-argument", "Gharama ya tokeni si sahihi.");
 
   const userRef = db.collection("users").doc(uid);
   const ledgerRef = db.collection("tokenTransactions").doc(requestId);
@@ -178,6 +219,13 @@ export const consumeTokens = onCall(async (request) => {
       return { reference: requestId, balanceAfter: row.balanceAfter, duplicate: true };
     }
     if (await serviceIsLocked(transaction, serviceId)) throw new HttpsError("failed-precondition", "Huduma hii imefungwa kwa sasa.");
+    const serviceSnapshot = await transaction.get(db.collection("services").where("slug", "==", serviceId).limit(1));
+    const service = serviceSnapshot.docs[0]?.data();
+    if (!service || service.active === false || service.isVisible === false) throw new HttpsError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
+    if (service.isFree === true) throw new HttpsError("failed-precondition", "Huduma hii haitumii tokeni.");
+    const cost = Number(service.tokenCost);
+    if (!Number.isSafeInteger(cost) || cost <= 0 || cost > 100000) throw new HttpsError("failed-precondition", "Gharama ya huduma haijawekwa sawa. Wasiliana na admin.");
+    const serviceName = String(service.name ?? data.serviceName ?? serviceId).slice(0, 180);
     const userSnapshot = await transaction.get(userRef);
     const profile = userSnapshot.data() as Profile | undefined;
     if (!profile || profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new HttpsError("permission-denied", "Akaunti hii haiwezi kutumia huduma.");
@@ -251,6 +299,349 @@ export const setServiceLock = onCall(async (request) => {
     recordAudit(transaction, uid, String(actor.role), after ? "LOCK_SERVICE" : "UNLOCK_SERVICE", "service", slug, { isLocked: before }, { isLocked: after });
     return { slug, isLocked: after };
   });
+});
+
+export const seedServiceCatalog = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  if (actor.role !== "super_admin") throw new HttpsError("permission-denied", "Super Admin pekee anaweza kuanzisha katalogi ya huduma.");
+  const refs = [
+    ...defaultServices.map((service) => ({ ref: db.collection("services").doc(service.slug), data: service })),
+    ...defaultLipaServices.map((service) => ({ ref: db.collection("lipaServices").doc(service.id), data: service })),
+  ];
+  let createdServices = 0;
+  let createdNetworks = 0;
+  await db.runTransaction(async (transaction) => {
+    const snapshots: FirebaseFirestore.DocumentSnapshot[] = [];
+    for (const item of refs) snapshots.push(await transaction.get(item.ref));
+    refs.forEach((item, index) => {
+      const snapshot = snapshots[index];
+      if (!snapshot.exists) {
+        transaction.create(item.ref, { ...item.data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+        if (item.ref.parent.id === "services") createdServices += 1;
+        else createdNetworks += 1;
+        return;
+      }
+      if (item.ref.parent.id !== "services") return;
+      const existing = snapshot.data()!;
+      const backfill = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
+      if (Object.keys(backfill).length) transaction.set(item.ref, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    });
+    recordAudit(transaction, uid, String(actor.role), "SEED_SERVICE_CATALOG", "serviceCatalog", "initial", null, { createdServices, createdNetworks });
+  });
+  return { createdServices, createdNetworks };
+});
+
+function objectValue(value: unknown, field: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new HttpsError("invalid-argument", `${field} si sahihi.`);
+  return value as Record<string, unknown>;
+}
+
+function cleanApplicationValues(values: Record<string, unknown>, fields: Array<Record<string, unknown>>, uid: string, applicationId: string, uploadCollection = "lipaUploads") {
+  const result: Record<string, unknown> = {};
+  for (const field of fields) {
+    const name = String(field.fieldName ?? "");
+    const label = String(field.label ?? name);
+    const type = String(field.type ?? "TEXT");
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)) throw new HttpsError("failed-precondition", "Fomu ya huduma ina field isiyo sahihi.");
+    const value = values[name];
+    const raw = value == null ? "" : String(value).trim();
+    if (field.required === true && !raw) throw new HttpsError("invalid-argument", `${label} inahitajika.`);
+    if (!raw) continue;
+    if (["IMAGE_UPLOAD", "FILE_UPLOAD"].includes(type)) {
+      const prefix = `${uploadCollection}/${uid}/${applicationId}/`;
+      if (!raw.startsWith(prefix) || raw.includes("..") || raw.length > 600) throw new HttpsError("invalid-argument", `Pakia ${label.toLowerCase()} tena.`);
+      result[name] = raw;
+      continue;
+    }
+    if (type === "NUMBER" && !Number.isFinite(Number(raw))) throw new HttpsError("invalid-argument", `${label} iwe namba sahihi.`);
+    if (type === "PHONE" && !/^\+?[0-9][0-9 ()-]{6,18}$/.test(raw)) throw new HttpsError("invalid-argument", `${label} si namba sahihi ya simu.`);
+    if (type === "TIN" && !/^\d{3}-\d{3}-\d{3}$/.test(raw)) throw new HttpsError("invalid-argument", `${label} itumie muundo 123-123-123.`);
+    if (type === "NIDA" && !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(raw)) throw new HttpsError("invalid-argument", `${label} itumie muundo 20068517-27520-00001-22.`);
+    if (type === "DROPDOWN" && !(Array.isArray(field.options) && field.options.includes(raw))) throw new HttpsError("invalid-argument", `Chagua ${label.toLowerCase()} kwenye orodha.`);
+    if (type === "DATE" && (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(`${raw}T00:00:00Z`)))) throw new HttpsError("invalid-argument", `${label} si tarehe sahihi.`);
+    if (typeof field.validation === "string" && field.validation.length <= 200) {
+      try { if (!new RegExp(field.validation).test(raw)) throw new HttpsError("invalid-argument", `${label} haijakidhi muundo unaotakiwa.`); }
+      catch (error) { if (error instanceof HttpsError) throw error; throw new HttpsError("failed-precondition", `Kanuni ya ${label.toLowerCase()} si sahihi.`); }
+    }
+    result[name] = type === "NUMBER" ? Number(raw) : raw.slice(0, 2000);
+  }
+  return result;
+}
+
+export const submitLipaApplication = onCall({ maxInstances: 20 }, async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new HttpsError("permission-denied", "Akaunti hii imezuiwa.");
+  const data = objectValue(request.data, "Taarifa za ombi");
+  const networkId = text(data.networkId, 80);
+  const applicationId = text(data.applicationId, 80);
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new HttpsError("invalid-argument", "Namba ya ombi si sahihi.");
+  const configRef = db.collection("lipaServices").doc(networkId);
+  const configSnapshot = await configRef.get();
+  if (!configSnapshot.exists) throw new HttpsError("not-found", "Mtandao huu haujapatikana.");
+  const config = configSnapshot.data()!;
+  if (config.active !== true) throw new HttpsError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
+  const fields = Array.isArray(config.fields) ? config.fields as Array<Record<string, unknown>> : [];
+  const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId);
+  const openRef = db.collection("lipaOpenApplications").doc(`${uid}_${networkId}`);
+  const preexistingOpen = await openRef.get();
+  if (preexistingOpen.exists) throw new HttpsError("already-exists", "Una ombi la mtandao huu ambalo bado linasubiri kukamilika.", { applicationId: preexistingOpen.data()?.applicationId });
+  const finalPaths: string[] = [];
+  const sourcePaths: string[] = [];
+  try {
+  for (const field of fields) {
+    const name = String(field.fieldName ?? "");
+    const pathValue = applicantData[name];
+    if (!["IMAGE_UPLOAD", "FILE_UPLOAD"].includes(String(field.type)) || typeof pathValue !== "string") continue;
+    const sourceFile = bucket.file(pathValue);
+    const [metadata] = await sourceFile.getMetadata().catch(() => { throw new HttpsError("invalid-argument", `Faili la ${String(field.label ?? name).toLowerCase()} halijapatikana.`); });
+    const allowed = Array.isArray(field.accept) ? field.accept : String(field.type) === "IMAGE_UPLOAD" ? ["image/jpeg", "image/png", "image/webp"] : [];
+    const maxSize = Math.min(Number(field.maxSizeMb ?? 5), 10) * 1024 * 1024;
+    if (Number(metadata.size) > maxSize || (allowed.length && !allowed.includes(String(metadata.contentType)))) throw new HttpsError("invalid-argument", `Aina au ukubwa wa ${String(field.label ?? name).toLowerCase()} haurusiwi.`);
+    const originalName = path.basename(pathValue).replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 80);
+    const finalPath = `lipaApplications/${applicationId}/documents/${name}-${originalName}`;
+    sourcePaths.push(pathValue);
+    await sourceFile.copy(bucket.file(finalPath));
+    finalPaths.push(finalPath);
+    applicantData[name] = finalPath;
+  }
+  const applicationRef = db.collection("lipaApplications").doc(applicationId);
+  const values = objectValue(data.values, "Fomu");
+  await db.runTransaction(async (transaction) => {
+    const openSnapshot = await transaction.get(openRef);
+    if (openSnapshot.exists) throw new HttpsError("already-exists", "Una ombi la mtandao huu ambalo bado linasubiri kukamilika.", { applicationId: openSnapshot.data()?.applicationId });
+    const existingApplication = await transaction.get(applicationRef);
+    if (existingApplication.exists) throw new HttpsError("already-exists", "Namba hii ya ombi tayari imetumika.");
+    const application = {
+      applicationId, userId: uid, userName: String(profile.name ?? ""), userEmail: String(profile.email ?? ""), network: String(config.name ?? networkId), networkId, serviceId: "pata-lipa-namba",
+      applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" "),
+      phone: String(applicantData.phone ?? ""), businessName: String(applicantData.businessName ?? ""), nidaNumber: String(applicantData.nidaNumber ?? ""), tinNumber: String(applicantData.tinNumber ?? ""),
+      businessLicense: String(applicantData.businessLicense ?? ""), idDocumentUrl: String(applicantData.idDocument ?? ""), idDocumentType: String(applicantData.idDocumentType ?? ""), applicantData,
+      reward: Number(config.reward ?? 0), status: "PENDING", rejectionReason: "", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
+    };
+    transaction.create(applicationRef, application);
+    transaction.create(openRef, { applicationId, userId: uid, networkId, createdAt: FieldValue.serverTimestamp() });
+    transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: "Ombi la Lipa Namba limepokelewa", body: `Maombi yako ya ${String(config.name ?? networkId)} yametumwa kikamilifu na yanasubiri kukaguliwa.`, type: "lipaApplication", applicationId, createdAt: FieldValue.serverTimestamp() });
+  });
+  await Promise.all(sourcePaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
+  return { applicationId, status: "PENDING" };
+  } catch (error) {
+    await Promise.all(finalPaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
+    throw error;
+  }
+});
+
+export const setLipaApplicationStatus = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageLipaApplications");
+  const data = objectValue(request.data, "Mabadiliko ya status");
+  const applicationId = text(data.applicationId, 80);
+  const status = String(data.status ?? "");
+  if (!["PROCESSING", "APPROVED", "REJECTED"].includes(status)) throw new HttpsError("invalid-argument", "Status si sahihi.");
+  const rejectionReason = typeof data.rejectionReason === "string" ? data.rejectionReason.trim().slice(0, 1000) : "";
+  if (status === "REJECTED" && rejectionReason.length < 3) throw new HttpsError("invalid-argument", "Andika sababu ya kukataliwa kabla ya kuendelea.");
+  const ref = db.collection("lipaApplications").doc(applicationId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new HttpsError("not-found", "Ombi halikupatikana.");
+    const application = snapshot.data()!;
+    const from = String(application.status ?? "PENDING");
+    const allowed = (status === "PROCESSING" && from === "PENDING") || ((status === "APPROVED" || status === "REJECTED") && from === "PROCESSING");
+    if (!allowed) throw new HttpsError("failed-precondition", `Mabadiliko kutoka ${from} kwenda ${status} hayaruhusiwi.`);
+    const now = FieldValue.serverTimestamp();
+    const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
+    if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
+    if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid });
+    if (status === "REJECTED") Object.assign(patch, { rejectionReason, rejectedAt: now, rejectedBy: uid });
+    transaction.update(ref, patch);
+    if (status === "APPROVED" || status === "REJECTED") transaction.delete(db.collection("lipaOpenApplications").doc(`${application.userId}_${application.networkId}`));
+    const reasonSuffix = status === "REJECTED" ? ` Sababu: ${rejectionReason}` : "";
+    transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${application.network}`, body: status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? "Maombi yako yamekubaliwa." : `Maombi yako yamekataliwa.${reasonSuffix}`, type: "lipaApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
+    const auditRef = db.collection("auditLogs").doc();
+    transaction.create(auditRef, { action: status === "PROCESSING" ? "LIPA_APPLICATION_PROCESSING" : status === "APPROVED" ? "LIPA_APPLICATION_APPROVED" : "LIPA_APPLICATION_REJECTED", actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
+    recordAudit(transaction, uid, String(actor.role), `LIPA_APPLICATION_${status}`, "lipaApplication", applicationId, { status: from }, { status }, { reason: status === "REJECTED" ? rejectionReason : "" });
+    return { applicationId, status };
+  });
+});
+
+export const markLipaApplicationViewed = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageLipaApplications");
+  const applicationId = text((request.data as Record<string, unknown> | undefined)?.applicationId, 80);
+  const snapshot = await db.collection("lipaApplications").doc(applicationId).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Ombi halikupatikana.");
+  const application = snapshot.data()!;
+  const now = FieldValue.serverTimestamp();
+  const auditRef = db.collection("auditLogs").doc();
+  await auditRef.create({ action: "LIPA_APPLICATION_VIEWED", actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: "", createdAt: now });
+  return { ok: true };
+});
+
+export const getLipaApplicationDocument = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  const data = objectValue(request.data, "Taarifa za faili");
+  const applicationId = text(data.applicationId, 80);
+  const fieldName = text(data.fieldName, 64);
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new HttpsError("invalid-argument", "Field ya faili si sahihi.");
+  const snapshot = await db.collection("lipaApplications").doc(applicationId).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Ombi halikupatikana.");
+  const application = snapshot.data()!;
+  if (application.userId !== uid) requirePermission(actor, "manageLipaApplications");
+  const storagePath = String((application.applicantData as Record<string, unknown> | undefined)?.[fieldName] ?? "");
+  if (!storagePath.startsWith(`lipaApplications/${applicationId}/documents/`)) throw new HttpsError("not-found", "Faili halikupatikana.");
+  const [url] = await bucket.file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60 * 1000 });
+  return { url, expiresAt: Date.now() + 5 * 60 * 1000 };
+});
+
+export const createServiceApplication = onCall({ maxInstances: 20 }, async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new HttpsError("permission-denied", "Akaunti hii imezuiwa.");
+  const data = objectValue(request.data, "Ombi la huduma");
+  const serviceSlug = text(data.serviceSlug, 120);
+  const applicationId = text(data.applicationId, 80);
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new HttpsError("invalid-argument", "Namba ya ombi si sahihi.");
+  const serviceSnapshot = await db.collection("services").where("slug", "==", serviceSlug).limit(1).get();
+  if (serviceSnapshot.empty) throw new HttpsError("not-found", "Huduma haikupatikana.");
+  const service = serviceSnapshot.docs[0].data();
+  if (service.active === false || service.isVisible === false) throw new HttpsError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
+  if (serviceSlug === "pata-lipa-namba" || serviceSlug === "leseni-biashara") throw new HttpsError("failed-precondition", "Tumia fomu maalum ya huduma hii.");
+  const fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
+  const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId, "serviceUploads");
+  const finalPaths: string[] = [];
+  const sourcePaths: string[] = [];
+  for (const field of fields) {
+    const name = String(field.fieldName ?? "");
+    const filePath = applicantData[name];
+    if (!["IMAGE_UPLOAD", "FILE_UPLOAD"].includes(String(field.type)) || typeof filePath !== "string") continue;
+    const [metadata] = await bucket.file(filePath).getMetadata().catch(() => { throw new HttpsError("invalid-argument", `Faili la ${String(field.label ?? name)} halijapatikana.`); });
+    const allowed = Array.isArray(field.accept) ? field.accept : String(field.type) === "IMAGE_UPLOAD" ? ["image/jpeg", "image/png", "image/webp"] : ["application/pdf"];
+    if (Number(metadata.size) > Math.min(Number(field.maxSizeMb ?? 5), 10) * 1024 * 1024 || (allowed.length && !allowed.includes(String(metadata.contentType)))) throw new HttpsError("invalid-argument", `Aina au ukubwa wa ${String(field.label ?? name)} haurusiwi.`);
+    const originalName = path.basename(filePath).replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 80);
+    const finalPath = `serviceApplications/${applicationId}/documents/${name}-${originalName}`;
+    sourcePaths.push(filePath);
+    await bucket.file(filePath).copy(bucket.file(finalPath));
+    finalPaths.push(finalPath);
+    applicantData[name] = finalPath;
+  }
+  const applicationRef = db.collection("serviceApplications").doc(applicationId);
+  const openRef = db.collection("serviceOpenApplications").doc(`${uid}_${serviceSlug}`);
+  const tokenCost = Number(service.isFree === true ? 0 : service.tokenCost);
+  if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) throw new HttpsError("failed-precondition", "Gharama ya huduma haijawekwa sawa.");
+  try {
+  const result = await db.runTransaction(async (transaction) => {
+    const prior = await transaction.get(applicationRef);
+    if (prior.exists) {
+      if (prior.data()?.userId === uid && prior.data()?.serviceSlug === serviceSlug) return { applicationId, status: prior.data()?.status ?? "PENDING", duplicate: true };
+      throw new HttpsError("already-exists", "Namba hii ya ombi tayari imetumika.");
+    }
+    const open = await transaction.get(openRef);
+    if (open.exists) throw new HttpsError("already-exists", "Una ombi la huduma hii ambalo bado linaendelea.", { applicationId: open.data()?.applicationId });
+    if (await serviceIsLocked(transaction, serviceSlug)) throw new HttpsError("failed-precondition", "Huduma hii imefungwa kwa sasa.");
+    const userRef = db.collection("users").doc(uid);
+    const userSnapshot = await transaction.get(userRef);
+    const user = userSnapshot.data() as Profile | undefined;
+    if (!user) throw new HttpsError("permission-denied", "Profile haikupatikana.");
+    let balanceAfter: number | null = null;
+    let ledgerRef: FirebaseFirestore.DocumentReference | null = null;
+    if (tokenCost > 0) {
+      if (user.verificationStatus !== "approved") throw new HttpsError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
+      const before = Number(user.tokenBalance ?? 0);
+      if (!Number.isSafeInteger(before) || before < tokenCost) throw new HttpsError("failed-precondition", "Tokeni hazitoshi kutumia huduma hii.");
+      balanceAfter = before - tokenCost;
+      transaction.update(userRef, { tokenBalance: balanceAfter, updatedAt: FieldValue.serverTimestamp() });
+      ledgerRef = db.collection("tokenTransactions").doc(applicationId);
+      transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
+    }
+    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), userEmail: String(user.email ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
+    transaction.create(openRef, { applicationId, userId: uid, serviceSlug, createdAt: FieldValue.serverTimestamp() });
+    transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(service.name ?? serviceSlug)} limepokelewa`, body: "Maombi yako yametumwa kikamilifu na yanasubiri kukaguliwa.", type: "serviceApplication", applicationId, createdAt: FieldValue.serverTimestamp() });
+    return { applicationId, status: "PENDING", balanceAfter, reference: ledgerRef?.id ?? applicationId, duplicate: false };
+  });
+  if (result.duplicate) await Promise.all(finalPaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
+  await Promise.all(sourcePaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
+  return result;
+  } catch (error) {
+    await Promise.all(finalPaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
+    throw error;
+  }
+});
+
+export const setServiceApplicationStatus = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const data = objectValue(request.data, "Hali ya ombi");
+  const applicationId = text(data.applicationId, 80);
+  const status = text(data.status, 40);
+  if (status === "PENDING") throw new HttpsError("invalid-argument", "Hali PENDING huwekwa ombi linapotumwa.");
+  const rejectionReason = typeof data.rejectionReason === "string" ? data.rejectionReason.trim().slice(0, 1000) : "";
+  if (status === "REJECTED" && rejectionReason.length < 3) throw new HttpsError("invalid-argument", "Sababu ya kukataliwa inahitajika.");
+  const ref = db.collection("serviceApplications").doc(applicationId);
+  const applicationSnapshot = await ref.get();
+  if (!applicationSnapshot.exists) throw new HttpsError("not-found", "Ombi halikupatikana.");
+  const applicationBefore = applicationSnapshot.data()!;
+  const serviceSnapshot = await db.collection("services").where("slug", "==", applicationBefore.serviceSlug).limit(1).get();
+  const service = serviceSnapshot.docs[0]?.data();
+  const statusOptions = Array.isArray(service?.statusOptions) ? service.statusOptions : Array.isArray(applicationBefore.statusOptions) ? applicationBefore.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"];
+  if (!statusOptions.includes(status)) throw new HttpsError("failed-precondition", "Hali hii haipo kwenye status options za huduma.");
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new HttpsError("not-found", "Ombi halikupatikana.");
+    const application = snapshot.data()!;
+    const from = String(application.status ?? "PENDING");
+    const terminal = ["APPROVED", "REJECTED"].includes(from);
+    if (terminal || status === from) throw new HttpsError("failed-precondition", `Mabadiliko ya ${from} kwenda ${status} hayaruhusiwi.`);
+    const now = FieldValue.serverTimestamp();
+    const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
+    if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
+    if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid });
+    if (status === "REJECTED") Object.assign(patch, { rejectedAt: now, rejectedBy: uid, rejectionReason });
+    transaction.update(ref, patch);
+    if (["APPROVED", "REJECTED"].includes(status)) transaction.delete(db.collection("serviceOpenApplications").doc(`${application.userId}_${application.serviceSlug}`));
+    const body = status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? "Maombi yako yamekubaliwa." : status === "REJECTED" ? `Maombi yako yamekataliwa. Sababu: ${rejectionReason}` : `Hali ya ombi lako imebadilishwa kuwa ${status}.`;
+    transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${application.serviceName}`, body, type: "serviceApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
+    const auditRef = db.collection("auditLogs").doc();
+    transaction.create(auditRef, { action: `SERVICE_APPLICATION_${status}`, actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
+    recordAudit(transaction, uid, String(actor.role), `SERVICE_APPLICATION_${status}`, "serviceApplication", applicationId, { status: from }, { status }, { reason: status === "REJECTED" ? rejectionReason : "" });
+    return { applicationId, status };
+  });
+});
+
+export const markServiceApplicationViewed = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const applicationId = text((request.data as Record<string, unknown> | undefined)?.applicationId, 80);
+  const snapshot = await db.collection("serviceApplications").doc(applicationId).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Ombi halikupatikana.");
+  const application = snapshot.data()!;
+  await db.collection("auditLogs").add({ action: "SERVICE_APPLICATION_VIEWED", actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), createdAt: FieldValue.serverTimestamp() });
+  return { ok: true };
+});
+
+export const getServiceApplicationDocument = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  const data = objectValue(request.data, "Taarifa za faili");
+  const applicationId = text(data.applicationId, 80);
+  const fieldName = text(data.fieldName, 64);
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new HttpsError("invalid-argument", "Field ya faili si sahihi.");
+  const snapshot = await db.collection("serviceApplications").doc(applicationId).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "Ombi halikupatikana.");
+  const application = snapshot.data()!;
+  if (application.userId !== uid) {
+    requirePermission(actor, "manageServices");
+    await db.collection("auditLogs").add({ action: "SERVICE_APPLICATION_DOCUMENT_VIEWED", actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), fieldName, createdAt: FieldValue.serverTimestamp() });
+  }
+  const storagePath = String((application.applicantData as Record<string, unknown> | undefined)?.[fieldName] ?? "");
+  if (!storagePath.startsWith(`serviceApplications/${applicationId}/documents/`)) throw new HttpsError("not-found", "Faili halikupatikana.");
+  const [url] = await bucket.file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60 * 1000 });
+  return { url, expiresAt: Date.now() + 5 * 60 * 1000 };
 });
 
 export const updateUserAccess = onCall(async (request) => {

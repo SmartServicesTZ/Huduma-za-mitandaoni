@@ -59,6 +59,26 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if false;
     }
+    match /lipaServices/{id} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+    match /lipaApplications/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || hasPermission('manageLipaApplications'));
+      allow create, update, delete: if false;
+    }
+    match /lipaOpenApplications/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || hasPermission('manageLipaApplications'));
+      allow create, update, delete: if false;
+    }
+    match /serviceApplications/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || hasPermission('manageServices'));
+      allow create, update, delete: if false;
+    }
+    match /serviceOpenApplications/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || hasPermission('manageServices'));
+      allow create, update, delete: if false;
+    }
     match /serviceLocks/{slug} {
       allow read: if true;
       allow create, update, delete: if false;
@@ -118,7 +138,8 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     match /auditLogs/{id} {
-      allow read, create: if false;
+      allow read: if canViewAuditLogs();
+      allow create: if false;
       allow update, delete: if false;
     }
     match /systemSettings/{id} {

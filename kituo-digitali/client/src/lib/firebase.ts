@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
@@ -22,6 +22,7 @@ import {
   getFirestore,
   increment,
   onSnapshot,
+  orderBy,
   query,
   runTransaction,
   serverTimestamp,
@@ -30,6 +31,7 @@ import {
   where,
   type DocumentData,
 } from "firebase/firestore";
+import type { ServiceFormField, ServiceFormValues } from "../../../shared/serviceForms";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCjzY-MjV40lJSyZr8b47AimYMybJoVEac",
@@ -53,6 +55,7 @@ export type AdminPermissions = {
   manageUsers?: boolean;
   manageTokens?: boolean;
   manageServices?: boolean;
+  manageLipaApplications?: boolean;
   manageContent?: boolean;
   manageMessages?: boolean;
   manageReports?: boolean;
@@ -192,7 +195,7 @@ export async function adminListTransactions() {
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
-export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings" | "serviceLocks") {
+export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings" | "serviceLocks" | "lipaServices") {
   const snapshot = await getDocs(collection(firestore, name));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
 }
@@ -303,4 +306,142 @@ export function subscribeToCollection(name: string, callback: (rows: DocumentDat
   return onSnapshot(collection(firestore, name), (snapshot) => {
     callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
   }, onError);
+}
+
+export type LipaNetworkConfig = {
+  id: string;
+  name: string;
+  title: string;
+  introduction: string;
+  requirements: string;
+  paymentInfo: string;
+  reward: number;
+  active: boolean;
+  fields: ServiceFormField[];
+};
+export type LipaApplication = {
+  id: string;
+  applicationId: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  network: string;
+  networkId: string;
+  serviceId: string;
+  applicantName: string;
+  phone: string;
+  businessName: string;
+  nidaNumber: string;
+  tinNumber: string;
+  idDocumentUrl: string;
+  idDocumentType: string;
+  applicantData: ServiceFormValues;
+  status: "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
+  assignedAdmin?: string;
+  submittedAt?: unknown;
+  updatedAt?: unknown;
+};
+export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; userEmail?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
+
+export async function seedServiceCatalog() {
+  const callable = httpsCallable(firebaseFunctions, "seedServiceCatalog");
+  return (await callable({})).data as { createdServices: number; createdNetworks: number };
+}
+
+export async function submitLipaApplication(applicationId: string, networkId: string, values: ServiceFormValues) {
+  const callable = httpsCallable<{ applicationId: string; networkId: string; values: ServiceFormValues }, { applicationId: string; status: "PENDING" }>(firebaseFunctions, "submitLipaApplication");
+  return (await callable({ applicationId, networkId, values })).data;
+}
+
+export async function setLipaApplicationStatus(applicationId: string, status: "PROCESSING" | "APPROVED" | "REJECTED", rejectionReason = "") {
+  const callable = httpsCallable(firebaseFunctions, "setLipaApplicationStatus");
+  return (await callable({ applicationId, status, rejectionReason })).data;
+}
+
+export async function markLipaApplicationViewed(applicationId: string) {
+  const callable = httpsCallable(firebaseFunctions, "markLipaApplicationViewed");
+  return (await callable({ applicationId })).data;
+}
+
+export async function getLipaApplicationDocument(applicationId: string, fieldName: string) {
+  const callable = httpsCallable<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>(firebaseFunctions, "getLipaApplicationDocument");
+  return (await callable({ applicationId, fieldName })).data;
+}
+
+export async function uploadLipaDocument(uid: string, applicationId: string, fieldName: string, file: File, maxSizeMb = 5, accept = ["image/jpeg", "image/png", "image/webp"]) {
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new Error("Jina la field si sahihi.");
+  if (!accept.includes(file.type)) throw new Error("Aina ya faili hairuhusiwi.");
+  const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 10);
+  if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi ${sizeLimit} MB.`);
+  const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
+  const objectRef = storageRef(firebaseStorage, `lipaUploads/${uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`);
+  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "private,no-store,max-age=0" });
+  return objectRef.fullPath;
+}
+
+export async function removeLipaUpload(storagePath: string) {
+  if (!storagePath.startsWith("lipaUploads/")) return;
+  await deleteObject(storageRef(firebaseStorage, storagePath));
+}
+
+export async function adminListLipaApplications() {
+  const snapshot = await getDocs(query(collection(firestore, "lipaApplications"), orderBy("submittedAt", "desc")));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt) } as LipaApplication));
+}
+
+export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
+  const userQuery = query(collection(firestore, "lipaApplications"), where("userId", "==", uid));
+  return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
+}
+
+export async function createServiceApplication(applicationId: string, serviceSlug: string, values: ServiceFormValues) {
+  const callable = httpsCallable(firebaseFunctions, "createServiceApplication");
+  return (await callable({ applicationId, serviceSlug, values })).data as { applicationId: string; status: string; duplicate: boolean; balanceAfter: number | null; reference: string };
+}
+
+export async function setServiceApplicationStatus(applicationId: string, status: string, rejectionReason = "") {
+  const callable = httpsCallable(firebaseFunctions, "setServiceApplicationStatus");
+  return (await callable({ applicationId, status, rejectionReason })).data;
+}
+
+export async function uploadServiceDocument(uid: string, applicationId: string, fieldName: string, file: File, maxSizeMb = 5, accept = ["image/jpeg", "image/png", "image/webp"]) {
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new Error("Jina la field si sahihi.");
+  if (!accept.includes(file.type)) throw new Error("Aina ya faili hairuhusiwi.");
+  const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 10);
+  if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi ${sizeLimit} MB.`);
+  const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
+  const objectRef = storageRef(firebaseStorage, `serviceUploads/${uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`);
+  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "private,no-store,max-age=0" });
+  return objectRef.fullPath;
+}
+
+export async function removeServiceUpload(storagePath: string) {
+  if (!storagePath.startsWith("serviceUploads/")) return;
+  await deleteObject(storageRef(firebaseStorage, storagePath));
+}
+
+export async function markServiceApplicationViewed(applicationId: string) {
+  const callable = httpsCallable<{ applicationId: string }, { ok: boolean }>(firebaseFunctions, "markServiceApplicationViewed");
+  return (await callable({ applicationId })).data;
+}
+
+export async function getServiceApplicationDocument(applicationId: string, fieldName: string) {
+  const callable = httpsCallable<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>(firebaseFunctions, "getServiceApplicationDocument");
+  return (await callable({ applicationId, fieldName })).data;
+}
+
+export async function adminListServiceApplications() {
+  const snapshot = await getDocs(query(collection(firestore, "serviceApplications"), orderBy("submittedAt", "desc")));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt) } as ServiceApplication));
+}
+
+export function subscribeUserServiceApplications(uid: string, callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
+  const userQuery = query(collection(firestore, "serviceApplications"), where("userId", "==", uid));
+  return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
+}
+
+export function subscribeUserMessages(uid: string, callback: (rows: Array<Record<string, unknown> & { id: string }>) => void, onError?: (error: unknown) => void) {
+  const userQuery = query(collection(firestore, "messages"), where("recipientId", "==", uid));
+  return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")))), onError);
 }
