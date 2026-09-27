@@ -125,3 +125,26 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .admin-lock { color: #9f1239 !important; background: #ffe4e6 !important; }
 .admin-unlock { color: #08723f !important; background: #d8f9e6 !important; }
 .admin-lock:disabled, .admin-unlock:disabled { cursor: not-allowed; opacity: .5; }
+
+
+/* Dynamic service and application CMS */
+.lipa-admin-layout { display: grid; gap: 18px; }
+.lipa-admin-nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; padding: 3px 7px; border-radius: 999px; color: #fff; background: #d84b32; font-size: 9px; font-weight: 900; }
+.lipa-admin-field-editor { display: grid; gap: 12px; padding: 15px; margin: 18px 0; border: 1px solid #dce6df; border-radius: 11px; background: #f8fbf9; }
+.lipa-admin-field-editor .admin-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lipa-admin-field-editor .admin-card-heading h3 { margin: 0; }
+.lipa-admin-field { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; border: 1px solid #e0e7e2; border-radius: 9px; background: white; }
+.lipa-admin-field .control-field { min-width: 0; }
+.lipa-admin-field .control-field input, .lipa-admin-field .control-field select { box-sizing: border-box; width: 100%; }
+.lipa-admin-field > label { display: flex; align-items: center; gap: 7px; color: #334155; font-size: 11px; }
+.lipa-admin-field > label input { accent-color: #168653; }
+.lipa-admin-field > button { justify-self: start; }
+.account-notification { padding: 11px 0; border-top: 1px solid #e7edf0; }
+.account-notification strong { display: block; color: #10233f; font-size: 12px; }
+.account-notification p { margin: 5px 0; color: #52657a; font-size: 11px; line-height: 1.45; }
+.account-notification small { color: #8b9aaa; font-size: 9px; }
+@media (max-width: 640px) { .lipa-admin-field { grid-template-columns: 1fr; } .lipa-admin-field-editor .admin-card-heading { align-items: flex-start; flex-direction: column; } }
+
+.lipa-admin-network-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.lipa-admin-button-secondary { color: #125c57 !important; border: 1px solid #b6d9c8 !important; background: #f0faf5 !important; }
+@media (max-width: 620px) { .lipa-admin-network-actions { width: 100%; justify-content: flex-start; } }
