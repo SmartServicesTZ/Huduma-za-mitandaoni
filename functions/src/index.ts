@@ -264,6 +264,9 @@ const FIRST_BUSINESS_LICENSE_SUFFIX = 35809;
 function formatBusinessLicenseNumber(suffix: number) {
   return `${BUSINESS_LICENSE_PREFIX}${String(suffix).padStart(5, "0")}`;
 }
+function titleCaseLocation(value: string) {
+  return value.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
+}
 
 function addText(page: import("pdf-lib").PDFPage, text: string, x: number, y: number, size = 8.5, bold = false) {
   page.drawText(text.slice(0, 70), { x, y, size, font: bold ? undefined : undefined, color: rgb(0.05, 0.08, 0.1) });
@@ -364,8 +367,10 @@ export const generateBusinessLicense = onCall(async (request) => {
   }
   const form = {
     firstName: cleanText(data.firstName, "Jina la kwanza", 80).toUpperCase(), middleName: cleanText(data.middleName, "Jina la pili", 80).toUpperCase(), lastName: cleanText(data.lastName, "Jina la mwisho", 80).toUpperCase(),
-    businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "", licenseType: data.licenseType === "RENEWED LICENCE" ? "RENEWED LICENCE" : "NEW LICENCE", principalBranch: data.principalBranch === "BRANCH" ? "BRANCH" : "PRINCIPAL", region: cleanText(data.region, "Mkoa", 80).toUpperCase(), district: "DAR ES SALAAM", ward: cleanText(data.ward, "Kata", 100).toUpperCase(), street: cleanText(data.street, "Mtaa / Kijiji", 140).toUpperCase(), tin: cleanText(data.tin, "TIN", 40).toUpperCase(), licenseFee: Number(data.licenseFee),
+    businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "", licenseType: data.licenseType === "NEW LICENCE" || data.licenseType === "RENEWED LICENCE" ? data.licenseType : "", principalBranch: data.principalBranch === "PRINCIPAL" || data.principalBranch === "BRANCH" ? data.principalBranch : "", region: titleCaseLocation(cleanText(data.region, "Mkoa", 80)), district: "DAR ES SALAAM", ward: titleCaseLocation(cleanText(data.ward, "Kata", 100)), street: titleCaseLocation(cleanText(data.street, "Mtaa / Kijiji", 140)), tin: cleanText(data.tin, "TIN", 40).toUpperCase(), licenseFee: Number(data.licenseFee),
   } as const;
+  if (!form.licenseType) throw new HttpsError("invalid-argument", "Chagua aina ya leseni.");
+  if (!form.principalBranch) throw new HttpsError("invalid-argument", "Chagua Principal au Branch.");
   if (form.businessType === "OTHER" && !form.otherBusinessType) throw new HttpsError("invalid-argument", "Eleza aina ya biashara.");
   if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin)) throw new HttpsError("invalid-argument", "Format ya TIN si sahihi. Tumia mfumo 123-123-123.");
   if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new HttpsError("invalid-argument", "Malipo ya leseni si sahihi.");
@@ -396,7 +401,7 @@ export const generateBusinessLicense = onCall(async (request) => {
     transaction.create(applicationRef, applicationData);
   });
   try {
-    const pdfBytes = await renderLicensePdf(form, licenseNumber, applicationId, issueDate, expiryDate);
+    const pdfBytes = await renderLicensePdf(form as LicenseForm, licenseNumber, applicationId, issueDate, expiryDate);
     const filePath = `license-documents/${uid}/${applicationId}.pdf`;
     const file = bucket.file(filePath);
     await file.save(Buffer.from(pdfBytes), { metadata: { contentType: "application/pdf", metadata: { userId: uid, applicationId } } });
