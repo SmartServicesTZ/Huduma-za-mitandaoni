@@ -1,6 +1,12 @@
 export const homepageSectionIds = ["services", "locked", "special", "tools", "tutorials"] as const;
 export type HomepageSectionId = (typeof homepageSectionIds)[number];
 export const defaultHomepageSectionOrder: HomepageSectionId[] = [...homepageSectionIds];
+export const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
+
+export function isServiceLocked(slug: string, override: boolean | undefined, recordLocked = false): boolean {
+  if (typeof override === "boolean") return override;
+  return recordLocked || defaultLockedServiceSlugs.has(slug);
+}
 
 export function completeOrder<T extends string>(available: T[], saved: readonly string[] = []): T[] {
   const availableSet = new Set<string>(available);

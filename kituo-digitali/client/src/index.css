@@ -121,3 +121,7 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .admin-secondary:hover:not(:disabled) { background: #d8f9e6; }
 .admin-secondary:disabled { cursor: not-allowed; opacity: .5; }
 @media (max-width: 600px) { .admin-order-row { gap: 8px; padding: 9px; } .admin-order-copy strong { font-size: 11px; } .admin-order-actions { gap: 4px; } .admin-order-actions button { width: 32px; height: 32px; } }
+
+.admin-lock { color: #9f1239 !important; background: #ffe4e6 !important; }
+.admin-unlock { color: #08723f !important; background: #d8f9e6 !important; }
+.admin-lock:disabled, .admin-unlock:disabled { cursor: not-allowed; opacity: .5; }

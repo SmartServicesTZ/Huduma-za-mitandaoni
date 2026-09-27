@@ -19,6 +19,7 @@ const functionsRoot = path.dirname(fileURLToPath(import.meta.url));
 const roles = ["user", "admin", "moderator", "support", "super_admin"] as const;
 type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
+const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
 type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string };
 
@@ -39,6 +40,14 @@ function can(profile: Profile, permission: string) {
 
 function requirePermission(profile: Profile, permission: string) {
   if (!can(profile, permission)) throw new HttpsError("permission-denied", "Huna ruhusa ya kufanya kitendo hiki.");
+}
+
+async function serviceIsLocked(transaction: Transaction, slug: string) {
+  const lockSnapshot = await transaction.get(db.collection("serviceLocks").doc(slug));
+  if (lockSnapshot.exists && typeof lockSnapshot.data()?.isLocked === "boolean") return lockSnapshot.data()!.isLocked === true;
+  if (defaultLockedServiceSlugs.has(slug)) return true;
+  const serviceSnapshot = await transaction.get(db.collection("services").where("slug", "==", slug).limit(1));
+  return serviceSnapshot.docs.some((document) => document.data().isLocked === true);
 }
 
 function text(value: unknown, max: number) {
@@ -168,6 +177,7 @@ export const consumeTokens = onCall(async (request) => {
       if (row.userId !== uid || row.serviceId !== serviceId) throw new HttpsError("already-exists", "Request ya tokeni si sahihi.");
       return { reference: requestId, balanceAfter: row.balanceAfter, duplicate: true };
     }
+    if (await serviceIsLocked(transaction, serviceId)) throw new HttpsError("failed-precondition", "Huduma hii imefungwa kwa sasa.");
     const userSnapshot = await transaction.get(userRef);
     const profile = userSnapshot.data() as Profile | undefined;
     if (!profile || profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new HttpsError("permission-denied", "Akaunti hii haiwezi kutumia huduma.");
@@ -188,22 +198,58 @@ export const adjustTokens = onCall(async (request) => {
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
   const description = text(data.description, 300);
+  const requestId = text(data.requestId, 160);
+  if (!/^[A-Za-z0-9_-]{8,160}$/.test(requestId)) throw new HttpsError("invalid-argument", "Rejea ya ombi la tokeni si sahihi.");
   const amount = Number(data.amount);
   if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 100000) throw new HttpsError("invalid-argument", "Kiasi cha tokeni si sahihi.");
   const userRef = db.collection("users").doc(userId);
-  const ledgerRef = db.collection("tokenTransactions").doc();
+  const ledgerRef = db.collection("tokenTransactions").doc(`${uid}_${requestId}`);
+  try {
+    return await db.runTransaction(async (transaction) => {
+      const prior = await transaction.get(ledgerRef);
+      if (prior.exists) {
+        const row = prior.data()!;
+        if (row.actorId !== uid || row.userId !== userId || Number(row.amount) !== amount || row.reason !== description) throw new HttpsError("already-exists", "Rejea hii tayari imetumika kwa ombi tofauti.");
+        return { balanceAfter: row.balanceAfter, reference: row.reference ?? ledgerRef.id, duplicate: true };
+      }
+      const snapshot = await transaction.get(userRef);
+      if (!snapshot.exists) throw new HttpsError("not-found", "Mtumiaji hakupatikana.");
+      const target = snapshot.data() as Profile;
+      if (target.role === "super_admin" && uid !== userId) throw new HttpsError("permission-denied", "Super Admin inalindwa.");
+      const before = Number(target.tokenBalance ?? 0);
+      if (!Number.isSafeInteger(before) || before < 0) throw new HttpsError("failed-precondition", "Salio la tokeni kwenye profile si sahihi. Kagua taarifa za mtumiaji kwanza.");
+      const after = before + amount;
+      if (!Number.isSafeInteger(after)) throw new HttpsError("out-of-range", "Salio jipya la tokeni limezidi kikomo kinachoruhusiwa.");
+      if (after < 0) throw new HttpsError("failed-precondition", "Salio haliwezi kuwa chini ya sifuri.");
+      transaction.update(userRef, { tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
+      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId, actorId: uid, type: amount > 0 ? "credit" : "debit", amount, balanceBefore: before, balanceAfter: after, reason: description, serviceId: "admin-adjustment", serviceName: "Admin token adjustment", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" });
+      recordAudit(transaction, uid, String(profile.role), amount > 0 ? "ADD_TOKENS" : "REMOVE_TOKENS", "user", userId, { tokenBalance: before }, { tokenBalance: after }, { amount, description });
+      return { balanceAfter: after, reference: ledgerRef.id, duplicate: false };
+    });
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    const cause = error as { code?: unknown; message?: unknown };
+    console.error("adjustTokens failed", { actorId: uid, targetUserId: userId, requestId, amount, code: String(cause?.code ?? "unknown"), message: String(cause?.message ?? "unknown") });
+    throw new HttpsError("internal", "Imeshindikana kuhifadhi tokeni. Jaribu tena; ombi linalindwa lisihesabiwe mara mbili.");
+  }
+});
+
+export const setServiceLock = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const slug = text(data.slug, 120);
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/.test(slug)) throw new HttpsError("invalid-argument", "Kitambulisho cha huduma si sahihi.");
+  if (typeof data.isLocked !== "boolean") throw new HttpsError("invalid-argument", "Hali ya huduma si sahihi.");
+  const ref = db.collection("serviceLocks").doc(slug);
   return db.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(userRef);
-    if (!snapshot.exists) throw new HttpsError("not-found", "Mtumiaji hakupatikana.");
-    const target = snapshot.data() as Profile;
-    if (target.role === "super_admin" && uid !== userId) throw new HttpsError("permission-denied", "Super Admin inalindwa.");
-    const before = Number(target.tokenBalance ?? 0);
-    const after = before + amount;
-    if (after < 0) throw new HttpsError("failed-precondition", "Salio haliwezi kuwa chini ya sifuri.");
-    transaction.update(userRef, { tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-    transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId, actorId: uid, type: amount > 0 ? "credit" : "debit", amount, balanceBefore: before, balanceAfter: after, reason: description, serviceId: "admin-adjustment", serviceName: "Admin token adjustment", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" });
-    recordAudit(transaction, uid, String(profile.role), amount > 0 ? "ADD_TOKENS" : "REMOVE_TOKENS", "user", userId, { tokenBalance: before }, { tokenBalance: after }, { amount, description });
-    return { balanceAfter: after, reference: ledgerRef.id };
+    const existing = await transaction.get(ref);
+    const before = existing.exists ? existing.data()?.isLocked === true : defaultLockedServiceSlugs.has(slug);
+    const after = data.isLocked as boolean;
+    transaction.set(ref, { slug, isLocked: after, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    recordAudit(transaction, uid, String(actor.role), after ? "LOCK_SERVICE" : "UNLOCK_SERVICE", "service", slug, { isLocked: before }, { isLocked: after });
+    return { slug, isLocked: after };
   });
 });
 
@@ -379,6 +425,7 @@ export const reserveBusinessLicenseNumber = onCall(async (request) => {
       licenseNumber = String(current.licenseNumber);
       return;
     }
+    if (await serviceIsLocked(transaction, "leseni-biashara")) throw new HttpsError("failed-precondition", "Huduma ya Leseni ya Biashara imefungwa kwa sasa.");
     const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
     const counterSnapshot = await transaction.get(counterRef);
     const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
@@ -422,6 +469,7 @@ export const generateBusinessLicense = onCall(async (request) => {
   await db.runTransaction(async (transaction) => {
     const claim = await transaction.get(applicationRef);
     if (claim.exists) throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
+    if (await serviceIsLocked(transaction, "leseni-biashara")) throw new HttpsError("failed-precondition", "Huduma ya Leseni ya Biashara imefungwa kwa sasa.");
     const reservationRef = db.collection("licenseNumberReservations").doc(requestId);
     const reservationSnapshot = await transaction.get(reservationRef);
     if (reservationSnapshot.exists) {
@@ -448,6 +496,7 @@ export const generateBusinessLicense = onCall(async (request) => {
     const [downloadUrl] = await file.getSignedUrl({ action: "read", expires: Date.now() + 15 * 60 * 1000 });
     const userRef = db.collection("users").doc(uid); const ledgerRef = db.collection("tokenTransactions").doc(); const usageRef = db.collection("serviceUsage").doc(); const now = FieldValue.serverTimestamp();
     const result = await db.runTransaction(async (transaction) => {
+      if (await serviceIsLocked(transaction, "leseni-biashara")) throw new HttpsError("failed-precondition", "Huduma ya Leseni ya Biashara imefungwa kwa sasa.");
       const userSnapshot = await transaction.get(userRef); const user = userSnapshot.data() as Profile; const before = Number(user.tokenBalance ?? 0); const cost = 2;
       if (before < cost) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
       const after = before - cost; transaction.update(userRef, { tokenBalance: after, updatedAt: now });
