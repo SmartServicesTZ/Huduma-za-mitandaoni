@@ -142,7 +142,7 @@ export type BusinessLicensePayload = {
 };
 
 export async function generateBusinessLicense(payload: BusinessLicensePayload) {
-  const callable = httpsCallable<BusinessLicensePayload, { status: string; applicationId: string; licenseNumber: string; downloadUrl: string; reference: string; duplicate: boolean }>(firebaseFunctions, "generateBusinessLicense");
+  const callable = httpsCallable<BusinessLicensePayload, { status: string; applicationId: string; downloadUrl: string; reference: string; duplicate: boolean }>(firebaseFunctions, "generateBusinessLicense");
   return (await callable(payload)).data;
 }
 
@@ -282,11 +282,6 @@ export async function adminSaveSiteSettings(adminId: string, values: Record<stri
 export async function adminGetSiteSettings() {
   const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
   return snapshot.exists() ? snapshot.data() : null;
-}
-
-export async function reserveBusinessLicenseNumber(reservationId: string) {
-  const callable = httpsCallable<{ reservationId: string }, { reservationId: string; licenseNumber: string }>(firebaseFunctions, "reserveBusinessLicenseNumber");
-  return (await callable({ reservationId })).data;
 }
 
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {

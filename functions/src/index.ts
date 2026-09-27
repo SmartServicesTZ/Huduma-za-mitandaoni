@@ -4,9 +4,8 @@ import { getStorage } from "firebase-admin/storage";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { createHash, randomUUID } from "node:crypto";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import QRCode from "qrcode";
+import { randomUUID } from "node:crypto";
+import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 
@@ -257,13 +256,6 @@ function cleanText(value: unknown, label: string, max = 180) {
   return value.trim();
 }
 
-const BUSINESS_LICENSE_PREFIX = "BL01396902025-26000";
-const BUSINESS_LICENSE_COUNTER_ID = "BL01396902025-26000";
-const FIRST_BUSINESS_LICENSE_SUFFIX = 35809;
-
-function formatBusinessLicenseNumber(suffix: number) {
-  return `${BUSINESS_LICENSE_PREFIX}${String(suffix).padStart(5, "0")}`;
-}
 function titleCaseLocation(value: string) {
   return value.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
 }
@@ -272,83 +264,54 @@ function addText(page: import("pdf-lib").PDFPage, text: string, x: number, y: nu
   page.drawText(text.slice(0, 70), { x, y, size, font: bold ? undefined : undefined, color: rgb(0.05, 0.08, 0.1) });
 }
 
-async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applicationId: string, issueDate: string, expiryDate: string) {
+async function renderLicensePdf(form: LicenseForm, applicationId: string) {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([612, 800]);
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold);
   const regularFont = await pdf.embedFont(StandardFonts.Helvetica);
   const blue = rgb(0.12, 0.48, 0.64);
   const ink = rgb(0.05, 0.08, 0.1);
-  page.drawRectangle({ x: 0, y: 0, width: 612, height: 800, color: rgb(0.83, 0.94, 0.96) });
-  page.drawRectangle({ x: 16, y: 16, width: 580, height: 768, borderColor: blue, borderWidth: 3, color: rgb(0.83, 0.94, 0.96), opacity: 0.18 });
-  const watermark = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tanzania-watermark.png")));
-  page.drawImage(watermark, { x: 70, y: 70, width: 472, height: 660, opacity: 0.22 });
-  const crest = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tanzania-crest.png")));
-  page.drawImage(crest, { x: 278, y: 695, width: 56, height: 56 });
-  const draw = (text: string, x: number, y: number, size = 8.5, bold = false, color = ink) => page.drawText(text.slice(0, 70), { x, y, size, font: bold ? boldFont : regularFont, color });
-  const label = (text: string, y: number) => draw(text, 56, y, 8, false, rgb(0.22, 0.28, 0.3));
+  const muted = rgb(0.34, 0.4, 0.45);
+  page.drawRectangle({ x: 0, y: 0, width: 612, height: 800, color: rgb(0.97, 0.99, 1) });
+  page.drawRectangle({ x: 18, y: 18, width: 576, height: 764, borderColor: blue, borderWidth: 3 });
+  const logo = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tausi-logo.png")));
+  page.drawImage(logo, { x: 278, y: 710, width: 56, height: 56 });
+  const draw = (text: string, x: number, y: number, size = 8.5, bold = false, color = ink) => page.drawText(text.slice(0, 78), { x, y, size, font: bold ? boldFont : regularFont, color });
+  const label = (text: string, y: number) => draw(text, 56, y, 8, false, muted);
   const value = (text: string, y: number, size = 8) => draw(text || "—", 220, y, size, true);
   const owner = `${form.firstName} ${form.middleName} ${form.lastName}`.replace(/\s+/g, " ").trim().toUpperCase();
-  const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "OTHER" : form.businessType).toUpperCase();
-  const office = "DAR ES SALAAM CITY COUNCIL";
-  draw("THE UNITED REPUBLIC OF TANZANIA", 185, 674, 15, false);
-  draw("BUSINESS LICENSE", 247, 650, 13, true);
-  draw(`B.L. NO: ${licenseNumber}`, 232, 628, 9, true, blue);
-  draw("The Business Licensing Act (Act No. 25 of 1972)", 195, 608, 7.5, false);
-  draw("License Details", 45, 570, 12, true);
-  label("Issuing Office:", 545); value(office, 545);
-  label("Tax Identification No:", 520); value(form.tin, 520);
-  label("License Issued To:", 495); value(owner, 495);
-  label("For the Business of:", 470); value(businessType, 470, 7.5);
-  label("Business Licensing:", 445); value(form.licenseType, 445);
-  label("Date of Issue:", 420); value(issueDate, 420);
-  label("Expiring Date:", 395); value(expiryDate, 395);
-  label("Principal/Branch:", 370); value(form.principalBranch, 370);
-  draw("Business Location", 45, 335, 12, true);
-  label("Region:", 310); value(form.region, 310);
-  label("Ward:", 285); value(form.ward, 285);
-  label("Street:", 260); value(form.street, 260);
-  draw("Payment Details", 45, 195, 12, true);
-  label("Amount of Fee Paid:", 170); value(`${Number(form.licenseFee).toLocaleString("en-TZ", { maximumFractionDigits: 2 })} TZS`, 170);
-  const hc = createHash("sha256").update(`${licenseNumber}|${form.tin}|${expiryDate}`).digest("hex").toUpperCase();
-  const qrPayload = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc });
-  const qrData = await QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "H", margin: 1, width: 700 });
-  const qr = await pdf.embedPng(Buffer.from(qrData.split(",")[1], "base64"));
-  page.drawImage(qr, { x: 410, y: 205, width: 135, height: 135 });
-  const logo = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tausi-logo.png")));
-  page.drawCircle({ x: 477.5, y: 272.5, size: 22, color: rgb(1, 1, 1), opacity: 0.92 });
-  page.drawImage(logo, { x: 458, y: 250, width: 39, height: 39 });
-  draw("This digital copy does not require a signature of authority", 180, 122, 8, false);
-  page.drawLine({ start: { x: 48, y: 106 }, end: { x: 564, y: 106 }, thickness: 0.8, color: rgb(0.22, 0.28, 0.3) });
-  draw("CONDITIONS & NOTES:", 48, 90, 7.5, true);
-  draw("1. This license shall be conspicuously displayed at the place of business.", 48, 75, 6.8);
-  draw("2. Renewal applications must be submitted within 21 days of the license expiry; Otherwise, penalties begin at 25% of the license fee and rise by 2% for each additional month, up to 47%.", 48, 62, 6.2);
+  const businessType = (form.businessType === "OTHER" ? form.otherBusinessType || "OTHER" : form.businessType).toUpperCase();
+  draw("HUDUMA ZA MTANDAONI", 220, 688, 12, true);
+  draw("BUSINESS LICENSE APPLICATION", 195, 661, 13, true);
+  draw("APPLICATION DRAFT ONLY - NOT AN OFFICIAL LICENSE", 166, 641, 9, true, blue);
+  draw(`APPLICATION REF: ${applicationId}`, 217, 622, 8, true, blue);
+  // Prominent on-page watermark prevents the application draft being mistaken for an issued license.
+  page.drawText("DRAFT ONLY", { x: 140, y: 390, size: 58, font: boldFont, color: rgb(0.88, 0.91, 0.94), rotate: degrees(-32) });
+  draw("APPLICANT & BUSINESS DETAILS", 45, 584, 11, true);
+  label("Applicant name:", 558); value(owner, 558);
+  label("Tax Identification No:", 536); value(form.tin, 536);
+  label("Business type:", 514); value(businessType, 514, 7.5);
+  label("Application type:", 492); value(form.licenseType, 492);
+  label("Principal / Branch:", 470); value(form.principalBranch, 470);
+  draw("BUSINESS LOCATION", 45, 438, 11, true);
+  label("Region:", 412); value(form.region, 412);
+  label("Council / District:", 390); value(form.district, 390);
+  label("Ward:", 368); value(form.ward, 368);
+  label("Street / Village:", 346); value(form.street, 346);
+  draw("FEE ESTIMATE - NOT PAYMENT CONFIRMATION", 45, 307, 10, true);
+  label("Estimated amount:", 281);
+  value(Number(form.licenseFee) > 0 ? `${Number(form.licenseFee).toLocaleString("en-TZ", { maximumFractionDigits: 2 })} TZS (ESTIMATE)` : "Not provided", 281);
+  page.drawRectangle({ x: 410, y: 142, width: 130, height: 130, borderColor: rgb(0.65, 0.7, 0.75), borderWidth: 1 });
+  draw("OFFICIAL QR", 444, 218, 9, true, muted);
+  draw("added by issuing", 429, 201, 7, false, muted);
+  draw("authority after approval", 418, 189, 7, false, muted);
+  draw("No official license number or validity dates are issued on this draft.", 114, 155, 8, true);
+  page.drawLine({ start: { x: 48, y: 128 }, end: { x: 564, y: 128 }, thickness: 0.8, color: muted });
+  draw("THIS DOCUMENT IS AN APPLICATION PREVIEW ONLY - IT IS NOT A LICENSE OR PROOF OF PAYMENT.", 47, 105, 7.2, true, blue);
+  draw("Submit your application to the relevant licensing authority for review, payment verification and approval.", 47, 87, 7, false);
+  draw("Official license number, issue/expiry dates and verification QR are added only by the licensing authority.", 47, 70, 7, false);
   return pdf.save();
 }
-
-export const reserveBusinessLicenseNumber = onCall(async (request) => {
-  const uid = authUid(request);
-  const reservationId = cleanText((request.data as { reservationId?: unknown } | undefined)?.reservationId ?? randomUUID(), "Reservation ID", 160);
-  const reservationRef = db.collection("licenseNumberReservations").doc(reservationId);
-  let licenseNumber = "";
-  await db.runTransaction(async (transaction) => {
-    const existing = await transaction.get(reservationRef);
-    if (existing.exists) {
-      const current = existing.data()!;
-      if (current.userId !== uid) throw new HttpsError("already-exists", "Reservation ID si sahihi.");
-      licenseNumber = String(current.licenseNumber);
-      return;
-    }
-    const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
-    const counterSnapshot = await transaction.get(counterRef);
-    const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
-    if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 99999) throw new HttpsError("resource-exhausted", "Namba za leseni zimejaa.");
-    licenseNumber = formatBusinessLicenseNumber(nextSuffix);
-    transaction.create(reservationRef, { reservationId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
-    transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-  });
-  return { reservationId, licenseNumber };
-});
 
 export const generateBusinessLicense = onCall(async (request) => {
   const uid = authUid(request);
@@ -362,64 +325,71 @@ export const generateBusinessLicense = onCall(async (request) => {
   if (existing.exists) {
     const current = existing.data()!;
     if (current.userId !== uid) throw new HttpsError("already-exists", "Request ID si sahihi.");
-    if (current.status === "COMPLETED") return { status: "COMPLETED", applicationId: current.applicationId, downloadUrl: current.downloadUrl, reference: current.reference, duplicate: true };
-    if (current.status === "PROCESSING") throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
+    if (current.status === "DRAFT_READY") return { status: "DRAFT_READY", applicationId: current.applicationId, downloadUrl: current.downloadUrl, reference: current.reference, duplicate: true };
+    if (current.status === "PROCESSING") throw new HttpsError("already-exists", "PDF ya rasimu tayari inaandaliwa. Subiri kidogo.");
   }
   const form = {
-    firstName: cleanText(data.firstName, "Jina la kwanza", 80).toUpperCase(), middleName: cleanText(data.middleName, "Jina la pili", 80).toUpperCase(), lastName: cleanText(data.lastName, "Jina la mwisho", 80).toUpperCase(),
-    businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(), otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "", licenseType: data.licenseType === "NEW LICENCE" || data.licenseType === "RENEWED LICENCE" ? data.licenseType : "", principalBranch: data.principalBranch === "PRINCIPAL" || data.principalBranch === "BRANCH" ? data.principalBranch : "", region: titleCaseLocation(cleanText(data.region, "Mkoa", 80)), district: "DAR ES SALAAM", ward: titleCaseLocation(cleanText(data.ward, "Kata", 100)), street: titleCaseLocation(cleanText(data.street, "Mtaa / Kijiji", 140)), tin: cleanText(data.tin, "TIN", 40).toUpperCase(), licenseFee: Number(data.licenseFee),
+    firstName: cleanText(data.firstName, "Jina la kwanza", 80).toUpperCase(),
+    middleName: typeof data.middleName === "string" ? data.middleName.trim().slice(0, 80).toUpperCase() : "",
+    lastName: cleanText(data.lastName, "Jina la mwisho", 80).toUpperCase(),
+    businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(),
+    otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "",
+    licenseType: data.licenseType === "NEW LICENCE" || data.licenseType === "RENEWED LICENCE" ? data.licenseType : "",
+    principalBranch: data.principalBranch === "PRINCIPAL" || data.principalBranch === "BRANCH" ? data.principalBranch : "",
+    region: titleCaseLocation(cleanText(data.region, "Mkoa", 80)),
+    district: titleCaseLocation(cleanText(data.district, "Halmashauri / Wilaya", 100)),
+    ward: titleCaseLocation(cleanText(data.ward, "Kata", 100)),
+    street: titleCaseLocation(cleanText(data.street, "Mtaa / Kijiji", 140)),
+    tin: cleanText(data.tin, "TIN", 40).toUpperCase(),
+    licenseFee: data.licenseFee === undefined || data.licenseFee === null || data.licenseFee === "" ? 0 : Number(data.licenseFee),
   } as const;
-  if (!form.licenseType) throw new HttpsError("invalid-argument", "Chagua aina ya leseni.");
+  if (!form.licenseType) throw new HttpsError("invalid-argument", "Chagua aina ya ombi.");
   if (!form.principalBranch) throw new HttpsError("invalid-argument", "Chagua Principal au Branch.");
   if (form.businessType === "OTHER" && !form.otherBusinessType) throw new HttpsError("invalid-argument", "Eleza aina ya biashara.");
   if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin)) throw new HttpsError("invalid-argument", "Format ya TIN si sahihi. Tumia mfumo 123-123-123.");
-  if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new HttpsError("invalid-argument", "Malipo ya leseni si sahihi.");
-  const now = new Date(); const issueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; const expiry = new Date(`${issueDate}T00:00:00`); expiry.setFullYear(expiry.getFullYear() + 1); const expiryDate = `${expiry.getFullYear()}-${String(expiry.getMonth() + 1).padStart(2, "0")}-${String(expiry.getDate()).padStart(2, "0")}`;
+  if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new HttpsError("invalid-argument", "Makadirio ya ada si sahihi.");
   const applicationId = `APP-${randomUUID().replaceAll("-", "").slice(0, 18).toUpperCase()}`;
-  let licenseNumber = "";
-  const balanceSnapshot = await db.collection("users").doc(uid).get();
-  if (Number(balanceSnapshot.data()?.tokenBalance ?? 0) < 2) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
+  const userRef = db.collection("users").doc(uid);
+  const balanceSnapshot = await userRef.get();
+  if (Number(balanceSnapshot.data()?.tokenBalance ?? 0) < 2) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua rasimu hii. Unahitaji tokeni 2.");
   await db.runTransaction(async (transaction) => {
     const claim = await transaction.get(applicationRef);
-    if (claim.exists) throw new HttpsError("already-exists", "PDF tayari inatengenezwa. Subiri kidogo.");
-    const reservationRef = db.collection("licenseNumberReservations").doc(requestId);
-    const reservationSnapshot = await transaction.get(reservationRef);
-    if (reservationSnapshot.exists) {
-      const reservation = reservationSnapshot.data()!;
-      if (reservation.userId !== uid) throw new HttpsError("permission-denied", "Reservation ID si sahihi.");
-      licenseNumber = String(reservation.licenseNumber);
-    } else {
-      const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
-      const counterSnapshot = await transaction.get(counterRef);
-      const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
-      if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 99999) throw new HttpsError("resource-exhausted", "Namba za leseni zimejaa.");
-      licenseNumber = formatBusinessLicenseNumber(nextSuffix);
-      transaction.create(reservationRef, { reservationId: requestId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
-      transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    }
-    const applicationData = { applicationId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName }, businessData: { businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin }, locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street }, licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: "DAR ES SALAAM CITY COUNCIL", dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee }, status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
-    transaction.create(applicationRef, applicationData);
+    if (claim.exists) throw new HttpsError("already-exists", "Rasimu tayari inatengenezwa. Subiri kidogo.");
+    transaction.create(applicationRef, {
+      applicationId, userId: uid, templateId: "business-license-application-draft-v1", serviceId: "leseni-biashara",
+      applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName },
+      businessData: { businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin },
+      locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street },
+      applicationData: { applicationType: form.licenseType, principalBranch: form.principalBranch, estimatedFee: form.licenseFee, feeVerified: false },
+      status: "PROCESSING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+    });
   });
   try {
-    const pdfBytes = await renderLicensePdf(form as LicenseForm, licenseNumber, applicationId, issueDate, expiryDate);
+    const pdfBytes = await renderLicensePdf(form as LicenseForm, applicationId);
     const filePath = `license-documents/${uid}/${applicationId}.pdf`;
     const file = bucket.file(filePath);
-    await file.save(Buffer.from(pdfBytes), { metadata: { contentType: "application/pdf", metadata: { userId: uid, applicationId } } });
+    await file.save(Buffer.from(pdfBytes), { metadata: { contentType: "application/pdf", metadata: { userId: uid, applicationId, documentStatus: "APPLICATION_DRAFT" } } });
     const [downloadUrl] = await file.getSignedUrl({ action: "read", expires: Date.now() + 15 * 60 * 1000 });
-    const userRef = db.collection("users").doc(uid); const ledgerRef = db.collection("tokenTransactions").doc(); const usageRef = db.collection("serviceUsage").doc(); const now = FieldValue.serverTimestamp();
+    const ledgerRef = db.collection("tokenTransactions").doc();
+    const usageRef = db.collection("serviceUsage").doc();
+    const now = FieldValue.serverTimestamp();
     const result = await db.runTransaction(async (transaction) => {
-      const userSnapshot = await transaction.get(userRef); const user = userSnapshot.data() as Profile; const before = Number(user.tokenBalance ?? 0); const cost = 2;
-      if (before < cost) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
-      const after = before - cost; transaction.update(userRef, { tokenBalance: after, updatedAt: now });
-      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, type: "service_usage", amount: -cost, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: now, status: "completed", applicationId });
-      transaction.set(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId, tokensUsed: cost, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: now, reference: ledgerRef.id });
-      transaction.update(applicationRef, { status: "COMPLETED", downloadUrl, storagePath: filePath, reference: ledgerRef.id, updatedAt: now });
-      recordAudit(transaction, uid, String(profile.role), "GENERATE_BUSINESS_LICENSE_PDF", "licenseApplication", applicationId, { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: cost, reference: ledgerRef.id });
-      return { before, after, reference: ledgerRef.id };
+      const userSnapshot = await transaction.get(userRef);
+      const user = userSnapshot.data() as Profile;
+      const before = Number(user.tokenBalance ?? 0);
+      const cost = 2;
+      if (before < cost) throw new HttpsError("failed-precondition", "Huna tokeni za kutosha kupakua rasimu hii. Unahitaji tokeni 2.");
+      const after = before - cost;
+      transaction.update(userRef, { tokenBalance: after, updatedAt: now });
+      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, type: "service_usage", amount: -cost, balanceBefore: before, balanceAfter: after, reason: "Kuandaa rasimu ya ombi la LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "RASIMU YA OMBI LA LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: now, status: "completed", applicationId });
+      transaction.set(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "RASIMU YA OMBI LA LESENI YA BIASHARA", applicationId, tokensUsed: cost, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_APPLICATION_DRAFT_PDF", status: "COMPLETED", createdAt: now, reference: ledgerRef.id });
+      transaction.update(applicationRef, { status: "DRAFT_READY", documentStatus: "APPLICATION_DRAFT", downloadUrl, storagePath: filePath, reference: ledgerRef.id, updatedAt: now });
+      recordAudit(transaction, uid, String(profile.role), "GENERATE_BUSINESS_LICENSE_APPLICATION_DRAFT", "licenseApplication", applicationId, { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: cost, reference: ledgerRef.id, documentStatus: "APPLICATION_DRAFT" });
+      return { reference: ledgerRef.id };
     });
-    return { status: "COMPLETED", applicationId, licenseNumber, downloadUrl, reference: result.reference, duplicate: false };
+    return { status: "DRAFT_READY", applicationId, downloadUrl, reference: result.reference, duplicate: false };
   } catch (error) {
-    await applicationRef.update({ status: "FAILED", failureReason: error instanceof HttpsError ? error.message : "PDF generation failed", updatedAt: FieldValue.serverTimestamp() }).catch(() => undefined);
-    throw error instanceof HttpsError ? error : new HttpsError("internal", "Imeshindikana kutengeneza PDF.");
+    await applicationRef.update({ status: "FAILED", failureReason: error instanceof HttpsError ? error.message : "Draft PDF generation failed", updatedAt: FieldValue.serverTimestamp() }).catch(() => undefined);
+    throw error instanceof HttpsError ? error : new HttpsError("internal", "Imeshindikana kutengeneza rasimu.");
   }
 });

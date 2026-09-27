@@ -52,6 +52,9 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-page .page-heading h1 { margin-bottom: 3px; }
 .license-page .page-heading p { margin: 0 0 8px; color: #65e69b; font-size: 14px; font-weight: 800; }
 .license-page .page-heading small { display: block; max-width: 620px; color: #b8c9de; font-size: 12px; line-height: 1.6; }
+.license-application-notice { display: flex; align-items: flex-start; gap: 10px; padding: 13px 15px; margin: 0 0 16px; border: 1px solid #f5d68a; border-radius: 12px; color: #744210; background: #fff8e6; font-size: 11px; line-height: 1.55; }
+.license-application-notice svg { flex: 0 0 auto; margin-top: 1px; }
+.license-application-notice b { display: block; margin-bottom: 2px; }
 .license-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(440px, 1.1fr); gap: 18px; align-items: start; }
 .license-form-card, .license-preview-card { min-width: 0; overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 16px 34px rgba(0,0,0,.18); }
 .license-form-card { padding: 22px; }
@@ -76,13 +79,14 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-auto-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 13px; margin-top: 13px; border-radius: 10px; background: #f3f7fb; color: #64748b; font-size: 10px; line-height: 1.35; }
 .license-auto-fields span { display: grid; gap: 3px; }
 .license-auto-fields b { color: #0f172a; font-size: 10px; }
-.license-actions { display: flex; gap: 10px; padding-top: 19px; }
+.license-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 19px; }
 .license-actions .button { flex: 1; }
 .license-draft-badge { padding: 5px 8px; border-radius: 999px; color: #9a5500; background: #fff0c7; font-size: 9px; font-weight: 900; }
 .license-preview-card { padding: 18px; background: #f8fafc; }
 .license-preview-heading { margin-bottom: 13px; }
 /* Clean, non-overlapping live certificate layout. */
 .license-clean-paper { position: relative; overflow: hidden; padding: clamp(18px, 3vw, 34px); border: 3px solid #2a83a7; background-color: #d3edf4; background-position: center; background-size: 100% 100%; background-repeat: no-repeat; color: #111827; font-family: Arial, sans-serif; }
+.license-application-paper { background-image: none !important; background-color: #f2f8fa; }
 .license-clean-header { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-bottom: 18px; text-align: center; border-bottom: 1px solid rgba(42,131,167,.55); }
 .license-clean-header img { width: clamp(44px, 8vw, 68px); height: auto; object-fit: contain; }
 .license-clean-header div { font-size: clamp(14px, 2vw, 22px); font-weight: 500; }
@@ -103,4 +107,12 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-clean-note { margin: 19px 0 0; padding: 10px 0; border-top: 1px solid rgba(71,85,105,.55); border-bottom: 1px solid rgba(71,85,105,.55); text-align: center; font-size: clamp(9px, 1vw, 12px); }
 .license-clean-conditions { margin-top: 12px; font-size: clamp(8px, .95vw, 11px); line-height: 1.45; }
 .license-clean-conditions p { margin: 4px 0; }
+.license-draft-ribbon { margin: 14px 0 8px; padding: 8px 10px; border: 1px solid #e9c46a; border-radius: 5px; color: #805000; background: rgba(255,248,225,.92); font-size: 11px; font-weight: 900; text-align: center; letter-spacing: .04em; }
+.license-verification-placeholder { display: grid; place-content: center; justify-items: center; gap: 7px; min-height: 170px; padding: 12px; border: 1px dashed #9caab5; border-radius: 6px; color: #526170; background: rgba(255,255,255,.55); text-align: center; }
+.license-verification-placeholder b { font-size: 9px; }
+.license-verification-placeholder span { max-width: 145px; font-size: 8px; line-height: 1.4; }
+.license-preview-disclaimer, .license-estimate-help { display: block; color: #8a5a00; font-size: 9px; line-height: 1.45; }
+.license-preview-disclaimer { margin: 4px 0 0 35%; }
+.license-estimate-help { margin: 9px 0 0; }
+@media (max-width: 1100px) { .license-layout { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 600px) { .license-clean-paper { padding: 15px 12px; } .license-clean-row { grid-template-columns: 42% minmax(0, 58%); column-gap: 8px; font-size: 8px; } .license-clean-lower { grid-template-columns: 1fr; gap: 8px; } .license-clean-qr-area { min-height: 135px; } }
