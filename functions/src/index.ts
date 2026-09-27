@@ -71,7 +71,7 @@ const writePolicy: Record<string, { permission: string; targetType: string }> = 
   siteSettings: { permission: "manageSettings", targetType: "siteSettings" },
 };
 
-const blockedFields = new Set(["password", "pin", "pinHash", "role", "permissions", "tokenBalance", "actorId", "actorRole", "updatedBy", "createdAt", "updatedAt"]);
+const blockedFields = new Set(["password", "pin", "pinHash", "role", "permissions", "tokenBalance", "actorId", "actorRole", "catalogInitialized", "updatedBy", "createdAt", "updatedAt"]);
 function safePatch(value: unknown) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new HttpsError("invalid-argument", "Taarifa za kuhifadhi si sahihi.");
   const patch = Object.fromEntries(Object.entries(value).filter(([key, entry]) => !blockedFields.has(key) && entry !== undefined));
@@ -301,35 +301,56 @@ export const setServiceLock = onCall(async (request) => {
   });
 });
 
-export const seedServiceCatalog = onCall(async (request) => {
-  const uid = authUid(request);
-  const actor = await profileFor(uid);
-  if (actor.role !== "super_admin") throw new HttpsError("permission-denied", "Super Admin pekee anaweza kuanzisha katalogi ya huduma.");
+async function initializeServiceCatalog(uid: string, actorRole: string, skipIfInitialized: boolean) {
   const refs = [
     ...defaultServices.map((service) => ({ ref: db.collection("services").doc(service.slug), data: service })),
     ...defaultLipaServices.map((service) => ({ ref: db.collection("lipaServices").doc(service.id), data: service })),
   ];
-  let createdServices = 0;
-  let createdNetworks = 0;
-  await db.runTransaction(async (transaction) => {
-    const snapshots: FirebaseFirestore.DocumentSnapshot[] = [];
-    for (const item of refs) snapshots.push(await transaction.get(item.ref));
-    refs.forEach((item, index) => {
-      const snapshot = snapshots[index];
+  const settingsRef = db.collection("siteSettings").doc("public");
+  return db.runTransaction(async (transaction) => {
+    const settingsSnapshot = await transaction.get(settingsRef);
+    if (skipIfInitialized && settingsSnapshot.data()?.catalogInitialized === true) return { createdServices: 0, createdNetworks: 0, initialized: true };
+    const existingRecords: Array<{ item: (typeof refs)[number]; snapshot: FirebaseFirestore.DocumentSnapshot; targetRef: FirebaseFirestore.DocumentReference }> = [];
+    for (const item of refs) {
+      const direct = await transaction.get(item.ref);
+      const catalogData = item.data as { slug?: string; id?: string };
+      const snapshot = direct.exists
+        ? direct
+        : (await transaction.get(item.ref.parent.where("slug", "==", String(catalogData.slug ?? catalogData.id)).limit(1))).docs[0] ?? direct;
+      existingRecords.push({ item, snapshot, targetRef: snapshot.exists ? snapshot.ref : item.ref });
+    }
+    let createdServices = 0;
+    let createdNetworks = 0;
+    existingRecords.forEach(({ item, snapshot, targetRef }) => {
       if (!snapshot.exists) {
-        transaction.create(item.ref, { ...item.data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+        transaction.create(targetRef, { ...item.data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
         if (item.ref.parent.id === "services") createdServices += 1;
         else createdNetworks += 1;
         return;
       }
-      if (item.ref.parent.id !== "services") return;
       const existing = snapshot.data()!;
       const backfill = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
-      if (Object.keys(backfill).length) transaction.set(item.ref, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      if (Object.keys(backfill).length) transaction.set(targetRef, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     });
-    recordAudit(transaction, uid, String(actor.role), "SEED_SERVICE_CATALOG", "serviceCatalog", "initial", null, { createdServices, createdNetworks });
+    transaction.set(settingsRef, { catalogInitialized: true, catalogInitializedAt: FieldValue.serverTimestamp() }, { merge: true });
+    recordAudit(transaction, uid, actorRole, "SEED_SERVICE_CATALOG", "serviceCatalog", "initial", { catalogInitialized: settingsSnapshot.data()?.catalogInitialized === true }, { createdServices, createdNetworks, catalogInitialized: true });
+    return { createdServices, createdNetworks, initialized: true };
   });
-  return { createdServices, createdNetworks };
+}
+
+export const ensureDefaultServiceCatalog = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const actorRole = String(actor.role ?? "user");
+  return initializeServiceCatalog(uid, actorRole, true);
+});
+
+export const seedServiceCatalog = onCall(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  if (actor.role !== "super_admin") throw new HttpsError("permission-denied", "Super Admin pekee anaweza kuanzisha katalogi ya huduma.");
+  return initializeServiceCatalog(uid, String(actor.role), false);
 });
 
 function objectValue(value: unknown, field: string): Record<string, unknown> {
