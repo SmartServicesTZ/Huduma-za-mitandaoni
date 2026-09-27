@@ -5,8 +5,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserMessages, updatePassword, uploadProfileImage } from "@/lib/firebase";
-import { announcementText, activitySeed, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserMessages, updatePassword, uploadProfileImage } from "@/lib/firebase";
+import { announcementText, activitySeed, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
 import AdminDashboard from "./AdminDashboard";
 import BusinessLicensePage from "./BusinessLicensePage";
@@ -128,7 +128,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true]))));
     return () => { stopAnnouncements(); stopSettings(); stopLocks(); };
   }, []);
-  const displayedServices = orderByIds([...services].sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
+  const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
     if (isServiceLocked(service.slug, override, service.kind === "locked")) return { ...service, kind: "locked" as const };
     if (service.kind === "locked" || service.category === "Huduma zilizofungwa") return { ...service, kind: "paid" as const, tokenCost: service.tokenCost || 2, category: "Huduma kuu" };
@@ -177,19 +177,35 @@ export default function Home() {
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const { isAuthenticated, firebaseUser } = useAuth();
+  const { isAuthenticated, firebaseUser, user } = useAuth();
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
+  const [catalogInitialized, setCatalogInitialized] = useState(false);
   useEffect(() => subscribeToCollection("services", (rows) => {
-    setServices(rows.filter((item) => item.active !== false && item.isVisible !== false).map((item) => ({ slug: String(item.slug ?? item.id), name: String(item.name ?? "Huduma"), description: String(item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: item.fields, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true })));
+    setServices(rows.map((item) => ({ slug: String(item.slug ?? item.id), name: String(item.name ?? "Huduma"), description: String(item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true })));
     setServicesLoading(false);
   }, () => setServicesLoading(false)), []);
+  useEffect(() => subscribeToCollection("siteSettings", (rows) => {
+    const settings = rows.find((item) => item.id === "public");
+    setCatalogInitialized(settings?.catalogInitialized === true);
+  }), []);
+  const canManageServices = user?.role === "super_admin" || user?.permissions?.manageServices === true;
+  useEffect(() => {
+    if (!firebaseUser?.uid || !canManageServices) return;
+    let cancelled = false;
+    void ensureDefaultServiceCatalog().then((result) => {
+      if (!cancelled && result.initialized) setCatalogInitialized(true);
+    }).catch((error) => console.warn("Default service catalog backfill was not completed:", error));
+    return () => { cancelled = true; };
+  }, [firebaseUser?.uid, canManageServices]);
   const tokenOperationKeys = useRef(new Map<string, string>());
   const appearance = { data: null as null | { backgroundColor?: string; primaryColor?: string; secondaryColor?: string } };
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.open(service.actionUrl, "_blank", "noopener,noreferrer"); else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
   const handleUse = (service: ServiceCatalogItem) => { if (service.kind === "locked") { toast.error("Huduma hii imefungwa kwa sasa."); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } if (["leseni-biashara", "pata-lipa-namba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
-  const selectedService = services.find((item) => item.slug === serviceSlug);
-  const page = location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? <DynamicServicePage service={selectedService as any} /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Nunua tokeni kupitia WhatsApp ili admin aweze kukuwekea tokeni kwenye akaunti yako.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={services} />;
+  const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized);
+  const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
+  const serviceFields = Array.isArray(selectedService?.fields) ? selectedService.fields : [];
+  const page = location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Nunua tokeni kupitia WhatsApp ili admin aweze kukuwekea tokeni kwenye akaunti yako.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} />;
   return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}><div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} /><div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div><div className="portal-content"><AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />{page}<footer className="portal-footer">Programu hii ilitengenezwa na Bw. Zoom Cotex Limited <span>© Haki zote zimehifadhiwa 2026</span></footer></div><BottomNav /></div>;
 }

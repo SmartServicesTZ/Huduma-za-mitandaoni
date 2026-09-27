@@ -349,6 +349,11 @@ export async function seedServiceCatalog() {
   return (await callable({})).data as { createdServices: number; createdNetworks: number };
 }
 
+export async function ensureDefaultServiceCatalog() {
+  const callable = httpsCallable(firebaseFunctions, "ensureDefaultServiceCatalog");
+  return (await callable({})).data as { createdServices: number; createdNetworks: number; initialized: boolean };
+}
+
 export async function submitLipaApplication(applicationId: string, networkId: string, values: ServiceFormValues) {
   const callable = httpsCallable<{ applicationId: string; networkId: string; values: ServiceFormValues }, { applicationId: string; status: "PENDING" }>(firebaseFunctions, "submitLipaApplication");
   return (await callable({ applicationId, networkId, values })).data;

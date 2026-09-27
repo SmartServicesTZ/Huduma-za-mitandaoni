@@ -9,6 +9,11 @@ export type ServiceCatalogItem = {
   kind: ServiceKind;
   category: string;
   actionUrl?: string;
+  order?: number;
+  fields?: Array<Record<string, unknown>>;
+  active?: boolean;
+  isVisible?: boolean;
+  isLocked?: boolean;
 };
 
 export type ActivityItem = {
@@ -42,6 +47,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "Huduma kuu"),
   paid("mpiga-kura", "MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "Huduma kuu"),
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "Huduma kuu"),
+  free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia.", "landmark", "Huduma kuu"),
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "Huduma kuu"),
   paid("nakala-nida-2", "NAKALA LAINI YA NIDA 2", "Nakala nyingine ya taarifa za NIDA.", "copy", "Huduma kuu"),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "Huduma kuu"),
@@ -83,6 +89,13 @@ export const activitySeed: ActivityItem[] = [
   { service: "CHETI CHA TIN", type: "Matumizi ya huduma", credits: 2, status: "Imekamilika", reference: "HM-81A2", createdAt: "2026-09-09T16:25:00.000Z" },
   { service: "NAKALA LAINI YA NIDA", type: "Matumizi ya huduma", credits: 2, status: "Imekamilika", reference: "HM-80F4", createdAt: "2026-09-07T09:10:00.000Z" },
 ];
+
+export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], initialized: boolean): ServiceCatalogItem[] {
+  if (initialized) return configured;
+  const merged = new Map(serviceCatalog.map((service) => [service.slug, service]));
+  configured.forEach((service) => merged.set(service.slug, service));
+  return Array.from(merged.values());
+}
 
 export function findService(slug: string) {
   return serviceCatalog.find((service) => service.slug === slug);
