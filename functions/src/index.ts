@@ -279,7 +279,7 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   page.drawRectangle({ x: 0, y: 0, width: 612, height: 800, color: rgb(0.83, 0.94, 0.96) });
   page.drawRectangle({ x: 16, y: 16, width: 580, height: 768, borderColor: blue, borderWidth: 3, color: rgb(0.83, 0.94, 0.96), opacity: 0.18 });
   const watermark = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tanzania-watermark.png")));
-  page.drawImage(watermark, { x: 190, y: 235, width: 232, height: 224, opacity: 0.34 });
+  page.drawImage(watermark, { x: 70, y: 70, width: 472, height: 660, opacity: 0.22 });
   const crest = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tanzania-crest.png")));
   page.drawImage(crest, { x: 278, y: 695, width: 56, height: 56 });
   const draw = (text: string, x: number, y: number, size = 8.5, bold = false, color = ink) => page.drawText(text.slice(0, 70), { x, y, size, font: bold ? boldFont : regularFont, color });
@@ -303,9 +303,8 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   label("Principal/Branch:", 370); value(form.principalBranch, 370);
   draw("Business Location", 45, 335, 12, true);
   label("Region:", 310); value(form.region, 310);
-  label("District/Council:", 285); value(form.district, 285);
-  label("Ward:", 260); value(form.ward, 260);
-  label("Street:", 235); value(form.street, 235);
+  label("Ward:", 285); value(form.ward, 285);
+  label("Street:", 260); value(form.street, 260);
   draw("Payment Details", 45, 195, 12, true);
   label("Amount of Fee Paid:", 170); value(`${Number(form.licenseFee).toLocaleString("en-TZ", { maximumFractionDigits: 2 })} TZS`, 170);
   const hc = createHash("sha256").update(`${licenseNumber}|${form.tin}|${expiryDate}`).digest("hex").toUpperCase();
