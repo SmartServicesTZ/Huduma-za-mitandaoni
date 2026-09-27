@@ -2,6 +2,8 @@
 
 Standalone PHP form that previews applicant-entered details and downloads a one-page application-draft PDF. It uses the existing Tanzania region/council/ward list from the main site; it does **not** copy, store, or reuse the uploaded license PDF or the person's personal details in it.
 
+The PDF field groups follow the uploaded Word form: applicant/TIN, business type, application type, principal/branch, region, council/district, ward, street and fee information. Issuing office, official license number, issue/expiry dates, amount paid and validation QR are clearly reserved for the licensing authority rather than accepted as user-entered license values.
+
 ## Requirements
 
 - PHP 8.1 or newer with `mbstring` and `gd`

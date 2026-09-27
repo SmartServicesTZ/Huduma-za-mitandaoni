@@ -145,21 +145,38 @@ function makeDraftPdf(array $form, string $applicationId): never
         $pdf->Line(18, $pdf->GetY(), 192, $pdf->GetY());
     };
 
-    $section('Taarifa za Mwombaji na Biashara');
-    $row('Jina la mwombaji:', trim($form['firstName'] . ' ' . $form['middleName'] . ' ' . $form['lastName']));
-    $row('Namba ya TIN:', $form['tin']);
-    $row('Aina ya biashara:', $form['businessType'] === 'OTHER' ? $form['otherBusinessType'] : $form['businessType']);
-    $row('Aina ya ombi:', $form['applicationType']);
-    $row('Biashara kuu/tawi:', $form['principalBranch']);
+    $section('License Details / Taarifa za Leseni');
+    $row('Ofisi inayotoa leseni:', 'Itathibitishwa na mamlaka husika baada ya mapitio.');
+    $row('Tax Identification No:', $form['tin']);
+    $row('License Issued To / Mwombaji:', trim($form['firstName'] . ' ' . $form['middleName'] . ' ' . $form['lastName']));
+    $row('For the Business of:', $form['businessType'] === 'OTHER' ? $form['otherBusinessType'] : $form['businessType']);
+    $row('Business Licensing / Aina ya ombi:', $form['applicationType']);
+    $row('Namba rasmi ya B.L. NO:', 'Hutolewa na mamlaka baada ya idhini.');
+    $row('Date of Issue / Tarehe ya kutolewa:', 'Hutolewa na mamlaka baada ya idhini.');
+    $row('Expiring Date / Tarehe ya kuisha:', 'Hutolewa na mamlaka baada ya idhini.');
+    $row('Principal/Branch:', $form['principalBranch']);
 
-    $section('Eneo la Biashara');
-    $row('Mkoa:', $form['region']);
+    $section('Business Location / Eneo la Biashara');
+    $row('Region / Mkoa:', $form['region']);
     $row('Halmashauri/Wilaya:', $form['district']);
-    $row('Kata:', $form['ward']);
-    $row('Mtaa/Kijiji:', $form['street']);
+    $row('Ward / Kata:', $form['ward']);
+    $row('Street / Mtaa-Kijiji:', $form['street']);
 
-    $section('Makadirio ya Ada - Hayajathibitishwa');
-    $row('Makadirio:', $form['estimatedFee'] === '' ? 'Haijawekwa' : number_format((float) $form['estimatedFee'], 2) . ' TZS');
+    $section('Payment Details / Makadirio ya Ada');
+    $row('Amount of Fee Paid:', 'Haijathibitishwa — hakuna risiti ya malipo kwenye rasimu.');
+    $row('Makadirio ya ada (hiari):', $form['estimatedFee'] === '' ? 'Haijawekwa' : number_format((float) $form['estimatedFee'], 2) . ' TZS');
+
+    $placeholderY = $pdf->GetY() + 5;
+    $pdf->SetDrawColor(150, 164, 171);
+    $pdf->SetLineWidth(0.4);
+    $pdf->Rect(139, $placeholderY, 51, 29);
+    $pdf->SetXY(141, $placeholderY + 5);
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->SetTextColor(80, 95, 103);
+    $pdf->MultiCell(47, 4, pdfText('SEHEMU YA QR RASMI'), 0, 'C');
+    $pdf->SetFont('Arial', '', 7);
+    $pdf->MultiCell(47, 4, pdfText('Huongezwa na mamlaka baada ya idhini.'), 0, 'C');
+    $pdf->SetY($placeholderY + 32);
 
     $pdf->Ln(5);
     $pdf->SetFont('Arial', 'B', 9);
@@ -260,9 +277,9 @@ $locationJson = json_encode($regions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AM
       <div class="paper-title"><b>OMBI LA LESENI YA BIASHARA</b><span>BUSINESS LICENSE APPLICATION</span><small>HUDUMA ZA MTANDAONI</small></div>
       <div class="ribbon">RASIMU TU — SI LESENI RASMI</div>
       <div class="ref">Rejea: Hutengenezwa unapopakua rasimu</div>
-      <div class="p-section"><h3>TAARIFA ZA MWOMBAJI NA BIASHARA</h3><div class="row"><span>Jina la mwombaji:</span><strong id="pv-name">—</strong></div><div class="row"><span>TIN:</span><strong id="pv-tin">—</strong></div><div class="row"><span>Aina ya biashara:</span><strong id="pv-type">—</strong></div><div class="row"><span>Aina ya ombi:</span><strong id="pv-app">—</strong></div><div class="row"><span>Eneo:</span><strong id="pv-branch">—</strong></div></div>
-      <div class="p-section"><h3>ENEO LA BIASHARA</h3><div class="row"><span>Mkoa:</span><strong id="pv-region">—</strong></div><div class="row"><span>Halmashauri/Wilaya:</span><strong id="pv-district">—</strong></div><div class="row"><span>Kata:</span><strong id="pv-ward">—</strong></div><div class="row"><span>Mtaa/Kijiji:</span><strong id="pv-street">—</strong></div></div>
-      <div class="p-section"><h3>MAKADIRIO YA ADA - HAYAJATHIBITISHWA</h3><div class="row"><span>Makadirio:</span><strong id="pv-fee">Haijawekwa</strong></div></div>
+      <div class="p-section"><h3>LICENSE DETAILS</h3><div class="row"><span>Issuing Office:</span><strong>Huthibitishwa na mamlaka</strong></div><div class="row"><span>Tax Identification No:</span><strong id="pv-tin">—</strong></div><div class="row"><span>License Issued To:</span><strong id="pv-name">—</strong></div><div class="row"><span>For the Business of:</span><strong id="pv-type">—</strong></div><div class="row"><span>Business Licensing:</span><strong id="pv-app">—</strong></div><div class="row"><span>B.L. NO:</span><strong>Hutolewa baada ya idhini</strong></div><div class="row"><span>Date of Issue:</span><strong>Hutolewa baada ya idhini</strong></div><div class="row"><span>Expiring Date:</span><strong>Hutolewa baada ya idhini</strong></div><div class="row"><span>Principal/Branch:</span><strong id="pv-branch">—</strong></div></div>
+      <div class="p-section"><h3>BUSINESS LOCATION / ENEO LA BIASHARA</h3><div class="row"><span>Region / Mkoa:</span><strong id="pv-region">—</strong></div><div class="row"><span>Halmashauri/Wilaya:</span><strong id="pv-district">—</strong></div><div class="row"><span>Ward / Kata:</span><strong id="pv-ward">—</strong></div><div class="row"><span>Street / Mtaa-Kijiji:</span><strong id="pv-street">—</strong></div></div>
+      <div class="p-section"><h3>PAYMENT DETAILS</h3><div class="row"><span>Amount of Fee Paid:</span><strong>Haijathibitishwa - si risiti</strong></div><div class="row"><span>Makadirio ya ada:</span><strong id="pv-fee">Haijawekwa</strong></div></div>
       <div class="stamp">Hakuna namba rasmi, tarehe za uhalali au QR ya uthibitisho kwenye rasimu.</div>
       <div class="foot"><strong>RASIMU YA OMBI PEKEE — SI LESENI WALA RISITI YA MALIPO</strong>Wasilisha kwa mamlaka husika kwa ukaguzi, malipo na idhini.</div>
     </div></aside>
