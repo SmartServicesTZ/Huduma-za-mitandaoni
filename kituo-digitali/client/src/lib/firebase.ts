@@ -192,14 +192,14 @@ export async function adminListTransactions() {
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
-export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings") {
+export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings" | "serviceLocks") {
   const snapshot = await getDocs(collection(firestore, name));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
 }
 
-export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string) {
-  const callable = httpsCallable<{ userId: string; amount: number; description: string }, { balanceAfter: number; reference: string }>(firebaseFunctions, "adjustTokens");
-  return (await callable({ userId, amount, description })).data;
+export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string) {
+  const callable = httpsCallable<{ userId: string; amount: number; description: string; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>(firebaseFunctions, "adjustTokens");
+  return (await callable({ userId, amount, description, requestId })).data;
 }
 
 export async function adminUpdateUser(adminId: string, userId: string, values: Partial<AdminUserRecord>) {
@@ -248,6 +248,11 @@ export async function adminSaveService(adminId: string, values: Record<string, u
   return (await callable({ collection: "services", id, values })).data;
 }
 
+export async function adminSetServiceLock(slug: string, isLocked: boolean) {
+  const callable = httpsCallable<{ slug: string; isLocked: boolean }, { slug: string; isLocked: boolean }>(firebaseFunctions, "setServiceLock");
+  return (await callable({ slug, isLocked })).data;
+}
+
 export async function adminDeleteService(adminId: string, id: string) {
   const callable = httpsCallable(firebaseFunctions, "adminDelete");
   return (await callable({ collection: "services", id })).data;
@@ -277,6 +282,11 @@ export async function adminDeleteCollectionItem(adminId: string, collectionName:
 export async function adminSaveSiteSettings(adminId: string, values: Record<string, unknown>) {
   const callable = httpsCallable(firebaseFunctions, "adminWrite");
   return (await callable({ collection: "siteSettings", id: "public", values })).data;
+}
+
+export async function setHomepageServiceOrder(serviceOrder: string[], homepageSectionOrder: string[]) {
+  const callable = httpsCallable<{ serviceOrder: string[]; homepageSectionOrder: string[] }, { savedServices: number; savedSections: number }>(firebaseFunctions, "setHomepageServiceOrder");
+  return (await callable({ serviceOrder, homepageSectionOrder })).data;
 }
 
 export async function adminGetSiteSettings() {

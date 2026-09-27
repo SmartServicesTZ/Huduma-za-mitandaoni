@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BadgeCheck, Baby, Bell, CarFront, ChevronRight, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, PlayCircle, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, X, Zap,
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, updatePassword, uploadProfileImage } from "@/lib/firebase";
 import { announcementText, activitySeed, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
+import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
 import AdminDashboard from "./AdminDashboard";
 import BusinessLicensePage from "./BusinessLicensePage";
 
@@ -111,32 +112,61 @@ function AccountPage() {
 function PortalHome({ search, onUse, services }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[] }) {
   const [liveServices, setLiveServices] = useState<ServiceCatalogItem[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [serviceOrder, setServiceOrder] = useState<string[]>([]);
+  const [serviceLockOverrides, setServiceLockOverrides] = useState<Record<string, boolean>>({});
+  const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
   useEffect(() => {
     const stopServices = subscribeToCollection("services", (rows) => setLiveServices(rows.filter((item) => item.isVisible !== false).map((item) => ({ slug: String(item.slug ?? item.id), name: String(item.name ?? ""), description: String(item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree ? "free" : "paid") as ServiceCatalogItem["kind"] }))));
     const stopAnnouncements = subscribeToCollection("announcements", (rows) => setAnnouncements(rows.filter((item) => item.enabled !== false)));
-    return () => { stopServices(); stopAnnouncements(); };
+    const stopSettings = subscribeToCollection("siteSettings", (rows) => {
+      const settings = rows.find((item) => item.id === "public");
+      if (Array.isArray(settings?.serviceOrder)) setServiceOrder(settings.serviceOrder.filter((id: unknown): id is string => typeof id === "string"));
+      if (Array.isArray(settings?.homepageSectionOrder)) setHomepageSectionOrder(settings.homepageSectionOrder.filter((id: unknown): id is string => typeof id === "string"));
+    });
+    const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true]))));
+    return () => { stopServices(); stopAnnouncements(); stopSettings(); stopLocks(); };
   }, []);
-  const displayedServices = liveServices.length ? liveServices : services;
+  const displayedServices = orderByIds((liveServices.length ? liveServices : services).map((service) => {
+    const override = serviceLockOverrides[service.slug];
+    if (isServiceLocked(service.slug, override, service.kind === "locked")) return { ...service, kind: "locked" as const };
+    if (service.kind === "locked" || service.category === "Huduma zilizofungwa") return { ...service, kind: "paid" as const, tokenCost: service.tokenCost || 2, category: "Huduma kuu" };
+    return service;
+  }), serviceOrder);
   const lower = search.toLowerCase();
   const matches = displayedServices.filter((service) => `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
-  const main = matches.filter((service) => service.category === "Huduma kuu" || service.category === "Huduma za bure");
+  const main = matches.filter((service) => service.kind !== "locked" && (service.category === "Huduma kuu" || service.category === "Huduma za bure"));
   const locked = matches.filter((service) => service.kind === "locked");
-  const tools = matches.filter((service) => service.category === "Zana za ziada");
-  return <main className="portal-main"><div className="welcome-strip"><div><span className="overline">Karibu HUDUMA ZA MTANDAONI</span><h1>Huduma zako, sehemu moja.</h1><p>Chagua huduma unayotaka. Tokeni hukatwa kwa usalama kwenye mfumo.</p></div><Sparkles size={44} /></div>{announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}<TokenCard /><ServiceGrid title="HUDUMA ZOTE" services={main} onUse={onUse} /><ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} /><SpecialSection /><ServiceGrid title="ZANA ZA ZIADA" services={tools} onUse={onUse} /><TutorialsSection /></main>;
+  const tools = matches.filter((service) => service.kind !== "locked" && service.category === "Zana za ziada");
+  const sections: Record<HomepageSectionId, React.ReactNode> = {
+    services: <ServiceGrid title="HUDUMA ZOTE" services={main} onUse={onUse} />,
+    locked: <ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} />,
+    special: <SpecialSection />,
+    tools: <ServiceGrid title="ZANA ZA ZIADA" services={tools} onUse={onUse} />,
+    tutorials: <TutorialsSection />,
+  };
+  const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
+  return <main className="portal-main"><div className="welcome-strip"><div><span className="overline">Karibu HUDUMA ZA MTANDAONI</span><h1>Huduma zako, sehemu moja.</h1><p>Chagua huduma unayotaka. Tokeni hukatwa kwa usalama kwenye mfumo.</p></div><Sparkles size={44} /></div>{announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}<TokenCard />{orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>)}</main>;
 }
 
 function ServiceWorkspace({ service }: { service: ServiceCatalogItem }) {
   const { firebaseUser } = useAuth();
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lockOverride, setLockOverride] = useState<boolean | undefined>(undefined);
+  const isLocked = isServiceLocked(service.slug, lockOverride, service.kind === "locked");
+  useEffect(() => subscribeToCollection("serviceLocks", (rows) => {
+    const record = rows.find((item) => String(item.slug ?? item.id) === service.slug);
+    setLockOverride(typeof record?.isLocked === "boolean" ? record.isLocked : undefined);
+  }), [service.slug]);
   const submit = async () => {
+    if (isLocked) { toast.error("Huduma hii imefungwa kwa sasa."); return; }
     if (!firebaseUser || !details.trim()) { toast.error("Andika maelezo ya ombi lako kwanza."); return; }
     setBusy(true);
     try { const reference = await createServiceRequest(firebaseUser.uid, service, details); setDetails(""); toast.success("Ombi limepokelewa.", { description: `Rejea: ${reference}` }); }
     catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutuma ombi."); }
     finally { setBusy(false); }
   };
-  return <main className="portal-main"><div className="page-heading"><div><span className="overline">WORKSPACE YA HUDUMA</span><h1>{service.name}</h1><p>{service.description}</p></div><Icon name={service.icon} size={42} /></div><section className="account-panel service-workspace"><Notice tone="success">Tokeni ya huduma hii imekatwa kwa mafanikio. Weka taarifa zako hapa ili ombi liende kwa admin.</Notice><label className="control-field"><span>Maelezo ya ombi / taarifa muhimu</span><textarea value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Andika jina, namba ya simu, TIN, au maelezo yanayohitajika..." rows={8} /></label><button className="button button--green" disabled={busy} onClick={submit}>{busy ? "INATUMA..." : "TUMA OMBI LA HUDUMA"}</button></section></main>;
+  return <main className="portal-main"><div className="page-heading"><div><span className="overline">WORKSPACE YA HUDUMA</span><h1>{service.name}</h1><p>{service.description}</p></div><Icon name={service.icon} size={42} /></div><section className="account-panel service-workspace">{isLocked ? <Notice>Huduma hii imefungwa kwa sasa na admin.</Notice> : <><Notice tone="success">Weka taarifa zako hapa ili ombi liende kwa admin.</Notice><label className="control-field"><span>Maelezo ya ombi / taarifa muhimu</span><textarea value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Andika jina, namba ya simu, TIN, au maelezo yanayohitajika..." rows={8} /></label><button className="button button--green" disabled={busy} onClick={submit}>{busy ? "INATUMA..." : "TUMA OMBI LA HUDUMA"}</button></>}</section></main>;
 }
 
 function BottomNav() { return <nav className="bottom-nav">{[{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma", icon: Zap }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Akaunti", icon: UserRound }].map(({ href, label, icon: ItemIcon }) => <Link href={href} key={href}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>; }

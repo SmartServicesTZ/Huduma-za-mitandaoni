@@ -16,6 +16,12 @@ service cloud.firestore {
     function canManageMessages() { return hasPermission('manageMessages'); }
     function canViewUsers() { return hasPermission('viewUsers') || hasPermission('manageUsers'); }
     function canViewAuditLogs() { return hasPermission('viewAuditLogs'); }
+    function serviceIsUnlocked(slug) {
+      let lockPath = /databases/$(database)/documents/serviceLocks/$(slug);
+      return exists(lockPath)
+        ? get(lockPath).data.isLocked == false
+        : !(slug in ['cheti-kuzaliwa', 'visa-pasipoti', 'cheti-ndoa', 'ripoti-hasara']);
+    }
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || canViewUsers());
@@ -53,6 +59,10 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if false;
     }
+    match /serviceLocks/{slug} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
     match /tokenTransactions/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if false;
@@ -75,7 +85,10 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
     match /serviceRequests/{id} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.serviceSlug is string
+        && serviceIsUnlocked(request.resource.data.serviceSlug);
       allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
       allow update: if isAdmin();
       allow delete: if isSuperAdmin();
