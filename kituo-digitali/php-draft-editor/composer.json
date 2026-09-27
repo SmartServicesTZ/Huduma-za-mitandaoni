@@ -1,0 +1,10 @@
+{
+  "name": "steward-tz/business-license-application-draft",
+  "description": "Editable business license application preview and draft PDF generator",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.1",
+    "setasign/fpdf": "^1.8.6"
+  }
+}
