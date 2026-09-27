@@ -279,7 +279,7 @@ async function renderLicensePdf(form: LicenseForm, licenseNumber: string, applic
   page.drawRectangle({ x: 0, y: 0, width: 612, height: 800, color: rgb(0.83, 0.94, 0.96) });
   page.drawRectangle({ x: 16, y: 16, width: 580, height: 768, borderColor: blue, borderWidth: 3, color: rgb(0.83, 0.94, 0.96), opacity: 0.18 });
   const watermark = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tanzania-watermark.png")));
-  page.drawImage(watermark, { x: 150, y: 154, width: 312, height: 420, opacity: 0.16 });
+  page.drawImage(watermark, { x: 190, y: 235, width: 232, height: 224, opacity: 0.34 });
   const crest = await pdf.embedPng(await readFile(path.join(functionsRoot, "../assets/tanzania-crest.png")));
   page.drawImage(crest, { x: 278, y: 695, width: 56, height: 56 });
   const draw = (text: string, x: number, y: number, size = 8.5, bold = false, color = ink) => page.drawText(text.slice(0, 70), { x, y, size, font: bold ? boldFont : regularFont, color });
