@@ -136,6 +136,25 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
   return (await callable({ serviceId: service.slug, serviceName: service.name, tokenCost: service.tokenCost, requestId: transactionId })).data;
 }
 
+export type TokenPurchaseOrder = { id: string; orderId: string; amount: number; currency: string; tokenAmount: number; status: string; createdAt?: unknown; transid?: string };
+
+export async function createTokenPurchaseOrder(amount: number, requestId = crypto.randomUUID()) {
+  const callable = httpsCallable<{ amount: number; requestId: string }, { orderId: string; status: string; amount: number; tokenAmount: number; duplicate: boolean }>(firebaseFunctions, "createTokenPurchaseOrder");
+  return (await callable({ amount, requestId })).data;
+}
+
+export function subscribeToTokenPurchaseOrders(uid: string, callback: (orders: TokenPurchaseOrder[]) => void, onError?: (error: Error) => void) {
+  const purchases = query(collection(firestore, "tokenPurchaseOrders"), where("userId", "==", uid));
+  return onSnapshot(purchases, (snapshot) => {
+    const orders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as TokenPurchaseOrder));
+    orders.sort((a, b) => {
+      const timestamp = (value: unknown) => value && typeof value === "object" && "toMillis" in value && typeof (value as { toMillis?: unknown }).toMillis === "function" ? (value as { toMillis: () => number }).toMillis() : 0;
+      return timestamp(b.createdAt) - timestamp(a.createdAt);
+    });
+    callback(orders.slice(0, 10));
+  }, onError);
+}
+
 export type BusinessLicensePayload = {
   requestId: string;
   firstName: string; middleName: string; lastName: string;
@@ -195,7 +214,7 @@ export async function adminListTransactions() {
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
-export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings" | "serviceLocks" | "lipaServices") {
+export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings" | "serviceLocks" | "lipaServices" | "tokenPurchaseOrders") {
   const snapshot = await getDocs(collection(firestore, name));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
 }

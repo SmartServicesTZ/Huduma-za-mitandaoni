@@ -7,15 +7,19 @@ import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
-import { onCall, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
+import { defineSecret } from "firebase-functions/params";
 import { defaultLipaServices, defaultServices } from "./defaultCatalog.js";
+import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
 
 initializeApp();
 setGlobalOptions({ region: process.env.FUNCTIONS_REGION ?? "us-central1", maxInstances: 20 });
 
 const db = getFirestore();
 const bucket = getStorage().bucket();
+const fimipayApiSecret = defineSecret("FIMIPAY_SECRET_KEY");
+const fimipayWebhookSecret = defineSecret("FIMIPAY_WEBHOOK_SECRET");
 const functionsRoot = path.dirname(fileURLToPath(import.meta.url));
 const roles = ["user", "admin", "moderator", "support", "super_admin"] as const;
 type Role = (typeof roles)[number];
@@ -922,5 +926,214 @@ export const generateBusinessLicense = onCall(async (request) => {
   } catch (error) {
     await applicationRef.update({ status: "FAILED", failureReason: error instanceof HttpsError ? error.message : "PDF generation failed", updatedAt: FieldValue.serverTimestamp() }).catch(() => undefined);
     throw error instanceof HttpsError ? error : new HttpsError("internal", "Imeshindikana kutengeneza PDF.");
+  }
+});
+
+const tokenPackageLabel = (amount: number, credits: number) => `${amount.toLocaleString("en-US")} TZS — ${credits} tokeni`;
+
+export const createTokenPurchaseOrder = onCall({ secrets: [fimipayApiSecret], maxInstances: 20 }, async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new HttpsError("permission-denied", "Akaunti hii haiwezi kununua tokeni.");
+
+  const data = objectValue(request.data, "Ombi la kununua tokeni");
+  const requestId = text(data.requestId, 100);
+  if (!/^[A-Za-z0-9_-]{8,100}$/.test(requestId)) throw new HttpsError("invalid-argument", "Namba ya ombi si sahihi.");
+  const amount = Number(data.amount);
+  const credits = tokenCreditsForAmount(amount);
+  if (credits === null) throw new HttpsError("invalid-argument", "Chagua kifurushi halali cha tokeni.");
+  const phone = normalizeTanzaniaPhone(profile.phone);
+  if (!phone) throw new HttpsError("failed-precondition", "Weka namba sahihi ya Tanzania kwenye akaunti yako kwanza.");
+
+  const orderId = makeTokenPurchaseOrderId(uid, requestId);
+  const orderRef = db.collection("tokenPurchaseOrders").doc(orderId);
+  const openLockRef = db.collection("tokenPurchaseOpenLocks").doc(uid);
+  const reservation = await db.runTransaction(async (transaction) => {
+    const savedOrderSnapshot = await transaction.get(orderRef);
+    const lockSnapshot = await transaction.get(openLockRef);
+    if (savedOrderSnapshot.exists) {
+      const saved = savedOrderSnapshot.data()!;
+      if (saved.userId !== uid || Number(saved.amount) !== amount || Number(saved.tokenAmount) !== credits) throw new HttpsError("already-exists", "Rejea hii ya malipo imetumika kwa ombi tofauti.");
+      if (saved.status === "PAID") return { status: "PAID", duplicate: true };
+      if (isOpenTokenPurchaseStatus(lockSnapshot.data()?.status) && lockSnapshot.data()?.orderId !== orderId) throw new HttpsError("failed-precondition", "Tayari una ombi la malipo linalosubiri. Subiri likamilike kabla ya kuanzisha jingine.");
+      transaction.set(openLockRef, { orderId, status: saved.status, updatedAt: FieldValue.serverTimestamp() });
+      return { status: String(saved.status ?? "CREATING"), duplicate: true };
+    }
+    if (lockSnapshot.exists && isOpenTokenPurchaseStatus(lockSnapshot.data()?.status)) throw new HttpsError("failed-precondition", "Tayari una ombi la malipo linalosubiri. Subiri likamilike kabla ya kuanzisha jingine.");
+    transaction.create(orderRef, { orderId, requestId, userId: uid, amount, currency: "TZS", tokenAmount: credits, status: "CREATING", createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+    transaction.set(openLockRef, { orderId, status: "CREATING", updatedAt: FieldValue.serverTimestamp() });
+    return { status: "CREATING", duplicate: false };
+  });
+  if (reservation.status === "PAID") return { orderId, status: "PAID", amount, tokenAmount: credits, duplicate: true };
+  if (reservation.duplicate && isOpenTokenPurchaseStatus(reservation.status)) return { orderId, status: reservation.status, amount, tokenAmount: credits, duplicate: true };
+
+  try {
+    const response = await fetch("https://fimipay.com/api/v1/payment/create_order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "HudumaZaMtandaoni/1.0", Authorization: `Bearer ${fimipayApiSecret.value()}` },
+      body: JSON.stringify({ order_id: orderId, buyer_phone: phone, amount, currency: "TZS", payment_method: "mobile" }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const result = await response.json().catch(() => null) as { status?: unknown; message?: unknown; data?: Record<string, unknown> } | null;
+    const providerOrderId = String(result?.data?.order_id ?? "");
+    if (!response.ok || result?.status !== "success" || providerOrderId !== orderId) {
+      const reason = String(result?.message ?? "FimiPay haikukubali ombi la malipo.").slice(0, 240);
+      await db.runTransaction(async (transaction) => {
+        const lockSnapshot = await transaction.get(openLockRef);
+        transaction.set(orderRef, { status: "CREATE_FAILED", providerMessage: reason, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (lockSnapshot.data()?.orderId === orderId) transaction.delete(openLockRef);
+      });
+      throw new HttpsError("unavailable", "Imeshindikana kuanzisha malipo kwa sasa. Jaribu tena baadaye.");
+    }
+
+    const status = String(result.data?.payment_status ?? "PENDING").toUpperCase();
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(orderRef);
+      const lockSnapshot = await transaction.get(openLockRef);
+      if (!snapshot.exists) throw new HttpsError("not-found", "Ombi la malipo halikupatikana.");
+      if (snapshot.data()?.status !== "PAID") transaction.set(orderRef, { providerOrderId, providerStatus: status, status: status === "SUCCESS" ? "PENDING" : status, providerEnvironment: String(result.data?.environment ?? "unknown"), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      if (lockSnapshot.data()?.orderId === orderId) {
+        if (["REJECTED", "FAILED", "CANCELLED", "USERCANCELLED", "EXPIRED"].includes(status)) transaction.delete(openLockRef);
+        else transaction.set(openLockRef, { orderId, status: status === "SUCCESS" ? "PENDING" : status, updatedAt: FieldValue.serverTimestamp() });
+      }
+    });
+    return { orderId, status, amount, tokenAmount: credits, duplicate: reservation.duplicate };
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    console.error("createTokenPurchaseOrder failed", { uid, orderId, error: String((error as Error)?.message ?? error).slice(0, 240) });
+    await db.runTransaction(async (transaction) => {
+      const lockSnapshot = await transaction.get(openLockRef);
+      transaction.set(orderRef, { status: "CREATE_UNKNOWN", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      if (lockSnapshot.data()?.orderId === orderId) transaction.set(openLockRef, { orderId, status: "CREATE_UNKNOWN", updatedAt: FieldValue.serverTimestamp() });
+    }).catch(() => undefined);
+    throw new HttpsError("unavailable", "Imeshindikana kuwasiliana na FimiPay. Jaribu tena baadaye.");
+  }
+});
+
+export const fimipayWebhook = onRequest({ secrets: [fimipayApiSecret, fimipayWebhookSecret], timeoutSeconds: 60, maxInstances: 10 }, async (req, res) => {
+  if (req.method !== "POST") { res.set("Allow", "POST").status(405).send("Method not allowed"); return; }
+  const rawBody = req.rawBody;
+  if (!Buffer.isBuffer(rawBody) || rawBody.length === 0 || rawBody.length > 65536) { res.status(400).send("Invalid payload"); return; }
+  if (!verifyFimipayWebhookSignature(rawBody, req.get("X-FIMIPAY-SIGNATURE"), fimipayWebhookSecret.value())) { res.status(401).send("Invalid signature"); return; }
+
+  let event: Record<string, unknown>;
+  try {
+    const parsed: unknown = JSON.parse(rawBody.toString("utf8"));
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error("not an object");
+    event = parsed as Record<string, unknown>;
+  } catch {
+    res.status(400).send("Invalid JSON"); return;
+  }
+
+  const providerOrderId = typeof event.order_id === "string" ? event.order_id.trim() : "";
+  if (!providerOrderId || providerOrderId.length > 64) { res.status(400).send("Missing order_id"); return; }
+  const orderRef = db.collection("tokenPurchaseOrders").doc(providerOrderId);
+  const savedOrder = await orderRef.get();
+  if (!savedOrder.exists) { res.status(200).json({ received: true, ignored: true }); return; }
+  const purchase = savedOrder.data()!;
+  const openLockRef = db.collection("tokenPurchaseOpenLocks").doc(String(purchase.userId));
+  const markNeedsReview = async (reason: string) => db.runTransaction(async (transaction) => {
+    const latest = await transaction.get(orderRef);
+    const lock = await transaction.get(openLockRef);
+    if (!latest.exists || latest.data()?.status === "PAID") return;
+    transaction.set(orderRef, { status: "NEEDS_REVIEW", reviewReason: reason, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    if (lock.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+  });
+  if (purchase.providerOrderId && purchase.providerOrderId !== providerOrderId) { res.status(200).json({ received: true, ignored: true }); return; }
+
+  const terminalStatus = fimipayTerminalStatus(event);
+  if (!isFimipaySuccessEvent(event)) {
+    if (terminalStatus && purchase.status !== "PAID") {
+      await db.runTransaction(async (transaction) => {
+        const latest = await transaction.get(orderRef);
+        const lock = await transaction.get(openLockRef);
+        if (latest.exists && latest.data()?.status !== "PAID") transaction.set(orderRef, { status: terminalStatus, providerStatus: terminalStatus, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (lock.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+      });
+    }
+    res.status(200).json({ received: true }); return;
+  }
+
+  const suppliedAmount = Number(event.amount);
+  const suppliedCurrency = String(event.currency ?? "").toUpperCase();
+  const expectedCredits = tokenCreditsForAmount(purchase.amount);
+  if (suppliedAmount !== Number(purchase.amount) || suppliedCurrency !== "TZS" || expectedCredits === null || expectedCredits !== Number(purchase.tokenAmount)) {
+    await markNeedsReview("Webhook amount/currency mismatch");
+    res.status(200).json({ received: true, review: true }); return;
+  }
+
+  try {
+    const verificationResponse = await fetch("https://fimipay.com/api/v1/payment/order_status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "HudumaZaMtandaoni/1.0", Authorization: `Bearer ${fimipayApiSecret.value()}` },
+      body: JSON.stringify({ order_id: providerOrderId }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const verification = await verificationResponse.json().catch(() => null) as { status?: unknown; data?: Record<string, unknown> } | null;
+    const confirmed = verification?.data;
+    const confirmedSuccess = verificationResponse.ok && verification?.status === "success" && isConfirmedLivePayment(confirmed, providerOrderId, Number(purchase.amount));
+
+    if (!confirmedSuccess) {
+      if (verificationResponse.ok && verification?.status === "success" && ["PENDING", "INPROGRESS"].includes(String(confirmed?.payment_status ?? "").toUpperCase())) { res.status(500).json({ received: false, pending: true }); return; }
+      await markNeedsReview("FimiPay status verification failed");
+      res.status(200).json({ received: true, review: true }); return;
+    }
+
+    const userRef = db.collection("users").doc(String(purchase.userId));
+    const ledgerRef = db.collection("tokenTransactions").doc(providerOrderId);
+    await db.runTransaction(async (transaction) => {
+      const latestOrderSnapshot = await transaction.get(orderRef);
+      const userSnapshot = await transaction.get(userRef);
+      const priorLedger = await transaction.get(ledgerRef);
+      const lockSnapshot = await transaction.get(openLockRef);
+      if (!latestOrderSnapshot.exists || !userSnapshot.exists) {
+        if (latestOrderSnapshot.exists) transaction.set(orderRef, { status: "NEEDS_REVIEW", reviewReason: "Account or order missing during settlement", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+        return;
+      }
+      const latestOrder = latestOrderSnapshot.data()!;
+      if (latestOrder.userId !== purchase.userId || latestOrder.amount !== purchase.amount || latestOrder.tokenAmount !== purchase.tokenAmount) {
+        transaction.set(orderRef, { status: "NEEDS_REVIEW", reviewReason: "Stored order integrity check failed", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+        return;
+      }
+      if (latestOrder.status === "PAID") { if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef); return; }
+      const user = userSnapshot.data() as Profile;
+      const before = Number(user.tokenBalance ?? 0);
+      if (!Number.isSafeInteger(before) || before < 0) {
+        transaction.set(orderRef, { status: "NEEDS_REVIEW", reviewReason: "Invalid token balance", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+        return;
+      }
+      if (priorLedger.exists) {
+        const ledger = priorLedger.data()!;
+        if (ledger.userId !== purchase.userId || Number(ledger.amount) !== expectedCredits || ledger.reference !== providerOrderId) {
+          transaction.set(orderRef, { status: "NEEDS_REVIEW", reviewReason: "Token ledger conflict", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+          if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+          return;
+        }
+        transaction.set(orderRef, { status: "PAID", providerStatus: "SUCCESS", transid: String(confirmed?.transid ?? event.transid ?? "").slice(0, 120), creditedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+        return;
+      }
+      const after = before + expectedCredits;
+      if (!Number.isSafeInteger(after)) {
+        transaction.set(orderRef, { status: "NEEDS_REVIEW", reviewReason: "Token balance overflow", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+        return;
+      }
+      const transid = String(confirmed?.transid ?? event.transid ?? "").slice(0, 120);
+      const paidAt = FieldValue.serverTimestamp();
+      transaction.update(userRef, { tokenBalance: after, updatedAt: paidAt });
+      transaction.create(ledgerRef, { transactionId: providerOrderId, userId: purchase.userId, actorId: "fimipay", type: "purchase", amount: expectedCredits, balanceBefore: before, balanceAfter: after, reason: `Ununuzi wa tokeni — ${tokenPackageLabel(Number(purchase.amount), expectedCredits)}`, description: `Ununuzi wa tokeni — ${tokenPackageLabel(Number(purchase.amount), expectedCredits)}`, serviceId: "token-purchase", serviceName: "FimiPay tokeni", reference: providerOrderId, providerTransactionId: transid, createdAt: paidAt, status: "completed", paymentAmount: Number(purchase.amount), currency: "TZS" });
+      transaction.set(orderRef, { status: "PAID", providerStatus: "SUCCESS", transid, creditedAt: paidAt, updatedAt: paidAt }, { merge: true });
+      transaction.create(db.collection("messages").doc(), { recipientId: purchase.userId, subject: "Malipo ya tokeni yamepokelewa", body: `Malipo yako ya TZS ${Number(purchase.amount).toLocaleString("en-US")} yamethibitishwa. Tokeni ${expectedCredits} zimeongezwa kwenye akaunti yako.`, type: "tokenPurchasePaid", orderId: providerOrderId, createdAt: paidAt });
+      transaction.create(db.collection("auditLogs").doc(), { action: "FIMIPAY_TOKEN_PURCHASE_CREDITED", actorId: "fimipay", actorRole: "system", targetUserId: String(purchase.userId), orderId: providerOrderId, tokenAmount: expectedCredits, paymentAmount: Number(purchase.amount), transid, createdAt: paidAt });
+      if (lockSnapshot.data()?.orderId === providerOrderId) transaction.delete(openLockRef);
+    });
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("fimipayWebhook settlement failed", { orderId: providerOrderId, error: String((error as Error)?.message ?? error).slice(0, 240) });
+    res.status(500).json({ received: false });
   }
 });
