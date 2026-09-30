@@ -88,6 +88,10 @@ service cloud.firestore {
       allow create: if false;
       allow update, delete: if false;
     }
+    match /tokenPurchaseOrders/{orderId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || canManageTokens());
+      allow create, update, delete: if false;
+    }
     match /licenseApplications/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || hasPermission('manageReports'));
       allow create, update, delete: if false;
