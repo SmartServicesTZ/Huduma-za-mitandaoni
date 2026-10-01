@@ -203,3 +203,10 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-template-condition-one { top: 86.1%; }
 .license-template-condition-two { top: 88.4%; }
 @media (max-width: 700px) { .license-template-paper { border-radius: 7px; } .license-template-overlay { font-size: 1.05vw; } }
+
+/* Authentication errors: intentionally high-contrast and distinct from the portal theme. */
+.auth-error-alert { display: flex; align-items: flex-start; gap: 11px; padding: 13px 14px; margin: 0 0 15px; border: 2px solid #f97316; border-radius: 11px; color: #7c2d12; background: #fff7ed; box-shadow: 0 5px 16px rgba(234,88,12,.14); }
+.auth-error-alert__icon { display: grid; place-items: center; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; color: #fff; background: #ea580c; }
+.auth-error-alert strong { display: block; color: #7c2d12; font-size: 12px; font-weight: 900; }
+.auth-error-alert p { margin: 4px 0 7px; color: #9a3412; font-size: 11px; line-height: 1.5; }
+.auth-error-alert code { display: inline-block; padding: 3px 6px; border-radius: 5px; color: #9a3412; background: #fed7aa; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; font-weight: 800; }

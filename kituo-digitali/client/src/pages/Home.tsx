@@ -19,15 +19,37 @@ function Icon({ name, size = 22 }: { name: string; size?: number }) { const Comp
 
 function Notice({ children, tone = "warning" }: { children: React.ReactNode; tone?: "warning" | "success" | "info" }) { return <div className={`notice notice--${tone}`}><CircleAlert size={17} /> <span>{children}</span></div>; }
 
+function explainAuthError(error: any, mode: "login" | "register") {
+  const code = String(error?.code ?? "").replace(/^auth\//, "");
+  const messages: Record<string, { title: string; detail: string }> = {
+    "invalid-credential": { title: "Email au password si sahihi", detail: "Kagua email na password yako, kisha jaribu tena." },
+    "user-not-found": { title: "Akaunti haijapatikana", detail: "Email hii haijasajiliwa bado. Tumia Jisajili kutengeneza akaunti." },
+    "wrong-password": { title: "Password si sahihi", detail: "Kagua password yako. Usishiriki password yako na mtu mwingine." },
+    "email-already-in-use": { title: "Email hii tayari imesajiliwa", detail: "Tumia Ingia, au tumia email nyingine kwa akaunti mpya." },
+    "invalid-email": { title: "Email si sahihi", detail: "Andika email yenye muundo sahihi, mfano jina@example.com." },
+    "weak-password": { title: "Password ni dhaifu", detail: "Tumia password yenye angalau herufi 6." },
+    "too-many-requests": { title: "Majaribio yamezidi", detail: "Subiri muda kidogo kabla ya kujaribu tena." },
+    "operation-not-allowed": { title: "Usajili wa email haujawashwa", detail: "Admin awashe Email/Password kwenye Firebase Authentication > Sign-in method." },
+    "unauthorized-domain": { title: "Domain ya website haijaidhinishwa", detail: "Admin aongeze steward-tz.github.io kwenye Firebase Authentication > Settings > Authorized domains." },
+    "invalid-api-key": { title: "Firebase API key si sahihi", detail: "Configuration ya Firebase inahitaji kusahihishwa na admin wa mfumo." },
+    "network-request-failed": { title: "Mtandao haupatikani", detail: "Kagua internet yako kisha jaribu tena." },
+    "permission-denied": { title: "Ruhusa imekataliwa", detail: "Firebase imekataa kuhifadhi profile. Admin akague Firestore Rules." },
+  };
+  const known = messages[code];
+  return { title: known?.title ?? `Imeshindikana ${mode === "login" ? "kuingia" : "kusajili"}`, detail: known?.detail ?? String(error?.message ?? "Firebase imerudisha hitilafu isiyojulikana."), code: code || "unknown" };
+}
+
 function LocalAuthModal({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [pending, setPending] = useState(false);
+  const [authError, setAuthError] = useState<{ title: string; detail: string; code: string } | null>(null);
   const update = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) => setForm((previous) => ({ ...previous, [key]: event.target.value }));
   const submit = async () => {
-    if (!form.email.trim() || !form.password) { toast.error("Weka email na password."); return; }
-    if (mode === "register" && form.password !== form.confirmPassword) { toast.error("Passwords hazifanani."); return; }
-    if (mode === "register" && form.password.length < 6) { toast.error("Password iwe na angalau herufi 6."); return; }
+    setAuthError(null);
+    if (!form.email.trim() || !form.password) { setAuthError({ title: "Taarifa hazijakamilika", detail: "Weka email na password kabla ya kuendelea.", code: "form/incomplete" }); return; }
+    if (mode === "register" && form.password !== form.confirmPassword) { setAuthError({ title: "Passwords hazifanani", detail: "Andika password ileile kwenye sehemu zote mbili.", code: "form/password-mismatch" }); return; }
+    if (mode === "register" && form.password.length < 6) { setAuthError({ title: "Password ni fupi", detail: "Password iwe na angalau herufi 6.", code: "form/weak-password" }); return; }
     setPending(true);
     try {
       if (mode === "login") await signInWithEmailAndPassword(firebaseAuth, form.email.trim(), form.password);
@@ -35,11 +57,12 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
       toast.success(mode === "login" ? "Umeingia kwa mafanikio." : "Akaunti imeundwa kwa mafanikio.");
       onClose();
     } catch (error: any) {
-      const messages: Record<string, string> = { "auth/invalid-credential": "Email au password si sahihi.", "auth/email-already-in-use": "Email hiyo tayari imesajiliwa.", "auth/invalid-email": "Weka email sahihi.", "auth/too-many-requests": "Majaribio yamezidi. Jaribu tena baadaye." };
-      toast.error(messages[error?.code] ?? "Imeshindikana kuingia. Hakikisha Firebase Authentication imewezeshwa.");
+      const explanation = explainAuthError(error, mode);
+      setAuthError(explanation);
+      toast.error(explanation.title);
     } finally { setPending(false); }
   };
-  return <div className="portal-modal-backdrop" onClick={onClose}><div className="portal-modal auth-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={19} /></button><span className="overline">Akaunti salama</span><h3>{mode === "login" ? "INGIA KWENYE AKAUNTI" : "JISAJILI AKAUNTI"}</h3><div className="auth-switch"><button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Ingia</button><button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>Jisajili</button></div>{mode === "register" && <div className="auth-fields auth-fields--two"><label>Jina la kwanza<input value={form.firstName} onChange={update("firstName")} /></label><label>Jina la mwisho<input value={form.lastName} onChange={update("lastName")} /></label></div>}<div className="auth-fields"><label>Email<input type="email" autoComplete="email" placeholder="barua pepe" value={form.email} onChange={update("email")} /></label>{mode === "register" && <label>Namba ya simu<input inputMode="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={update("phone")} /></label>}<label>Password<input type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={update("password")} /></label>{mode === "register" && <label>Thibitisha password<input type="password" autoComplete="new-password" value={form.confirmPassword} onChange={update("confirmPassword")} /></label>}</div><button className="button button--green button--wide" disabled={pending} onClick={submit}>{pending ? "INASUBIRI..." : mode === "login" ? "INGIA" : "TENGENEZA AKAUNTI"}</button></div></div>;
+  return <div className="portal-modal-backdrop" onClick={onClose}><div className="portal-modal auth-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={19} /></button><span className="overline">Akaunti salama</span><h3>{mode === "login" ? "INGIA KWENYE AKAUNTI" : "JISAJILI AKAUNTI"}</h3><div className="auth-switch"><button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setAuthError(null); }}>Ingia</button><button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setAuthError(null); }}>Jisajili</button></div>{authError && <div className="auth-error-alert" role="alert"><div className="auth-error-alert__icon"><CircleAlert size={20} /></div><div><strong>{authError.title}</strong><p>{authError.detail}</p><code>{authError.code}</code></div></div>}{mode === "register" && <div className="auth-fields auth-fields--two"><label>Jina la kwanza<input value={form.firstName} onChange={update("firstName")} /></label><label>Jina la mwisho<input value={form.lastName} onChange={update("lastName")} /></label></div>}<div className="auth-fields"><label>Email<input type="email" autoComplete="email" placeholder="barua pepe" value={form.email} onChange={update("email")} /></label>{mode === "register" && <label>Namba ya simu<input inputMode="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={update("phone")} /></label>}<label>Password<input type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={update("password")} /></label>{mode === "register" && <label>Thibitisha password<input type="password" autoComplete="new-password" value={form.confirmPassword} onChange={update("confirmPassword")} /></label>}</div><button className="button button--green button--wide" disabled={pending} onClick={submit}>{pending ? "INASUBIRI..." : mode === "login" ? "INGIA" : "TENGENEZA AKAUNTI"}</button></div></div>;
 }
 
 function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: string; setSearch: (value: string) => void }) {
