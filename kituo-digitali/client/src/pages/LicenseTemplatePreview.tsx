@@ -48,7 +48,7 @@ export default function LicenseTemplatePreview({ form, issueDate, expiryDate, li
   return <section className="license-preview-card license-template-preview-card">
     <div className="license-preview-heading"><div><span className="overline">MUONEKANO WA HATI ULIYOLETA</span><h2>LIVE LICENSE TEMPLATE</h2></div><span className="license-draft-badge">LIVE</span></div>
     <div className="license-template-paper">
-      <img className="license-template-background" src={assetPath("uploaded-license-template.png")} alt="Template ya hati ya leseni" />
+      <img className="license-template-background" src={assetPath("uploaded-license-template.jpg")} alt="Template ya hati ya leseni" />
       <div className="license-template-overlay" aria-label="Taarifa za hati ya leseni">
         {text("license-template-static license-template-country", "THE UNITED REPUBLIC OF TANZANIA")}
         {text("license-template-static license-template-title", "BUSINESS LICENSE")}
