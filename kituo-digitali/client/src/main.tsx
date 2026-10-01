@@ -9,7 +9,7 @@ if (typeof window !== "undefined") {
   if (route) window.history.replaceState({}, "", decodeURIComponent(route));
 }
 
-// The production portal uses Firebase Authentication, Firestore, Storage and
+// Production bootstrap v2: the portal uses Firebase Authentication, Firestore, Storage and
 // callable Cloud Functions. GitHub Pages is a static host, so do not create
 // the old tRPC client here: it would incorrectly request /api/trpc from the
 // Pages origin and show an "API haipatikani" error.
