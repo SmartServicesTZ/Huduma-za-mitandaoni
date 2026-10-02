@@ -1,5 +1,4 @@
 import { initializeApp } from "firebase/app";
-import { getFunctions, httpsCallable } from "firebase/functions";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
@@ -35,6 +34,7 @@ import {
 } from "firebase/firestore";
 import type { ServiceFormField, ServiceFormValues } from "../../../shared/serviceForms";
 import { omitUndefinedFields } from "../../../shared/omitUndefinedFields";
+import type { BrowserLicenseForm } from "./businessLicensePdf";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCjzY-MjV40lJSyZr8b47AimYMybJoVEac",
@@ -49,7 +49,36 @@ const app = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(app);
 export const firestore = getFirestore(app);
 export const firebaseStorage = getStorage(app);
-export const firebaseFunctions = getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION ?? "us-central1");
+
+function workerBaseUrl() {
+  const configured = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "").trim();
+  const value = configured || (import.meta.env.DEV ? "http://127.0.0.1:8787" : "");
+  if (!value) throw Object.assign(new Error("Huduma ya API haijasanidiwa. Wasiliana na msimamizi."), { code: "api/unconfigured" });
+  return value.replace(/\/+$/, "");
+}
+
+async function invokeWorker<TResponse>(name: string, data: unknown): Promise<TResponse> {
+  const user = firebaseAuth.currentUser;
+  if (!user) throw Object.assign(new Error("Ingia kwanza."), { code: "unauthenticated" });
+  const token = await user.getIdToken();
+  const response = await fetch(`${workerBaseUrl()}/call/${encodeURIComponent(name)}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ data }),
+  });
+  const result = await response.json().catch(() => null) as { data?: TResponse; error?: { code?: string; message?: string } } | null;
+  if (!response.ok || !result || result.error) {
+    const code = result?.error?.code ?? "api/request-failed";
+    const error = new Error(result?.error?.message ?? `Ombi la API limeshindikana (${response.status}).`);
+    Object.assign(error, { code });
+    throw error;
+  }
+  return result.data as TResponse;
+}
+
+function createWorkerCall<TRequest = unknown, TResponse = unknown>(name: string) {
+  return async (data?: TRequest): Promise<{ data: TResponse }> => ({ data: await invokeWorker<TResponse>(name, data ?? {}) });
+}
 const appCheckSiteKey = String(import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY ?? "").trim();
 export const firebaseAppCheck = appCheckSiteKey ? initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true }) : null;
 export { onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword };
@@ -150,14 +179,14 @@ export async function saveFirebaseProfile(uid: string, values: Partial<FirebaseP
 export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string }, requestId?: string) {
   if (service.kind === "free" || service.tokenCost <= 0) return { balanceAfter: null, reference: requestId ?? `free-${Date.now()}`, duplicate: false };
   const transactionId = requestId?.trim() || crypto.randomUUID();
-  const callable = httpsCallable<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>(firebaseFunctions, "consumeTokens");
+  const callable = createWorkerCall<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>("consumeTokens");
   return (await callable({ serviceId: service.slug, serviceName: service.name, tokenCost: service.tokenCost, requestId: transactionId })).data;
 }
 
 export type TokenPurchaseOrder = { id: string; orderId: string; amount: number; currency: string; tokenAmount: number; status: string; createdAt?: unknown; transid?: string };
 
 export async function createTokenPurchaseOrder(amount: number, requestId = crypto.randomUUID()) {
-  const callable = httpsCallable<{ amount: number; requestId: string }, { orderId: string; status: string; amount: number; tokenAmount: number; duplicate: boolean }>(firebaseFunctions, "createTokenPurchaseOrder");
+  const callable = createWorkerCall<{ amount: number; requestId: string }, { orderId: string; status: string; amount: number; tokenAmount: number; duplicate: boolean }>("createTokenPurchaseOrder");
   return (await callable({ amount, requestId })).data;
 }
 
@@ -181,11 +210,39 @@ export type BusinessLicensePayload = {
   region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
 };
 
-export async function generateBusinessLicense(payload: BusinessLicensePayload) {
-  const callable = httpsCallable<BusinessLicensePayload, { status: string; applicationId: string; licenseNumber: string; downloadUrl: string; reference: string; duplicate: boolean }>(firebaseFunctions, "generateBusinessLicense");
-  return (await callable(payload)).data;
+export type GeneratedBusinessLicense = {
+  status: string;
+  requestId: string;
+  applicationId: string;
+  licenseNumber: string;
+  issueDate?: string;
+  expiryDate?: string;
+  reference: string;
+  duplicate: boolean;
+  pdfBlob: Blob;
+};
+
+type PreparedBusinessLicense = Omit<GeneratedBusinessLicense, "pdfBlob"> & { form?: BrowserLicenseForm };
+
+function licensePdfBlob(bytes: Uint8Array) {
+  const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  return new Blob([arrayBuffer], { type: "application/pdf" });
 }
 
+export async function generateBusinessLicense(payload: BusinessLicensePayload): Promise<GeneratedBusinessLicense> {
+  const preparation = await invokeWorker<PreparedBusinessLicense>("generateBusinessLicense", payload);
+  if (!preparation.requestId || !preparation.applicationId || !preparation.licenseNumber) throw new Error("Taarifa za ombi la leseni hazijakamilika.");
+  const form = preparation.form ?? payload;
+  const issueDate = preparation.issueDate ?? "";
+  const expiryDate = preparation.expiryDate ?? "";
+  const { renderBusinessLicensePdf } = await import("./businessLicensePdf");
+  const pdfBytes = await renderBusinessLicensePdf(form, preparation.licenseNumber, issueDate, expiryDate);
+  let completed: Omit<GeneratedBusinessLicense, "pdfBlob"> = preparation;
+  if (preparation.status !== "COMPLETED") {
+    completed = await invokeWorker<Omit<GeneratedBusinessLicense, "pdfBlob">>("completeBusinessLicense", { requestId: preparation.requestId });
+  }
+  return { ...completed, pdfBlob: licensePdfBlob(pdfBytes) };
+}
 export async function createServiceRequest(uid: string, service: { slug: string; name: string }, details: string) {
   const requestRef = await addDoc(collection(firestore, "serviceRequests"), {
     userId: uid,
@@ -238,19 +295,19 @@ export async function adminListCollection(name: "announcements" | "auditLogs" | 
 }
 
 export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string) {
-  const callable = httpsCallable<{ userId: string; amount: number; description: string; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>(firebaseFunctions, "adjustTokens");
+  const callable = createWorkerCall<{ userId: string; amount: number; description: string; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>("adjustTokens");
   return (await callable({ userId, amount, description, requestId })).data;
 }
 
 export async function adminUpdateUser(adminId: string, userId: string, values: Partial<AdminUserRecord>) {
   if (values.role !== undefined || values.permissions !== undefined) {
-    const callable = httpsCallable(firebaseFunctions, "updateUserAccess");
+    const callable = createWorkerCall("updateUserAccess");
     await callable({ userId, role: values.role, permissions: values.permissions });
   } else if (values.accountStatus !== undefined) {
-    const callable = httpsCallable(firebaseFunctions, "setAccountStatus");
+    const callable = createWorkerCall("setAccountStatus");
     await callable({ userId, status: values.accountStatus });
   } else if (values.verificationStatus !== undefined) {
-    const callable = httpsCallable(firebaseFunctions, "verifyUser");
+    const callable = createWorkerCall("verifyUser");
     await callable({ userId, status: values.verificationStatus });
   } else {
     throw new Error("Mabadiliko haya ya admin hayaruhusiwi kupitia frontend.");
@@ -284,48 +341,48 @@ export async function recordAdminAction(actorId: string, action: string, targetT
 }
 
 export async function adminSaveService(adminId: string, values: Record<string, unknown>, id?: string) {
-  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  const callable = createWorkerCall("adminWrite");
   return (await callable({ collection: "services", id, values })).data;
 }
 
 export async function adminSetServiceLock(slug: string, isLocked: boolean) {
-  const callable = httpsCallable<{ slug: string; isLocked: boolean }, { slug: string; isLocked: boolean }>(firebaseFunctions, "setServiceLock");
+  const callable = createWorkerCall<{ slug: string; isLocked: boolean }, { slug: string; isLocked: boolean }>("setServiceLock");
   return (await callable({ slug, isLocked })).data;
 }
 
 export async function adminDeleteService(adminId: string, id: string) {
-  const callable = httpsCallable(firebaseFunctions, "adminDelete");
+  const callable = createWorkerCall("adminDelete");
   return (await callable({ collection: "services", id })).data;
 }
 
 export async function adminSaveAnnouncement(adminId: string, values: Record<string, unknown>, id?: string) {
-  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  const callable = createWorkerCall("adminWrite");
   return (await callable({ collection: "announcements", id, values })).data;
 }
 
 export async function adminDeleteAnnouncement(adminId: string, id: string) {
-  const callable = httpsCallable(firebaseFunctions, "adminDelete");
+  const callable = createWorkerCall("adminDelete");
   return (await callable({ collection: "announcements", id })).data;
 }
 
 
 export async function adminSaveCollectionItem(adminId: string, collectionName: string, values: Record<string, unknown>, id?: string) {
-  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  const callable = createWorkerCall("adminWrite");
   return (await callable({ collection: collectionName, id, values })).data;
 }
 
 export async function adminDeleteCollectionItem(adminId: string, collectionName: string, id: string) {
-  const callable = httpsCallable(firebaseFunctions, "adminDelete");
+  const callable = createWorkerCall("adminDelete");
   return (await callable({ collection: collectionName, id })).data;
 }
 
 export async function adminSaveSiteSettings(adminId: string, values: Record<string, unknown>) {
-  const callable = httpsCallable(firebaseFunctions, "adminWrite");
+  const callable = createWorkerCall("adminWrite");
   return (await callable({ collection: "siteSettings", id: "public", values })).data;
 }
 
 export async function setHomepageServiceOrder(serviceOrder: string[], homepageSectionOrder: string[]) {
-  const callable = httpsCallable<{ serviceOrder: string[]; homepageSectionOrder: string[] }, { savedServices: number; savedSections: number }>(firebaseFunctions, "setHomepageServiceOrder");
+  const callable = createWorkerCall<{ serviceOrder: string[]; homepageSectionOrder: string[] }, { savedServices: number; savedSections: number }>("setHomepageServiceOrder");
   return (await callable({ serviceOrder, homepageSectionOrder })).data;
 }
 
@@ -335,7 +392,7 @@ export async function adminGetSiteSettings() {
 }
 
 export async function reserveBusinessLicenseNumber(reservationId: string) {
-  const callable = httpsCallable<{ reservationId: string }, { reservationId: string; licenseNumber: string }>(firebaseFunctions, "reserveBusinessLicenseNumber");
+  const callable = createWorkerCall<{ reservationId: string }, { reservationId: string; licenseNumber: string }>("reserveBusinessLicenseNumber");
   return (await callable({ reservationId })).data;
 }
 
@@ -382,32 +439,32 @@ export type LipaApplication = {
 export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; userEmail?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
 
 export async function seedServiceCatalog() {
-  const callable = httpsCallable(firebaseFunctions, "seedServiceCatalog");
+  const callable = createWorkerCall("seedServiceCatalog");
   return (await callable({})).data as { createdServices: number; createdNetworks: number };
 }
 
 export async function ensureDefaultServiceCatalog() {
-  const callable = httpsCallable(firebaseFunctions, "ensureDefaultServiceCatalog");
+  const callable = createWorkerCall("ensureDefaultServiceCatalog");
   return (await callable({})).data as { createdServices: number; createdNetworks: number; initialized: boolean };
 }
 
 export async function submitLipaApplication(applicationId: string, networkId: string, values: ServiceFormValues) {
-  const callable = httpsCallable<{ applicationId: string; networkId: string; values: ServiceFormValues }, { applicationId: string; status: "PENDING" }>(firebaseFunctions, "submitLipaApplication");
+  const callable = createWorkerCall<{ applicationId: string; networkId: string; values: ServiceFormValues }, { applicationId: string; status: "PENDING" }>("submitLipaApplication");
   return (await callable({ applicationId, networkId, values })).data;
 }
 
 export async function setLipaApplicationStatus(applicationId: string, status: "PROCESSING" | "APPROVED" | "REJECTED", rejectionReason = "") {
-  const callable = httpsCallable(firebaseFunctions, "setLipaApplicationStatus");
+  const callable = createWorkerCall("setLipaApplicationStatus");
   return (await callable({ applicationId, status, rejectionReason })).data;
 }
 
 export async function markLipaApplicationViewed(applicationId: string) {
-  const callable = httpsCallable(firebaseFunctions, "markLipaApplicationViewed");
+  const callable = createWorkerCall("markLipaApplicationViewed");
   return (await callable({ applicationId })).data;
 }
 
 export async function getLipaApplicationDocument(applicationId: string, fieldName: string) {
-  const callable = httpsCallable<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>(firebaseFunctions, "getLipaApplicationDocument");
+  const callable = createWorkerCall<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>("getLipaApplicationDocument");
   return (await callable({ applicationId, fieldName })).data;
 }
 
@@ -438,12 +495,12 @@ export function subscribeUserLipaApplications(uid: string, callback: (rows: Lipa
 }
 
 export async function createServiceApplication(applicationId: string, serviceSlug: string, values: ServiceFormValues) {
-  const callable = httpsCallable(firebaseFunctions, "createServiceApplication");
+  const callable = createWorkerCall("createServiceApplication");
   return (await callable({ applicationId, serviceSlug, values })).data as { applicationId: string; status: string; duplicate: boolean; balanceAfter: number | null; reference: string };
 }
 
 export async function setServiceApplicationStatus(applicationId: string, status: string, rejectionReason = "") {
-  const callable = httpsCallable(firebaseFunctions, "setServiceApplicationStatus");
+  const callable = createWorkerCall("setServiceApplicationStatus");
   return (await callable({ applicationId, status, rejectionReason })).data;
 }
 
@@ -464,12 +521,12 @@ export async function removeServiceUpload(storagePath: string) {
 }
 
 export async function markServiceApplicationViewed(applicationId: string) {
-  const callable = httpsCallable<{ applicationId: string }, { ok: boolean }>(firebaseFunctions, "markServiceApplicationViewed");
+  const callable = createWorkerCall<{ applicationId: string }, { ok: boolean }>("markServiceApplicationViewed");
   return (await callable({ applicationId })).data;
 }
 
 export async function getServiceApplicationDocument(applicationId: string, fieldName: string) {
-  const callable = httpsCallable<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>(firebaseFunctions, "getServiceApplicationDocument");
+  const callable = createWorkerCall<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>("getServiceApplicationDocument");
   return (await callable({ applicationId, fieldName })).data;
 }
 

@@ -78,7 +78,18 @@ export default function BusinessLicensePage() {
   const [form, setForm] = useState<FormState>({ firstName: "", middleName: "", lastName: "", businessType: "", otherBusinessType: "", licenseType: "", principalBranch: "", region: "", district: "DAR ES SALAAM", ward: "Tegeta", street: "Mbuyuni", tin: "", licenseFee: 80000 });
   const [submitted, setSubmitted] = useState(false);
   const [licenseNumber, setLicenseNumber] = useState("");
-  const [requestId] = useState(() => crypto.randomUUID());
+  const [requestId] = useState(() => {
+    const key = "hmt-business-license-request-id";
+    try {
+      const previous = sessionStorage.getItem(key);
+      if (previous && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(previous)) return previous;
+      const next = crypto.randomUUID();
+      sessionStorage.setItem(key, next);
+      return next;
+    } catch {
+      return crypto.randomUUID();
+    }
+  });
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [serviceLocked, setServiceLocked] = useState(false);
 
@@ -126,8 +137,16 @@ export default function BusinessLicensePage() {
       const result = await generateBusinessLicense(payload);
       setSubmitted(true);
       setLicenseNumber(result.licenseNumber ?? "");
-      window.open(result.downloadUrl, "_blank", "noopener,noreferrer");
-      toast.success("PDF imetengenezwa kikamilifu.", { description: `Tokeni 2 zimekatwa. Rejea: ${result.reference}` });
+      const objectUrl = URL.createObjectURL(result.pdfBlob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `leseni-${result.licenseNumber || "biashara"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      try { sessionStorage.removeItem("hmt-business-license-request-id"); } catch { /* storage may be disabled */ }
+      toast.success("PDF imetengenezwa kikamilifu.", { description: result.duplicate ? `Ombi hili lilikuwa limekamilika tayari. Rejea: ${result.reference}` : `Tokeni 2 zimekatwa. Rejea: ${result.reference}` });
     } catch (error: any) {
       const message = error?.message?.includes("Huna tokeni") ? error.message : error?.message ?? "Imeshindikana kutengeneza PDF. Jaribu tena.";
       toast.error(message);

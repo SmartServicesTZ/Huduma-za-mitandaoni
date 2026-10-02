@@ -10,8 +10,8 @@ if (typeof window !== "undefined") {
   if (route) window.history.replaceState({}, "", withBasePath(route, import.meta.env.BASE_URL));
 }
 
-// Production bootstrap v2: the portal uses Firebase Authentication, Firestore, Storage and
-// callable Cloud Functions. GitHub Pages is a static host, so do not create
+// Production bootstrap v2: the portal uses Firebase Authentication, Firestore,
+// Firebase Storage for legacy file uploads, and the Cloudflare Worker API. GitHub Pages is a static host, so do not create
 // the old tRPC client here: it would incorrectly request /api/trpc from the
 // Pages origin and show an "API haipatikani" error.
 createRoot(document.getElementById("root")!).render(<App />);

@@ -56,7 +56,7 @@ Hii inamaanisha mtumiaji mwenye role ya admin hawezi moja kwa moja kufanya kila 
 
 ### 6. Backend na App Check
 
-- Shughuli nyeti kama tokeni, access, verification, account status na CMS sasa zinapitia callable Cloud Functions zenye Firebase Admin SDK.
+- Shughuli nyeti kama tokeni, access, verification, account status, CMS na malipo sasa zimehamishiwa kwenye Cloudflare Worker inayothibitisha Firebase ID token na kufanya miamala ya Firestore upande wa server.
 - Frontend haiwezi tena kuandika moja kwa moja baadhi ya collections za kiutawala.
 - Firebase App Check imeandaliwa ili kusaidia kuthibitisha kuwa requests zinatoka kwenye application halali.
 - App Check enforcement itawashwa baada ya staging tests na configuration ya Firebase kukamilika.
@@ -72,6 +72,6 @@ Hii inamaanisha mtumiaji mwenye role ya admin hawezi moja kwa moja kufanya kila 
 
 ## Hali ya utekelezaji
 
-Mabadiliko yamekamilisha ukaguzi wa code, type-checks, tests na production build bila errors. Hata hivyo, deployment ya Firebase Functions, Firestore rules, Storage rules na App Check enforcement bado inahitaji kufanyika kwenye staging project kabla ya kwenda production.
+Mabadiliko ya awali yalipita ukaguzi na majaribio yake. Uhamisho wa sasa kwenda Cloudflare Worker pia umepita type-check, tests na build katika branch ya maendeleo, lakini **bado haujapelekwa production**. Kabla ya kuhamisha traffic, sanidi Cloudflare secrets, thibitisha Worker kwenye staging, na uelekeze webhook ya FimiPay kwenye endpoint mpya. Profile images na viambatisho bado vinategemea Firebase Storage na havipatikani kwenye Spark bila kuhamishwa kwenda object storage nyingine.
 
 > Usalama ni mchakato endelevu. Baada ya staging verification, hatua zinazofuata ni deployment salama, backup/restore drills, emulator security tests na monitoring ya matukio muhimu.
