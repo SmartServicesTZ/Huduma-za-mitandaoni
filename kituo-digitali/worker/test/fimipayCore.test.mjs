@@ -10,7 +10,7 @@ import {
   normalizeTanzaniaPhone,
   tokenCreditsForAmount,
   verifyFimipayWebhookSignature,
-} from "../lib/fimipayCore.js";
+} from "../src/fimipayCore.ts";
 
 test("only the three supported shilling packages award fixed token amounts", () => {
   assert.equal(tokenCreditsForAmount(2000), 40);

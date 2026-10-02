@@ -102,7 +102,7 @@ function errorMessage(error: unknown) {
 
 function isAlreadyExists(error: unknown) {
   const item = error as { code?: string; message?: string } | null;
-  return item?.code === "functions/already-exists" || item?.code === "already-exists" || item?.message?.toLowerCase().includes("already exists");
+  return item?.code === "already-exists" || item?.message?.toLowerCase().includes("already exists");
 }
 
 function valueForField(values: ServiceFormValues, field: ServiceFormField) {

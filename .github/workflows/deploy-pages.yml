@@ -1,7 +1,9 @@
-name: Deploy to GitHub Pages
+name: Deploy website and Cloudflare Worker
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -11,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: website-deploy
   cancel-in-progress: true
 
 jobs:
@@ -37,24 +39,77 @@ jobs:
         working-directory: kituo-digitali
         run: pnpm install --frozen-lockfile
 
+      - name: Type-check, test, and bundle Worker
+        working-directory: kituo-digitali
+        run: pnpm check && pnpm test && pnpm worker:check && pnpm worker:test && pnpm worker:build
+
+      - name: Require production Worker URL
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          API_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
+        run: |
+          if [ -z "$API_URL" ] || [[ "$API_URL" != https://* ]]; then
+            echo "Set the repository variable VITE_CLOUDFLARE_WORKER_URL to the deployed HTTPS Worker URL before production deployment."
+            exit 1
+          fi
+
       - name: Build frontend
         working-directory: kituo-digitali
         env:
-          # Repository variable; never use the GitHub Pages URL as the API host.
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_CLOUDFLARE_WORKER_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
         run: pnpm build
 
       - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: kituo-digitali/dist/public
 
-  deploy:
+  deploy-worker:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: kituo-digitali/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: kituo-digitali
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy Cloudflare Worker
+        working-directory: kituo-digitali/worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm deploy
+
+      - name: Verify Worker secrets are configured
+        env:
+          API_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
+        run: |
+          response=$(curl --fail --silent --show-error --retry 5 --retry-delay 3 "$API_URL/ready")
+          echo "$response" | jq -e '.ready == true'
+
+  deploy-pages:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, deploy-worker]
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

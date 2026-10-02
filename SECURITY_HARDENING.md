@@ -39,28 +39,21 @@ Run it only from a trusted server environment with Firebase Admin Application De
 
 > Note: `firebase-admin` must be installed in the trusted migration environment. Do not bundle it into the browser build.
 
-## Implemented in Phase 3
+## Current architecture and deployment boundary
 
-- Added server-only callable Cloud Functions for token consumption, token adjustments, user access, account status, and verification.
-- Sensitive token, admin-access, CMS, service, message, license, and settings calls in the browser now call those Functions instead of writing directly.
-- Added optional browser Firebase App Check initialization using `VITE_FIREBASE_APPCHECK_SITE_KEY` and automatic token refresh.
-- Added restrictive Storage rules for `users/{uid}/profile/*`: owner-only access, image MIME validation, and a 2 MB limit.
-- Profile pictures now upload to Firebase Storage; Firestore stores only the resulting `photoURL`.
-- Added `firebase.json`, `storage.rules`, and a separate Functions package so Admin SDK code cannot enter the browser bundle.
+- Sensitive token, admin-access, CMS, service-application, license, and payment operations now use the authenticated Cloudflare Worker API. The Worker verifies Firebase Authentication ID tokens and applies server-side authorization before using Firestore REST transactions.
+- FimiPay API and webhook secrets are Cloudflare Worker secrets; they are never included in browser configuration or the Git repository.
+- License PDFs are rendered and downloaded locally in the browser; the Worker still validates eligibility and charges tokens transactionally in Firestore.
+- Firebase Authentication and Firestore remain in use. The repository no longer contains the old callable backend package or a Firebase CLI target for it.
+- Firebase Storage profile images and application attachments remain a separate legacy path. Firebase's current plan policy requires Blaze for Storage bucket access; those flows are not Spark-compatible until moved to another object store.
+- Optional Firebase App Check initialization remains available for Firebase client SDK requests.
 
-### Phase 3 deployment boundary
-
-Functions, App Check enforcement, Firestore rules, and Storage rules have **not** been deployed from this session. Configure and test them in a staging Firebase project first. Enable App Check enforcement only after legitimate login, callable functions, Firestore, Storage, and profile upload flows pass staging tests.
-
-## Not deployed by this change
-
-- Firestore rules have not been deployed.
-- No production data was read or modified.
+This Cloudflare migration is **source-only and not deployed**. No Cloudflare API credentials, Worker runtime secrets, FimiPay webhook changes, or production Worker deployment were made in this session. Removing source files does not delete any previously deployed Firebase endpoints. The GitHub workflow runs checks on pull requests and gates a production Pages release on a successful Worker deployment and readiness check. Configure and test a staging Worker and Firebase service-account permissions before production traffic is switched.
 - App Check enforcement, backups, restore drills, and monitoring still require Firebase-console/server configuration and a separate verification phase.
 
 ## Next phase
 
-1. Deploy Functions, Firestore rules, and Storage rules to a staging Firebase project.
-2. Configure reCAPTCHA Enterprise App Check and test before enabling enforcement.
-3. Add Firebase Emulator tests for negative balances, duplicate requests, concurrent requests, role escalation, and direct-request bypass attempts.
-4. Run backup/restore drills and add operational monitoring.
+1. Configure a staging Cloudflare Worker, its encrypted secrets, and a least-privilege service account; test against a staging Firebase project or Emulator.
+2. Verify FimiPay test-mode order creation and signed webhook delivery without crediting production tokens; use production settings only at an approved cutover.
+3. Decide whether legacy profile-image and attachment uploads should move to Cloudflare R2 or remain disabled on Spark.
+4. Configure App Check, run backup/restore drills, and add operational monitoring.

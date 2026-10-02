@@ -1,0 +1,21 @@
+{
+  "name": "@huduma/cloudflare-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --port 8787",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test test/*.test.ts test/*.test.mjs",
+    "build": "wrangler deploy --dry-run --outdir /tmp/huduma-worker-build",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "jose": "6.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261002.1",
+    "tsx": "4.19.1",
+    "typescript": "5.9.3",
+    "wrangler": "4.147.0"
+  }
+}
