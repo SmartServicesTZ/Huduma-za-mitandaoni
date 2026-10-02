@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, subscribeUserMessages, updatePassword, uploadProfileImage, type TokenPurchaseOrder } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, sendPasswordReset, sendVerificationEmail, signInWithEmailAndPassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, subscribeUserMessages, updatePassword, uploadProfileImage, type TokenPurchaseOrder } from "@/lib/firebase";
 import { announcementText, activitySeed, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
 import AdminDashboard from "./AdminDashboard";
@@ -26,6 +26,7 @@ function explainAuthError(error: any, mode: "login" | "register") {
     "user-not-found": { title: "Akaunti haijapatikana", detail: "Email hii haijasajiliwa bado. Tumia Jisajili kutengeneza akaunti." },
     "wrong-password": { title: "Password si sahihi", detail: "Kagua password yako. Usishiriki password yako na mtu mwingine." },
     "email-already-in-use": { title: "Email hii tayari imesajiliwa", detail: "Tumia Ingia, au tumia email nyingine kwa akaunti mpya." },
+    "profile/setup-failed": { title: "Akaunti imetengenezwa; profile haikukamilika", detail: "Usijisajili tena kwa email hii. Tumia Ingia; baada ya Firestore kurekebishwa mfumo utajaribu kukamilisha profile yako." },
     "invalid-email": { title: "Email si sahihi", detail: "Andika email yenye muundo sahihi, mfano jina@example.com." },
     "weak-password": { title: "Password ni dhaifu", detail: "Tumia password yenye angalau herufi 6." },
     "too-many-requests": { title: "Majaribio yamezidi", detail: "Subiri muda kidogo kabla ya kujaribu tena." },
@@ -48,6 +49,8 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
   const submit = async () => {
     setAuthError(null);
     if (!form.email.trim() || !form.password) { setAuthError({ title: "Taarifa hazijakamilika", detail: "Weka email na password kabla ya kuendelea.", code: "form/incomplete" }); return; }
+    if (mode === "register" && (!form.firstName.trim() || !form.lastName.trim() || !form.phone.trim())) { setAuthError({ title: "Taarifa za usajili hazijakamilika", detail: "Jaza jina la kwanza, jina la mwisho na namba ya simu.", code: "form/profile-required" }); return; }
+    if (mode === "register" && (form.phone.replace(/\D/g, "").length < 9 || form.phone.replace(/\D/g, "").length > 15)) { setAuthError({ title: "Namba ya simu si sahihi", detail: "Weka namba yenye tarakimu 9 hadi 15, ukiweka au bila msimbo wa nchi.", code: "form/invalid-phone" }); return; }
     if (mode === "register" && form.password !== form.confirmPassword) { setAuthError({ title: "Passwords hazifanani", detail: "Andika password ileile kwenye sehemu zote mbili.", code: "form/password-mismatch" }); return; }
     if (mode === "register" && form.password.length < 6) { setAuthError({ title: "Password ni fupi", detail: "Password iwe na angalau herufi 6.", code: "form/weak-password" }); return; }
     setPending(true);
@@ -62,7 +65,20 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
       toast.error(explanation.title);
     } finally { setPending(false); }
   };
-  return <div className="portal-modal-backdrop" onClick={onClose}><div className="portal-modal auth-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={19} /></button><span className="overline">Akaunti salama</span><h3>{mode === "login" ? "INGIA KWENYE AKAUNTI" : "JISAJILI AKAUNTI"}</h3><div className="auth-switch"><button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setAuthError(null); }}>Ingia</button><button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setAuthError(null); }}>Jisajili</button></div>{authError && <div className="auth-error-alert" role="alert"><div className="auth-error-alert__icon"><CircleAlert size={20} /></div><div><strong>{authError.title}</strong><p>{authError.detail}</p><code>{authError.code}</code></div></div>}{mode === "register" && <div className="auth-fields auth-fields--two"><label>Jina la kwanza<input value={form.firstName} onChange={update("firstName")} /></label><label>Jina la mwisho<input value={form.lastName} onChange={update("lastName")} /></label></div>}<div className="auth-fields"><label>Email<input type="email" autoComplete="email" placeholder="barua pepe" value={form.email} onChange={update("email")} /></label>{mode === "register" && <label>Namba ya simu<input inputMode="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={update("phone")} /></label>}<label>Password<input type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={update("password")} /></label>{mode === "register" && <label>Thibitisha password<input type="password" autoComplete="new-password" value={form.confirmPassword} onChange={update("confirmPassword")} /></label>}</div><button className="button button--green button--wide" disabled={pending} onClick={submit}>{pending ? "INASUBIRI..." : mode === "login" ? "INGIA" : "TENGENEZA AKAUNTI"}</button></div></div>;
+  const resetPassword = async () => {
+    setAuthError(null);
+    if (!form.email.trim()) { setAuthError({ title: "Weka email yako", detail: "Andika email ya akaunti ili upokee kiungo cha kuweka password mpya.", code: "form/email-required" }); return; }
+    setPending(true);
+    try {
+      await sendPasswordReset(form.email.trim());
+      toast.success("Ikiwa email hiyo imesajiliwa, kiungo cha kuweka password mpya kimetumwa.");
+    } catch (error: any) {
+      const explanation = explainAuthError(error, "login");
+      setAuthError(explanation);
+      toast.error(explanation.title);
+    } finally { setPending(false); }
+  };
+  return <div className="portal-modal-backdrop" onClick={onClose}><div className="portal-modal auth-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={19} /></button><span className="overline">Akaunti salama</span><h3>{mode === "login" ? "INGIA KWENYE AKAUNTI" : "JISAJILI AKAUNTI"}</h3><div className="auth-switch"><button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setAuthError(null); }}>Ingia</button><button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setAuthError(null); }}>Jisajili</button></div>{authError && <div className="auth-error-alert" role="alert"><div className="auth-error-alert__icon"><CircleAlert size={20} /></div><div><strong>{authError.title}</strong><p>{authError.detail}</p><code>{authError.code}</code></div></div>}<form onSubmit={(event) => { event.preventDefault(); void submit(); }}>{mode === "register" && <div className="auth-fields auth-fields--two"><label>Jina la kwanza<input required autoComplete="given-name" value={form.firstName} onChange={update("firstName")} /></label><label>Jina la mwisho<input required autoComplete="family-name" value={form.lastName} onChange={update("lastName")} /></label></div>}<div className="auth-fields"><label>Email<input required type="email" autoComplete="email" placeholder="barua pepe" value={form.email} onChange={update("email")} /></label>{mode === "register" && <label>Namba ya simu<input required inputMode="tel" autoComplete="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={update("phone")} /></label>}<label>Password<input required type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={update("password")} /></label>{mode === "register" && <label>Thibitisha password<input required type="password" autoComplete="new-password" value={form.confirmPassword} onChange={update("confirmPassword")} /></label>}</div>{mode === "login" && <button type="button" className="button button--green button--small" disabled={pending} onClick={() => void resetPassword()}>Umesahau password?</button>}<button type="submit" className="button button--green button--wide" disabled={pending}>{pending ? "INASUBIRI..." : mode === "login" ? "INGIA" : "TENGENEZA AKAUNTI"}</button></form></div></div>;
 }
 
 function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: string; setSearch: (value: string) => void }) {
@@ -90,6 +106,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const { isAuthenticated, profile, firebaseUser } = useAuth();
   const [orders, setOrders] = useState<TokenPurchaseOrder[]>([]);
   const [busyAmount, setBusyAmount] = useState<number | null>(null);
+  const [verificationPending, setVerificationPending] = useState(false);
   const balance = profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
   useEffect(() => {
@@ -107,10 +124,28 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       toast.error(error?.message ?? "Imeshindikana kuanzisha malipo.");
     } finally { setBusyAmount(null); }
   };
+  const resendVerification = async () => {
+    if (!firebaseUser) return;
+    setVerificationPending(true);
+    try { await sendVerificationEmail(firebaseUser); toast.success("Kiungo cha kuthibitisha email kimetumwa."); }
+    catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutuma kiungo cha uthibitisho."); }
+    finally { setVerificationPending(false); }
+  };
   const statusLabel = (value: string) => value === "PAID" ? "Imelipwa — tokeni zimeongezwa" : ["PENDING", "CREATING", "CREATE_UNKNOWN", "INPROGRESS"].includes(value) ? "Subiri uthibitishe USSD kwenye simu" : value === "NEEDS_REVIEW" ? "Malipo yanasubiri ukaguzi wa msaada" : value === "CREATE_FAILED" ? "Malipo hayakuanzishwa; jaribu tena" : `Hali ya malipo: ${value}`;
   const packages = [{ amount: 2000, credits: 40 }, { amount: 5000, credits: 100 }, { amount: 10000, credits: 200 }];
   const hasOpenOrder = orders.some((order) => ["CREATING", "CREATE_UNKNOWN", "PENDING", "INPROGRESS"].includes(order.status));
-  return <section className={`token-card ${compact ? "token-card--compact" : ""}`}><div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">Tokeni zako</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div></div><div className="token-card__meta"><span>Email: <b>{profile?.email ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "Imeidhinishwa" : "Haijathibitishwa"}</span></div>{status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Unaweza kununua tokeni, lakini huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}<div className="token-package-grid">{packages.map(({ amount, credits }) => <button key={amount} className="button button--green token-package-button" disabled={!isAuthenticated || !profile?.phone || busyAmount !== null || hasOpenOrder} onClick={() => void startPurchase(amount)}>{busyAmount === amount ? "Inatuma ombi..." : <>TZS {amount.toLocaleString("en-US")}<small>{credits} tokeni</small></>}</button>)}</div>{isAuthenticated && !profile?.phone && <div className="account-warning">Weka namba yako ya simu kwenye sehemu ya Akaunti kabla ya kununua tokeni.</div>}{hasOpenOrder && <small className="token-note">Ombi moja la malipo linasubiri; kagua hali yake hapa chini kabla ya kuanzisha jingine.</small>}{!isAuthenticated && <small className="token-note">Ingia au jisajili ili kununua tokeni na kuhusisha malipo na akaunti yako.</small>}{orders.length > 0 && <div className="token-purchase-status"><strong>Malipo yako ya karibuni</strong>{orders.slice(0, 3).map((order) => <div key={order.id}><span>TZS {Number(order.amount).toLocaleString("en-US")} — {Number(order.tokenAmount)} tokeni</span><small>{statusLabel(order.status)}</small></div>)}</div>}<small className="token-note">Malipo hupokelewa kupitia FimiPay; baada ya uthibitisho tokeni huongezwa moja kwa moja.</small></section>;
+  return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
+    <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">Tokeni zako</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div></div>
+    <div className="token-card__meta"><span>Email: <b>{profile?.email ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "Imeidhinishwa" : "Haijathibitishwa na admin"}</span></div>
+    {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Unaweza kununua tokeni, lakini huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
+    {isAuthenticated && firebaseUser && !firebaseUser.emailVerified && <div className="account-warning">Email yako bado haijathibitishwa. <button className="button button--green button--small" disabled={verificationPending} onClick={() => void resendVerification()}>{verificationPending ? "Inatuma..." : "Tuma kiungo cha uthibitisho"}</button></div>}
+    <div className="token-package-grid">{packages.map(({ amount, credits }) => <button key={amount} className="button button--green token-package-button" disabled={!isAuthenticated || !profile?.phone || busyAmount !== null || hasOpenOrder} onClick={() => void startPurchase(amount)}>{busyAmount === amount ? "Inatuma ombi..." : <>TZS {amount.toLocaleString("en-US")}<small>{credits} tokeni</small></>}</button>)}</div>
+    {isAuthenticated && !profile?.phone && <div className="account-warning">Weka namba yako ya simu kwenye sehemu ya Akaunti kabla ya kununua tokeni.</div>}
+    {hasOpenOrder && <small className="token-note">Ombi moja la malipo linasubiri; kagua hali yake hapa chini kabla ya kuanzisha jingine.</small>}
+    {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kununua tokeni na kuhusisha malipo na akaunti yako.</small>}
+    {orders.length > 0 && <div className="token-purchase-status"><strong>Malipo yako ya karibuni</strong>{orders.slice(0, 3).map((order) => <div key={order.id}><span>TZS {Number(order.amount).toLocaleString("en-US")} — {Number(order.tokenAmount)} tokeni</span><small>{statusLabel(order.status)}</small></div>)}</div>}
+    <small className="token-note">Malipo hupokelewa kupitia FimiPay; baada ya uthibitisho tokeni huongezwa moja kwa moja.</small>
+  </section>;
 }
 
 function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (service: ServiceCatalogItem) => void }) {

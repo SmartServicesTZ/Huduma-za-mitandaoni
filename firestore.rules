@@ -26,29 +26,26 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || canViewUsers());
       allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'firstName', 'lastName', 'phone', 'name', 'username', 'tokenBalance', 'verificationStatus', 'role', 'permissions', 'createdAt', 'language', 'profileImageUrl', 'updatedAt'])
+        && request.resource.data.uid == userId
         && request.resource.data.role == 'user'
         && request.resource.data.tokenBalance == 0
+        && request.resource.data.verificationStatus == 'pending'
+        && request.resource.data.permissions is map
+        && request.resource.data.permissions.keys().size() == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
         && hasNoCredentialFields(request.resource.data);
       allow update: if signedIn() && hasNoCredentialFields(request.resource.data) && (
         (request.auth.uid == userId
-          && request.resource.data.role == resource.data.role
-          && request.resource.data.tokenBalance == resource.data.tokenBalance
-          && request.resource.data.verificationStatus == resource.data.verificationStatus
-          && request.resource.data.permissions == resource.data.permissions
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['password', 'pin', 'pinHash']))
-        || (isSuperAdmin()
-          && request.resource.data.role in ['user', 'admin', 'moderator', 'support', 'super_admin']
-          && !(request.auth.uid == userId
-            && resource.data.role == 'super_admin'
-            && (request.resource.data.role != resource.data.role
-              || request.resource.data.permissions != resource.data.permissions
-              || request.resource.data.accountStatus == 'blocked')))
-        || (canManageUsers()
-          && resource.data.role != 'super_admin'
-          && request.resource.data.role != 'super_admin'
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'permissions', 'tokenBalance']))
-        || (canManageTokens()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tokenBalance', 'updatedAt']))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'email', 'firstName', 'lastName', 'phone', 'name', 'username', 'language', 'profileImageUrl', 'updatedAt', 'createdAt', 'role', 'tokenBalance', 'verificationStatus', 'permissions', 'password', 'pin', 'pinHash'])
+          && (resource.data.keys().hasAny(['uid']) ? request.resource.data.uid == resource.data.uid : request.resource.data.uid == userId)
+          && (resource.data.keys().hasAny(['role']) ? request.resource.data.role == resource.data.role : request.resource.data.role == 'user')
+          && (resource.data.keys().hasAny(['tokenBalance']) ? request.resource.data.tokenBalance == resource.data.tokenBalance : request.resource.data.tokenBalance == 0)
+          && (resource.data.keys().hasAny(['verificationStatus']) ? request.resource.data.verificationStatus == resource.data.verificationStatus : request.resource.data.verificationStatus == 'pending')
+          && (resource.data.keys().hasAny(['permissions']) ? request.resource.data.permissions == resource.data.permissions : request.resource.data.permissions is map && request.resource.data.permissions.keys().size() == 0)
+          && (resource.data.keys().hasAny(['accountStatus']) ? request.resource.data.accountStatus == resource.data.accountStatus : !request.resource.data.keys().hasAny(['accountStatus']))
+          && (resource.data.keys().hasAny(['createdAt']) ? request.resource.data.createdAt == resource.data.createdAt : request.resource.data.createdAt == request.time))
       );
       allow delete: if isSuperAdmin()
         && request.auth.uid != userId

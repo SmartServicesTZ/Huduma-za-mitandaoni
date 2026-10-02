@@ -6,6 +6,8 @@ import {
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updatePassword,
@@ -32,6 +34,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import type { ServiceFormField, ServiceFormValues } from "../../../shared/serviceForms";
+import { omitUndefinedFields } from "../../../shared/omitUndefinedFields";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCjzY-MjV40lJSyZr8b47AimYMybJoVEac",
@@ -94,7 +97,7 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
   const current = existing.data() ?? {};
   const firstName = extra.firstName ?? String(current.firstName ?? user.displayName?.split(" ")[0] ?? "");
   const lastName = extra.lastName ?? String(current.lastName ?? user.displayName?.split(" ").slice(1).join(" ") ?? "");
-  await setDoc(ref, {
+  const profile = omitUndefinedFields({
     uid: user.uid,
     email: user.email ?? "",
     firstName,
@@ -111,14 +114,29 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     language: extra.language ?? current.language ?? "sw",
     profileImageUrl: extra.profileImageUrl ?? current.profileImageUrl,
     updatedAt: serverTimestamp(),
-  }, { merge: true });
+  });
+  await setDoc(ref, profile, { merge: true });
   return ref;
 }
 
 export async function registerFirebaseUser(input: { email: string; password: string; firstName: string; lastName: string; phone: string }) {
   const credential = await createUserWithEmailAndPassword(firebaseAuth, input.email.trim(), input.password);
-  await ensureUserProfile(credential.user, input);
+  try {
+    await ensureUserProfile(credential.user, input);
+  } catch (cause) {
+    const failure = new Error("Akaunti imetengenezwa lakini profile haijahifadhiwa. Tumia Ingia kwa email na password hii baada ya tatizo la profile kurekebishwa.");
+    Object.assign(failure, { code: "profile/setup-failed", cause });
+    throw failure;
+  }
   return credential.user;
+}
+
+export function sendPasswordReset(email: string) {
+  return sendPasswordResetEmail(firebaseAuth, email.trim());
+}
+
+export function sendVerificationEmail(user: User) {
+  return sendEmailVerification(user);
 }
 
 export function subscribeToProfile(uid: string, callback: (profile: FirebaseProfile | null) => void) {
@@ -126,7 +144,7 @@ export function subscribeToProfile(uid: string, callback: (profile: FirebaseProf
 }
 
 export async function saveFirebaseProfile(uid: string, values: Partial<FirebaseProfile>) {
-  await setDoc(doc(firestore, "users", uid), { ...values, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(doc(firestore, "users", uid), { ...omitUndefinedFields(values as Record<string, unknown>), updatedAt: serverTimestamp() }, { merge: true });
 }
 
 export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string }, requestId?: string) {
