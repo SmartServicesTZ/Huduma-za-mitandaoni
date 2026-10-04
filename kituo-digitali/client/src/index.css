@@ -641,3 +641,19 @@ border:1px solid rgba(255,255,255,.11);box-shadow:0 25px 70px rgba(1,9,22,.28);}
  .header-support{display:none;}
  .header-user{display:none;}
 }
+
+
+/* TIN editable-template workspace */
+.tin-template-canvas{display:block;width:100%;height:auto;background:#fff}
+.tin-code-hint{display:flex;align-items:flex-start;gap:10px;margin-top:16px;padding:13px 14px;border:1px solid #dfe8f2;border-radius:14px;background:linear-gradient(135deg,#f8fbff,#f2fff8);color:#4b6077}
+.tin-code-hint svg{flex:0 0 auto;color:#168b59;margin-top:2px}
+.tin-code-hint div{display:flex;flex-direction:column;gap:4px}
+.tin-code-hint strong{font-size:11px;color:#10233d}
+.tin-code-hint span{font-size:10px;line-height:1.55}
+.tin-code-hint code{font-size:9px;padding:2px 5px;border-radius:5px;background:#e9f1f8;color:#15324f}
+.tin-preview-card{box-shadow:0 18px 48px rgba(8,25,48,.12)!important}
+.tin-demo-banner{box-shadow:0 8px 20px rgba(245,158,11,.08)}
+.service-free .service-card-icon{background:linear-gradient(145deg,#e9fff3,#d7f8e5)}
+.service-paid .service-card-icon{background:linear-gradient(145deg,#eef5ff,#ddeaff);color:#2d67bd}
+.service-locked .service-card-icon{background:linear-gradient(145deg,#f5f6f8,#e9edf2);color:#64748b}
+.portal-service-card:focus-visible{outline:3px solid rgba(45,127,249,.28);outline-offset:3px}
