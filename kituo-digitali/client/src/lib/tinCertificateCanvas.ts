@@ -36,7 +36,7 @@ export const TIN_TEMPLATE = {
   subtitle: { x: 506, y: 365, fontSize: 25, weight: 400 },
   numberTitle: { x: 506, y: 435, fontSize: 24, weight: 700 },
   certify: { x: 506, y: 510, fontSize: 27, weight: 700 },
-  taxpayer: { x: 506, y: 620, fontSize: 23, weight: 700 },
+  taxpayer: { x: 480, y: 620, fontSize: 23, weight: 700 },
   assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
   tinValue: { x: 506, y: 760, fontSize: 25, weight: 700 },
   effectLabel: { x: 150, y: 835, fontSize: 15, weight: 700 },
