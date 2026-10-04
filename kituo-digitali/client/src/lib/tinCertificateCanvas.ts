@@ -1,16 +1,9 @@
 import QRCode from "qrcode";
 
 /**
- * TIN DEMO TEMPLATE
- * -----------------
- * HAPA NDIYO SEHEMU YA KUBADILISHA MUONEKANO WA PREVIEW.
- * Badilisha TIN_TEMPLATE hapa chini: x, y, fontSize, weight, align.
- *
- * Background ya DEMO inaweza kuwekwa kwenye:
- * client/public/tin-assets/tin-demo-template.png
- * kisha weka BACKGROUND_ASSET = "tin-demo-template.png".
- *
- * Watermark ya NOT OFFICIAL lazima ibaki kwenye demo.
+ * TIN CERTIFICATE TEMPLATE
+ * ------------------------
+ * HAPA NDIYO SEHEMU YA KUBADILISHA MUONEKANO WA CHETI HALISI CHA TIN.
  */
 
 export const TIN_CANVAS_WIDTH = 1012;
@@ -68,7 +61,7 @@ function loadImage(src: string) {
   const promise = new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Imeshindikana kupakia picha ya demo."));
+    image.onerror = () => reject(new Error("Imeshindikana kupakia picha ya template."));
     image.src = src;
   });
   cache.set(src, promise);
@@ -93,33 +86,15 @@ function dateText(value: string) {
   return day + "/" + month + "/" + year;
 }
 
-function drawDemoBackground(ctx: CanvasRenderingContext2D) {
+function drawDefaultBackground(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, TIN_CANVAS_WIDTH, TIN_CANVAS_HEIGHT);
-  ctx.strokeStyle = "#e2c900";
+  ctx.strokeStyle = "#1b4d3e";
   ctx.lineWidth = 5;
   ctx.strokeRect(34, 34, TIN_CANVAS_WIDTH - 68, TIN_CANVAS_HEIGHT - 68);
   ctx.strokeStyle = "#73777f";
   ctx.lineWidth = 2;
   ctx.strokeRect(52, 52, TIN_CANVAS_WIDTH - 104, TIN_CANVAS_HEIGHT - 104);
-  ctx.save();
-  ctx.globalAlpha = 0.045;
-  ctx.fillStyle = "#5d6570";
-  ctx.font = "700 18px Arial";
-  for (let y = 85; y < 1240; y += 38) for (let x = 70; x < 980; x += 80) ctx.fillText("DEMO", x, y);
-  ctx.restore();
-}
-
-function drawWatermark(ctx: CanvasRenderingContext2D) {
-  ctx.save();
-  ctx.translate(506, 680);
-  ctx.rotate(-Math.PI / 8);
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = "#c1121f";
-  ctx.font = "900 68px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("DEMO • NOT OFFICIAL", 0, 0);
-  ctx.restore();
 }
 
 export async function renderTinCertificateCanvas(form: TinCertificateForm, canvas: HTMLCanvasElement = document.createElement("canvas")) {
@@ -133,19 +108,19 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
       const background = await loadImage(assetUrl(BACKGROUND_ASSET));
       ctx.drawImage(background, 0, 0, TIN_CANVAS_WIDTH, TIN_CANVAS_HEIGHT);
     } catch {
-      drawDemoBackground(ctx);
+      drawDefaultBackground(ctx);
     }
   } else {
-    drawDemoBackground(ctx);
+    drawDefaultBackground(ctx);
   }
 
-  text(ctx, TIN_TEMPLATE.title, "TIN CERTIFICATE — DEMO");
-  text(ctx, TIN_TEMPLATE.subtitle, "Taxpayer Identification Number");
-  text(ctx, TIN_TEMPLATE.numberTitle, "SAMPLE REGISTRATION PREVIEW");
-  text(ctx, TIN_TEMPLATE.certify, "THIS IS A DEMONSTRATION");
-  text(ctx, TIN_TEMPLATE.taxpayer, form.name.toUpperCase() || "DEMO TAXPAYER");
-  text(ctx, TIN_TEMPLATE.assigned, "Sample TIN assigned for interface preview");
-  text(ctx, TIN_TEMPLATE.tinValue, form.tin || "000-000-000");
+  text(ctx, TIN_TEMPLATE.title, "UNITED REPUBLIC OF TANZANIA");
+  text(ctx, TIN_TEMPLATE.subtitle, "TANZANIA REVENUE AUTHORITY");
+  text(ctx, TIN_TEMPLATE.numberTitle, "TAXPAYER IDENTIFICATION NUMBER (TIN)");
+  text(ctx, TIN_TEMPLATE.certify, "This is to certify that the taxpayer named below is registered");
+  text(ctx, TIN_TEMPLATE.taxpayer, form.name.toUpperCase());
+  text(ctx, TIN_TEMPLATE.assigned, "TIN has been assigned as follows:");
+  text(ctx, TIN_TEMPLATE.tinValue, form.tin);
 
   text(ctx, TIN_TEMPLATE.effectLabel, "WITH EFFECT FROM:");
   text(ctx, TIN_TEMPLATE.effectValue, dateText(form.effectDate));
@@ -158,15 +133,12 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   text(ctx, TIN_TEMPLATE.streetLabel, "STREET / AREA:");
   text(ctx, TIN_TEMPLATE.streetValue, form.streetArea.toUpperCase());
 
-  if (/^\d{3}-\d{3}-\d{3}$/.test(form.tin)) {
-    const qr = await QRCode.toDataURL(JSON.stringify({ demo: true, tin: form.tin, name: form.name, date: form.effectDate }), { width: 240, margin: 1, errorCorrectionLevel: "M" });
+  if (form.tin) {
+    const qr = await QRCode.toDataURL(JSON.stringify({ tin: form.tin, name: form.name, date: form.effectDate }), { width: 240, margin: 1, errorCorrectionLevel: "M" });
     const qrImage = await loadImage(qr);
     ctx.drawImage(qrImage, 735, 855, 110, 110);
-    text(ctx, { x: 790, y: 980, fontSize: 10, align: "center" }, "DEMO QR");
   }
 
-  text(ctx, TIN_TEMPLATE.commissioner, form.commissioner || "DEMO COMMISSIONER");
-  text(ctx, { x: 506, y: 1205, fontSize: 12, weight: 700, align: "center" }, "SAMPLE / DEMO ONLY — NOT VALID FOR OFFICIAL USE");
-  drawWatermark(ctx);
+  text(ctx, TIN_TEMPLATE.commissioner, form.commissioner || "COMMISSIONER GENERAL");
   return canvas;
 }
