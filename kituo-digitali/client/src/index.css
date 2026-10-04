@@ -180,3 +180,342 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .auth-error-alert strong { display: block; color: #7c2d12; font-size: 12px; font-weight: 900; }
 .auth-error-alert p { margin: 4px 0 7px; color: #9a3412; font-size: 11px; line-height: 1.5; }
 .auth-error-alert code { display: inline-block; padding: 3px 6px; border-radius: 5px; color: #9a3412; background: #fed7aa; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; font-weight: 800; }
+
+
+/* =========================================================
+   $TEWARD TZ — 2026 UI POLISH
+   Visual-only layer: preserves existing business logic,
+   service data, Firebase flows and certificate rendering.
+   ========================================================= */
+:root{
+  --ui-navy:#071a36;
+  --ui-navy-2:#0b2447;
+  --ui-green:#65e69b;
+  --ui-green-strong:#18b969;
+  --ui-surface:#ffffff;
+  --ui-soft:#f5f8fc;
+  --ui-border:#e3eaf2;
+  --ui-shadow:0 14px 36px rgba(2,12,27,.14);
+}
+body{
+  font-family:"Manrope",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  overflow-x:hidden;
+}
+::selection{color:#062817;background:#65e69b}
+
+/* Header */
+.announcement{
+  min-height:38px;
+  padding:8px 18px;
+  font-size:12px;
+  letter-spacing:.01em;
+  box-shadow:0 1px 0 rgba(0,0,0,.12);
+}
+.app-header{
+  min-height:70px;
+  gap:18px;
+  padding:10px clamp(14px,3vw,38px);
+  background:rgba(5,20,42,.94);
+  border-bottom-color:rgba(255,255,255,.08);
+}
+.portal-brand{font-size:14px}
+.portal-logo{
+  width:36px;height:36px;border-radius:11px;
+  box-shadow:0 7px 18px rgba(101,230,155,.2);
+}
+.global-search{
+  min-height:42px;
+  border-radius:13px;
+  border-color:rgba(255,255,255,.12);
+  background:rgba(255,255,255,.065);
+  transition:border-color .18s ease,background .18s ease,box-shadow .18s ease;
+}
+.global-search:focus-within{
+  border-color:rgba(101,230,155,.55);
+  background:rgba(255,255,255,.09);
+  box-shadow:0 0 0 4px rgba(101,230,155,.08);
+}
+.header-actions{gap:10px}
+.header-support{box-shadow:0 5px 16px rgba(101,230,155,.08)}
+.header-icon{border-radius:9px}
+.button{border-radius:10px}
+.button--green{box-shadow:0 7px 18px rgba(101,230,155,.12)}
+
+/* Main shell / sidebar */
+.portal-shell{
+  background:
+    radial-gradient(circle at 82% 0%,rgba(27,78,129,.25),transparent 28%),
+    var(--navy);
+}
+.sidebar-portal{
+  background:linear-gradient(180deg,#06172f 0%,#05142a 100%);
+  border-right-color:rgba(255,255,255,.075);
+  box-shadow:12px 0 30px rgba(0,0,0,.08);
+}
+.sidebar-user{
+  border-color:rgba(255,255,255,.09);
+  background:rgba(255,255,255,.045);
+}
+.portal-nav-item{
+  min-height:43px;
+  border:1px solid transparent;
+  transition:background .16s ease,color .16s ease,transform .16s ease,border-color .16s ease;
+}
+.portal-nav-item:hover{
+  transform:translateX(2px);
+  border-color:rgba(101,230,155,.12);
+}
+.portal-nav-item.active{
+  box-shadow:0 8px 20px rgba(101,230,155,.08);
+}
+
+/* Content */
+.portal-main{
+  max-width:1460px;
+  padding-top:28px;
+}
+.welcome-strip{
+  position:relative;
+  overflow:hidden;
+  min-height:178px;
+  border:1px solid rgba(255,255,255,.07);
+  background:
+    radial-gradient(circle at 92% 18%,rgba(101,230,155,.17),transparent 25%),
+    linear-gradient(135deg,#123b70 0%,#0b2447 58%,#082d4c 100%);
+  box-shadow:0 22px 55px rgba(0,0,0,.2);
+}
+.welcome-strip:after{
+  content:"";
+  position:absolute;
+  width:220px;height:220px;
+  right:-90px;bottom:-125px;
+  border:1px solid rgba(101,230,155,.12);
+  border-radius:50%;
+  box-shadow:0 0 0 28px rgba(101,230,155,.025),0 0 0 58px rgba(101,230,155,.018);
+}
+.welcome-strip > *{position:relative;z-index:1}
+.welcome-strip h1{
+  font-size:clamp(27px,4vw,43px);
+}
+.portal-section{margin-top:38px}
+.section-title{margin-bottom:16px}
+.section-title h2{font-size:clamp(21px,2.5vw,29px)}
+.section-count{
+  min-width:34px;height:34px;
+  box-shadow:0 5px 15px rgba(101,230,155,.12);
+}
+
+/* Service cards */
+.portal-service-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:15px;
+}
+.portal-service-card{
+  position:relative;
+  min-height:184px;
+  padding:18px;
+  border:1px solid rgba(15,23,42,.045);
+  border-radius:16px;
+  box-shadow:0 10px 27px rgba(0,0,0,.11);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.portal-service-card:before{
+  content:"";
+  position:absolute;
+  left:0;right:0;top:0;
+  height:3px;
+  opacity:0;
+  border-radius:16px 16px 0 0;
+  background:linear-gradient(90deg,#18b969,#65e69b);
+  transition:opacity .18s ease;
+}
+.portal-service-card:hover{
+  transform:translateY(-5px);
+  border-color:rgba(24,185,105,.18);
+  box-shadow:0 20px 38px rgba(0,0,0,.17);
+}
+.portal-service-card:hover:before{opacity:1}
+.service-card-icon{
+  width:44px;height:44px;
+  margin-bottom:14px;
+  border-radius:13px;
+  transition:transform .18s ease;
+}
+.portal-service-card:hover .service-card-icon{transform:scale(1.05)}
+.service-card-copy strong{font-size:12.5px}
+.service-card-copy span{font-size:10.5px}
+.service-card-foot{margin-top:15px}
+
+/* Special offers / tutorials */
+.special-grid,.tutorial-grid{gap:14px}
+.special-card,.tutorial-card{
+  border:1px solid rgba(15,23,42,.045);
+  box-shadow:0 10px 25px rgba(0,0,0,.11);
+}
+.special-card:hover,.tutorial-card:hover{
+  box-shadow:0 18px 34px rgba(0,0,0,.16);
+}
+.tutorial-card{min-height:182px}
+
+/* Token / account surfaces */
+.token-card,.history-table,.admin-panel,.account-panel{
+  border:1px solid rgba(15,23,42,.045);
+  box-shadow:var(--ui-shadow);
+}
+.token-card{
+  padding:23px;
+  border-radius:17px;
+}
+.token-icon{
+  box-shadow:inset 0 0 0 1px rgba(24,185,105,.08);
+}
+.token-package-button{
+  border:1px solid #dce6ee;
+  border-radius:11px;
+  background:#fbfdff;
+}
+.token-package-button:hover:not(:disabled){
+  border-color:#9fe6bd;
+  background:#f5fff8;
+}
+
+/* Forms */
+.auth-fields input,.admin-form-grid input,.admin-form-grid textarea,
+.admin-form-grid select,.control-field input,.control-field select,
+.control-field textarea{
+  transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.auth-fields input:hover,.admin-form-grid input:hover,.admin-form-grid textarea:hover,
+.control-field input:hover,.control-field select:hover,.control-field textarea:hover{
+  border-color:#c5d3e0;
+  background:#fbfdff;
+}
+.auth-fields input:focus,.admin-form-grid input:focus,.admin-form-grid textarea:focus,
+.control-field input:focus,.control-field select:focus,.control-field textarea:focus{
+  border-color:#18b969;
+  box-shadow:0 0 0 4px rgba(24,185,105,.10);
+  background:#fff;
+}
+
+/* Modals */
+.portal-modal,.admin-modal{
+  border:1px solid rgba(15,23,42,.08);
+  box-shadow:0 35px 100px rgba(0,0,0,.34);
+}
+.portal-modal-backdrop,.admin-modal-backdrop{
+  backdrop-filter:blur(5px);
+}
+
+/* Admin */
+.admin-content{
+  background:
+    radial-gradient(circle at 95% 0%,rgba(99,102,241,.07),transparent 28%),
+    #f7f9fc;
+}
+.admin-stat-card,.admin-stat{
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 10px 25px rgba(15,23,42,.08);
+}
+.admin-card{
+  border:1px solid #e7edf4;
+  box-shadow:0 10px 26px rgba(15,23,42,.07);
+}
+.admin-tabs a{
+  border:1px solid rgba(255,255,255,.05);
+  transition:transform .15s ease,background .15s ease,color .15s ease;
+}
+.admin-tabs a:hover{transform:translateY(-1px)}
+
+/* Tables */
+.history-head{background:#f8fafc}
+.history-row:hover{background:#fbfdff}
+.admin-table tr{transition:background .12s ease}
+.admin-table tbody tr:hover{background:#fbfdff}
+
+/* Footer */
+.portal-footer{
+  border-top:1px solid rgba(255,255,255,.06);
+  margin-top:18px;
+}
+
+/* Accessibility / reduced motion */
+@media (prefers-reduced-motion:reduce){
+  *,*:before,*:after{
+    scroll-behavior:auto!important;
+    transition:none!important;
+    animation:none!important;
+  }
+}
+
+/* Tablet */
+@media (max-width:1100px){
+  .portal-service-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .portal-main{padding-left:22px;padding-right:22px}
+}
+
+/* Mobile */
+@media (max-width:800px){
+  .announcement{min-height:40px;font-size:10.5px;padding:8px 12px}
+  .app-header{min-height:64px;padding:9px 13px}
+  .portal-brand{font-size:11.5px;gap:7px}
+  .portal-logo{width:32px;height:32px;border-radius:10px}
+  .header-actions .button{min-height:35px;padding:7px 9px;font-size:10px}
+  .global-search{
+    top:70px;
+    min-height:42px;
+    border-radius:12px;
+  }
+  .portal-main{
+    padding:58px 13px 45px;
+  }
+  .welcome-strip{
+    min-height:155px;
+    padding:21px;
+    border-radius:16px;
+  }
+  .welcome-strip h1{font-size:28px}
+  .welcome-strip p{font-size:12px}
+  .welcome-strip > svg{width:56px;height:56px}
+  .portal-section{margin-top:30px}
+  .section-title h2{font-size:21px}
+  .portal-service-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  .portal-service-card{
+    min-height:165px;
+    padding:14px;
+    border-radius:14px;
+  }
+  .service-card-icon{width:40px;height:40px}
+  .service-card-copy strong{font-size:11.5px}
+  .service-card-copy span{font-size:9.5px}
+  .special-grid{grid-template-columns:1fr}
+  .tutorial-grid{grid-template-columns:1fr 1fr}
+  .token-card{padding:17px;border-radius:15px}
+  .history-head,.history-row{
+    grid-template-columns:1.2fr 1.4fr .8fr;
+  }
+  .history-head>*:nth-child(n+4),.history-row>*:nth-child(n+4){display:none}
+}
+
+/* Small phones */
+@media (max-width:520px){
+  .portal-service-grid{grid-template-columns:1fr 1fr}
+  .portal-service-card{min-height:156px;padding:13px}
+  .service-card-icon{width:38px;height:38px;margin-bottom:10px}
+  .service-card-copy strong{font-size:11px}
+  .service-card-copy span{font-size:9px}
+  .service-card-foot{margin-top:10px;padding-top:8px}
+  .tutorial-grid{grid-template-columns:1fr}
+  .token-package-grid{grid-template-columns:repeat(3,1fr);gap:6px}
+  .token-package-button{min-height:61px;font-size:10px}
+  .portal-footer{flex-direction:column;gap:7px}
+  .auth-fields--two{grid-template-columns:1fr}
+  .portal-modal{padding:22px}
+}
+
+/* Keep certificate/template workspace geometry stable. */
+.license-clean-paper,.license-template-paper,.license-preview-card{
+  transform:none!important;
+}
