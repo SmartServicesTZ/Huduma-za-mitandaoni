@@ -519,3 +519,15 @@ body{
 .license-clean-paper,.license-template-paper,.license-preview-card{
   transform:none!important;
 }
+
+
+/* TIN certificate demo */
+.tin-layout{display:grid;grid-template-columns:minmax(360px,.9fr) minmax(420px,1.1fr);gap:18px;align-items:start}
+.tin-demo-banner{margin:0 0 16px;padding:11px 14px;border:1px solid #f59e0b;border-radius:10px;color:#7c2d12;background:#fff7ed;font-size:11px;font-weight:900;text-align:center}
+.tin-preview-card{position:sticky;top:18px}
+.tin-paper{width:min(100%,650px);margin:0 auto;overflow:hidden;background:#fff;border:1px solid #d7e0e8;box-shadow:0 12px 32px rgba(0,0,0,.13);aspect-ratio:1012/1300}
+.tin-paper img{display:block;width:100%;height:100%;object-fit:contain}
+.tin-actions{display:flex;flex-wrap:wrap;gap:10px;padding-top:18px}
+.tin-actions .button{flex:1 1 180px;justify-content:center}
+@media(max-width:950px){.tin-layout{grid-template-columns:1fr}.tin-preview-card{position:static}}
+@media(max-width:600px){.tin-layout{gap:12px}.tin-paper{width:100%}.tin-actions{gap:8px}.tin-actions .button{flex-basis:100%}}
