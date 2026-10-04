@@ -97,7 +97,7 @@ function drawDefaultBackground(ctx: CanvasRenderingContext2D) {
   ctx.strokeRect(52, 52, TIN_CANVAS_WIDTH - 104, TIN_CANVAS_HEIGHT - 104);
 }
 
-export async function renderTinCertificateCanvas(form: TinCertificateForm, canvas: HTMLCanvasElement = document.createElement("canvas")) {
+export async function renderTinCertificateCanvas(form: TinCertificateForm, canvas: HTMLCanvasElement = document.createElement("canvas"), layout?: Record<string, { x?: number; y?: number; fontSize?: number }>) {
   canvas.width = TIN_CANVAS_WIDTH;
   canvas.height = TIN_CANVAS_HEIGHT;
   const ctx = canvas.getContext("2d");
@@ -114,24 +114,25 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
     drawDefaultBackground(ctx);
   }
 
-  text(ctx, TIN_TEMPLATE.title, "UNITED REPUBLIC OF TANZANIA");
-  text(ctx, TIN_TEMPLATE.subtitle, "TANZANIA REVENUE AUTHORITY");
-  text(ctx, TIN_TEMPLATE.numberTitle, "TAXPAYER IDENTIFICATION NUMBER (TIN)");
-  text(ctx, TIN_TEMPLATE.certify, "This is to certify that the taxpayer named below is registered");
-  text(ctx, TIN_TEMPLATE.taxpayer, form.name.toUpperCase());
-  text(ctx, TIN_TEMPLATE.assigned, "TIN has been assigned as follows:");
-  text(ctx, TIN_TEMPLATE.tinValue, form.tin);
+  const pos = (key: keyof typeof TIN_TEMPLATE) => ({ ...TIN_TEMPLATE[key], ...(layout?.[key] ?? {}) });
+  text(ctx, pos("title"), "UNITED REPUBLIC OF TANZANIA");
+  text(ctx, pos("subtitle"), "TANZANIA REVENUE AUTHORITY");
+  text(ctx, pos("numberTitle"), "TAXPAYER IDENTIFICATION NUMBER (TIN)");
+  text(ctx, pos("certify"), "This is to certify that the taxpayer named below is registered");
+  text(ctx, pos("taxpayer"), form.name.toUpperCase());
+  text(ctx, pos("assigned"), "TIN has been assigned as follows:");
+  text(ctx, pos("tinValue"), form.tin);
 
-  text(ctx, TIN_TEMPLATE.effectLabel, "WITH EFFECT FROM:");
-  text(ctx, TIN_TEMPLATE.effectValue, dateText(form.effectDate));
-  text(ctx, TIN_TEMPLATE.locationLabel, "TRA LOCATION:");
-  text(ctx, TIN_TEMPLATE.locationValue, form.traLocation.toUpperCase());
-  text(ctx, TIN_TEMPLATE.officeLabel, "TAX OFFICE:");
-  text(ctx, TIN_TEMPLATE.officeValue, form.taxOffice.toUpperCase());
-  text(ctx, TIN_TEMPLATE.physicalLabel, "PHYSICAL LOCATION:");
-  text(ctx, TIN_TEMPLATE.physicalValue, form.physicalLocation.toUpperCase());
-  text(ctx, TIN_TEMPLATE.streetLabel, "STREET / AREA:");
-  text(ctx, TIN_TEMPLATE.streetValue, form.streetArea.toUpperCase());
+  text(ctx, pos("effectLabel"), "WITH EFFECT FROM:");
+  text(ctx, pos("effectValue"), dateText(form.effectDate));
+  text(ctx, pos("locationLabel"), "TRA LOCATION:");
+  text(ctx, pos("locationValue"), form.traLocation.toUpperCase());
+  text(ctx, pos("officeLabel"), "TAX OFFICE:");
+  text(ctx, pos("officeValue"), form.taxOffice.toUpperCase());
+  text(ctx, pos("physicalLabel"), "PHYSICAL LOCATION:");
+  text(ctx, pos("physicalValue"), form.physicalLocation.toUpperCase());
+  text(ctx, pos("streetLabel"), "STREET / AREA:");
+  text(ctx, pos("streetValue"), form.streetArea.toUpperCase());
 
   if (form.tin) {
     const qr = await QRCode.toDataURL(JSON.stringify({ tin: form.tin, name: form.name, date: form.effectDate }), { width: 240, margin: 1, errorCorrectionLevel: "M" });
@@ -139,6 +140,6 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
     ctx.drawImage(qrImage, 735, 855, 110, 110);
   }
 
-  text(ctx, TIN_TEMPLATE.commissioner, form.commissioner || "COMMISSIONER GENERAL");
+  text(ctx, pos("commissioner"), form.commissioner || "COMMISSIONER GENERAL");
   return canvas;
 }
