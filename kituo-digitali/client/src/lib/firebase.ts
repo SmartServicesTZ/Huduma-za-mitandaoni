@@ -52,7 +52,8 @@ export const firebaseStorage = getStorage(app);
 
 function workerBaseUrl() {
   const configured = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "").trim();
-  const value = configured || (import.meta.env.DEV ? "http://127.0.0.1:8787" : "");
+  const productionFallback = "https://huduma-za-mtandao-api.stewardjackson999.workers.dev";
+  const value = configured || (import.meta.env.DEV ? "http://127.0.0.1:8787" : productionFallback);
   if (!value) throw Object.assign(new Error("Huduma ya API haijasanidiwa. Wasiliana na msimamizi."), { code: "api/unconfigured" });
   return value.replace(/\/+$/, "");
 }
