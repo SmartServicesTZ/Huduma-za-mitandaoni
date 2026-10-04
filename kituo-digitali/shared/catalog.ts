@@ -49,7 +49,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "Huduma kuu"),
   free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia.", "landmark", "Huduma kuu"),
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "Huduma kuu"),
-  paid("nakala-nida-2", "NAKALA LAINI YA NIDA 2", "Nakala nyingine ya taarifa za NIDA.", "copy", "Huduma kuu"),
+  paid("nakala-nida-2", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "Huduma kuu"),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "Huduma kuu"),
   free("utafutaji-nida", "UTAFUTA WA NIDA", "Tafuta taarifa za NIDA bila tokeni.", "search", "Huduma za bure"),
   free("qr-mitandao", "MSIMBO WA QR MITANDAO YOTE", "Tengeneza msimbo wa QR wa mitandao yako.", "qr-code", "Huduma za bure"),
