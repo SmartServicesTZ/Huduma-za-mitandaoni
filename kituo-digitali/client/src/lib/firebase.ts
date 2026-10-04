@@ -388,6 +388,11 @@ export async function setHomepageServiceOrder(serviceOrder: string[], homepageSe
   return (await callable({ serviceOrder, homepageSectionOrder })).data;
 }
 
+export async function getPublicSiteSettings() {
+  const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
+  return snapshot.exists() ? snapshot.data() : null;
+}
+
 export async function adminGetSiteSettings() {
   const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
   return snapshot.exists() ? snapshot.data() : null;
