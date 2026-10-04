@@ -50,7 +50,13 @@ export default function AgentStickerPage() {
   const [agentNumber, setAgentNumber] = useState("");
   const [imageError, setImageError] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [layout, setLayout] = useState(STICKER_LAYOUT);
+  const [layout, setLayout] = useState<{
+    name: { left: number; top: number; fontPercent: number };
+    number: { left: number; top: number; fontPercent: number };
+  }>({
+    name: { left: STICKER_LAYOUT.name.left, top: STICKER_LAYOUT.name.top, fontPercent: STICKER_LAYOUT.name.fontPercent },
+    number: { left: STICKER_LAYOUT.number.left, top: STICKER_LAYOUT.number.top, fontPercent: STICKER_LAYOUT.number.fontPercent },
+  });
   useEffect(() => { void getPublicSiteSettings().then((settings: any) => { const saved = settings?.templateLayouts?.sticker; if (saved) setLayout((current) => ({ name: { ...current.name, left: Number(saved.nameX ?? current.name.left), top: Number(saved.nameY ?? current.name.top), fontPercent: Number(saved.nameSize ?? current.name.fontPercent) }, number: { ...current.number, left: Number(saved.numberX ?? current.number.left), top: Number(saved.numberY ?? current.number.top), fontPercent: Number(saved.numberSize ?? current.number.fontPercent) } })); }).catch(() => undefined); }, []);
 
   const config = NETWORKS[network];
