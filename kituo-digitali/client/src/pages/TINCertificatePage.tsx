@@ -18,6 +18,9 @@ const DEMO: TinCertificateForm = {
 export default function TINCertificatePage() {
   const [form, setForm] = useState<TinCertificateForm>({ ...DEMO });
   const [busy, setBusy] = useState(false);
+  const [layout, setLayout] = useState<Record<string, {x:number;y:number;fontSize:number}>>({
+    taxpayer:{x:480,y:620,fontSize:23}, tinValue:{x:506,y:760,fontSize:25}, effectValue:{x:390,y:835,fontSize:15}, locationValue:{x:390,y:875,fontSize:15}, officeValue:{x:390,y:915,fontSize:15}, physicalValue:{x:390,y:955,fontSize:15}, streetValue:{x:390,y:995,fontSize:15}
+  });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -25,7 +28,7 @@ export default function TINCertificatePage() {
     const render = async () => {
       try {
         const output = document.createElement("canvas");
-        await renderTinCertificateCanvas(form, output);
+        await renderTinCertificateCanvas(form, output, layout);
         if (cancelled || !canvasRef.current) return;
         canvasRef.current.width = output.width;
         canvasRef.current.height = output.height;
@@ -93,6 +96,16 @@ export default function TINCertificatePage() {
           <Field label="Street / Area" english="Street / Area"><input value={form.streetArea} onChange={(e) => set("streetArea", e.target.value.toUpperCase())} /></Field>
           <Field label="Commissioner" english="Demo name"><input value={form.commissioner} onChange={(e) => set("commissioner", e.target.value)} /></Field>
         </div></div>
+        <div className="tin-layout-editor" style={{marginTop:18,padding:16,border:"1px solid #e5e7eb",borderRadius:14,background:"#f8fafc"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><strong>🎛️ DEMO TEMPLATE — X / Y CONTROL</strong><small>Badilisha kisha Live Preview ita-update</small></div>
+          {Object.entries(layout).map(([key,v]) => <div key={key} style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",gap:8,alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:12,fontWeight:700}}>{key}</span>
+            <input type="number" value={v.x} title="X" onChange={e=>setLayout(l=>({...l,[key]:{...l[key],x:Number(e.target.value)}}))}/>
+            <input type="number" value={v.y} title="Y" onChange={e=>setLayout(l=>({...l,[key]:{...l[key],y:Number(e.target.value)}}))}/>
+            <input type="number" value={v.fontSize} title="Font" onChange={e=>setLayout(l=>({...l,[key]:{...l[key],fontSize:Number(e.target.value)}}))}/>
+          </div>)}
+          <small>X = kushoto/kulia • Y = juu/chini • Font = ukubwa wa maandishi. Hii ni DEMO tu.</small>
+        </div>
 
         <div className="tin-actions">
           <button className="button button--dark" onClick={() => { setForm({ ...DEMO }); toast.success("Demo imewekwa."); }}><RotateCcw size={16} /> WEKA DEMO</button>
