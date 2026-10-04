@@ -216,7 +216,7 @@ function CollectionPanel({ title, collectionName, rows, form, setForm, fields, o
 function TemplateEditorPanel({ values, setValues, onRun, adminId }: any) {
   const defaults = {
     sticker: { nameX: 50, nameY: 72, nameSize: 3.4, numberX: 50, numberY: 82, numberSize: 3.1 },
-    tin: { nameX: 506, nameY: 620, nameSize: 23, tinX: 506, tinY: 760, tinSize: 25 },
+    tin: { taxpayer: 480, taxpayerY: 620, taxpayerSize: 23, tinX: 506, tinY: 760, tinSize: 25, effectX: 390, effectY: 835, locationX: 390, locationY: 875, officeX: 390, officeY: 915, physicalX: 390, physicalY: 955, streetX: 390, streetY: 995, commissionerX: 795, commissionerY: 1110 },
     license: { nameX: 50, nameY: 50, nameSize: 3.2, numberX: 50, numberY: 58, numberSize: 3 },
     airtelSme: { nameX: 50, nameY: 25, nameSize: 3, phoneX: 50, phoneY: 29, phoneSize: 3 },
   };
@@ -224,7 +224,7 @@ function TemplateEditorPanel({ values, setValues, onRun, adminId }: any) {
   const set = (service: string, key: string, value: number) => setValues({ ...values, templateLayouts: { ...current, [service]: { ...current[service as keyof typeof current], [key]: value } } });
   const groups = [
     ["sticker", "Stika za Mawakala", [["nameX","Jina X",0,100],["nameY","Jina Y",0,100],["nameSize","Jina size",1,10],["numberX","Namba X",0,100],["numberY","Namba Y",0,100],["numberSize","Namba size",1,10]]],
-    ["tin", "Cheti cha TIN", [["nameX","Jina X",0,1012],["nameY","Jina Y",0,1300],["nameSize","Jina size",8,80],["tinX","TIN X",0,1012],["tinY","TIN Y",0,1300],["tinSize","TIN size",8,80]]],
+    ["tin", "Cheti cha TIN", [["taxpayer","Jina",0,1012],["taxpayerY","Jina Y",0,1300],["taxpayerSize","Jina size",8,80],["tinX","TIN X",0,1012],["tinY","TIN Y",0,1300],["tinSize","TIN size",8,80],["effectX","Tarehe X",0,1012],["effectY","Tarehe Y",0,1300],["locationX","Location X",0,1012],["locationY","Location Y",0,1300],["officeX","Office X",0,1012],["officeY","Office Y",0,1300],["physicalX","Physical X",0,1012],["physicalY","Physical Y",0,1300],["streetX","Street X",0,1012],["streetY","Street Y",0,1300],["commissionerX","Commissioner X",0,1012],["commissionerY","Commissioner Y",0,1300]]],
     ["license", "Leseni ya Biashara", [["nameX","Jina X",0,100],["nameY","Jina Y",0,100],["nameSize","Jina size",1,10],["numberX","Namba X",0,100],["numberY","Namba Y",0,100],["numberSize","Namba size",1,10]]],
     ["airtelSme", "SME Airtel Mkataba", [["nameX","Jina X",0,100],["nameY","Jina Y",0,100],["nameSize","Jina size",1,10],["phoneX","Simu X",0,100],["phoneY","Simu Y",0,100],["phoneSize","Simu size",1,10]]],
   ] as const;
