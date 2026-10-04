@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Image as ImageIcon, RotateCcw, ShieldCheck, Smartphone } from "lucide-react";
+import { getPublicSiteSettings } from "@/lib/firebase";
 
 type NetworkKey = "airtel" | "vodacom" | "halotel" | "yas";
 type NetworkConfig = { name: string; template: string; logo: string; className: NetworkKey };
@@ -49,6 +50,8 @@ export default function AgentStickerPage() {
   const [agentNumber, setAgentNumber] = useState("");
   const [imageError, setImageError] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const [layout, setLayout] = useState(STICKER_LAYOUT);
+  useEffect(() => { void getPublicSiteSettings().then((settings: any) => { const saved = settings?.templateLayouts?.sticker; if (saved) setLayout((current) => ({ name: { ...current.name, left: Number(saved.nameX ?? current.name.left), top: Number(saved.nameY ?? current.name.top), fontPercent: Number(saved.nameSize ?? current.name.fontPercent) }, number: { ...current.number, left: Number(saved.numberX ?? current.number.left), top: Number(saved.numberY ?? current.number.top), fontPercent: Number(saved.numberSize ?? current.number.fontPercent) } })); }).catch(() => undefined); }, []);
 
   const config = NETWORKS[network];
   const theme = themes[network];
@@ -88,8 +91,8 @@ export default function AgentStickerPage() {
       ctx.restore();
     };
 
-    drawText(cleanName(agentName), STICKER_LAYOUT.name);
-    drawText(cleanNumber(agentNumber), STICKER_LAYOUT.number);
+    drawText(cleanName(agentName), layout.name);
+    drawText(cleanNumber(agentNumber), layout.number);
 
     const safeName = cleanName(agentName).replace(/\s+/g, "-").toLowerCase();
     const safeNumber = cleanNumber(agentNumber);
@@ -183,8 +186,8 @@ export default function AgentStickerPage() {
               <div className="relative inline-block leading-none shadow-xl">
                 <img ref={imageRef} src={asset(config.template)} alt={config.name + " agent sticker template"} className="block h-auto max-w-full" onError={() => setImageError(true)} />
                 {!imageError && <>
-                  <div className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-center font-black uppercase" style={{ left: STICKER_LAYOUT.name.left + "%", top: STICKER_LAYOUT.name.top + "%", fontSize: "clamp(12px, 3vw, 28px)", color: "#111" }}>{cleanName(agentName)}</div>
-                  <div className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-center font-black" style={{ left: STICKER_LAYOUT.number.left + "%", top: STICKER_LAYOUT.number.top + "%", fontSize: "clamp(12px, 3vw, 26px)", color: "#111" }}>{cleanNumber(agentNumber)}</div>
+                  <div className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-center font-black uppercase" style={{ left: layout.name.left + "%", top: layout.name.top + "%", fontSize: `clamp(12px, ${layout.name.fontPercent}vw, 28px)`, color: "#111" }}>{cleanName(agentName)}</div>
+                  <div className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-center font-black" style={{ left: layout.number.left + "%", top: layout.number.top + "%", fontSize: `clamp(12px, ${layout.number.fontPercent}vw, 26px)`, color: "#111" }}>{cleanNumber(agentNumber)}</div>
                 </>}
                 {imageError && <div className="absolute inset-0 flex items-center justify-center bg-white/90 p-6 text-center"><div><ImageIcon className="mx-auto mb-2 h-8 w-8 text-slate-400" /><p className="font-bold">Template haijapatikana.</p><p className="mt-1 text-xs text-slate-500">Weka {config.template} ndani ya client/public/.</p></div></div>}
               </div>
