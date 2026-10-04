@@ -15,7 +15,7 @@ import QRCode from "qrcode";
 
 export const TIN_CANVAS_WIDTH = 1012;
 export const TIN_CANVAS_HEIGHT = 1300;
-export const BACKGROUND_ASSET = "";
+export const BACKGROUND_ASSET = "tin-template.png";
 
 export type TinCertificateForm = {
   name: string;
