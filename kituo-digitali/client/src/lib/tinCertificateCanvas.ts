@@ -141,7 +141,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
     ctx.drawImage(qrImage, 735, 855, 110, 110);
   }
 
-  text(ctx, pos("commissioner"), form.commissioner || "DEMO COMMISSIONER");
+  text(ctx, pos("commissioner"), form.commissioner);
   ctx.save();
   ctx.translate(TIN_CANVAS_WIDTH / 2, TIN_CANVAS_HEIGHT / 2);
   ctx.rotate(-Math.PI / 8);
