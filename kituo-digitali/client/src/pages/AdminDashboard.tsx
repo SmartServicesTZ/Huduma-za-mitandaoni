@@ -91,7 +91,8 @@ export default function AdminDashboard() {
       if (settings.status === "fulfilled" && settings.value) {
         const saved = settings.value as Record<string, unknown>;
         if (Array.isArray(saved.serviceOrder)) setServiceOrder(saved.serviceOrder.filter((item): item is string => typeof item === "string"));
-        if (Array.isArray(saved.homepageSectionOrder)) setHomepageSectionOrder(saved.homepageSectionOrder.filter((item): item is string => typeof item === "string"));\n        setCms((current) => ({ ...current, ...Object.fromEntries(Object.keys(current).map((key) => [key, saved[key] ?? current[key as keyof typeof current]])) }));
+        if (Array.isArray(saved.homepageSectionOrder)) setHomepageSectionOrder(saved.homepageSectionOrder.filter((item): item is string => typeof item === "string"));
+        setCms((current) => ({ ...current, ...Object.fromEntries(Object.keys(current).map((key) => [key, saved[key] ?? current[key as keyof typeof current]])) }));
       }
     } finally { setLoadingData(false); }
   };
