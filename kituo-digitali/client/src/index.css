@@ -657,3 +657,25 @@ border:1px solid rgba(255,255,255,.11);box-shadow:0 25px 70px rgba(1,9,22,.28);}
 .service-paid .service-card-icon{background:linear-gradient(145deg,#eef5ff,#ddeaff);color:#2d67bd}
 .service-locked .service-card-icon{background:linear-gradient(145deg,#f5f6f8,#e9edf2);color:#64748b}
 .portal-service-card:focus-visible{outline:3px solid rgba(45,127,249,.28);outline-offset:3px}
+
+.hero-actions{display:flex;align-items:center;gap:14px;margin-top:22px}
+.hero-link{display:inline-flex;align-items:center;gap:4px;color:#d9e7f5;font-size:11px;font-weight:900;text-decoration:none}
+.hero-link:hover{color:#fff}
+.hero-orbit{width:150px;height:150px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:#062719;background:radial-gradient(circle at 35% 30%,#9bffc5,#2bd77f 65%,#0eaa5d);box-shadow:0 0 0 18px rgba(101,230,155,.07),0 0 0 42px rgba(101,230,155,.035),0 25px 50px rgba(0,0,0,.22);font-size:10px;font-weight:1000;letter-spacing:.14em;text-align:center}
+.quick-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.quick-metrics>div{padding:16px 17px;border:1px solid #e3ebf3;border-radius:16px;background:rgba(255,255,255,.92);box-shadow:0 8px 24px rgba(15,23,42,.06)}
+.quick-metrics span{display:block;font-size:9px;letter-spacing:.13em;font-weight:1000;color:#7b8ba0}
+.quick-metrics strong{display:block;margin:4px 0 1px;font-size:24px;letter-spacing:-.04em;color:#0b1830}
+.quick-metrics small{font-size:9px;color:#8290a2}
+.portal-mini-note{display:flex;align-items:center;gap:8px;margin:18px 0 -18px;padding:10px 13px;border-radius:12px;background:#eef3f8;color:#64748b;font-size:10px;font-weight:800}
+.portal-mini-note svg{color:#718096}
+@media(max-width:800px){
+ .hero-actions{margin-top:17px;gap:10px}
+ .hero-actions .button{min-height:38px}
+ .hero-orbit{width:94px;height:94px;font-size:7px;flex:0 0 auto}
+ .hero-orbit svg{width:28px;height:28px}
+ .quick-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .quick-metrics>div{padding:13px}
+ .quick-metrics strong{font-size:20px}
+}
+@media(max-width:480px){.hero-orbit{display:none}.hero-actions{flex-wrap:wrap}.quick-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
