@@ -3,6 +3,7 @@ import { ArrowLeft, Code2, Download, FileBadge, RotateCcw, ShieldCheck } from "l
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { renderTinCertificateCanvas, type TinCertificateForm } from "@/lib/tinCertificateCanvas";
+import { getPublicSiteSettings } from "@/lib/firebase";
 
 const DEMO: TinCertificateForm = {
   name: "STAWARD JACKSON NJIWA",
@@ -18,6 +19,7 @@ const DEMO: TinCertificateForm = {
 export default function TINCertificatePage() {
   const [form, setForm] = useState<TinCertificateForm>({ ...DEMO });
   const [busy, setBusy] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [layout, setLayout] = useState<Record<string, {x:number;y:number;fontSize:number}>>({
     taxpayer:{x:480,y:620,fontSize:23}, tinValue:{x:506,y:760,fontSize:25}, effectValue:{x:390,y:835,fontSize:15}, locationValue:{x:390,y:875,fontSize:15}, officeValue:{x:390,y:915,fontSize:15}, physicalValue:{x:390,y:955,fontSize:15}, streetValue:{x:390,y:995,fontSize:15}
   });
@@ -42,7 +44,7 @@ export default function TINCertificatePage() {
     };
     void render();
     return () => { cancelled = true; };
-  }, [form]);
+  }, [form, layout]);
 
   const set = (key: keyof TinCertificateForm, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -51,7 +53,7 @@ export default function TINCertificatePage() {
     setBusy(true);
     try {
       const output = document.createElement("canvas");
-      await renderTinCertificateCanvas(form, output);
+      await renderTinCertificateCanvas(form, output, layout);
       const link = document.createElement("a");
       link.download = "tin-demo-preview.png";
       link.href = output.toDataURL("image/png");
@@ -74,7 +76,7 @@ export default function TINCertificatePage() {
       <span className="overline">HUDUMA YA TIN</span>
       <h1>CHETI CHA TIN</h1>
       <p>Editable template + Live Preview</p>
-      <small>Muundo wa demo umewekwa kwenye faili tofauti ili uweze kubadilisha template, nafasi za maandishi, font na ukubwa bila kugusa fomu.</small>
+      <small>Template, X/Y na font size hudhibitiwa na Admin kupitia Template Control; mabadiliko yaliyohifadhiwa hutumika hapa moja kwa moja.</small>
     </div>
 
     <div className="tin-demo-banner"><strong>DEMO ONLY</strong> — Hii ni preview ya interface; si cheti rasmi cha TRA.</div>
@@ -104,7 +106,7 @@ export default function TINCertificatePage() {
             <input type="number" value={v.y} title="Y" onChange={e=>setLayout(l=>({...l,[key]:{...l[key],y:Number(e.target.value)}}))}/>
             <input type="number" value={v.fontSize} title="Font" onChange={e=>setLayout(l=>({...l,[key]:{...l[key],fontSize:Number(e.target.value)}}))}/>
           </div>)}
-          <small>X = kushoto/kulia • Y = juu/chini • Font = ukubwa wa maandishi. Hii ni DEMO tu.</small>
+          <small>X = kushoto/kulia • Y = juu/chini • Font = ukubwa wa maandishi. Admin akihifadhi Template Control, Live Preview hii itatumia settings hizo.</small>
         </div>
 
         <div className="tin-actions">
