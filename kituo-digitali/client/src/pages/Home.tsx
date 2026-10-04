@@ -109,6 +109,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const [verificationPending, setVerificationPending] = useState(false);
   const balance = profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
+  const paymentsPaused = true;
   useEffect(() => {
     if (!firebaseUser) { setOrders([]); return; }
     return subscribeToTokenPurchaseOrders(firebaseUser.uid, setOrders, () => toast.error("Imeshindikana kupakia hali ya malipo."));
@@ -131,20 +132,20 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutuma kiungo cha uthibitisho."); }
     finally { setVerificationPending(false); }
   };
-  const statusLabel = (value: string) => value === "PAID" ? "Imelipwa — tokeni zimeongezwa" : ["PENDING", "CREATING", "CREATE_UNKNOWN", "INPROGRESS"].includes(value) ? "Subiri uthibitishe USSD kwenye simu" : value === "NEEDS_REVIEW" ? "Malipo yanasubiri ukaguzi wa msaada" : value === "CREATE_FAILED" ? "Malipo hayakuanzishwa; jaribu tena" : `Hali ya malipo: ${value}`;
+  const statusLabel = (value: string) => value === "PAID" ? "Imelipwa — tokeni zimeongezwa" : ["PENDING", "CREATING", "CREATE_UNKNOWN", "INPROGRESS"].includes(value) ? "Ombi la awali linasubiri ukaguzi; ununuzi mpya umesitishwa" : value === "NEEDS_REVIEW" ? "Malipo yanasubiri ukaguzi wa msaada" : value === "CREATE_FAILED" ? "Malipo hayakuanzishwa; jaribu tena baadaye" : `Hali ya malipo: ${value}`;
   const packages = [{ amount: 2000, credits: 40 }, { amount: 5000, credits: 100 }, { amount: 10000, credits: 200 }];
   const hasOpenOrder = orders.some((order) => ["CREATING", "CREATE_UNKNOWN", "PENDING", "INPROGRESS"].includes(order.status));
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
     <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">Tokeni zako</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div></div>
     <div className="token-card__meta"><span>Email: <b>{profile?.email ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "Imeidhinishwa" : "Haijathibitishwa na admin"}</span></div>
-    {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Unaweza kununua tokeni, lakini huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
+    {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
     {isAuthenticated && firebaseUser && !firebaseUser.emailVerified && <div className="account-warning">Email yako bado haijathibitishwa. <button className="button button--green button--small" disabled={verificationPending} onClick={() => void resendVerification()}>{verificationPending ? "Inatuma..." : "Tuma kiungo cha uthibitisho"}</button></div>}
-    <div className="token-package-grid">{packages.map(({ amount, credits }) => <button key={amount} className="button button--green token-package-button" disabled={!isAuthenticated || !profile?.phone || busyAmount !== null || hasOpenOrder} onClick={() => void startPurchase(amount)}>{busyAmount === amount ? "Inatuma ombi..." : <>TZS {amount.toLocaleString("en-US")}<small>{credits} tokeni</small></>}</button>)}</div>
-    {isAuthenticated && !profile?.phone && <div className="account-warning">Weka namba yako ya simu kwenye sehemu ya Akaunti kabla ya kununua tokeni.</div>}
-    {hasOpenOrder && <small className="token-note">Ombi moja la malipo linasubiri; kagua hali yake hapa chini kabla ya kuanzisha jingine.</small>}
-    {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kununua tokeni na kuhusisha malipo na akaunti yako.</small>}
+    {paymentsPaused ? <div className="account-warning" role="status">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Salio lililopo limehifadhiwa; hakuna tokeni za bure zinazotolewa.</div> : <div className="token-package-grid">{packages.map(({ amount, credits }) => <button key={amount} className="button button--green token-package-button" disabled={!isAuthenticated || !profile?.phone || busyAmount !== null || hasOpenOrder} onClick={() => void startPurchase(amount)}>{busyAmount === amount ? "Inatuma ombi..." : <>TZS {amount.toLocaleString("en-US")}<small>{credits} tokeni</small></>}</button>)}</div>}
+    {!paymentsPaused && isAuthenticated && !profile?.phone && <div className="account-warning">Weka namba yako ya simu kwenye sehemu ya Akaunti kabla ya kununua tokeni.</div>}
+    {hasOpenOrder && <small className="token-note">Ombi la awali la malipo bado linaonekana hapa chini. Ununuzi mpya umesitishwa kwa muda.</small>}
+    {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuona salio la tokeni na huduma zako.</small>}
     {orders.length > 0 && <div className="token-purchase-status"><strong>Malipo yako ya karibuni</strong>{orders.slice(0, 3).map((order) => <div key={order.id}><span>TZS {Number(order.amount).toLocaleString("en-US")} — {Number(order.tokenAmount)} tokeni</span><small>{statusLabel(order.status)}</small></div>)}</div>}
-    <small className="token-note">Malipo hupokelewa kupitia FimiPay; baada ya uthibitisho tokeni huongezwa moja kwa moja.</small>
+    <small className="token-note">Salio na historia ya tokeni za awali havijabadilishwa.</small>
   </section>;
 }
 

@@ -40,6 +40,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateUserAccess, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
+const PAYMENT_FLOWS_ENABLED = false; // Re-enable only after the separate payment setup and verification phase.
 const firebaseJwks = createRemoteJWKSet(new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"));
 
 function allowedOrigins(env: Env) {
@@ -164,12 +165,13 @@ const worker = {
       } catch { /* Report only the missing binding name below. */ }
       const missing = [
         ...(!validServiceAccount ? ["FIREBASE_SERVICE_ACCOUNT_JSON"] : []),
-        ...(typeof env.FIMIPAY_SECRET_KEY !== "string" || !/^sk_live_.{8,}$/.test(env.FIMIPAY_SECRET_KEY) ? ["FIMIPAY_SECRET_KEY"] : []),
-        ...(typeof env.FIMIPAY_WEBHOOK_SECRET !== "string" || env.FIMIPAY_WEBHOOK_SECRET.length === 0 ? ["FIMIPAY_WEBHOOK_SECRET"] : []),
       ];
       return jsonResponse({ ready: missing.length === 0, missing }, missing.length === 0 ? 200 : 503, cors);
     }
     if (url.pathname === "/webhooks/fimipay") {
+      if (!PAYMENT_FLOWS_ENABLED) {
+        return jsonResponse({ error: { code: "unavailable", message: "Malipo yamesitishwa kwa muda." } }, 503, cors);
+      }
       return withWorkerEnv(env, () => handleWebhook(request, cors).catch((error) => {
         const code = error instanceof Error ? error.name : "unknown";
         console.error("Worker webhook failed", { code });
@@ -177,12 +179,17 @@ const worker = {
       }));
     }
     const match = /^\/call\/([A-Za-z][A-Za-z0-9]*)$/.exec(url.pathname);
-    if (match) return withWorkerEnv(env, () => handleCallable(request, match[1], cors, env).catch((error) => {
-      if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
-      const code = error instanceof Error ? error.name : "unknown";
-      console.error("Worker request failed", { code });
-      return jsonResponse({ error: { code: "internal", message: "Ombi halijakamilika kwa sasa. Jaribu tena baadaye." } }, 500, cors);
-    }));
+    if (match) {
+      if (match[1] === "createTokenPurchaseOrder" && !PAYMENT_FLOWS_ENABLED) {
+        return jsonResponse({ error: { code: "unavailable", message: "Ununuzi wa tokeni umesitishwa kwa muda." } }, 503, cors);
+      }
+      return withWorkerEnv(env, () => handleCallable(request, match[1], cors, env).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        const code = error instanceof Error ? error.name : "unknown";
+        console.error("Worker request failed", { code });
+        return jsonResponse({ error: { code: "internal", message: "Ombi halijakamilika kwa sasa. Jaribu tena baadaye." } }, 500, cors);
+      }));
+    }
     return jsonResponse({ error: { code: "not-found", message: "Njia ya API haikupatikana." } }, 404, cors);
   },
 };

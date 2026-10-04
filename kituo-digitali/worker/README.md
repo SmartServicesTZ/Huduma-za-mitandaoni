@@ -6,19 +6,22 @@ This Worker is the server-side API for privileged application operations and Fim
 
 ## Cloudflare Worker secrets and configuration
 
-Set these as encrypted Worker secrets in the Cloudflare Dashboard or with `wrangler secret put`:
+For the core-only launch, set this as an encrypted Worker secret in the Cloudflare Dashboard or with `wrangler secret put`:
 
-- `FIREBASE_SERVICE_ACCOUNT_JSON` — service-account JSON for project `huduma-za-mtandaoni-b1c0c`. Grant only the IAM permissions required for Firestore datastore access. The Worker uses privileged REST access, so its code—not Firestore Rules—must enforce authorization. A Cloud Storage object role is needed only if the legacy Storage-backed attachment operations are retained on Blaze; it is not needed for license PDFs.
-- `FIMIPAY_SECRET_KEY` — the correct test or live FimiPay API secret; used only for Worker-to-FimiPay requests.
+- `FIREBASE_SERVICE_ACCOUNT_JSON` — service-account JSON for project `huduma-za-mtandaoni-b1c0c`. Grant only the IAM permissions required for Firestore datastore access. The Worker uses privileged REST access, so its code—not Firestore Rules—must enforce authorization. A Cloud Storage object role is needed only if legacy Storage-backed attachment operations are retained on Blaze; it is not needed for license PDFs.
+
+Token purchases and FimiPay webhooks are intentionally disabled during the first launch phase. Do not add payment secrets yet. Before enabling payments in a later phase, configure these as encrypted Worker secrets:
+
+- `FIMIPAY_SECRET_KEY` — the correct live FimiPay API secret, used only for Worker-to-FimiPay requests.
 - `FIMIPAY_WEBHOOK_SECRET` — used to verify the exact raw webhook body with HMAC-SHA256.
 
 `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, and `ALLOWED_ORIGINS` are non-secret Worker variables configured in `wrangler.toml`. Keep the allowed origins restricted to the production site and approved local development origins.
 
 ## GitHub deployment
 
-For the GitHub Actions deployment, configure repository secrets `CLOUDFLARE_API_TOKEN` (scoped to deploy/edit this Worker) and `CLOUDFLARE_ACCOUNT_ID`. Configure the three Worker runtime secrets above directly in Cloudflare before enabling automated deployment. Set repository variable `VITE_CLOUDFLARE_WORKER_URL` to the Worker URL and `DEPLOY_CLOUDFLARE_WORKER=true` to allow the main-branch workflow to deploy the Worker and then GitHub Pages. The Pages deployment is deliberately gated on Worker deployment so a frontend that depends on a missing API is not published.
+For the GitHub Actions deployment, configure repository secrets `CLOUDFLARE_API_TOKEN` (scoped to deploy/edit this Worker) and `CLOUDFLARE_ACCOUNT_ID`. Set repository variable `VITE_CLOUDFLARE_WORKER_URL` to the exact Worker URL. The main-branch workflow deploys the Worker, verifies core readiness, and then publishes GitHub Pages. FimiPay secrets are not a prerequisite for the core-only launch.
 
-Set the FimiPay webhook URL to `https://<worker-host>/webhooks/fimipay`. Test the API in FimiPay's test environment and verify webhook idempotency before changing production secrets/webhook settings.
+Do not point FimiPay webhooks at the Worker until the payment phase is approved and enabled. Then test the API in FimiPay's test environment and verify webhook idempotency before changing production secrets or webhook settings.
 
 Removing the retired backend source from this repository does not delete any endpoints that were already deployed in Firebase, and it does not change the FimiPay dashboard's existing webhook URL. Retire old deployed endpoints only after the Worker is configured and verified; switch the provider webhook during the approved production cutover.
 

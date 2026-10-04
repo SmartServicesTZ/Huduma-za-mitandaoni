@@ -47,9 +47,10 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           API_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
+          EXPECTED_API_URL: https://huduma-za-mtandao-api.stewardjackson999.workers.dev
         run: |
-          if [ -z "$API_URL" ] || [[ "$API_URL" != https://* ]]; then
-            echo "Set the repository variable VITE_CLOUDFLARE_WORKER_URL to the deployed HTTPS Worker URL before production deployment."
+          if [ "$API_URL" != "$EXPECTED_API_URL" ]; then
+            echo "Set the repository variable VITE_CLOUDFLARE_WORKER_URL to the exact deployed Worker URL before production deployment."
             exit 1
           fi
 
@@ -96,7 +97,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm run deploy
 
-      - name: Verify Worker secrets are configured
+      - name: Verify core Worker readiness
         env:
           API_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
         run: |

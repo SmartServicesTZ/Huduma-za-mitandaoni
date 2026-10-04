@@ -5,8 +5,8 @@ export interface WorkerEnv {
   FIREBASE_PROJECT_ID: string;
   FIREBASE_STORAGE_BUCKET: string;
   FIREBASE_SERVICE_ACCOUNT_JSON: string;
-  FIMIPAY_SECRET_KEY: string;
-  FIMIPAY_WEBHOOK_SECRET: string;
+  FIMIPAY_SECRET_KEY?: string;
+  FIMIPAY_WEBHOOK_SECRET?: string;
   ALLOWED_ORIGINS?: string;
   [key: string]: unknown;
 }
