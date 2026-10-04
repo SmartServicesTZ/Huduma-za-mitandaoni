@@ -89,7 +89,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
     <header className="app-header">
       <button className="mobile-menu" onClick={onMenu} aria-label="Fungua menyu"><Menu size={24} /></button>
       <Link href="/" className="portal-brand"><span className="portal-logo"><Zap size={20} /></span><span>HUDUMA ZA <b>MTANDAONI</b></span></Link>
-      <label className="global-search"><Search size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tafuta chochote kwenye Google..." /><kbd>⌘ K</kbd></label>
+      <label className="global-search"><Search size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tafuta huduma, akaunti au sehemu..." /><kbd>⌘ K</kbd></label>
       <div className="header-actions"><a className="header-support" href={whatsappUrl} target="_blank" rel="noreferrer" aria-label="Wasiliana na support kupitia WhatsApp"><MessageCircle size={17} /><span>WhatsApp</span></a><button className="header-icon" onClick={() => toast("Hakuna arifa mpya kwa sasa.")} aria-label="Arifa"><Bell size={19} /><i /></button>{isAuthenticated ? <span className="header-user">{user?.name ?? "Mwanachama"}</span> : <button className="button button--green button--small" onClick={() => setAuthOpen(true)}><LogIn size={15} /> Ingia / Jisajili</button>}</div>
     </header>{authOpen && <LocalAuthModal onClose={() => setAuthOpen(false)} />}
   </>;
