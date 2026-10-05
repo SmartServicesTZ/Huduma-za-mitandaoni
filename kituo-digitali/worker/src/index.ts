@@ -16,6 +16,7 @@ import {
   markLipaApplicationViewed,
   markServiceApplicationViewed,
   reserveBusinessLicenseNumber,
+  resetUserPassword,
   seedServiceCatalog,
   setAccountStatus,
   setHomepageServiceOrder,
