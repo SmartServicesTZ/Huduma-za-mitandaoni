@@ -806,3 +806,49 @@ body{overflow-x:hidden;}
 .portal-brand > span:last-child b,.sidebar-brand a b{color:#65e69b;font-size:1em;letter-spacing:.02em}
 .brand-subtitle{display:block;color:#9fb1c8;font-size:8px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
 @media(max-width:520px){.brand-subtitle{font-size:7px}.portal-brand{gap:7px}}
+
+
+/* $TEWARD TZ — Home V3 visual system */
+.modern-hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:30px;min-height:300px;padding:42px 48px;border-radius:28px;background:radial-gradient(circle at 80% 25%,rgba(88,227,154,.20),transparent 25%),radial-gradient(circle at 60% 120%,rgba(45,127,249,.22),transparent 35%),linear-gradient(135deg,#0d3768,#071d39 65%,#082746);border:1px solid rgba(255,255,255,.10);box-shadow:0 28px 70px rgba(2,12,28,.30)}
+.modern-hero:after{content:"";position:absolute;width:360px;height:360px;right:-120px;top:-170px;border:1px solid rgba(88,227,154,.13);border-radius:50%;box-shadow:0 0 0 45px rgba(88,227,154,.025),0 0 0 90px rgba(88,227,154,.018)}
+.modern-hero-copy{position:relative;z-index:2;max-width:760px}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid rgba(88,227,154,.25);border-radius:999px;color:#8ff0b9;background:rgba(88,227,154,.08);font-size:9px;font-weight:1000;letter-spacing:.09em}
+.modern-hero h1{margin:18px 0 12px;color:#fff;font-size:clamp(38px,5vw,64px);line-height:.98;letter-spacing:-.055em}
+.modern-hero h1 em{color:#67e59c;font-style:normal}
+.modern-hero p{max-width:620px;margin:0;color:#b9cce1;font-size:13px;line-height:1.7}
+.hero-visual{position:relative;z-index:2;width:190px;height:190px;flex:0 0 190px;display:grid;place-items:center}
+.hero-visual-ring{width:142px;height:142px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;color:#062719;background:radial-gradient(circle at 35% 25%,#b4ffd2,#42df91 62%,#12a963);box-shadow:0 0 0 17px rgba(88,227,154,.07),0 0 0 38px rgba(88,227,154,.035),0 25px 55px rgba(0,0,0,.25)}
+.hero-visual-ring strong{font-size:31px;line-height:1}
+.hero-visual-ring span{font-size:8px;font-weight:1000;letter-spacing:.14em;margin-top:4px}
+.hero-floating{position:absolute;padding:7px 10px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.09);backdrop-filter:blur(10px);color:#fff;font-size:9px;font-weight:1000;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,.15)}
+.hero-floating small{font-size:7px;color:#9db2c9;letter-spacing:.1em}
+.hero-floating--top{top:5px;right:-3px;color:#75e9a5}
+.hero-floating--bottom{left:-5px;bottom:7px;display:flex;align-items:center;gap:5px}
+.service-discovery{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-top:40px;margin-bottom:-8px}
+.service-discovery h2{margin:5px 0 4px;color:#0b1830;font-size:clamp(23px,2.8vw,32px);letter-spacing:-.04em}
+.service-discovery p{margin:0;color:#718096;font-size:11px}
+.service-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;max-width:600px}
+.service-chips button{padding:9px 13px;border:1px solid #dce5ee;border-radius:999px;background:#fff;color:#52657a;font-size:10px;font-weight:900;cursor:pointer;transition:.16s ease}
+.service-chips button:hover{border-color:#9edeb9;transform:translateY(-1px)}
+.service-chips button.active{border-color:#18b969;color:#075b35;background:#dcfbe9;box-shadow:0 5px 14px rgba(24,185,105,.10)}
+.portal-service-card{border:1px solid #e1e9f1!important}
+.portal-service-card .service-card-icon{box-shadow:inset 0 0 0 1px rgba(24,185,105,.08)}
+@media(max-width:800px){
+ .modern-hero{min-height:245px;padding:25px 22px;border-radius:20px}
+ .modern-hero h1{font-size:34px;margin-top:14px}
+ .modern-hero p{font-size:11px;max-width:75%}
+ .hero-visual{position:absolute;right:-25px;bottom:-18px;width:130px;height:130px;opacity:.9;transform:scale(.82)}
+ .hero-floating--top{right:0}.hero-floating--bottom{left:0}
+ .service-discovery{display:block;margin-top:30px;margin-bottom:0}
+ .service-discovery h2{font-size:25px}
+ .service-chips{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding:10px 1px 5px;margin-right:-12px;padding-right:12px;scrollbar-width:none}
+ .service-chips::-webkit-scrollbar{display:none}
+ .service-chips button{white-space:nowrap}
+}
+@media(max-width:480px){
+ .modern-hero{padding:22px 18px;min-height:225px}
+ .modern-hero h1{font-size:30px}
+ .modern-hero p{max-width:100%;padding-right:30px}
+ .hero-visual{display:none}
+ .hero-actions{margin-top:17px}
+}
