@@ -69,17 +69,9 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
     } finally { setPending(false); }
   };
   const resetPassword = async () => {
-    setAuthError(null);
-    if (!form.email.trim()) { setAuthError({ title: "Weka email yako", detail: "Andika email ya akaunti ili upokee kiungo cha kuweka password mpya.", code: "form/email-required" }); return; }
-    setPending(true);
-    try {
-      await sendPasswordReset(form.email.trim());
-      toast.success("Ikiwa email hiyo imesajiliwa, kiungo cha kuweka password mpya kimetumwa.");
-    } catch (error: any) {
-      const explanation = explainAuthError(error, "login");
-      setAuthError(explanation);
-      toast.error(explanation.title);
-    } finally { setPending(false); }
+    const phone = "255698232313";
+    const message = "Habari, nimesahau password ya akaunti yangu ya Huduma za Mtandaoni. Email yangu ni: " + (form.email.trim() || "sijaiweka");
+    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), "_blank", "noopener,noreferrer");
   };
   return <div className="portal-modal-backdrop" onClick={onClose}><div className="portal-modal auth-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={19} /></button><span className="overline">Akaunti salama</span><h3>{mode === "login" ? "INGIA KWENYE AKAUNTI" : "JISAJILI AKAUNTI"}</h3><div className="auth-switch"><button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setAuthError(null); }}>Ingia</button><button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setAuthError(null); }}>Jisajili</button></div>{authError && <div className="auth-error-alert" role="alert"><div className="auth-error-alert__icon"><CircleAlert size={20} /></div><div><strong>{authError.title}</strong><p>{authError.detail}</p><code>{authError.code}</code></div></div>}<form onSubmit={(event) => { event.preventDefault(); void submit(); }}>{mode === "register" && <div className="auth-fields auth-fields--two"><label>Jina la kwanza<input required autoComplete="given-name" value={form.firstName} onChange={update("firstName")} /></label><label>Jina la mwisho<input required autoComplete="family-name" value={form.lastName} onChange={update("lastName")} /></label></div>}<div className="auth-fields"><label>Email<input required type="email" autoComplete="email" placeholder="barua pepe" value={form.email} onChange={update("email")} /></label>{mode === "register" && <label>Namba ya simu<input required inputMode="tel" autoComplete="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={update("phone")} /></label>}<label>Password<input required type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={update("password")} /></label>{mode === "register" && <label>Thibitisha password<input required type="password" autoComplete="new-password" value={form.confirmPassword} onChange={update("confirmPassword")} /></label>}</div>{mode === "login" && <button type="button" className="button button--green button--small" disabled={pending} onClick={() => void resetPassword()}>Umesahau password?</button>}<button type="submit" className="button button--green button--wide" disabled={pending}>{pending ? "INASUBIRI..." : mode === "login" ? "INGIA" : "TENGENEZA AKAUNTI"}</button></form></div></div>;
 }
