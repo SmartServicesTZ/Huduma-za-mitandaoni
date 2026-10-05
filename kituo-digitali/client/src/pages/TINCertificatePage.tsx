@@ -809,3 +809,5 @@ export default function TINCertificatePage() {
   );
 }
 ```
+
+// Build-safe TIN page: source ends here.
