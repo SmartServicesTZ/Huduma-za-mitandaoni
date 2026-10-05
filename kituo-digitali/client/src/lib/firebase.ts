@@ -370,6 +370,10 @@ export async function changeOwnPassword(newPassword: string) {
   const callable = createWorkerCall<{ newPassword: string }, { ok: boolean }>("changeOwnPassword");
   return (await callable({ newPassword })).data;
 }
+export async function refreshPasswordSession(user: User, newPassword: string) {
+  if (!user.email) throw new Error("Akaunti hii haina kitambulisho cha kuingia.");
+  await signInWithEmailAndPassword(firebaseAuth, user.email, newPassword);
+}
 
 export async function adminResetUserPassword(adminId: string, userId: string, temporaryPassword: string) {
   const callable = createWorkerCall("resetUserPassword");
