@@ -4,6 +4,8 @@ import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-ch
 import {
   createUserWithEmailAndPassword,
   getAuth,
+  setPersistence,
+  browserLocalPersistence,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -49,7 +51,7 @@ const app = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(app);
 export const firestore = getFirestore(app);
 export const firebaseStorage = getStorage(app);
-
+// Keep login across page refreshes/browser restarts. Explicitly selecting local persistence avoids accidental session-only auth.\nvoid setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => console.warn("Firebase auth persistence could not be configured:", error));\n
 function workerBaseUrl() {
   const configured = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "").trim();
   const productionFallback = "https://huduma-za-mtandao-api.stewardjackson999.workers.dev";
