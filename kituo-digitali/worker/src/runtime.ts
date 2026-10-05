@@ -54,7 +54,7 @@ async function requestGoogleToken(env: WorkerEnv): Promise<string> {
   const { clientEmail, privateKey } = getServiceAccountCredentials();
   const now = Math.floor(Date.now() / 1000);
   const signingKey = await importPKCS8(privateKey, "RS256");
-  const assertion = await new SignJWT({ scope: "https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/devstorage.read_write" })
+  const assertion = await new SignJWT({ scope: "https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/devstorage.read_write https://www.googleapis.com/auth/identitytoolkit" })
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
     .setIssuer(clientEmail)
     .setAudience("https://oauth2.googleapis.com/token")
