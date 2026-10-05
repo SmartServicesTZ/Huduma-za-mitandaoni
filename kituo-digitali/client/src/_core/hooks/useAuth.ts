@@ -16,8 +16,28 @@ export function useAuth(options?: UseAuthOptions) {
     setError(null);
     setFirebaseUser(nextUser);
     if (!nextUser) { setProfile(null); setLoading(false); return; }
-    try { await nextUser.reload(); await ensureUserProfile(nextUser, { emailVerified: nextUser.emailVerified }); setLoading(false); }
-    catch (cause) { setError(cause); setLoading(false); }
+
+    // Hydrate immediately from the last known profile so a refresh/network hiccup
+    // does not make a valid Firebase session look like a logged-out account.
+    try {
+      const cached = localStorage.getItem("firebase-user-profile");
+      if (cached) {
+        const parsed = JSON.parse(cached) as FirebaseProfile;
+        if (parsed?.uid === nextUser.uid) setProfile(parsed);
+      }
+    } catch {
+      localStorage.removeItem("firebase-user-profile");
+    }
+
+    try {
+      // Do not call reload() here: auth persistence already restored this user.
+      // A temporary network failure must never turn a valid session into logout.
+      await ensureUserProfile(nextUser, { emailVerified: nextUser.emailVerified });
+    } catch (cause) {
+      setError(cause);
+    } finally {
+      setLoading(false);
+    }
   }), []);
 
   useEffect(() => {
