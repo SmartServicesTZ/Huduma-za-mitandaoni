@@ -217,7 +217,7 @@ function TemplateEditorPanel({ values, setValues, onRun, adminId }: any) {
   const defaults = {
     sticker: { nameX: 50, nameY: 72, nameSize: 3.4, numberX: 50, numberY: 82, numberSize: 3.1 },
     tin: { taxpayer: 480, taxpayerY: 620, taxpayerSize: 23, tinX: 506, tinY: 760, tinSize: 25, effectX: 390, effectY: 835, locationX: 390, locationY: 875, officeX: 390, officeY: 915, physicalX: 390, physicalY: 955, streetX: 390, streetY: 995, commissionerX: 795, commissionerY: 1110 },
-    license: { nameX: 50, nameY: 50, nameSize: 3.2, numberX: 50, numberY: 58, numberSize: 3 },
+    license: { nameX: 50, nameY: 50, nameSize: 3.2, numberX: 50, numberY: 58, numberSize: 3, dateX: 50, dateY: 66, dateSize: 2.6, addressX: 50, addressY: 74, addressSize: 2.6 },
     airtelSme: {
       nameX: 22.5, nameY: 25, nameSize: 3, phoneX: 22.5, phoneY: 28.9, phoneSize: 3,
       tinX: 76, tinY: 28.9, tinSize: 2.8, idTypeX: 24, idTypeY: 32.9, idTypeSize: 2.8,
