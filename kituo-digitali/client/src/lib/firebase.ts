@@ -9,7 +9,6 @@ import {
   signInWithEmailAndPassword,
   connectAuthEmulator,
   signOut,
-  updatePassword,
   type User,
 } from "firebase/auth";
 import {
