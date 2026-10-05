@@ -109,7 +109,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
     <div className="announcement"><Bell size={17} /> <strong>{announcementText}</strong></div>
     <header className="app-header">
       <button className="mobile-menu" onClick={onMenu} aria-label="Fungua menyu"><Menu size={24} /></button>
-      <Link href="/" className="portal-brand"><span className="portal-logo"><Zap size={20} /></span><span>HUDUMA ZA <b>MTANDAONI</b></span></Link>
+      <Link href="/" className="portal-brand"><span className="portal-logo"><Zap size={20} /></span><span><b>$TEWARD TZ</b><small className="brand-subtitle">HUDUMA ZA MTANDAONI</small></span></Link>
       <label className="global-search"><Search size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tafuta huduma, akaunti au sehemu..." /><kbd>⌘ K</kbd></label>
       <div className="header-actions"><a className="header-support" href={whatsappUrl} target="_blank" rel="noreferrer" aria-label="Wasiliana na support kupitia WhatsApp"><MessageCircle size={17} /><span>WhatsApp</span></a><button className="header-icon" onClick={() => toast("Hakuna arifa mpya kwa sasa.")} aria-label="Arifa"><Bell size={19} /><i /></button>{isAuthenticated ? <span className="header-user">{user?.name ?? "Mwanachama"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></span> : <button className="button button--green button--small" onClick={() => setAuthOpen(true)}><LogIn size={15} /> Ingia / Jisajili</button>}</div>
     </header>{authOpen && <LocalAuthModal onClose={() => setAuthOpen(false)} />}
@@ -120,7 +120,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { user } = useAuth();
   const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Akaunti", icon: UserRound }];
-  return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}>HUDUMA ZA <b>MTANDAONI</b></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.name?.slice(0, 2).toUpperCase() ?? "HM"}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <Link href="/admin" className={`portal-nav-item admin-link ${location.startsWith("/admin") ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
+  return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>$TEWARD TZ</b><small className="brand-subtitle">HUDUMA ZA MTANDAONI</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.name?.slice(0, 2).toUpperCase() ?? "HM"}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <Link href="/admin" className={`portal-nav-item admin-link ${location.startsWith("/admin") ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
 function TokenCard({ compact = false }: { compact?: boolean }) {
@@ -130,7 +130,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   
   const balance = profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
-  const paymentsPaused = true;
+  const paymentsPaused = String(import.meta.env.VITE_PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() !== "true";
   useEffect(() => {
     if (!firebaseUser) { setOrders([]); return; }
     return subscribeToTokenPurchaseOrders(firebaseUser.uid, setOrders, () => toast.error("Imeshindikana kupakia hali ya malipo."));
