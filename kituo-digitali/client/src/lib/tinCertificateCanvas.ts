@@ -9,7 +9,6 @@ import QRCode from "qrcode";
 export const TIN_CANVAS_WIDTH = 1012;
 export const TIN_CANVAS_HEIGHT = 1300;
 export const BACKGROUND_ASSET = "tin-template.png";
-export const TIN_DEMO_WATERMARK = "DEMO • NOT OFFICIAL";
 
 export type TinCertificateForm = {
   name: string;
@@ -140,15 +139,5 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   }
 
   text(ctx, pos("commissioner"), form.commissioner);
-  ctx.save();
-  ctx.translate(TIN_CANVAS_WIDTH / 2, TIN_CANVAS_HEIGHT / 2);
-  ctx.rotate(-Math.PI / 8);
-  ctx.globalAlpha = 0.14;
-  ctx.fillStyle = "#c1121f";
-  ctx.font = "900 68px Arial, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(TIN_DEMO_WATERMARK, 0, 0);
-  ctx.restore();
   return canvas;
 }
