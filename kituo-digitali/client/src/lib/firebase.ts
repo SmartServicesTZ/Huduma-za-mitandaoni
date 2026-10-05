@@ -3,7 +3,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObjec
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
-  getAuth,
+  initializeAuth,
   setPersistence,
   browserLocalPersistence,
   onAuthStateChanged,
@@ -48,7 +48,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const firebaseAuth = getAuth(app);
+export const firebaseAuth = initializeAuth(app, { persistence: browserLocalPersistence });
 export const firestore = getFirestore(app);
 export const firebaseStorage = getStorage(app);
 export const authPersistenceReady = setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
