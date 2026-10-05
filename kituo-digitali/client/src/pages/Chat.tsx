@@ -20,6 +20,7 @@ function initials(name?: string) { return (name?.trim() || "M").slice(0, 1).toUp
 
 export default function ChatPage() {
   const { firebaseUser, profile, user, isAuthenticated } = useAuth();
+  const mediaReady = import.meta.env.VITE_FIREBASE_STORAGE_READY === "true";
   const canModerate = Boolean(user?.role === "super_admin" || user?.permissions?.manageMessages);
   const [view, setView] = useState<"public" | "private" | "moderation">("public");
   const [publicMessages, setPublicMessages] = useState<ChatMessage[]>([]);
@@ -118,7 +119,7 @@ export default function ChatPage() {
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [activeMessages.length, view]);
   useEffect(() => {
     let active = true;
-    const pending = activeMessages.filter((message) => message.filePath && !attachments[message.id]);
+    const pending = mediaReady ? activeMessages.filter((message) => message.filePath && !attachments[message.id]) : [];
     for (const message of pending) {
       if (!message.filePath) continue;
       void loadChatAttachment(message.filePath).then((blob) => {
@@ -127,7 +128,7 @@ export default function ChatPage() {
       }).catch(() => undefined);
     }
     return () => { active = false; };
-  }, [activeMessages, attachments]);
+  }, [activeMessages, attachments, mediaReady]);
   useEffect(() => () => {
     Object.values(attachments).forEach((url) => URL.revokeObjectURL(url));
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -214,7 +215,8 @@ export default function ChatPage() {
   const loading = view === "public" ? loadingPublic : loadingMessages;
 
   return <main className="portal-main chat-page">
-    <header className="chat-page-head"><div><span className="overline">JUMUIYA YA $TEWARD TZ</span><h1>Ujumbe na mazungumzo</h1><p>Shiriki mawazo, tuma faili au zungumza moja kwa moja.</p></div><div className="chat-connection"><i/> Imeunganishwa</div></header>
+    <header className="chat-page-head"><div><span className="overline">JUMUIYA YA $TEWARD TZ</span><h1>Ujumbe na mazungumzo</h1><p>Shiriki mawazo na zungumza moja kwa moja.</p></div><div className="chat-connection"><i/> Imeunganishwa</div></header>
+    {!mediaReady && <div role="status" className="chat-media-notice"><File size={17}/><span><strong>Ujumbe wa maandishi unapatikana.</strong> Picha, faili na voice message zitasubiri hadi Firebase Storage ianzishwe na rules zake zichapishwe.</span></div>}
     <section className="chat-workspace">
       <aside className="chat-sidebar">
         <div className="chat-sidebar-heading"><div><span className="chat-section-mark"><MessageCircle size={18}/></span><strong>Ujumbe</strong></div><span className="chat-total-count">{view === "moderation" ? moderationConversations.length : conversations.length}</span></div>
@@ -256,7 +258,8 @@ export default function ChatPage() {
                 {message.replyTo && <div className="chat-reply-preview">↪ {message.replyTo.text}</div>}
                 {editingId === message.id ? <div className="chat-edit-box"><textarea value={editDraft} onChange={(event) => setEditDraft(event.target.value)} maxLength={5000}/><div><button onClick={() => { setEditingId(""); setEditDraft(""); }}>Ghairi</button><button className="primary" onClick={() => void saveEdit(message)}>Hifadhi</button></div></div> : message.text && <p>{message.text}</p>}
                 {message.filePath && attachments[message.id] && (isImage ? <a href={attachments[message.id]} target="_blank" rel="noreferrer"><img className="chat-image" src={attachments[message.id]} alt={message.fileName ?? "Picha iliyotumwa"}/></a> : isAudio ? <audio controls src={attachments[message.id]}/> : <a className="chat-file" href={attachments[message.id]} download={message.fileName}><File size={16}/>{message.fileName ?? "Faili"}</a>)}
-                {message.filePath && !attachments[message.id] && <span className="chat-file-pending"><File size={15}/> Inapakia kiambatisho…</span>}
+                {message.filePath && !mediaReady && <span className="chat-file-pending"><File size={15}/> Kiambatisho kitasomwa Storage ikianzishwa.</span>}
+                {message.filePath && mediaReady && !attachments[message.id] && <span className="chat-file-pending"><File size={15}/> Inapakia kiambatisho…</span>}
                 <footer><time>{dateLabel(message.createdAt)}{message.editedAt ? " · imehaririwa" : ""}</time>{own && view !== "moderation" && <span className="chat-receipt" title={message.readBy?.some((uid) => uid !== firebaseUser.uid) ? "Imesomwa" : message.deliveredTo?.some((uid) => uid !== firebaseUser.uid) ? "Imefika" : "Imetumwa"}>{message.readBy?.some((uid) => uid !== firebaseUser.uid) ? <CheckCheck size={14}/> : message.deliveredTo?.some((uid) => uid !== firebaseUser.uid) ? <CheckCheck size={14}/> : <Check size={14}/>}</span>}
                   {canEdit && <button title="Hariri ujumbe" aria-label="Hariri ujumbe" onClick={() => { setEditingId(message.id); setEditDraft(message.text ?? ""); }}><Pencil size={14}/></button>}
                   {view !== "moderation" && !own && <button title="Jibu" aria-label="Jibu" onClick={() => setReply(message)}><Reply size={14}/></button>}
@@ -268,7 +271,16 @@ export default function ChatPage() {
           {view === "private" && typing.some((uid) => uid !== firebaseUser.uid) && <div className="chat-typing">Mwanachama anaandika…</div>}
         </div>
         {reply && <div className="chat-reply-bar"><Reply size={16}/><span>Unajibu: {reply.text ?? reply.fileName ?? "Kiambatisho"}</span><button onClick={() => setReply(null)}><X size={16}/></button></div>}
-        <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}><input ref={fileRef} type="file" hidden onChange={(event) => void onFile(event.target.files?.[0])}/><button type="button" title="Ambatisha picha/faili" onClick={() => fileRef.current?.click()} disabled={fileBusy || (view !== "public" && !roomId)}><Paperclip size={18}/></button><button type="button" title="Ongeza emoji" onClick={() => setDraft((value) => value + emojis[0])} disabled={view !== "public" && !roomId}><Smile size={18}/></button><input value={draft} onChange={(event) => setTypingDraft(event.target.value)} placeholder={view === "public" ? "Andika ujumbe wa jumuiya…" : view === "moderation" ? "Moderation ni ya kusoma na kusimamia ujumbe tu" : roomId ? "Andika ujumbe…" : "Chagua mazungumzo kwanza"} disabled={(view !== "public" && !roomId) || view === "moderation"}/><div className="chat-composer-actions">{view !== "moderation" && <button type="button" title={recording ? "Simamisha kurekodi" : "Rekodi voice message"} onClick={() => recording ? mediaRecorder.current?.stop() : void startVoiceNote()} disabled={view === "private" && !roomId}>{recording ? <StopCircle size={18}/> : <Mic size={18}/>}</button>}<button className="chat-send-button" type="submit" title="Tuma ujumbe" disabled={fileBusy || sending || view === "moderation" || (view === "private" && !roomId) || (!draft.trim() && !recording)}>{sending ? <LoaderCircle className="chat-spin" size={18}/> : <Send size={18}/>}</button></div></form>
+        <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
+          <input ref={fileRef} type="file" hidden disabled={!mediaReady} onChange={(event) => void onFile(event.target.files?.[0])}/>
+          <button type="button" title={mediaReady ? "Ambatisha picha/faili" : "Firebase Storage haijawezeshwa"} onClick={() => fileRef.current?.click()} disabled={!mediaReady || fileBusy || (view !== "public" && !roomId)}><Paperclip size={18}/></button>
+          <button type="button" title="Ongeza emoji" onClick={() => setDraft((value) => value + emojis[0])} disabled={view !== "public" && !roomId}><Smile size={18}/></button>
+          <input value={draft} onChange={(event) => setTypingDraft(event.target.value)} placeholder={view === "public" ? "Andika ujumbe wa jumuiya…" : view === "moderation" ? "Moderation ni ya kusoma na kusimamia ujumbe tu" : roomId ? "Andika ujumbe…" : "Chagua mazungumzo kwanza"} disabled={(view !== "public" && !roomId) || view === "moderation"}/>
+          <div className="chat-composer-actions">
+            {view !== "moderation" && <button type="button" title={!mediaReady ? "Firebase Storage haijawezeshwa" : recording ? "Simamisha kurekodi" : "Rekodi voice message"} onClick={() => recording ? mediaRecorder.current?.stop() : void startVoiceNote()} disabled={!mediaReady || (view === "private" && !roomId)}>{recording ? <StopCircle size={18}/> : <Mic size={18}/>}</button>}
+            <button className="chat-send-button" type="submit" title="Tuma ujumbe" disabled={fileBusy || sending || view === "moderation" || (view === "private" && !roomId) || (!draft.trim() && !recording)}>{sending ? <LoaderCircle className="chat-spin" size={18}/> : <Send size={18}/>}</button>
+          </div>
+        </form>
         <div className="chat-emoji-row">{emojis.map((emoji) => <button type="button" key={emoji} onClick={() => setDraft((value) => value + emoji)} disabled={view === "moderation"}>{emoji}</button>)}{fileBusy && <small>Inatuma faili…</small>}</div>
       </section>
     </section>

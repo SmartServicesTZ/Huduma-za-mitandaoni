@@ -67,6 +67,7 @@ jobs:
         env:
           VITE_CLOUDFLARE_WORKER_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
           VITE_PAYMENT_FLOWS_ENABLED: ${{ vars.VITE_PAYMENT_FLOWS_ENABLED }}
+          VITE_FIREBASE_STORAGE_READY: ${{ vars.VITE_FIREBASE_STORAGE_READY }}
         run: pnpm build
 
       - name: Upload Pages artifact
@@ -133,15 +134,21 @@ jobs:
         with:
           node-version: 22
 
-      - name: Deploy Firestore and Storage security rules
+      - name: Deploy Firestore rules and optional Storage rules
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_STORAGE_READY: ${{ vars.VITE_FIREBASE_STORAGE_READY }}
         run: |
           if [ -z "$FIREBASE_TOKEN" ]; then
-            echo "::error::Add the FIREBASE_TOKEN repository secret before deploying chat rules. Pages and Worker deployment are blocked to avoid stale production permissions."
+            echo "::error::Add the FIREBASE_TOKEN secret before deploying Firestore rules. Pages and Worker deployment are blocked to avoid stale production permissions."
             exit 1
           fi
-          pnpm dlx firebase-tools deploy --only firestore:rules,storage --project huduma-za-mtandaoni-b1c0c --token "$FIREBASE_TOKEN" --non-interactive
+          pnpm dlx firebase-tools deploy --only firestore:rules --project huduma-za-mtandaoni-b1c0c --token "$FIREBASE_TOKEN" --non-interactive
+          if [ "$FIREBASE_STORAGE_READY" = "true" ]; then
+            pnpm dlx firebase-tools deploy --only storage --project huduma-za-mtandaoni-b1c0c --token "$FIREBASE_TOKEN" --non-interactive
+          else
+            echo "::notice::Firebase Storage is not provisioned; Storage rules are skipped and chat media controls remain disabled."
+          fi
 
   deploy-pages:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
