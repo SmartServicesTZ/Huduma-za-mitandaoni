@@ -33,18 +33,18 @@ type IssuedFiles = {
 
 const REQUEST_ID_KEY = "hmt-business-license-request-id";
 const initialForm: FormState = {
-  firstName: "",
-  middleName: "",
-  lastName: "",
-  businessType: "",
+  firstName: "STEWART",
+  middleName: "JACKSON",
+  lastName: "NJIWA",
+  businessType: "MOBILE PHONE SHOP",
   otherBusinessType: "",
-  licenseType: "",
-  principalBranch: "",
-  region: "",
+  licenseType: "NEW LICENCE",
+  principalBranch: "PRINCIPAL",
+  region: "DAR ES SALAAM",
   district: "DAR ES SALAAM",
   ward: "Tegeta",
   street: "Mbuyuni",
-  tin: "",
+  tin: "123-456-789",
   licenseFee: 80000,
 };
 
