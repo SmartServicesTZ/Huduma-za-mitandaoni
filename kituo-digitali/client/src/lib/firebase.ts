@@ -393,6 +393,15 @@ export async function getPublicSiteSettings() {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
+let publicLicenseTemplateCache: Record<string, unknown> | null | undefined;
+export async function getPublicLicenseTemplateSettings() {
+  if (publicLicenseTemplateCache !== undefined) return publicLicenseTemplateCache;
+  const settings = await getPublicSiteSettings();
+  const value = settings?.licenseTemplateSettings;
+  publicLicenseTemplateCache = value && typeof value === "object" ? value as Record<string, unknown> : null;
+  return publicLicenseTemplateCache;
+}
+
 export async function adminGetSiteSettings() {
   const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
   return snapshot.exists() ? snapshot.data() : null;
