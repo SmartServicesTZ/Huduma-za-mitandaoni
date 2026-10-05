@@ -66,6 +66,7 @@ jobs:
         working-directory: kituo-digitali
         env:
           VITE_CLOUDFLARE_WORKER_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
+          VITE_PAYMENT_FLOWS_ENABLED: ${{ vars.VITE_PAYMENT_FLOWS_ENABLED }}
         run: pnpm build
 
       - name: Upload Pages artifact
