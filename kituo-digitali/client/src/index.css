@@ -768,8 +768,7 @@ body{overflow-x:hidden;}
 .portal-service-card[aria-disabled="true"]{cursor:not-allowed;}
 @media(max-width:800px){
   .portal-sidebar-wrap{width:0;flex:0 0 0;}
-  .sidebar-portal{width:min(86vw,310px);z-index:60;transform:translateX(-105%);transition:transform .22s ease;box-shadow:20px 0 50px rgba(0,0,0,.28);}
-  .sidebar-portal.is-open{transform:translateX(0);}
+  .sidebar-portal{width:min(86vw,310px);z-index:60;box-shadow:20px 0 50px rgba(0,0,0,.28);}
   .mobile-menu{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.07);}
   .mobile-menu:hover{background:rgba(255,255,255,.13);}
   .portal-content{width:100%;}
