@@ -5,6 +5,15 @@ import { toast } from "sonner";
 import { renderTinCertificateCanvas, type TinCertificateForm } from "@/lib/tinCertificateCanvas";
 import { getPublicSiteSettings } from "@/lib/firebase";
 
+type FieldProps = { label: string; english?: string; children: React.ReactNode };
+
+function Field({ label, english, children }: FieldProps) {
+  return <div className="license-field">
+    <label><strong>{label}</strong>{english ? <small>{english}</small> : null}</label>
+    {children}
+  </div>;
+}
+
 export default function TINCertificatePage() {
   const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:"", traLocation:"", taxOffice:"", physicalLocation:"", streetArea:"", commissioner:"" });
   const [busy, setBusy] = useState(false);
@@ -84,10 +93,7 @@ export default function TINCertificatePage() {
       <span className="overline">HUDUMA YA TIN</span>
       <h1>CHETI CHA TIN</h1>
       <p>Jaza taarifa na uone Live Preview</p>
-      
     </div>
-
-    
 
     <div className="tin-layout">
       <section className="license-form-card">
@@ -104,10 +110,20 @@ export default function TINCertificatePage() {
           <Field label="Tax Office" english="Tax Office"><input value={form.taxOffice} onChange={(e) => set("taxOffice", e.target.value.toUpperCase())} /></Field>
           <Field label="Physical Location" english="Physical Location"><input value={form.physicalLocation} onChange={(e) => set("physicalLocation", e.target.value.toUpperCase())} /></Field>
           <Field label="Street / Area" english="Street / Area"><input value={form.streetArea} onChange={(e) => set("streetArea", e.target.value.toUpperCase())} /></Field>
-
+          <Field label="Commissioner" english="Commissioner General"><input value={form.commissioner} onChange={(e) => set("commissioner", e.target.value.toUpperCase())} /></Field>
         </div></div>
+
         <div className="tin-actions">
           <button className="button button--green" disabled={busy} onClick={() => void download()}><Download size={16} /> {busy ? "INATENGENEZA..." : "PAKUA PNG"}</button>
         </div>
+      </section>
 
-
+      <section className="license-preview-card">
+        <div className="license-card-title"><FileBadge size={21} /><div><h2>LIVE PREVIEW</h2><p>Preview ya cheti</p></div></div>
+        <div className="license-preview-wrap">
+          <canvas ref={canvasRef} className="license-preview-canvas" />
+        </div>
+      </section>
+    </div>
+  </main>;
+}
