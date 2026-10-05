@@ -741,3 +741,9 @@ border:1px solid rgba(255,255,255,.11);box-shadow:0 25px 70px rgba(1,9,22,.28);}
 
 
 @media (max-width: 767px) { .license-page,.tin-page{overflow-x:hidden}.license-topbar{flex-wrap:wrap;gap:8px;padding:10px 12px}.page-heading{padding-left:14px;padding-right:14px}.page-heading h1{font-size:clamp(24px,8vw,36px);line-height:1.08}.license-layout,.tin-layout{grid-template-columns:minmax(0,1fr)!important;gap:14px!important;width:100%}.license-form-card,.license-preview-card{min-width:0;width:100%}.license-form-grid{grid-template-columns:minmax(0,1fr)!important}.license-field input,.license-field select,.license-select-wrap select{width:100%;min-width:0;max-width:100%;font-size:16px}.license-preview-wrap{width:100%;max-width:100%;overflow:auto;-webkit-overflow-scrolling:touch;padding:8px!important}.license-preview-canvas{display:block;width:min(100%,720px)!important;height:auto!important;max-width:none;margin:0 auto}.tin-actions{position:sticky;bottom:8px;z-index:10}} @media(max-width:420px){.license-card-title{align-items:flex-start}.license-card-title h2{font-size:16px}.license-form-card,.license-preview-card{padding:12px!important}.license-form-section{padding:12px!important}.license-preview-wrap{padding:4px!important}}
+
+/* TIN desktop preview: always scale the full certificate to the available card width. */
+.tin-page .license-preview-card{overflow:visible;min-width:0}
+.tin-page .license-preview-wrap{width:100%;max-width:none;overflow:auto;box-sizing:border-box}
+.tin-page .license-preview-canvas{display:block;width:100%!important;max-width:1012px!important;height:auto!important;margin:0 auto}
+@media(min-width:951px){.tin-page .tin-layout{grid-template-columns:minmax(360px,.78fr) minmax(0,1.22fr);align-items:start}.tin-page .license-preview-card{min-width:0}.tin-page .license-preview-wrap{min-width:0}}
