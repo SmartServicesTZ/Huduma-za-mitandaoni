@@ -76,15 +76,42 @@ try {
   await page.locator(".header-user").waitFor({ state: "visible" });
   console.log("PASS 3: login using +255 phone format and password");
 
+  await page.goto(`${appUrl}/account`);
+  const bio = `E2E profile ${Date.now()}`;
+  await page.waitForFunction(() => { const field = document.querySelector(".profile-form textarea"); return field instanceof HTMLTextAreaElement && !field.disabled; });
+  await page.locator(".profile-form textarea").fill(bio);
+  assert.equal(await page.locator(".profile-form textarea").inputValue(), bio);
+  await page.getByRole("button", { name: /Hifadhi wasifu/ }).click();
+  await page.getByText("Wasifu wako umehifadhiwa.").waitFor({ state: "visible" });
+  await page.reload();
+  await page.locator(".profile-form textarea").waitFor({ state: "visible" });
+  await page.waitForFunction((expected) => document.querySelector(".profile-form textarea")?.value === expected, bio);
+  console.log("PASS 4: editable profile bio is stored in Firestore and survives reload");
+
+  await page.goto(`${appUrl}/chat`);
+  const originalMessage = `CHAT-E2E-${Date.now()}`;
+  const editedMessage = `${originalMessage}-EDITED`;
+  await page.getByPlaceholder("Andika ujumbe wa jumuiya…").fill(originalMessage);
+  await page.getByRole("button", { name: "Tuma ujumbe", exact: true }).click();
+  await page.getByText(originalMessage, { exact: true }).waitFor({ state: "visible" });
+  await page.getByRole("button", { name: "Hariri ujumbe", exact: true }).click();
+  await page.locator(".chat-edit-box textarea").fill(editedMessage);
+  await page.getByRole("button", { name: "Hifadhi", exact: true }).click();
+  await page.getByText(editedMessage, { exact: true }).waitFor({ state: "visible" });
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Futa ujumbe", exact: true }).click();
+  await page.getByText(editedMessage, { exact: true }).waitFor({ state: "detached" });
+  console.log("PASS 5: public chat send, own-message edit, and delete");
+
   await page.reload();
   await page.locator(".header-user").waitFor({ state: "visible" });
-  console.log("PASS 4: session persists after refresh");
+  console.log("PASS 6: session persists after refresh");
 
   await page.locator(".portal-sidebar-wrap").getByRole("link", { name: "Chat", exact: true }).click();
   await page.locator(".header-user").waitFor({ state: "visible" });
   await page.locator(".portal-sidebar-wrap").getByRole("link", { name: "Huduma zote", exact: true }).click();
   await page.locator(".header-user").waitFor({ state: "visible" });
-  console.log("PASS 5: session persists across navigation");
+  console.log("PASS 7: session persists across navigation");
 
   // Closing and reopening the Chromium profile verifies Firebase browser-local persistence.
   await browserContext.close();
@@ -93,12 +120,12 @@ try {
   page.setDefaultTimeout(15_000);
   await page.goto(appUrl);
   await page.locator(".header-user").waitFor({ state: "visible", timeout: 20_000 });
-  console.log("PASS 6: session persists after closing/reopening the browser profile");
+  console.log("PASS 8: session persists after closing/reopening the browser profile");
 
   await logout(page);
   await page.reload();
   await page.getByRole("button", { name: "Ingia / Jisajili", exact: true }).waitFor({ state: "visible" });
-  console.log("PASS 7: logout clears session across reload");
+  console.log("PASS 9: logout clears session across reload");
   console.log("AUTH_EMULATOR_E2E_OK");
 } catch (error) {
   console.error("E2E_CURRENT_URL", page?.url());

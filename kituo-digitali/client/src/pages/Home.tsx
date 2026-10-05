@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, subscribeUserMessages, updatePassword, uploadProfileImage, type TokenPurchaseOrder } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, consumeFirebaseTokens, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, updatePassword, type TokenPurchaseOrder } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
@@ -17,6 +17,7 @@ import AirtelSmeContractPage from "./AirtelSmeContractPage";
 import AgentStickerPage from "./AgentStickerPage";
 import DynamicServicePage from "./DynamicServicePage";
 import ChatPage from "./Chat";
+import AccountSettingsPage from "./AccountPage";
 
 const icons: Record<string, React.ElementType> = { "file-badge": FileBadge, "badge-check": BadgeCheck, contact: Contact, "qr-code": QrCode, vote: Vote, store: Store, ticket: Ticket, copy: Copy, "car-front": CarFront, search: Search, landmark: Landmark, baby: Baby, plane: Plane, "heart-handshake": HeartHandshake, "file-warning": FileWarning, "music-2": Music2, "image-search": Image, smartphone: Smartphone, "scan-face": ScanFace, "user-round-pen": UserRoundPen, palette: Palette, radio: Radio, trophy: Trophy, star: Star, tv: Tv };
 
@@ -232,23 +233,7 @@ function HistoryPage() {
 }
 
 function AdminPage() { return <AdminDashboard />; }
-function AccountPage() {
-  const { isAuthenticated, user, profile, firebaseUser, logout, updateProfile: saveProfile } = useAuth();
-  const [names, setNames] = useState({ firstName: "", lastName: "" });
-  const [newPassword, setNewPassword] = useState("");
-  const [imageBusy, setImageBusy] = useState(false);
-  const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
-  useEffect(() => { if (!firebaseUser) { setMessages([]); return; } return subscribeUserMessages(firebaseUser.uid, setMessages, () => toast.error("Imeshindikana kupakia ujumbe.")); }, [firebaseUser]);
-  const chooseProfileImage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]; if (!file || !firebaseUser) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error("Chagua picha ya JPG, PNG au WebP."); return; }
-    if (file.size > 2 * 1024 * 1024) { toast.error("Picha isizidi MB 2."); return; }
-    setImageBusy(true); void uploadProfileImage(firebaseUser.uid, file).then(() => toast.success("Picha ya profile imehifadhiwa kwenye Storage.")).catch((error: any) => toast.error(error?.message ?? "Imeshindikana kuhifadhi picha.")).finally(() => setImageBusy(false));
-  };
-  const saveNames = async () => { try { await saveProfile({ firstName: names.firstName || profile?.firstName, lastName: names.lastName || profile?.lastName, name: `${names.firstName || profile?.firstName || ""} ${names.lastName || profile?.lastName || ""}`.trim() }); toast.success("Taarifa zimehifadhiwa."); } catch { toast.error("Imeshindikana kuhifadhi taarifa."); } };
-  const saveNewPassword = async () => { if (!firebaseUser || newPassword.length < 6) { toast.error("Password iwe na angalau herufi 6."); return; } try { await updatePassword(firebaseUser, newPassword); setNewPassword(""); toast.success("Password imebadilishwa kwa usalama."); } catch { toast.error("Kwa usalama, ingia tena kabla ya kubadilisha password."); } };
-  return <main className="portal-main"><div className="page-heading"><div><span className="overline">Wasifu na usalama</span><h1>AKAUNTI</h1><p>Simamia taarifa za akaunti, lugha na taarifa zako.</p></div></div>{!isAuthenticated ? <section className="account-panel"><Notice>Ingia ili kuona akaunti yako binafsi.</Notice><button className="button button--green" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Tumia kitufe cha Ingia / Jisajili juu</button></section> : <div className="account-grid"><section className="account-panel"><div className="large-avatar">{profile?.profileImageUrl ? <img src={profile.profileImageUrl} alt="Picha ya profile" /> : user?.name?.slice(0, 2).toUpperCase() ?? "HM"}</div><label className="profile-image-picker">{imageBusy ? "Inapakia picha..." : "Weka au badilisha picha"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseProfileImage} disabled={imageBusy} /></label><small className="profile-image-help">JPG, PNG au WebP — hadi MB 2.</small><h2>{profile?.name ?? "Mwanachama"} <VerifiedTick verified={profile?.verificationStatus === "approved"} /></h2><p>Namba ya simu: {profile?.phone ?? "—"}</p><Notice tone="success">Akaunti yako inalindwa na Firebase Authentication.</Notice><div className="auth-fields auth-fields--two"><label>Jina la kwanza<input value={names.firstName || profile?.firstName || ""} onChange={(event) => setNames({ ...names, firstName: event.target.value })} /></label><label>Jina la mwisho<input value={names.lastName || profile?.lastName || ""} onChange={(event) => setNames({ ...names, lastName: event.target.value })} /></label><label>Namba ya simu<input type="tel" value={profile?.phone ?? ""} readOnly aria-readonly="true" /></label></div><button className="button button--green" onClick={saveNames}>Hifadhi taarifa</button><hr /><h3>Badilisha password</h3><div className="auth-fields"><input type="password" placeholder="Password mpya" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></div><button className="button button--dark" onClick={saveNewPassword}>Badilisha password</button><button className="button button--dark" onClick={() => logout()}>Toka kwenye akaunti</button></section><section className="account-side"><div className="account-panel"><h3>Tokeni</h3><p>Salio lako: <strong>{profile?.tokenBalance ?? 0} tokeni</strong></p><p>Hali ya akaunti: {profile?.verificationStatus === "approved" ? "Imeidhinishwa" : "Inasubiri uthibitisho"}</p></div><div className="account-panel"><div className="admin-card-heading"><h3>Ujumbe na hali ya maombi</h3><Link href="/service/pata-lipa-namba">Maombi ya Lipa Namba</Link></div>{messages.length ? messages.map((item) => <div className="account-notification" key={item.id}><strong>{String(item.subject ?? "Ujumbe")}</strong><p>{String(item.body ?? "")}</p><small>{String(item.createdAt ?? "")}</small></div>) : <Notice tone="info">Hakuna ujumbe bado. Mabadiliko ya maombi yataonekana hapa.</Notice>}</div></section></div>}</main>;
-}
+function AccountPage() { return <AccountSettingsPage />; }
 
 function PortalHome({ search, onUse, services }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[] }) {
   const [category, setCategory] = useState("Zote");

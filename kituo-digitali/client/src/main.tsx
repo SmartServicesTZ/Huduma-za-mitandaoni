@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import "./portal-refresh.css";
 import { withBasePath } from "../../shared/githubPagesRoute";
 
 // GitHub Pages serves 404.html for direct SPA routes. The fallback redirects

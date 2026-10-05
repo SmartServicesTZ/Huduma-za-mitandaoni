@@ -113,6 +113,7 @@ export type FirebaseProfile = {
   lastName: string;
   phone: string;
   name: string;
+  bio?: string;
   username: string;
   tokenBalance: number;
   verificationStatus: "pending" | "approved" | "rejected";
@@ -146,6 +147,7 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     lastName,
     phone,
     name: extra.name ?? current.name ?? (`${firstName} ${lastName}`.trim() || "Mwanachama"),
+    bio: extra.bio ?? current.bio,
     username: extra.username ?? current.username ?? user.uid.slice(0, 8),
     tokenBalance: typeof current.tokenBalance === "number" ? current.tokenBalance : 0,
     verificationStatus: current.verificationStatus ?? "pending",
@@ -630,7 +632,7 @@ export function subscribeUserMessages(uid: string, callback: (rows: Array<Record
 }
 
 export type ChatUser = { uid: string; name: string; phone: string };
-export type ChatMessage = { id: string; senderId: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
+export type ChatMessage = { id: string; senderId: string; senderName?: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; editedAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
 export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
 
 export async function findChatUser(phone: string) {
@@ -665,6 +667,11 @@ export function subscribeConversations(uid: string, callback: (rows: PrivateConv
     callback(rows);
   }, onError);
 }
+export function subscribeAllConversations(callback: (rows: PrivateConversation[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(query(collection(firestore, "conversations"), orderBy("updatedAt", "desc")), (snapshot) => {
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as PrivateConversation)));
+  }, onError);
+}
 export function subscribePrivateChat(roomId: string, callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
   return subscribeChatRows(collection(firestore, "conversations", roomId, "messages"), callback, onError);
 }
@@ -682,12 +689,13 @@ export async function setChatTyping(roomId: string, uid: string, typing: boolean
   if (typing) await setDoc(ref, { updatedAt: serverTimestamp() });
   else await deleteDoc(ref);
 }
-export async function sendChatMessage(roomId: string | null, senderId: string, text: string, replyTo?: ChatMessage, isPublic = false, attachment?: { filePath: string; fileName: string; fileType: string }) {
+export async function sendChatMessage(roomId: string | null, senderId: string, text: string, replyTo?: ChatMessage, isPublic = false, attachment?: { filePath: string; fileName: string; fileType: string }, senderName?: string) {
   const collectionRef = isPublic ? collection(firestore, "publicChatMessages") : collection(firestore, "conversations", roomId!, "messages");
   const content = text.trim();
   if (!content && !attachment) throw new Error("Andika ujumbe au chagua faili.");
   const message = {
     senderId,
+    ...(senderName ? { senderName: senderName.slice(0, 80) } : {}),
     ...(content ? { text: content } : {}),
     ...(attachment ?? {}),
     ...(replyTo ? { replyTo: { id: replyTo.id, text: String(replyTo.text ?? replyTo.fileName ?? "Kiambatisho"), senderId: replyTo.senderId } } : {}),
@@ -700,6 +708,20 @@ export async function markChatMessageRead(roomId: string | null, message: ChatMe
   if (message.senderId === uid || message.readBy?.includes(uid)) return;
   const ref = isPublic ? doc(firestore, "publicChatMessages", message.id) : doc(firestore, "conversations", roomId!, "messages", message.id);
   await updateDoc(ref, { deliveredTo: arrayUnion(uid), readBy: arrayUnion(uid) });
+}
+export async function editChatMessage(roomId: string | null, message: ChatMessage, text: string, isPublic = false) {
+  const content = text.trim();
+  if (!content) throw new Error("Ujumbe hauwezi kuwa tupu.");
+  if (content.length > 5000) throw new Error("Ujumbe usizidi herufi 5,000.");
+  const ref = isPublic ? doc(firestore, "publicChatMessages", message.id) : doc(firestore, "conversations", roomId!, "messages", message.id);
+  await updateDoc(ref, { text: content, editedAt: serverTimestamp() });
+}
+export async function deleteChatMessage(roomId: string | null, message: ChatMessage, isPublic = false) {
+  const ref = isPublic ? doc(firestore, "publicChatMessages", message.id) : doc(firestore, "conversations", roomId!, "messages", message.id);
+  await deleteDoc(ref);
+  if (message.filePath) {
+    try { await deleteObject(storageRef(firebaseStorage, message.filePath)); } catch { /* The message is removed; an orphaned file can be cleaned up later. */ }
+  }
 }
 export async function uploadChatFile(roomId: string | null, senderId: string, file: File, isPublic = false) {
   if (file.size > 10 * 1024 * 1024) throw new Error("Faili isizidi MB 10.");

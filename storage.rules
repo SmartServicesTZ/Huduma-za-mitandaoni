@@ -2,6 +2,11 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function canModerateChat() {
+      return request.auth != null
+        && ((request.auth.token.get('role', '') == 'super_admin' && request.auth.token.get('isSuperAdmin', false) == true)
+          || request.auth.token.get('permissions', {}).get('manageMessages', false) == true);
+    }
     match /users/{userId}/profile/{fileName} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null
@@ -49,7 +54,7 @@ service firebase.storage {
         && request.auth.uid == userId
         && request.resource.size <= 10 * 1024 * 1024
         && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow delete: if (request.auth != null && request.auth.uid == userId) || canModerateChat();
     }
 
     match /chatFiles/{roomId}/{userId}/{fileName} {
@@ -58,12 +63,12 @@ service firebase.storage {
           && firestore.exists(/databases/(default)/documents/conversations/$(roomId))
           && request.auth.uid in firestore.get(/databases/(default)/documents/conversations/$(roomId)).data.participants;
       }
-      allow read: if isMember();
+          allow read: if isMember() || canModerateChat();
       allow write: if isMember()
         && request.auth.uid == userId
         && request.resource.size <= 10 * 1024 * 1024
         && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
-      allow delete: if isMember() && request.auth.uid == userId;
+      allow delete: if (isMember() && request.auth.uid == userId) || canModerateChat();
     }
 
     match /{allPaths=**} {

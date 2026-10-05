@@ -78,7 +78,7 @@ jobs:
   deploy-worker:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, deploy-firebase-rules]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -113,13 +113,41 @@ jobs:
           response=$(curl --fail --silent --show-error --retry 5 --retry-delay 3 "$API_URL/ready")
           echo "$response" | jq -e '.ready == true'
 
+  deploy-firebase-rules:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy Firestore and Storage security rules
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ]; then
+            echo "::error::Add the FIREBASE_TOKEN repository secret before deploying chat rules. Pages and Worker deployment are blocked to avoid stale production permissions."
+            exit 1
+          fi
+          pnpm dlx firebase-tools deploy --only firestore:rules,storage --project huduma-za-mtandaoni-b1c0c --token "$FIREBASE_TOKEN" --non-interactive
+
   deploy-pages:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: [build, deploy-worker]
+    needs: [build, deploy-worker, deploy-firebase-rules]
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

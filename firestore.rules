@@ -3,10 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function isSuperAdmin() { return signedIn() && request.auth.token.role == 'super_admin' && request.auth.token.isSuperAdmin == true; }
-    function isPrivileged() { return signedIn() && request.auth.token.role in ['admin', 'moderator', 'support', 'super_admin']; }
+    function isSuperAdmin() { return signedIn() && request.auth.token.get('role', '') == 'super_admin' && request.auth.token.get('isSuperAdmin', false) == true; }
+    function isPrivileged() { return signedIn() && request.auth.token.get('role', '') in ['admin', 'moderator', 'support', 'super_admin']; }
     function isAdmin() { return isPrivileged(); }
-    function hasPermission(name) { return isSuperAdmin() || (isAdmin() && request.auth.token.permissions[name] == true); }
+    function hasPermission(name) { return isSuperAdmin() || (isAdmin() && request.auth.token.get('permissions', {}).get(name, false) == true); }
     function hasNoCredentialFields(data) { return !data.keys().hasAny(['password', 'pin', 'pinHash']); }
     function phoneMatchesAuth(data) {
       return data.phone is string
@@ -26,6 +26,10 @@ service cloud.firestore {
       let roomPath = /databases/$(database)/documents/conversations/$(roomId);
       return signedIn() && exists(roomPath) && request.auth.uid in get(roomPath).data.participants;
     }
+    function canOpenConversationId(roomId) {
+      let participants = roomId.split('__');
+      return signedIn() && participants.size() == 2 && request.auth.uid in participants;
+    }
     function isNotBlockedByEither(uidA, uidB) {
       let aBlocksB = /databases/$(database)/documents/userBlocks/$(uidA)/blocked/$(uidB);
       let bBlocksA = /databases/$(database)/documents/userBlocks/$(uidB)/blocked/$(uidA);
@@ -41,7 +45,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || canViewUsers());
       allow create: if signedIn() && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['uid', 'firstName', 'lastName', 'phone', 'name', 'username', 'tokenBalance', 'verificationStatus', 'role', 'permissions', 'createdAt', 'language', 'profileImageUrl', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'firstName', 'lastName', 'phone', 'name', 'bio', 'username', 'tokenBalance', 'verificationStatus', 'role', 'permissions', 'createdAt', 'language', 'profileImageUrl', 'updatedAt'])
         && request.resource.data.uid == userId
         && request.resource.data.phone.matches('^255[67][0-9]{8}$')
         && phoneMatchesAuth(request.resource.data)
@@ -50,6 +54,7 @@ service cloud.firestore {
         && request.resource.data.verificationStatus == 'pending'
         && request.resource.data.permissions is map
         && request.resource.data.permissions.keys().size() == 0
+        && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 160))
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time
         && !request.resource.data.keys().hasAny(['email', 'emailVerified'])
@@ -57,7 +62,8 @@ service cloud.firestore {
       allow update: if signedIn() && hasNoCredentialFields(request.resource.data) && (
         (request.auth.uid == userId
           && !request.resource.data.keys().hasAny(['email', 'emailVerified'])
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email', 'emailVerified', 'firstName', 'lastName', 'name', 'username', 'language', 'profileImageUrl', 'updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email', 'emailVerified', 'firstName', 'lastName', 'name', 'bio', 'username', 'language', 'profileImageUrl', 'updatedAt'])
+          && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 160))
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.phone == resource.data.phone)
         || canManageUsers()
@@ -147,23 +153,36 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn()
         && request.resource.data.senderId == request.auth.uid
-        && request.resource.data.keys().hasOnly(['senderId', 'text', 'filePath', 'fileName', 'fileType', 'replyTo', 'deliveredTo', 'readBy', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'filePath', 'fileName', 'fileType', 'replyTo', 'deliveredTo', 'readBy', 'createdAt'])
+        && (!('senderName' in request.resource.data) || (request.resource.data.senderName is string && request.resource.data.senderName.size() <= 80))
         && request.resource.data.createdAt == request.time
-        && (request.resource.data.text is string || request.resource.data.filePath is string);
+        && ((request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 5000) || request.resource.data.filePath is string);
       allow update: if signedIn()
-        && resource.data.senderId != request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deliveredTo', 'readBy'])
-        && request.resource.data.deliveredTo.hasAll(resource.data.deliveredTo)
-        && request.resource.data.readBy.hasAll(resource.data.readBy)
-        && request.auth.uid in request.resource.data.readBy;
-      allow delete: if signedIn() && resource.data.senderId == request.auth.uid;
+        && ((resource.data.senderId == request.auth.uid
+          && resource.data.text is string
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 5000
+          && request.resource.data.editedAt == request.time)
+        || (resource.data.senderId != request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deliveredTo', 'readBy'])
+          && request.resource.data.deliveredTo.hasAll(resource.data.deliveredTo)
+          && request.resource.data.readBy.hasAll(resource.data.readBy)
+          && request.auth.uid in request.resource.data.readBy));
+      allow delete: if signedIn() && (resource.data.senderId == request.auth.uid || canManageMessages());
     }
     match /conversations/{roomId} {
-      allow read: if isConversationParticipant(roomId);
+      allow get: if isConversationParticipant(roomId)
+        || canManageMessages()
+        || (!exists(/databases/$(database)/documents/conversations/$(roomId)) && canOpenConversationId(roomId));
+      allow list: if signedIn() && (request.auth.uid in resource.data.participants || canManageMessages());
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['participants', 'names', 'phones', 'createdAt', 'updatedAt', 'lastMessage'])
         && request.resource.data.participants is list
         && request.resource.data.participants.size() == 2
+        && roomId.split('__').size() == 2
+        && roomId.split('__') == request.resource.data.participants
         && request.auth.uid in request.resource.data.participants
         && request.resource.data.participants[0] != request.resource.data.participants[1]
         && request.resource.data.names is map
@@ -177,22 +196,31 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
       allow delete: if false;
       match /messages/{messageId} {
-        allow read: if isConversationParticipant(roomId);
+        allow read: if isConversationParticipant(roomId) || canManageMessages();
         allow create: if isConversationParticipant(roomId)
           && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.keys().hasOnly(['senderId', 'text', 'filePath', 'fileName', 'fileType', 'replyTo', 'deliveredTo', 'readBy', 'createdAt'])
+          && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'filePath', 'fileName', 'fileType', 'replyTo', 'deliveredTo', 'readBy', 'createdAt'])
+          && (!('senderName' in request.resource.data) || (request.resource.data.senderName is string && request.resource.data.senderName.size() <= 80))
           && request.resource.data.createdAt == request.time
           && request.resource.data.deliveredTo == [request.auth.uid]
           && request.resource.data.readBy == [request.auth.uid]
-          && (request.resource.data.text is string || request.resource.data.filePath is string)
+          && ((request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 5000) || request.resource.data.filePath is string)
           && isNotBlockedByEither(request.auth.uid, get(/databases/$(database)/documents/conversations/$(roomId)).data.participants[0] == request.auth.uid ? get(/databases/$(database)/documents/conversations/$(roomId)).data.participants[1] : get(/databases/$(database)/documents/conversations/$(roomId)).data.participants[0]);
         allow update: if isConversationParticipant(roomId)
-          && resource.data.senderId != request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deliveredTo', 'readBy'])
-          && request.resource.data.deliveredTo.hasAll(resource.data.deliveredTo)
-          && request.resource.data.readBy.hasAll(resource.data.readBy)
-          && request.auth.uid in request.resource.data.readBy;
-        allow delete: if false;
+          && ((resource.data.senderId == request.auth.uid
+            && resource.data.text is string
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+            && request.resource.data.text is string
+            && request.resource.data.text.size() > 0
+            && request.resource.data.text.size() <= 5000
+            && request.resource.data.editedAt == request.time)
+          || (resource.data.senderId != request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deliveredTo', 'readBy'])
+            && request.resource.data.deliveredTo.hasAll(resource.data.deliveredTo)
+            && request.resource.data.readBy.hasAll(resource.data.readBy)
+            && request.auth.uid in request.resource.data.readBy));
+        allow delete: if (isConversationParticipant(roomId) && resource.data.senderId == request.auth.uid)
+          || canManageMessages();
       }
       match /typing/{userId} {
         allow read: if isConversationParticipant(roomId);
