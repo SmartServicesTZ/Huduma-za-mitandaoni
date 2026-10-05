@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getPublicSiteSettings } from "@/lib/firebase";
 
 type FormState = {
   customerName: string;
@@ -60,6 +61,9 @@ const initialForm = (): FormState => ({
 export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
+  const [layout, setLayout] = useState<Record<string, number>>({nameX:22.5,nameY:25,nameSize:3,phoneX:22.5,phoneY:28.9,phoneSize:3,tinX:76,tinY:28.9,tinSize:2.8,idTypeX:24,idTypeY:32.9,idTypeSize:2.8,idX:69,idY:32.9,idSize:2.4,streetX:28,streetY:37,streetSize:2.8,wardX:75,wardY:37,wardSize:2.8,districtX:31,districtY:41,districtSize:2.8,regionX:76,regionY:41,regionSize:2.8,emailX:31,emailY:45,emailSize:2.6,normalX:5.8,normalY:56.2,normalSize:4.2,deviceX:29,deviceY:56,deviceSize:2.8,customerX:17,customerY:90,customerSize:2.6,sign1X:70,sign1Y:90,sign1Size:2.6,date1X:89,date1Y:90,date1Size:2.2,salesX:20,salesY:93.7,salesSize:2.6,sign2X:70,sign2Y:93.7,sign2Size:2.6,date2X:89,date2Y:93.7,date2Size:2.2});
+  useEffect(() => { void getPublicSiteSettings().then((settings:any) => { const saved=settings?.templateLayouts?.airtelSme; if(saved) setLayout((cur)=>Object.fromEntries(Object.keys(cur).map(k=>[k,Number(saved[k] ?? cur[k])]))); }).catch(()=>undefined); }, []);
+  const ov=(x:string,y:string,size:string,width?:string): React.CSSProperties => ({left:`${layout[x] ?? 0}%`,top:`${layout[y] ?? 0}%`,fontSize:`${layout[size] ?? 2.8}vw`,width});
 
   const update = (key: keyof FormState, value: string | boolean) => {
     setForm((current) => {
@@ -193,14 +197,14 @@ export default function AirtelSmeContractPage() {
             <div className="sme-preview">
               <div className="sme-template">
                 <img src={imageSrc} alt="Airtel SME Contract Template" onError={() => setStatus("⚠️ contact.png haijapatikana. Iweke ndani ya client/public/contact.png.")} />
-                <div className="sme-overlay sme-name">{form.customerName}</div><div className="sme-overlay sme-phone">{form.phone}</div><div className="sme-overlay sme-tin">{form.tin}</div>
-                <div className="sme-overlay sme-idtype">{form.idType.toUpperCase()}</div><div className="sme-overlay sme-id">{form.idNumber}</div>
-                <div className="sme-overlay sme-street">{form.street.toUpperCase()}</div><div className="sme-overlay sme-ward">{form.ward.toUpperCase()}</div>
-                <div className="sme-overlay sme-district">{form.district.toUpperCase()}</div><div className="sme-overlay sme-region">{form.region.toUpperCase()}</div>
-                <div className="sme-overlay sme-email">{form.email}</div><div className="sme-overlay sme-normal">{form.normalSme ? "☑" : "☐"}</div>
-                <div className="sme-overlay sme-device">{form.devicePhone}</div><div className="sme-overlay sme-customer">{form.customerName2}</div>
-                <div className="sme-overlay sme-sign1">{form.signature1}</div><div className="sme-overlay sme-date1">{form.date1}</div>
-                <div className="sme-overlay sme-sales">{form.salesName}</div><div className="sme-overlay sme-sign2">{form.signature2}</div><div className="sme-overlay sme-date2">{form.date2}</div>
+                <div className="sme-overlay" style={ov("nameX","nameY","nameSize","73%")}>{form.customerName}</div><div className="sme-overlay" style={ov("phoneX","phoneY","phoneSize","39%")}>{form.phone}</div><div className="sme-overlay" style={ov("tinX","tinY","tinSize","20%")}>{form.tin}</div>
+                <div className="sme-overlay" style={ov("idTypeX","idTypeY","idTypeSize","28%")}>{form.idType.toUpperCase()}</div><div className="sme-overlay" style={ov("idX","idY","idSize","27%")}>{form.idNumber}</div>
+                <div className="sme-overlay" style={ov("streetX","streetY","streetSize","36%")}>{form.street.toUpperCase()}</div><div className="sme-overlay" style={ov("wardX","wardY","wardSize","20%")}>{form.ward.toUpperCase()}</div>
+                <div className="sme-overlay" style={ov("districtX","districtY","districtSize","34%")}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={ov("regionX","regionY","regionSize","20%")}>{form.region.toUpperCase()}</div>
+                <div className="sme-overlay" style={ov("emailX","emailY","emailSize","64%")}>{form.email}</div><div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "☑" : "☐"}</div>
+                <div className="sme-overlay" style={ov("deviceX","deviceY","deviceSize","30%")}>{form.devicePhone}</div><div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
+                <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div><div className="sme-overlay" style={ov("date1X","date1Y","date1Size","9%")}>{form.date1}</div>
+                <div className="sme-overlay" style={ov("salesX","salesY","salesSize","36%")}>{form.salesName}</div><div className="sme-overlay" style={ov("sign2X","sign2Y","sign2Size","12%")}>{form.signature2}</div><div className="sme-overlay" style={ov("date2X","date2Y","date2Size","9%")}>{form.date2}</div>
               </div>
             </div>
           </section>
