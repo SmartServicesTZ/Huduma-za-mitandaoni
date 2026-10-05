@@ -799,3 +799,10 @@ body{overflow-x:hidden;}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;}
 }
+
+
+/* $teward Tz brand lockup */
+.portal-brand > span:last-child,.sidebar-brand a{display:flex;flex-direction:column;gap:2px;line-height:1.05}
+.portal-brand > span:last-child b,.sidebar-brand a b{color:#65e69b;font-size:1em;letter-spacing:.02em}
+.brand-subtitle{display:block;color:#9fb1c8;font-size:8px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+@media(max-width:520px){.brand-subtitle{font-size:7px}.portal-brand{gap:7px}}
