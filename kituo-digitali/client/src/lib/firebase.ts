@@ -100,6 +100,7 @@ export type AdminPermissions = {
 export type FirebaseProfile = {
   uid: string;
   email: string;
+  emailVerified?: boolean;
   firstName: string;
   lastName: string;
   phone: string;
