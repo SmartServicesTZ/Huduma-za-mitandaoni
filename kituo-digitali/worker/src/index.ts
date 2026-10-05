@@ -18,6 +18,7 @@ import {
   markServiceApplicationViewed,
   reserveBusinessLicenseNumber,
   resetUserPassword,
+  changeOwnPassword,
   seedServiceCatalog,
   setAccountStatus,
   setHomepageServiceOrder,
@@ -39,7 +40,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   changeOwnPassword, createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
-  resetUserPassword, changeOwnPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
+  resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
