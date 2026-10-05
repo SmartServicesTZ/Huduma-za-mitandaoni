@@ -36,7 +36,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
-  seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
+  seedServiceCatalog, setAccountStatus, resetUserPassword, setHomepageServiceOrder, setLipaApplicationStatus,
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateUserAccess, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
