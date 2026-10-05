@@ -207,6 +207,7 @@ function AccountPage() {
 }
 
 function PortalHome({ search, onUse, services }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[] }) {
+  const [category, setCategory] = useState("Zote");
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [serviceOrder, setServiceOrder] = useState<string[]>([]);
   const [serviceLockOverrides, setServiceLockOverrides] = useState<Record<string, boolean>>({});
@@ -230,7 +231,8 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     return service;
   }), serviceOrder);
   const lower = search.toLowerCase();
-  const matches = displayedServices.filter((service) => `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
+  const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))].slice(0, 8);
+  const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
   const main = matches.filter((service) => service.kind !== "locked" && (service.category === "Huduma kuu" || service.category === "Huduma za bure"));
   const locked = matches.filter((service) => service.kind === "locked");
   const tools = matches.filter((service) => service.kind !== "locked" && service.category === "Zana za ziada");
@@ -246,7 +248,14 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   const paidCount = displayedServices.filter((service) => service.kind === "paid").length;
   const lockedCount = displayedServices.filter((service) => service.kind === "locked").length;
   const layoutStyle = { "--home-cols": layout.homeColumns, "--home-tablet-cols": layout.homeTabletColumns, "--home-mobile-cols": layout.homeMobileColumns, "--section-gap": `${layout.sectionGap}px`, "--card-gap": `${layout.cardGap}px`, "--card-radius": `${layout.cardRadius}px`, "--card-padding": `${layout.cardPadding}px`, "--hero-radius": `${layout.heroRadius}px`, "--hero-padding": `${layout.heroPadding}px`, "--content-max": `${layout.contentMaxWidth}px` } as React.CSSProperties;
-  return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>{layout.showHero && <div className="welcome-strip"><div><span className="overline">Karibu HUDUMA ZA MTANDAONI</span><h1>Huduma zako, sehemu moja.</h1><p>Huduma za kidigitali, fomu, maombi na zana muhimu — zimepangwa sehemu moja na zikiwa rahisi kutumia.</p><div className="hero-actions"><Link href="/services" className="button button--green"><Zap size={16} /> TAZAMA HUDUMA</Link><Link href="/account" className="hero-link">Akaunti yangu <ChevronRight size={15} /></Link></div></div><div className="hero-orbit"><Sparkles size={44} /><span>SMART<br />PORTAL</span></div></div>}{layout.showMetrics && <div className="quick-metrics"><div><span>HUDUMA</span><strong>{displayedServices.length}</strong><small>zilizo kwenye portal</small></div><div><span>BURE</span><strong>{freeCount}</strong><small>bila tokeni</small></div><div><span>ZA TOKENI</span><strong>{paidCount}</strong><small>huduma kuu</small></div><div><span>USALAMA</span><strong>24/7</strong><small>mfumo wa akaunti</small></div></div>}{announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}<TokenCard />{lockedCount > 0 && search === "" ? <div className="portal-mini-note"><LockKeyhole size={15} /><span>Huduma {lockedCount} zinasubiri kufunguliwa na admin.</span></div> : null}{orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>)}</main>;
+  return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
+    {layout.showHero && <div className="modern-hero"><div className="modern-hero-copy"><span className="hero-badge"><Sparkles size={13}/> $TEWARD TZ • DIGITAL SERVICE HUB</span><h1>Huduma muhimu.<br/><em>Sehemu moja.</em></h1><p>Fomu, maombi, zana na huduma za kidigitali — zimepangwa kwa urahisi, kasi na usalama.</p><div className="hero-actions"><Link href="/services" className="button button--green"><Zap size={16}/> Anza kutumia</Link><Link href="/account" className="hero-link">Akaunti yangu <ChevronRight size={15}/></Link></div></div><div className="hero-visual"><div className="hero-visual-ring"><Zap size={32}/><strong>{displayedServices.length}</strong><span>HUDUMA</span></div><div className="hero-floating hero-floating--top">24/7<br/><small>ONLINE</small></div><div className="hero-floating hero-floating--bottom"><ShieldCheck size={14}/> SALAMA</div></div></div>}
+    {layout.showMetrics && <div className="quick-metrics"><div><span>HUDUMA ZOTE</span><strong>{displayedServices.length}</strong><small>zinazopatikana sasa</small></div><div><span>BURE</span><strong>{freeCount}</strong><small>bila tokeni</small></div><div><span>TOKENI</span><strong>{paidCount}</strong><small>huduma zinazolipiwa</small></div><div><span>USALAMA</span><strong>24/7</strong><small>akaunti inalindwa</small></div></div>}
+    {announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}
+    <TokenCard />
+    <section className="service-discovery"><div><span className="overline">CHAGUA UNACHOHITAJI</span><h2>Huduma za mtandaoni</h2><p>Tafuta huduma au chagua kundi hapa chini.</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
+    {lockedCount > 0 && search === "" ? <div className="portal-mini-note"><LockKeyhole size={15}/><span>Huduma {lockedCount} zinasubiri kufunguliwa na admin.</span></div> : null}{orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>)}
+  </main>;
 }
 
 function ServiceWorkspace({ service }: { service: ServiceCatalogItem }) {
