@@ -519,6 +519,31 @@ body{
 .license-clean-paper,.license-template-paper,.license-preview-card{
   transform:none!important;
 }
+/* Mobile-first business license layout */
+@media (max-width: 900px) {
+  .license-page { width: 100%; max-width: 100%; padding: 0 10px; }
+  .license-layout { grid-template-columns: 1fr; gap: 14px; }
+  .license-form-card, .license-preview-card { width: 100%; border-radius: 14px; }
+  .license-preview-card { order: 2; padding: 10px; }
+  .license-form-card { order: 1; padding: 14px; }
+  .license-form-grid { grid-template-columns: 1fr; gap: 10px; }
+  .license-auto-fields { grid-template-columns: 1fr; }
+  .license-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .license-actions .button { min-width: 0; width: 100%; flex: none; padding: 10px 8px; font-size: 10px; }
+  .license-template-paper { width: 100%; max-width: 100%; }
+}
+@media (max-width: 520px) {
+  .license-topbar { flex-wrap: wrap; }
+  .license-security { font-size: 9px; }
+  .license-page .page-heading h1 { font-size: 20px; }
+  .license-page .page-heading small { font-size: 10px; }
+  .license-card-title h2, .license-preview-heading h2 { font-size: 14px; }
+  .license-actions { grid-template-columns: 1fr; }
+  .license-actions .button { min-height: 42px; font-size: 11px; }
+  .license-template-paper { border-radius: 5px; box-shadow: 0 4px 14px rgba(16,20,24,.10); }
+  .license-template-hint { font-size: 10px; }
+}
+
 
 
 /* TIN certificate demo */
