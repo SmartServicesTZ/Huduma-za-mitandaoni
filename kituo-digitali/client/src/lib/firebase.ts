@@ -140,10 +140,10 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     role: current.role ?? "user",
     permissions: current.permissions ?? {},
     createdAt: current.createdAt ?? serverTimestamp(),
-    password: deleteField(),
     language: extra.language ?? current.language ?? "sw",
     profileImageUrl: extra.profileImageUrl ?? current.profileImageUrl,
     updatedAt: serverTimestamp(),
+    emailVerified: user.emailVerified,
   });
   await setDoc(ref, profile, { merge: true });
   return ref;
@@ -151,13 +151,8 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
 
 export async function registerFirebaseUser(input: { email: string; password: string; firstName: string; lastName: string; phone: string }) {
   const credential = await createUserWithEmailAndPassword(firebaseAuth, input.email.trim(), input.password);
-  try {
-    await ensureUserProfile(credential.user, input);
-  } catch (cause) {
-    const failure = new Error("Akaunti imetengenezwa lakini profile haijahifadhiwa. Tumia Ingia kwa email na password hii baada ya tatizo la profile kurekebishwa.");
-    Object.assign(failure, { code: "profile/setup-failed", cause });
-    throw failure;
-  }
+  await ensureUserProfile(credential.user, input);
+  await sendEmailVerification(credential.user);
   return credential.user;
 }
 
