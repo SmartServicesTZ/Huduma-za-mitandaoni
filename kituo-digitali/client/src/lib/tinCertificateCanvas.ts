@@ -119,9 +119,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   text(ctx, pos("title"), "UNITED REPUBLIC OF TANZANIA");
   text(ctx, pos("subtitle"), "TANZANIA REVENUE AUTHORITY");
   text(ctx, pos("numberTitle"), "TAXPAYER IDENTIFICATION NUMBER (TIN)");
-  text(ctx, pos("certify"), "This is to certify that the taxpayer named below is registered");
   text(ctx, pos("taxpayer"), form.name.toUpperCase());
-  text(ctx, pos("assigned"), "TIN has been assigned as follows:");
   text(ctx, pos("tinValue"), form.tin);
 
   text(ctx, pos("effectLabel"), "WITH EFFECT FROM:");
