@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot, type Transaction } from "./firestore-rest.js";
 import { getStorage } from "./storage-rest.js";
 import { ApiError, defineWorkerSecret, callable, httpEndpoint, type ApiRequest } from "./api-adapter.js";
+import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
 import { defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
 
@@ -687,6 +688,41 @@ export const updateUserAccess = callable(async (request) => {
     recordAudit(transaction, uid, String(actor.role), "UPDATE_USER_ACCESS", "user", userId, { role: target.role, permissions: target.permissions ?? {} }, { role: patch.role ?? target.role, permissions: patch.permissions ?? target.permissions ?? {} });
     return { ok: true };
   });
+});
+
+export const resetUserPassword = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageUsers");
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const userId = text(data.userId, 180);
+  const temporaryPassword = text(data.temporaryPassword, 128);
+  if (temporaryPassword.length < 8) throw new ApiError("invalid-argument", "Password ya muda iwe na angalau herufi 8.");
+  const targetRef = db.collection("users").doc(userId);
+  const targetSnapshot = await targetRef.get();
+  if (!targetSnapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
+  const target = targetSnapshot.data() as Profile;
+  if (target.role === "super_admin" || userId === uid) throw new ApiError("permission-denied", "Akaunti hii haiwezi resetiwa na admin kupitia workflow hii.");
+  const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
+  const accessToken = await getGoogleAccessToken();
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:update`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ localId: userId, password: temporaryPassword, validSince: String(Math.floor(Date.now() / 1000)) }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const result = await response.json().catch(() => null) as { localId?: unknown; error?: { message?: unknown } } | null;
+  if (!response.ok || result?.localId !== userId) {
+    const code = String(result?.error?.message ?? "AUTH_UPDATE_FAILED");
+    if (code.includes("USER_NOT_FOUND")) throw new ApiError("not-found", "Akaunti ya Authentication haikupatikana.");
+    if (code.includes("WEAK_PASSWORD")) throw new ApiError("invalid-argument", "Password ya muda ni dhaifu.");
+    throw new ApiError("internal", "Imeshindikana kuweka password mpya ya muda.");
+  }
+  await db.runTransaction(async (transaction) => {
+    transaction.update(targetRef, { mustChangePassword: true, passwordResetAt: FieldValue.serverTimestamp(), passwordResetBy: uid, updatedAt: FieldValue.serverTimestamp() });
+    recordAudit(transaction, uid, String(actor.role), "RESET_USER_PASSWORD", "user", userId, { mustChangePassword: target.mustChangePassword === true }, { mustChangePassword: true });
+  });
+  return { ok: true, mustChangePassword: true };
 });
 
 export const setAccountStatus = callable(async (request) => {
