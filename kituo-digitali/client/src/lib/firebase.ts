@@ -150,11 +150,22 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
   return ref;
 }
 
-export async function registerFirebaseUser(input: { email: string; password: string; firstName: string; lastName: string; phone: string }) {
-  const credential = await createUserWithEmailAndPassword(firebaseAuth, input.email.trim(), input.password);
-  await ensureUserProfile(credential.user, input);
-  await sendEmailVerification(credential.user);
+function authEmailFromPhone(phone: string) {
+  const compact = phone.replace(/\D/g, "");
+  const normalized = compact.startsWith("255") ? compact : compact.startsWith("0") ? "255" + compact.slice(1) : "255" + compact;
+  return normalized + "@login.huduma-za-mtandao.local";
+}
+
+export async function registerFirebaseUser(input: { password: string; firstName: string; lastName: string; phone: string }) {
+  const email = authEmailFromPhone(input.phone);
+  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, input.password);
+  await ensureUserProfile(credential.user, { ...input, email: "" });
+  // Hakuna email verification: akaunti ya mfumo huu hutumia namba ya simu kama kitambulisho.
   return credential.user;
+}
+
+export async function signInWithPhonePassword(phone: string, password: string) {
+  return signInWithEmailAndPassword(firebaseAuth, authEmailFromPhone(phone), password);
 }
 
 export function sendPasswordReset(email: string) {
