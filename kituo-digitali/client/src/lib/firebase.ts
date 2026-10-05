@@ -92,7 +92,7 @@ function createWorkerCall<TRequest = unknown, TResponse = unknown>(name: string)
 }
 const appCheckSiteKey = String(import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY ?? "").trim();
 export const firebaseAppCheck = appCheckSiteKey ? initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true }) : null;
-export { onAuthStateChanged, updatePassword };
+export { onAuthStateChanged };
 export type AdminPermissions = {
   viewUsers?: boolean;
   manageUsers?: boolean;
@@ -365,6 +365,11 @@ export async function adminListCollection(name: "announcements" | "auditLogs" | 
 export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string) {
   const callable = createWorkerCall<{ userId: string; amount: number; description: string; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>("adjustTokens");
   return (await callable({ userId, amount, description, requestId })).data;
+}
+
+export async function changeOwnPassword(newPassword: string) {
+  const callable = createWorkerCall<{ newPassword: string }, { ok: boolean }>("changeOwnPassword");
+  return (await callable({ newPassword })).data;
 }
 
 export async function adminResetUserPassword(adminId: string, userId: string, temporaryPassword: string) {
