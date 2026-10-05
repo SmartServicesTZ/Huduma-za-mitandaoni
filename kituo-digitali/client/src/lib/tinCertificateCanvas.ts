@@ -115,21 +115,15 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   }
 
   const pos = (key: keyof typeof TIN_TEMPLATE) => ({ ...TIN_TEMPLATE[key], ...(layout?.[key] ?? {}) });
-  text(ctx, pos("title"), "UNITED REPUBLIC OF TANZANIA");
-  text(ctx, pos("subtitle"), "TANZANIA REVENUE AUTHORITY");
-  text(ctx, pos("numberTitle"), "TAXPAYER IDENTIFICATION NUMBER (TIN)");
+
+  // IMPORTANT: Background template tayari ina labels/text zake.
+  // Hapa tunachora VALUES ZA FORM TU ili kuepuka maandishi kujirudia.
   text(ctx, pos("taxpayer"), form.name.toUpperCase());
   text(ctx, pos("tinValue"), form.tin);
-
-  text(ctx, pos("effectLabel"), "WITH EFFECT FROM:");
   text(ctx, pos("effectValue"), dateText(form.effectDate));
-  text(ctx, pos("locationLabel"), "TRA LOCATION:");
   text(ctx, pos("locationValue"), form.traLocation.toUpperCase());
-  text(ctx, pos("officeLabel"), "TAX OFFICE:");
   text(ctx, pos("officeValue"), form.taxOffice.toUpperCase());
-  text(ctx, pos("physicalLabel"), "PHYSICAL LOCATION:");
   text(ctx, pos("physicalValue"), form.physicalLocation.toUpperCase());
-  text(ctx, pos("streetLabel"), "STREET / AREA:");
   text(ctx, pos("streetValue"), form.streetArea.toUpperCase());
 
   if (form.tin) {
