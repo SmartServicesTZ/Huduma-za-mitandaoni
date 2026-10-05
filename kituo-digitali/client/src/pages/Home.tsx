@@ -47,31 +47,60 @@ function explainAuthError(error: any, mode: "login" | "register") {
 }
 
 function PasswordChangeGate({ firebaseUser, saveProfile }: { firebaseUser: import("firebase/auth").User; saveProfile: (values: any) => Promise<void> }) {
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const draftKey = `huduma-password-change:${firebaseUser.uid}`;
+  const readDraft = () => {
+    if (typeof window === "undefined") return { password: "", confirm: "" };
+    try {
+      const raw = window.sessionStorage.getItem(draftKey);
+      if (!raw) return { password: "", confirm: "" };
+      const parsed = JSON.parse(raw);
+      return {
+        password: typeof parsed?.password === "string" ? parsed.password : "",
+        confirm: typeof parsed?.confirm === "string" ? parsed.confirm : "",
+      };
+    } catch {
+      return { password: "", confirm: "" };
+    }
+  };
+  const draft = readDraft();
+  const [password, setPassword] = useState(draft.password);
+  const [confirm, setConfirm] = useState(draft.confirm);
   const [busy, setBusy] = useState(false);
   const [show, setShow] = useState(false);
-  const submit = async () => {
+  const persistDraft = (nextPassword: string, nextConfirm: string) => {
+    try {
+      window.sessionStorage.setItem(draftKey, JSON.stringify({ password: nextPassword, confirm: nextConfirm }));
+    } catch {
+      // Session storage can be unavailable in private/restricted browser modes.
+    }
+  };
+  const submit = async (event?: React.FormEvent) => {
+    event?.preventDefault();
     if (password.length < 6) { toast.error("Password mpya iwe na angalau herufi 6."); return; }
     if (password !== confirm) { toast.error("Password hazifanani."); return; }
     setBusy(true);
     try {
       await updatePassword(firebaseUser, password);
       await saveProfile({ mustChangePassword: false });
+      try { window.sessionStorage.removeItem(draftKey); } catch {}
       setPassword(""); setConfirm("");
       toast.success("Password mpya imewekwa. Akaunti yako iko tayari kutumia.");
     } catch (error: any) {
       toast.error(error?.message ?? "Imeshindikana kubadilisha password. Jaribu tena.");
     } finally { setBusy(false); }
   };
-  return <div className="admin-modal-backdrop password-gate-backdrop"><div className="admin-modal password-gate" onClick={(event) => event.stopPropagation()}>
-    <span className="admin-kicker">USALAMA WA AKAUNTI</span><h2>Weka password yako mpya</h2>
-    <p>Admin amekuwekea password ya muda. Kwa usalama, unatakiwa kuiweka password yako binafsi kabla ya kuendelea.</p>
-    <label className="control-field"><span>Password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-    <label className="control-field"><span>Rudia password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} /></label>
-    <label className="check-inline"><input type="checkbox" checked={show} onChange={(event) => setShow(event.target.checked)} /> Onyesha password</label>
-    <button className="admin-primary" disabled={busy} onClick={submit}>{busy ? "Inahifadhi..." : "Weka password mpya"}</button>
-  </div></div>;
+  return <div className="admin-modal-backdrop password-gate-backdrop">
+    <div className="admin-modal password-gate" onClick={(event) => event.stopPropagation()}>
+      <span className="admin-kicker">USALAMA WA AKAUNTI</span><h2>Weka password yako mpya</h2>
+      <p>Admin amekuwekea password ya muda. Kwa usalama, unatakiwa kuiweka password yako binafsi kabla ya kuendelea.</p>
+      <form onSubmit={submit}>
+        <label className="control-field"><span>Password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => { const value = event.target.value; setPassword(value); persistDraft(value, confirm); }} /></label>
+        <label className="control-field"><span>Rudia password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={confirm} onChange={(event) => { const value = event.target.value; setConfirm(value); persistDraft(password, value); }} /></label>
+        <label className="check-inline"><input type="checkbox" checked={show} onChange={(event) => setShow(event.target.checked)} /> Onyesha password</label>
+        <button type="submit" className="admin-primary" disabled={busy}>{busy ? "Inahifadhi..." : "Weka password mpya"}</button>
+      </form>
+    </div>
+  </div>;
 }
 
 function VerifiedTick({ verified }: { verified?: boolean }) {
