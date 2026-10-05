@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, changeOwnPassword, consumeFirebaseTokens, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, type TokenPurchaseOrder } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, changeOwnPassword, consumeFirebaseTokens, refreshPasswordSession, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, type TokenPurchaseOrder } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
@@ -81,6 +81,7 @@ function PasswordChangeGate({ firebaseUser, saveProfile }: { firebaseUser: impor
     setBusy(true);
     try {
       await changeOwnPassword(password);
+      await refreshPasswordSession(firebaseUser, password);
       await saveProfile({ mustChangePassword: false });
       try { window.sessionStorage.removeItem(draftKey); } catch {}
       setPassword(""); setConfirm("");
