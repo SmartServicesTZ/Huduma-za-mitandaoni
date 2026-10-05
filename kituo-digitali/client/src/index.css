@@ -892,3 +892,5 @@ body{overflow-x:hidden;}
  .admin-header h1{font-size:21px}
  .admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+.hero-trust-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.hero-trust-row span{display:inline-flex;align-items:center;gap:5px;padding:7px 9px;border-radius:999px;color:#c5d6e8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:9px;font-weight:800}.hero-trust-row svg{color:#74e7a4}@media(max-width:480px){.hero-trust-row{margin-top:13px}.hero-trust-row span{font-size:8px;padding:6px 8px}}
