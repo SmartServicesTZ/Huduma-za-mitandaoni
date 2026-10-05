@@ -780,6 +780,36 @@ export const resetUserPassword = callable(async (request) => {
   return { ok: true, mustChangePassword: true };
 });
 
+export const changeOwnPassword = callable(async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const newPassword = text(data.newPassword, 128);
+  if (newPassword.length < 6) throw new ApiError("invalid-argument", "Password mpya iwe na angalau herufi 6.");
+  if (profile.mustChangePassword !== true) throw new ApiError("failed-precondition", "Hakuna password ya muda inayosubiri kubadilishwa.");
+  const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
+  const accessToken = await getGoogleAccessToken();
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:update`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ localId: uid, password: newPassword }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const result = await response.json().catch(() => null) as { localId?: unknown; error?: { message?: unknown } } | null;
+  if (!response.ok || result?.localId !== uid) {
+    const code = String(result?.error?.message ?? "AUTH_UPDATE_FAILED");
+    if (code.includes("WEAK_PASSWORD")) throw new ApiError("invalid-argument", "Password mpya ni dhaifu. Tumia angalau herufi 6.");
+    if (code.includes("USER_NOT_FOUND")) throw new ApiError("not-found", "Akaunti ya Authentication haikupatikana.");
+    throw new ApiError("internal", "Imeshindikana kuhifadhi password kwenye Firebase Authentication.");
+  }
+  await db.collection("users").doc(uid).set({
+    mustChangePassword: false,
+    passwordChangedAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  return { ok: true };
+});
+
 export const setAccountStatus = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
