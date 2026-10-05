@@ -36,10 +36,10 @@ interface Env extends WorkerEnv {}
 
 const callableRoutes: Record<string, CallableRoute> = {
   adminDelete, adminWrite, adjustTokens, completeBusinessLicense, consumeTokens,
-  createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
+  changeOwnPassword, createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
-  resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
+  resetUserPassword, changeOwnPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
