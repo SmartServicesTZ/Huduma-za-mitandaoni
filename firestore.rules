@@ -49,6 +49,8 @@ service cloud.firestore {
         && request.resource.data.uid == userId
         && request.resource.data.phone.matches('^255[67][0-9]{8}$')
         && phoneMatchesAuth(request.resource.data)
+        && exists(/databases/$(database)/documents/phoneRegistry/$(request.resource.data.phone))
+        && get(/databases/$(database)/documents/phoneRegistry/$(request.resource.data.phone)).data.uid == userId
         && request.resource.data.role == 'user'
         && request.resource.data.tokenBalance == 0
         && request.resource.data.verificationStatus == 'pending'
@@ -72,6 +74,11 @@ service cloud.firestore {
       allow delete: if isSuperAdmin()
         && request.auth.uid != userId
         && resource.data.role != 'super_admin';
+    }
+
+    match /phoneRegistry/{phone} {
+      // Entries are reserved by the authenticated Worker, never by browsers.
+      allow read, write: if false;
     }
 
     match /services/{id} {

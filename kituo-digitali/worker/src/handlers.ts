@@ -7,6 +7,7 @@ import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
 import { resolveAuthRole } from "./authClaims.js";
 import { defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
+import { phoneAuthAlias } from "../../shared/tanzaniaPhone.js";
 
 const db = getFirestore();
 const bucket = getStorage().bucket();
@@ -27,7 +28,9 @@ function authUid(request: ApiRequest<unknown>) {
 async function profileFor(uid: string) {
   const snapshot = await db.collection("users").doc(uid).get();
   if (!snapshot.exists) throw new ApiError("permission-denied", "Profile ya akaunti haijapatikana.");
-  return snapshot.data() as Profile;
+  const profile = snapshot.data() as Profile;
+  const role = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+  return { ...profile, role };
 }
 
 function can(profile: Profile, permission: string) {
@@ -258,7 +261,8 @@ export const adjustTokens = callable(async (request) => {
       const snapshot = await transaction.get(userRef);
       if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
       const target = snapshot.data() as Profile;
-      if (target.role === "super_admin" && uid !== userId) throw new ApiError("permission-denied", "Super Admin inalindwa.");
+      const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+      if (targetRole === "super_admin" && uid !== userId) throw new ApiError("permission-denied", "Super Admin inalindwa.");
       const before = Number(target.tokenBalance ?? 0);
       if (!Number.isSafeInteger(before) || before < 0) throw new ApiError("failed-precondition", "Salio la tokeni kwenye profile si sahihi. Kagua taarifa za mtumiaji kwanza.");
       const after = before + amount;
@@ -672,7 +676,8 @@ export const updateUserAccess = callable(async (request) => {
     const snapshot = await transaction.get(targetRef);
     if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
     const target = snapshot.data() as Profile;
-    if (target.role === "super_admin" || data.role === "super_admin") throw new ApiError("permission-denied", "Mabadiliko ya Super Admin yanahitaji workflow maalum.");
+    const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+    if (targetRole === "super_admin" || data.role === "super_admin") throw new ApiError("permission-denied", "Mabadiliko ya Super Admin yanahitaji workflow maalum.");
     const patch: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
     if (data.role !== undefined) {
       if (!roles.includes(data.role as Role) || data.role === "super_admin") throw new ApiError("invalid-argument", "Role si sahihi.");
@@ -745,6 +750,64 @@ export const findChatUser = callable(async (request) => {
   return { uid: target.id, name: String(user.name ?? "Mwanachama"), phone };
 });
 
+export const claimRegistrationPhone = callable(async (request) => {
+  const uid = authUid(request);
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const phone = normalizeTanzaniaPhone(data.phone);
+  if (!phone) throw new ApiError("invalid-argument", "Namba ya simu ya Tanzania si sahihi.");
+  if (request.auth?.email !== phoneAuthAlias(phone)) throw new ApiError("permission-denied", "Namba ya simu haiendani na akaunti hii.");
+
+  const registryRef = db.collection("phoneRegistry").doc(phone);
+  await db.runTransaction(async (transaction) => {
+    const registry = await transaction.get(registryRef);
+    const profiles = await transaction.get(db.collection("users").where("phone", "==", phone).limit(2));
+    if (profiles.docs.some((profile) => profile.id !== uid)) {
+      throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
+    }
+    if (registry.exists && registry.data()?.uid !== uid) {
+      throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
+    }
+    if (!registry.exists) transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });
+  });
+  return { ok: true };
+});
+
+export const changeOwnPassword = callable(async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.mustChangePassword !== true) throw new ApiError("failed-precondition", "Akaunti hii haihitaji kubadilisha password ya muda.");
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const password = data.password;
+  if (typeof password !== "string" || password.length < 6 || password.length > 128) {
+    throw new ApiError("invalid-argument", "Password mpya iwe na herufi 6 hadi 128.");
+  }
+
+  const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
+  const accessToken = await getGoogleAccessToken();
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:update`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ localId: uid, password }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const result = await response.json().catch(() => null) as { localId?: unknown; error?: { message?: unknown } } | null;
+  if (!response.ok || result?.localId !== uid) {
+    const code = String(result?.error?.message ?? "AUTH_UPDATE_FAILED");
+    if (code.includes("WEAK_PASSWORD") || code.includes("PASSWORD_DOES_NOT_MEET_REQUIREMENTS")) throw new ApiError("invalid-argument", "Password mpya haikidhi masharti ya Firebase.");
+    if (code.includes("USER_NOT_FOUND") || code.includes("EMAIL_NOT_FOUND")) throw new ApiError("not-found", "Akaunti ya Authentication haikupatikana.");
+    console.error("Firebase Auth password update failed", { uid, code, status: response.status });
+    throw new ApiError("unavailable", "Password haikuweza kusasishwa sasa hivi. Jaribu tena.");
+  }
+
+  const profileRef = db.collection("users").doc(uid);
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(profileRef);
+    if (!snapshot.exists) throw new ApiError("not-found", "Profile ya akaunti haijapatikana.");
+    transaction.update(profileRef, { mustChangePassword: false, passwordChangedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+  });
+  return { ok: true };
+});
+
 export const resetUserPassword = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
@@ -757,7 +820,8 @@ export const resetUserPassword = callable(async (request) => {
   const targetSnapshot = await targetRef.get();
   if (!targetSnapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
   const target = targetSnapshot.data() as Profile;
-  if (target.role === "super_admin" || userId === uid) throw new ApiError("permission-denied", "Akaunti hii haiwezi resetiwa na admin kupitia workflow hii.");
+  const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+  if (targetRole === "super_admin" || userId === uid) throw new ApiError("permission-denied", "Akaunti hii haiwezi resetiwa na admin kupitia workflow hii.");
   const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
   const accessToken = await getGoogleAccessToken();
   const response = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:update`, {
@@ -780,36 +844,6 @@ export const resetUserPassword = callable(async (request) => {
   return { ok: true, mustChangePassword: true };
 });
 
-export const changeOwnPassword = callable(async (request) => {
-  const uid = authUid(request);
-  const profile = await profileFor(uid);
-  const data = (request.data ?? {}) as Record<string, unknown>;
-  const newPassword = text(data.newPassword, 128);
-  if (newPassword.length < 6) throw new ApiError("invalid-argument", "Password mpya iwe na angalau herufi 6.");
-  if (profile.mustChangePassword !== true) throw new ApiError("failed-precondition", "Hakuna password ya muda inayosubiri kubadilishwa.");
-  const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
-  const accessToken = await getGoogleAccessToken();
-  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:update`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ localId: uid, password: newPassword }),
-    signal: AbortSignal.timeout(15000),
-  });
-  const result = await response.json().catch(() => null) as { localId?: unknown; error?: { message?: unknown } } | null;
-  if (!response.ok || result?.localId !== uid) {
-    const code = String(result?.error?.message ?? "AUTH_UPDATE_FAILED");
-    if (code.includes("WEAK_PASSWORD")) throw new ApiError("invalid-argument", "Password mpya ni dhaifu. Tumia angalau herufi 6.");
-    if (code.includes("USER_NOT_FOUND")) throw new ApiError("not-found", "Akaunti ya Authentication haikupatikana.");
-    throw new ApiError("internal", "Imeshindikana kuhifadhi password kwenye Firebase Authentication.");
-  }
-  await db.collection("users").doc(uid).set({
-    mustChangePassword: false,
-    passwordChangedAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-  return { ok: true };
-});
-
 export const setAccountStatus = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
@@ -824,7 +858,8 @@ export const setAccountStatus = callable(async (request) => {
     const snapshot = await transaction.get(targetRef);
     if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
     const target = snapshot.data() as Profile;
-    if (target.role === "super_admin") throw new ApiError("permission-denied", "Super Admin inalindwa.");
+    const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+    if (targetRole === "super_admin") throw new ApiError("permission-denied", "Super Admin inalindwa.");
     transaction.update(targetRef, { accountStatus: status, updatedAt: FieldValue.serverTimestamp() });
     recordAudit(transaction, uid, String(actor.role), "SET_ACCOUNT_STATUS", "user", userId, { accountStatus: target.accountStatus ?? "active" }, { accountStatus: status });
     return { ok: true };

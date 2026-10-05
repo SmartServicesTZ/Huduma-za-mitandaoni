@@ -4,6 +4,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 
 const appUrl = "http://127.0.0.1:5173";
 const userDataDir = await mkdtemp(path.join(os.tmpdir(), "huduma-auth-e2e-"));
@@ -12,6 +14,10 @@ const server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--host
 });
 let browserContext;
 let page;
+let rulesEnv;
+let registeredUid;
+let passwordChangeMockCalls = 0;
+let workerMockError = "";
 const phone = `067${String(Math.floor(Math.random() * 10_000_000)).padStart(7, "0")}`;
 const password = `AuthTest-${Math.random().toString(36).slice(2, 10)}!`;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,14 +47,50 @@ async function logout(page) {
   await page.getByRole("button", { name: "Ingia / Jisajili", exact: true }).waitFor({ state: "visible" });
 }
 
+function tokenUid(authorization) {
+  const token = /^Bearer (.+)$/.exec(authorization ?? "")?.[1];
+  if (!token) throw new Error("Worker test route received no Firebase ID token.");
+  const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+  return String(payload.sub ?? payload.user_id ?? "");
+}
+
+async function installWorkerTestRoutes(context) {
+  await context.route("**/call/claimRegistrationPhone", async (route) => {
+    const body = route.request().postDataJSON();
+    const uid = tokenUid(route.request().headers().authorization);
+    const phone = body?.data?.phone;
+    if (typeof phone !== "string" || !uid) return route.fulfill({ status: 400, body: "invalid test request" });
+    registeredUid = uid;
+    await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
+      await setDoc(doc(testContext.firestore(), "phoneRegistry", phone), { uid, phone, createdAt: serverTimestamp() });
+    });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { ok: true } }) });
+  });
+  await context.route("**/call/changeOwnPassword", async (route) => {
+    if (!registeredUid) return route.fulfill({ status: 400, body: "missing test user" });
+    try {
+      await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
+        await updateDoc(doc(testContext.firestore(), "users", registeredUid), { mustChangePassword: false, updatedAt: serverTimestamp() });
+      });
+      passwordChangeMockCalls += 1;
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { ok: true } }) });
+    } catch (error) {
+      workerMockError = String(error?.message ?? error);
+      await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { code: "internal", message: "Worker test mock failed." } }) });
+    }
+  });
+}
+
 try {
   await waitForServer();
   // Use only isolated emulator project `huduma-za-mtandaoni-b1c0c`; delete all test identities between runs.
   const reset = await fetch("http://127.0.0.1:9099/emulator/v1/projects/huduma-za-mtandaoni-b1c0c/accounts", { method: "DELETE" });
   if (!reset.ok) throw new Error(`Auth Emulator reset failed (${reset.status}). Is project huduma-za-mtandaoni-b1c0c running?`);
+  rulesEnv = await initializeTestEnvironment({ projectId: "huduma-za-mtandaoni-b1c0c", firestore: { host: "127.0.0.1", port: 8080 } });
 
   const launchOptions = { headless: true, executablePath: "/usr/bin/chromium", args: ["--no-sandbox", "--disable-dev-shm-usage"] };
   browserContext = await chromium.launchPersistentContext(userDataDir, launchOptions);
+  await installWorkerTestRoutes(browserContext);
   page = browserContext.pages()[0] ?? await browserContext.newPage();
   page.setDefaultTimeout(15_000);
   await page.goto(appUrl);
@@ -116,26 +158,48 @@ try {
   // Closing and reopening the Chromium profile verifies Firebase browser-local persistence.
   await browserContext.close();
   browserContext = await chromium.launchPersistentContext(userDataDir, launchOptions);
+  await installWorkerTestRoutes(browserContext);
   page = browserContext.pages()[0] ?? await browserContext.newPage();
   page.setDefaultTimeout(15_000);
   await page.goto(appUrl);
   await page.locator(".header-user").waitFor({ state: "visible", timeout: 20_000 });
   console.log("PASS 8: session persists after closing/reopening the browser profile");
 
+  await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
+    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { mustChangePassword: true });
+  });
+  await page.reload();
+  await page.getByRole("heading", { name: "Weka password yako mpya" }).waitFor({ state: "visible" });
+  const newPassword = `E2E-confirm-${Date.now()}!`;
+  await page.locator(".password-gate input").nth(0).fill(newPassword);
+  await page.locator(".password-gate input").nth(1).fill(newPassword);
+  await page.getByRole("button", { name: "Weka password mpya", exact: true }).click();
+  await page.getByRole("heading", { name: "Weka password yako mpya" }).waitFor({ state: "detached" });
+  let updatedProfile;
+  await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
+    updatedProfile = await getDoc(doc(testContext.firestore(), "users", registeredUid));
+  });
+  assert.equal(updatedProfile.data()?.mustChangePassword, false);
+  assert.equal(Object.hasOwn(updatedProfile.data() ?? {}, "password"), false);
+  console.log("PASS 9: forced-password gate completes once and does not save password to profile");
+
   await logout(page);
   await page.reload();
   await page.getByRole("button", { name: "Ingia / Jisajili", exact: true }).waitFor({ state: "visible" });
-  console.log("PASS 9: logout clears session across reload");
+  console.log("PASS 10: logout clears session across reload");
   console.log("AUTH_EMULATOR_E2E_OK");
 } catch (error) {
   console.error("E2E_CURRENT_URL", page?.url());
   console.error("E2E_HEADER_TEXT", await page?.locator(".header-actions").innerText().catch(() => "<missing>") ?? "<missing>");
   const authError = await page?.locator(".auth-error-alert").innerText().catch(() => "") ?? "";
   if (authError) console.error("AUTH_MODAL_ERROR", authError);
+  if (workerMockError) console.error("PASSWORD_WORKER_MOCK_ERROR", workerMockError);
+  console.error("PASSWORD_WORKER_MOCK_CALLS", passwordChangeMockCalls);
   console.error("AUTH_EMULATOR_E2E_FAILED", error?.stack ?? error);
   process.exitCode = 1;
 } finally {
   await browserContext?.close().catch(() => undefined);
+  await rulesEnv?.cleanup().catch(() => undefined);
   server.kill("SIGTERM");
   await rm(userDataDir, { recursive: true, force: true });
 }

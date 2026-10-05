@@ -4,6 +4,8 @@ import {
   adminDelete,
   adminWrite,
   adjustTokens,
+  changeOwnPassword,
+  claimRegistrationPhone,
   completeBusinessLicense,
   consumeTokens,
   createServiceApplication,
@@ -18,7 +20,6 @@ import {
   markServiceApplicationViewed,
   reserveBusinessLicenseNumber,
   resetUserPassword,
-  changeOwnPassword,
   seedServiceCatalog,
   setAccountStatus,
   setHomepageServiceOrder,
@@ -36,8 +37,8 @@ import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 interface Env extends WorkerEnv {}
 
 const callableRoutes: Record<string, CallableRoute> = {
-  adminDelete, adminWrite, adjustTokens, completeBusinessLicense, consumeTokens,
-  changeOwnPassword, createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
+  adminDelete, adminWrite, adjustTokens, changeOwnPassword, claimRegistrationPhone, completeBusinessLicense, consumeTokens,
+  createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
@@ -102,7 +103,8 @@ async function verifyFirebaseIdToken(request: Request, env: Env) {
     });
     const uid = verified.payload.sub;
     if (typeof uid !== "string" || uid.length < 1 || uid.length > 128) throw new Error("invalid sub");
-    return uid;
+    const email = typeof verified.payload.email === "string" ? verified.payload.email : undefined;
+    return { uid, email };
   } catch {
     throw new ApiError("unauthenticated", "Kikao cha kuingia kimeisha au si sahihi. Ingia tena.");
   }
@@ -114,7 +116,7 @@ async function handleCallable(request: Request, name: string, cors: Headers, env
   if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
   const contentLength = Number(request.headers.get("Content-Length") ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 1024 * 1024) return jsonResponse({ error: { code: "invalid-argument", message: "Ombi limezidi ukubwa unaoruhusiwa." } }, 413, cors);
-  const uid = await verifyFirebaseIdToken(request, env);
+  const auth = await verifyFirebaseIdToken(request, env);
   let body: unknown;
   try {
     const text = await request.text();
@@ -126,7 +128,7 @@ async function handleCallable(request: Request, name: string, cors: Headers, env
   if (typeof body !== "object" || body === null || Array.isArray(body)) return jsonResponse({ error: { code: "invalid-argument", message: "Muundo wa ombi si sahihi." } }, 400, cors);
   const data = (body as { data?: unknown }).data ?? {};
   try {
-    const result = await descriptor.handler({ auth: { uid }, data });
+    const result = await descriptor.handler({ auth, data });
     return jsonResponse({ data: result }, 200, cors);
   } catch (error) {
     if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message, ...(error.details === undefined ? {} : { details: error.details }) } }, statusForError(error.code), cors);

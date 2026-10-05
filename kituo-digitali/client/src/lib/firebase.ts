@@ -3,10 +3,12 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBlob, de
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   initializeAuth,
   browserLocalPersistence,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  updatePassword as updateFirebasePassword,
   connectAuthEmulator,
   signOut,
   type User,
@@ -157,6 +159,7 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     profileImageUrl: extra.profileImageUrl ?? current.profileImageUrl,
     updatedAt: serverTimestamp(),
   });
+  if (!existing.exists()) await invokeWorker("claimRegistrationPhone", { phone });
   await setDoc(ref, { ...profile, email: deleteField(), emailVerified: deleteField() }, { merge: true });
   return ref;
 }
@@ -192,7 +195,15 @@ export async function registerFirebaseUser(input: { password: string; firstName:
   try {
     const credential = await createUserWithEmailAndPassword(firebaseAuth, email, input.password);
     registration.uid = credential.user.uid;
-    await ensureUserProfile(credential.user, { ...input, phone });
+    try {
+      await ensureUserProfile(credential.user, { ...input, phone });
+    } catch (error) {
+      if (String((error as { code?: unknown })?.code ?? "") === "already-exists") {
+        await deleteUser(credential.user).catch(() => undefined);
+        throw Object.assign(new Error("Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako."), { code: "phone/already-registered" });
+      }
+      throw error;
+    }
     registration.ready = true;
     profilesReadyInThisSession.add(credential.user.uid);
     // No email is collected, displayed, sent, or saved to the Firestore profile.
@@ -210,12 +221,21 @@ export async function signInWithPhonePassword(phone: string, password: string) {
   return signInWithEmailAndPassword(firebaseAuth, phoneAuthAlias(normalizedPhone), password);
 }
 
+export async function completeRequiredPasswordChange(password: string) {
+  const user = firebaseAuth.currentUser;
+  if (!user) throw Object.assign(new Error("Ingia kwanza."), { code: "unauthenticated" });
+  await invokeWorker("changeOwnPassword", { password });
+  await user.getIdToken(true);
+  await syncFirebaseAuthClaims(true);
+}
+
 export type FirebaseRoleClaims = { role: FirebaseProfile["role"]; permissions: AdminPermissions; isSuperAdmin: boolean };
 const authClaimsInFlight = new Map<string, Promise<FirebaseRoleClaims>>();
-export async function syncFirebaseAuthClaims() {
+export async function syncFirebaseAuthClaims(force = false) {
   const user = firebaseAuth.currentUser;
   if (!user) throw Object.assign(new Error("Ingia kwanza."), { code: "unauthenticated" });
   if (usingFirebaseEmulators) return { role: "user", permissions: {}, isSuperAdmin: false } as FirebaseRoleClaims;
+  if (force) authClaimsInFlight.delete(user.uid);
   const existing = authClaimsInFlight.get(user.uid);
   if (existing) return existing;
   const pending = invokeWorker<FirebaseRoleClaims>("syncAuthClaims", {}).then(async (claims) => {
@@ -366,13 +386,8 @@ export async function adminAdjustTokens(adminId: string, userId: string, amount:
   return (await callable({ userId, amount, description, requestId })).data;
 }
 
-export async function changeOwnPassword(newPassword: string) {
-  const callable = createWorkerCall<{ newPassword: string }, { ok: boolean }>("changeOwnPassword");
-  return (await callable({ newPassword })).data;
-}
-export async function refreshPasswordSession(user: User, newPassword: string) {
-  if (!user.email) throw new Error("Akaunti hii haina kitambulisho cha kuingia.");
-  await signInWithEmailAndPassword(firebaseAuth, user.email, newPassword);
+export async function updatePassword(user: User, newPassword: string) {
+  return updateFirebasePassword(user, newPassword);
 }
 
 export async function adminResetUserPassword(adminId: string, userId: string, temporaryPassword: string) {
@@ -581,6 +596,11 @@ export async function removeLipaUpload(storagePath: string) {
 export async function adminListLipaApplications() {
   const snapshot = await getDocs(query(collection(firestore, "lipaApplications"), orderBy("submittedAt", "desc")));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt) } as LipaApplication));
+}
+
+export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
+  const applications = query(collection(firestore, "lipaApplications"), orderBy("submittedAt", "desc"));
+  return onSnapshot(applications, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication))), onError);
 }
 
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {

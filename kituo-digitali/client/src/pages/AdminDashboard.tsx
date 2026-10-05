@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowDown, ArrowUp, BarChart3, Bell, Boxes, ChevronRight, ClipboardList, FileKey2, LayoutDashboard, LogOut, Menu, MessageSquare, Palette, PlaySquare, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Trash2, UserCog, Users, WalletCards, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminSaveCollectionItem, adminSaveService, adminSaveSiteSettings, adminSetServiceLock, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminSaveCollectionItem, adminSaveService, adminSaveSiteSettings, adminSetServiceLock, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, moveId } from "../../../shared/serviceOrdering";
 import { serviceFieldTypes, type ServiceFormField } from "../../../shared/serviceForms";
 import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels";
@@ -62,6 +62,7 @@ export default function AdminDashboard() {
   const permissions = user?.permissions ?? {};
   const isSuper = user?.role === "super_admin";
   const hasPermission = (permission: string) => isSuper || permissions[permission as keyof typeof permissions] === true;
+  const canManageLipaApplications = hasPermission("manageLipaApplications");
   const canManage = isAuthenticated && (isSuper || Object.values(permissions).some(Boolean));
   const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
   const panel = (nav.some(([key]) => key === rawPanel) ? rawPanel : "overview") as Panel;
@@ -98,6 +99,10 @@ export default function AdminDashboard() {
     } finally { setLoadingData(false); }
   };
   useEffect(() => { void refresh(); }, [canManage]);
+  useEffect(() => {
+    if (!canManageLipaApplications) { setLipaApplications([]); return; }
+    return subscribeToAdminLipaApplications(setLipaApplications, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
+  }, [canManageLipaApplications, firebaseUser?.uid]);
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
   const visibleUsers = useMemo(() => users.filter((item) => `${item.name} ${item.phone} ${item.username}`.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const totalIssued = transactions.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);

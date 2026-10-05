@@ -3,13 +3,14 @@ import { readFile } from "node:fs/promises";
 import { after, before, beforeEach, test } from "node:test";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import {
-  collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where,
+  collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc, where,
 } from "firebase/firestore";
 import { deleteObject, getBytes, ref, uploadBytes } from "firebase/storage";
 
 const projectId = "demo-chat-rules";
 let env;
 const member = (uid) => env.authenticatedContext(uid, { email: `${uid}@example.test` });
+const phoneMember = (uid, phone) => env.authenticatedContext(uid, { email: `${phone}@login.huduma-za-mtandao.local` });
 const moderator = () => env.authenticatedContext("moderator", {
   role: "admin",
   permissions: { manageMessages: true },
@@ -65,6 +66,41 @@ test("public chat supports sender edits and restricts deletion to author or mode
   await assertFails(updateDoc(doc(bobDb, "publicChatMessages", "public-1"), { text: "Nimebadili ujumbe wa mwingine", editedAt: serverTimestamp() }));
   await assertFails(deleteDoc(doc(bobDb, "publicChatMessages", "public-1")));
   await assertSucceeds(deleteDoc(doc(moderatorDb, "publicChatMessages", "public-1")));
+});
+
+test("phone registry is private and a reserved phone can create only its owner's profile", async () => {
+  const phone = "255698232313";
+  await env.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "phoneRegistry", phone), { uid: "alice", phone });
+  });
+  const profile = {
+    uid: "alice", firstName: "Alice", lastName: "Test", phone, name: "Alice Test", username: "alice",
+    tokenBalance: 0, verificationStatus: "pending", role: "user", permissions: {},
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  };
+  const aliceDb = phoneMember("alice", phone).firestore();
+  const bobDb = phoneMember("bob", phone).firestore();
+  await assertSucceeds(setDoc(doc(aliceDb, "users", "alice"), profile));
+  await assertFails(setDoc(doc(bobDb, "users", "bob"), { ...profile, uid: "bob", name: "Bob Test", username: "bob" }));
+  await assertFails(getDoc(doc(aliceDb, "phoneRegistry", phone)));
+  await assertFails(setDoc(doc(bobDb, "phoneRegistry", "255712345678"), { uid: "bob", phone: "255712345678" }));
+});
+
+test("Lipa applications are private to the applicant and the authorized admin inbox", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, "lipaApplications", "lipa-alice"), { applicationId: "lipa-alice", userId: "alice", status: "PENDING", submittedAt: "2026-10-01" });
+    await setDoc(doc(db, "lipaApplications", "lipa-bob"), { applicationId: "lipa-bob", userId: "bob", status: "PENDING", submittedAt: "2026-10-02" });
+  });
+  const aliceDb = member("alice").firestore();
+  const adminDb = env.authenticatedContext("lipa-admin", { role: "admin", permissions: { manageLipaApplications: true } }).firestore();
+  await assertSucceeds(getDoc(doc(aliceDb, "lipaApplications", "lipa-alice")));
+  await assertFails(getDoc(doc(aliceDb, "lipaApplications", "lipa-bob")));
+  const ownRows = await assertSucceeds(getDocs(query(collection(aliceDb, "lipaApplications"), where("userId", "==", "alice"))));
+  assert.equal(ownRows.size, 1);
+  await assertFails(getDocs(collection(aliceDb, "lipaApplications")));
+  const adminRows = await assertSucceeds(getDocs(query(collection(adminDb, "lipaApplications"), orderBy("submittedAt", "desc"))));
+  assert.equal(adminRows.size, 2);
 });
 
 test("a user can check only their own deterministic conversation before it is created", async () => {

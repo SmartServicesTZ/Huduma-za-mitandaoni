@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, changeOwnPassword, consumeFirebaseTokens, refreshPasswordSession, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, type TokenPurchaseOrder } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, type TokenPurchaseOrder } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
@@ -32,6 +32,8 @@ function explainAuthError(error: any, mode: "login" | "register") {
     "user-not-found": { title: "Akaunti haijapatikana", detail: "Namba hii haijasajiliwa bado. Tumia Jisajili kutengeneza akaunti." },
     "wrong-password": { title: "Password si sahihi", detail: "Kagua password yako. Usishiriki password yako na mtu mwingine." },
     "email-already-in-use": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
+    "phone/already-registered": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
+    "already-exists": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
     "profile/setup-failed": { title: "Akaunti imetengenezwa; wasifu unasubiri", detail: "Usijisajili tena. Ingia kwenye akaunti yako; wasifu utajaribu kusawazishwa tena." },
     "phone/invalid": { title: "Namba ya simu si sahihi", detail: "Weka namba halali ya simu ya Tanzania." },
     "weak-password": { title: "Password ni dhaifu", detail: "Tumia password yenye angalau herufi 6." },
@@ -46,44 +48,18 @@ function explainAuthError(error: any, mode: "login" | "register") {
   return { title: known?.title ?? `Imeshindikana ${mode === "login" ? "kuingia" : "kusajili"}`, detail: known?.detail ?? String(error?.message ?? "Firebase imerudisha hitilafu isiyojulikana."), code: code || "unknown" };
 }
 
-function PasswordChangeGate({ firebaseUser, saveProfile }: { firebaseUser: import("firebase/auth").User; saveProfile: (values: any) => Promise<void> }) {
-  const draftKey = `huduma-password-change:${firebaseUser.uid}`;
-  const readDraft = () => {
-    if (typeof window === "undefined") return { password: "", confirm: "" };
-    try {
-      const raw = window.sessionStorage.getItem(draftKey);
-      if (!raw) return { password: "", confirm: "" };
-      const parsed = JSON.parse(raw);
-      return {
-        password: typeof parsed?.password === "string" ? parsed.password : "",
-        confirm: typeof parsed?.confirm === "string" ? parsed.confirm : "",
-      };
-    } catch {
-      return { password: "", confirm: "" };
-    }
-  };
-  const draft = readDraft();
-  const [password, setPassword] = useState(draft.password);
-  const [confirm, setConfirm] = useState(draft.confirm);
+function PasswordChangeGate() {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [show, setShow] = useState(false);
-  const persistDraft = (nextPassword: string, nextConfirm: string) => {
-    try {
-      window.sessionStorage.setItem(draftKey, JSON.stringify({ password: nextPassword, confirm: nextConfirm }));
-    } catch {
-      // Session storage can be unavailable in private/restricted browser modes.
-    }
-  };
   const submit = async (event?: React.FormEvent) => {
     event?.preventDefault();
     if (password.length < 6) { toast.error("Password mpya iwe na angalau herufi 6."); return; }
     if (password !== confirm) { toast.error("Password hazifanani."); return; }
     setBusy(true);
     try {
-      await changeOwnPassword(password);
-      await refreshPasswordSession(firebaseUser, password);
-      await saveProfile({ mustChangePassword: false });
-      try { window.sessionStorage.removeItem(draftKey); } catch {}
+      await completeRequiredPasswordChange(password);
       setPassword(""); setConfirm("");
       toast.success("Password mpya imewekwa. Akaunti yako iko tayari kutumia.");
     } catch (error: any) {
@@ -95,8 +71,8 @@ function PasswordChangeGate({ firebaseUser, saveProfile }: { firebaseUser: impor
       <span className="admin-kicker">USALAMA WA AKAUNTI</span><h2>Weka password yako mpya</h2>
       <p>Admin amekuwekea password ya muda. Kwa usalama, unatakiwa kuiweka password yako binafsi kabla ya kuendelea.</p>
       <form onSubmit={submit}>
-        <label className="control-field"><span>Password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => { const value = event.target.value; setPassword(value); persistDraft(value, confirm); }} /></label>
-        <label className="control-field"><span>Rudia password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={confirm} onChange={(event) => { const value = event.target.value; setConfirm(value); persistDraft(password, value); }} /></label>
+        <label className="control-field"><span>Password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+        <label className="control-field"><span>Rudia password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} /></label>
         <label className="check-inline"><input type="checkbox" checked={show} onChange={(event) => setShow(event.target.checked)} /> Onyesha password</label>
         <button type="submit" className="admin-primary" disabled={busy}>{busy ? "Inahifadhi..." : "Weka password mpya"}</button>
       </form>
@@ -136,6 +112,8 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
         "user-not-found": { title: "Akaunti haijapatikana", detail: "Namba hii haijasajiliwa bado. Tumia Jisajili kutengeneza akaunti." },
         "wrong-password": { title: "Password si sahihi", detail: "Kagua password yako kisha jaribu tena." },
         "email-already-in-use": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
+        "phone/already-registered": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
+        "already-exists": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
         "phone/invalid": { title: "Namba ya simu si sahihi", detail: "Tumia namba halali ya Tanzania, mfano 0698232313 au +255698232313." },
         "weak-password": { title: "Password ni dhaifu", detail: "Password iwe na angalau herufi 6." },
         "too-many-requests": { title: "Majaribio yamezidi", detail: "Subiri muda kidogo kabla ya kujaribu tena." },
@@ -344,7 +322,7 @@ export default function Home() {
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const { isAuthenticated, firebaseUser, user, updateProfile: saveProfile } = useAuth();
+  const { isAuthenticated, firebaseUser, user } = useAuth();
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogInitialized, setCatalogInitialized] = useState(false);
@@ -376,5 +354,5 @@ export default function Home() {
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
   const serviceFields = Array.isArray(selectedService?.fields) ? selectedService.fields : [];
   const page = location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <TINCertificatePage /> : serviceSlug === "nakala-nida-2" ? <AirtelSmeContractPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/chat" ? <ChatPage /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa taarifa kuhusu salio lililopo, wasiliana na support kupitia WhatsApp +255 698 232 313.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} />;
-  return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}><div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} /><div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div><div className="portal-content"><AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />{page}<footer className="portal-footer">Programu hii ilitengenezwa na Bw. $teward Tz <span>© Haki zote zimehifadhiwa 2026</span></footer></div><BottomNav />{isAuthenticated && firebaseUser && user?.mustChangePassword === true ? <PasswordChangeGate firebaseUser={firebaseUser} saveProfile={saveProfile} /> : null}</div>;
+  return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}><div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} /><div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div><div className="portal-content"><AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />{page}<footer className="portal-footer">Programu hii ilitengenezwa na Bw. $teward Tz <span>© Haki zote zimehifadhiwa 2026</span></footer></div><BottomNav />{isAuthenticated && firebaseUser && user?.mustChangePassword === true ? <PasswordChangeGate /> : null}</div>;
 }

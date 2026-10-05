@@ -3,7 +3,7 @@ import { getSecret } from "./runtime.js";
 
 export interface ApiRequest<T = unknown> {
   data: T;
-  auth?: { uid: string };
+  auth?: { uid: string; email?: string };
 }
 
 export interface WorkerHttpRequest {
