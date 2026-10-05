@@ -11,34 +11,41 @@ export function useAuth(options?: UseAuthOptions) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => onAuthStateChanged(firebaseAuth, async (nextUser) => {
-    setLoading(true);
-    setError(null);
-    setFirebaseUser(nextUser);
-    if (!nextUser) { setProfile(null); setLoading(false); return; }
+  useEffect(() => {
+    let active = true;
+    let unsubscribe = () => {};
+    void authPersistenceReady.then(() => {
+      if (!active) return;
+      unsubscribe = onAuthStateChanged(firebaseAuth, async (nextUser) => {
+        if (!active) return;
+        setLoading(true);
+        setError(null);
+        setFirebaseUser(nextUser);
+        if (!nextUser) { setProfile(null); setLoading(false); return; }
 
-    // Hydrate immediately from the last known profile so a refresh/network hiccup
-    // does not make a valid Firebase session look like a logged-out account.
-    try {
-      const cached = localStorage.getItem("firebase-user-profile");
-      if (cached) {
-        const parsed = JSON.parse(cached) as FirebaseProfile;
-        if (parsed?.uid === nextUser.uid) setProfile(parsed);
-      }
-    } catch {
-      localStorage.removeItem("firebase-user-profile");
-    }
+        try {
+          const cached = localStorage.getItem("firebase-user-profile");
+          if (cached) {
+            const parsed = JSON.parse(cached) as FirebaseProfile;
+            if (parsed?.uid === nextUser.uid) setProfile(parsed);
+          }
+        } catch {
+          localStorage.removeItem("firebase-user-profile");
+        }
 
-    try {
-      // Do not call reload() here: auth persistence already restored this user.
-      // A temporary network failure must never turn a valid session into logout.
-      await ensureUserProfile(nextUser, { emailVerified: nextUser.emailVerified });
-    } catch (cause) {
-      setError(cause);
-    } finally {
-      setLoading(false);
-    }
-  }), []);
+        try {
+          await ensureUserProfile(nextUser, { emailVerified: nextUser.emailVerified });
+        } catch (cause) {
+          setError(cause);
+        } finally {
+          if (active) setLoading(false);
+        }
+      });
+    }).catch((cause) => {
+      if (active) { setError(cause); setLoading(false); }
+    });
+    return () => { active = false; unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     if (!firebaseUser) return;
