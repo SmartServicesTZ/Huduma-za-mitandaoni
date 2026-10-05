@@ -16,7 +16,7 @@ type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
-type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; name?: string; email?: string; phone?: string; mustChangePassword?: boolean };
+type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; name?: string; phone?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
@@ -429,7 +429,7 @@ export const submitLipaApplication = callable(async (request) => {
     const existingApplication = await transaction.get(applicationRef);
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const application = {
-      applicationId, userId: uid, userName: String(profile.name ?? ""), userEmail: String(profile.email ?? ""), network: String(config.name ?? networkId), networkId, serviceId: "pata-lipa-namba",
+      applicationId, userId: uid, userName: String(profile.name ?? ""), network: String(config.name ?? networkId), networkId, serviceId: "pata-lipa-namba",
       applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" "),
       phone: String(applicantData.phone ?? ""), businessName: String(applicantData.businessName ?? ""), nidaNumber: String(applicantData.nidaNumber ?? ""), tinNumber: String(applicantData.tinNumber ?? ""),
       businessLicense: String(applicantData.businessLicense ?? ""), idDocumentUrl: String(applicantData.idDocument ?? ""), idDocumentType: String(applicantData.idDocumentType ?? ""), applicantData,
@@ -573,7 +573,7 @@ export const createServiceApplication = callable(async (request) => {
       ledgerRef = db.collection("tokenTransactions").doc(applicationId);
       transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
     }
-    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), userEmail: String(user.email ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
+    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
     transaction.create(openRef, { applicationId, userId: uid, serviceSlug, createdAt: FieldValue.serverTimestamp() });
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(service.name ?? serviceSlug)} limepokelewa`, body: "Maombi yako yametumwa kikamilifu na yanasubiri kukaguliwa.", type: "serviceApplication", applicationId, createdAt: FieldValue.serverTimestamp() });
     return { applicationId, status: "PENDING", balanceAfter, reference: ledgerRef?.id ?? applicationId, duplicate: false };
@@ -688,6 +688,50 @@ export const updateUserAccess = callable(async (request) => {
     recordAudit(transaction, uid, String(actor.role), "UPDATE_USER_ACCESS", "user", userId, { role: target.role, permissions: target.permissions ?? {} }, { role: patch.role ?? target.role, permissions: patch.permissions ?? target.permissions ?? {} });
     return { ok: true };
   });
+});
+
+export const syncAuthClaims = callable(async (request) => {
+  const uid = authUid(request);
+  const snapshot = await db.collection("users").doc(uid).get();
+  if (!snapshot.exists) throw new ApiError("failed-precondition", "Profile ya akaunti bado haijapatikana.");
+  const profile = snapshot.data() as Profile;
+  let role = profile.role ?? "user";
+  const configuredPhone = normalizeTanzaniaPhone(getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313");
+  const profilePhone = normalizeTanzaniaPhone(profile.phone);
+  if (role === "super_admin" && (!configuredPhone || profilePhone !== configuredPhone)) role = "user";
+  const safePermissions = role === "user" || role === "super_admin"
+    ? {}
+    : Object.fromEntries(permissions.filter((key) => profile.permissions?.[key] === true).map((key) => [key, true]));
+  const customAttributes = JSON.stringify({ role, permissions: safePermissions, isSuperAdmin: role === "super_admin" });
+  if (customAttributes.length > 1000) throw new ApiError("failed-precondition", "Role claims zimezidi ukubwa unaoruhusiwa.");
+  const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
+  const accessToken = await getGoogleAccessToken();
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:update`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ localId: uid, customAttributes }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const result = await response.json().catch(() => null) as { localId?: unknown; error?: { message?: unknown } } | null;
+  if (!response.ok || result?.localId !== uid) {
+    console.error("Firebase Auth custom-claim sync failed", { uid, code: String(result?.error?.message ?? response.status) });
+    throw new ApiError("unavailable", "Role ya akaunti haikuweza kusawazishwa sasa hivi.");
+  }
+  return { role, permissions: safePermissions, isSuperAdmin: role === "super_admin" };
+});
+
+export const findChatUser = callable(async (request) => {
+  const uid = authUid(request);
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const phone = normalizeTanzaniaPhone(data.phone);
+  if (!phone) throw new ApiError("invalid-argument", "Weka namba halali ya simu ya Tanzania.");
+  if (normalizeTanzaniaPhone((await profileFor(uid)).phone) === phone) throw new ApiError("invalid-argument", "Huwezi kuanzisha mazungumzo na akaunti yako mwenyewe.");
+  const matches = await db.collection("users").where("phone", "==", phone).limit(1).get();
+  const target = matches.docs[0];
+  if (!target) throw new ApiError("not-found", "Hakuna akaunti iliyopatikana kwa namba hiyo.");
+  const user = target.data() as Profile;
+  if (user.accountStatus === "blocked") throw new ApiError("failed-precondition", "Akaunti hii haipatikani kwa sasa.");
+  return { uid: target.id, name: String(user.name ?? "Mwanachama"), phone };
 });
 
 export const resetUserPassword = callable(async (request) => {

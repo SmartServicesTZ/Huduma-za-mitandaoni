@@ -1,22 +1,22 @@
 import { initializeApp } from "firebase/app";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBlob, deleteObject } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
   initializeAuth,
-  setPersistence,
   browserLocalPersistence,
   onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  connectAuthEmulator,
   signOut,
   updatePassword,
   type User,
 } from "firebase/auth";
 import {
   addDoc,
+  arrayUnion,
   collection,
+  connectFirestoreEmulator,
   deleteDoc,
   deleteField,
   doc,
@@ -36,6 +36,7 @@ import {
 } from "firebase/firestore";
 import type { ServiceFormField, ServiceFormValues } from "../../../shared/serviceForms";
 import { omitUndefinedFields } from "../../../shared/omitUndefinedFields";
+import { normalizeTanzaniaPhone, phoneAuthAlias } from "../../../shared/tanzaniaPhone";
 import type { BrowserLicenseForm } from "./businessLicensePdf";
 
 const firebaseConfig = {
@@ -51,10 +52,14 @@ const app = initializeApp(firebaseConfig);
 export const firebaseAuth = initializeAuth(app, { persistence: browserLocalPersistence });
 export const firestore = getFirestore(app);
 export const firebaseStorage = getStorage(app);
-export const authPersistenceReady = setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
-  console.warn("Firebase auth persistence could not be configured:", error);
-});
-// Keep login across page refreshes/browser restarts. Explicitly selecting local persistence avoids accidental session-only auth.\n
+export const usingFirebaseEmulators = import.meta.env.VITE_FIREBASE_EMULATOR === "true";
+if (usingFirebaseEmulators) {
+  connectAuthEmulator(firebaseAuth, "http://127.0.0.1:9099", { disableWarnings: true });
+  connectFirestoreEmulator(firestore, "127.0.0.1", 8080);
+}
+// Local persistence is configured at Auth initialization; Firebase Auth itself
+// restores sessions after refresh and browser restarts where the browser permits it.
+export const authPersistenceReady = Promise.resolve();
 function workerBaseUrl() {
   const configured = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "").trim();
   const productionFallback = "https://huduma-za-mtandao-api.stewardjackson999.workers.dev";
@@ -87,7 +92,7 @@ function createWorkerCall<TRequest = unknown, TResponse = unknown>(name: string)
 }
 const appCheckSiteKey = String(import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY ?? "").trim();
 export const firebaseAppCheck = appCheckSiteKey ? initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true }) : null;
-export { onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword };
+export { onAuthStateChanged, updatePassword };
 export type AdminPermissions = {
   viewUsers?: boolean;
   manageUsers?: boolean;
@@ -104,8 +109,6 @@ export type AdminPermissions = {
 
 export type FirebaseProfile = {
   uid: string;
-  email: string;
-  emailVerified?: boolean;
   firstName: string;
   lastName: string;
   phone: string;
@@ -122,9 +125,11 @@ export type FirebaseProfile = {
 };
 
 const credentialFieldNames = ["password", "pin", "pinHash"] as const;
+const profilesReadyInThisSession = new Set<string>();
+let activeRegistration: { uid?: string; ready: boolean; promise: Promise<void>; resolve: () => void } | null = null;
 export function sanitizeProfileData(data: DocumentData): FirebaseProfile {
   const safe = { ...data } as Record<string, unknown>;
-  for (const field of credentialFieldNames) delete safe[field];
+  for (const field of [...credentialFieldNames, "email", "emailVerified"]) delete safe[field];
   return safe as FirebaseProfile;
 }
 
@@ -134,14 +139,14 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
   const current = existing.data() ?? {};
   const firstName = extra.firstName ?? String(current.firstName ?? user.displayName?.split(" ")[0] ?? "");
   const lastName = extra.lastName ?? String(current.lastName ?? user.displayName?.split(" ").slice(1).join(" ") ?? "");
+  const phone = normalizeTanzaniaPhone(extra.phone ?? current.phone ?? phoneFromLegacyAlias(user.email) ?? "") ?? "";
   const profile = omitUndefinedFields({
     uid: user.uid,
-    email: user.email ?? "",
     firstName,
     lastName,
-    phone: extra.phone ?? current.phone ?? "",
-    name: extra.name ?? current.name ?? (`${firstName} ${lastName}`.trim() || user.email?.split("@")[0] || "Mwanachama"),
-    username: extra.username ?? current.username ?? user.email?.split("@")[0] ?? user.uid.slice(0, 8),
+    phone,
+    name: extra.name ?? current.name ?? (`${firstName} ${lastName}`.trim() || "Mwanachama"),
+    username: extra.username ?? current.username ?? user.uid.slice(0, 8),
     tokenBalance: typeof current.tokenBalance === "number" ? current.tokenBalance : 0,
     verificationStatus: current.verificationStatus ?? "pending",
     role: current.role ?? "user",
@@ -150,42 +155,86 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     language: extra.language ?? current.language ?? "sw",
     profileImageUrl: extra.profileImageUrl ?? current.profileImageUrl,
     updatedAt: serverTimestamp(),
-    emailVerified: user.emailVerified,
   });
-  await setDoc(ref, profile, { merge: true });
+  await setDoc(ref, { ...profile, email: deleteField(), emailVerified: deleteField() }, { merge: true });
   return ref;
 }
 
-function authEmailFromPhone(phone: string) {
-  const compact = phone.replace(/\D/g, "");
-  const normalized = compact.startsWith("255") ? compact : compact.startsWith("0") ? "255" + compact.slice(1) : "255" + compact;
-  return normalized + "@login.huduma-za-mtandao.local";
+export async function ensureAuthenticatedProfile(user: User) {
+  const registration = activeRegistration;
+  if (registration) {
+    await registration.promise;
+    if (registration.ready && registration.uid === user.uid) return doc(firestore, "users", user.uid);
+  }
+  if (profilesReadyInThisSession.has(user.uid)) return doc(firestore, "users", user.uid);
+  const ref = await ensureUserProfile(user);
+  profilesReadyInThisSession.add(user.uid);
+  return ref;
+}
+
+function phoneFromLegacyAlias(alias: string | null) {
+  return /^(255[67]\d{8})@login\.huduma-za-mtandao\.local$/i.exec(alias ?? "")?.[1] ?? "";
 }
 
 export async function registerFirebaseUser(input: { password: string; firstName: string; lastName: string; phone: string }) {
   await authPersistenceReady;
-  const email = authEmailFromPhone(input.phone);
-  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, input.password);
-  await ensureUserProfile(credential.user, { ...input, email: "" });
-  // Hakuna email verification: akaunti ya mfumo huu hutumia namba ya simu kama kitambulisho.
-  return credential.user;
+  const phone = normalizeTanzaniaPhone(input.phone);
+  if (!phone) throw Object.assign(new Error("Namba ya simu ya Tanzania si sahihi."), { code: "phone/invalid" });
+  const email = phoneAuthAlias(phone);
+  let resolveRegistration!: () => void;
+  const registration: { uid?: string; ready: boolean; promise: Promise<void>; resolve: () => void } = {
+    ready: false,
+    promise: new Promise<void>((resolve) => { resolveRegistration = resolve; }),
+    resolve: () => resolveRegistration(),
+  };
+  activeRegistration = registration;
+  try {
+    const credential = await createUserWithEmailAndPassword(firebaseAuth, email, input.password);
+    registration.uid = credential.user.uid;
+    await ensureUserProfile(credential.user, { ...input, phone });
+    registration.ready = true;
+    profilesReadyInThisSession.add(credential.user.uid);
+    // No email is collected, displayed, sent, or saved to the Firestore profile.
+    return credential.user;
+  } finally {
+    registration.resolve();
+    if (activeRegistration === registration) activeRegistration = null;
+  }
 }
 
 export async function signInWithPhonePassword(phone: string, password: string) {
   await authPersistenceReady;
-  return signInWithEmailAndPassword(firebaseAuth, authEmailFromPhone(phone), password);
+  const normalizedPhone = normalizeTanzaniaPhone(phone);
+  if (!normalizedPhone) throw Object.assign(new Error("Namba ya simu ya Tanzania si sahihi."), { code: "phone/invalid" });
+  return signInWithEmailAndPassword(firebaseAuth, phoneAuthAlias(normalizedPhone), password);
 }
 
-export function sendPasswordReset(email: string) {
-  return sendPasswordResetEmail(firebaseAuth, email.trim());
+export type FirebaseRoleClaims = { role: FirebaseProfile["role"]; permissions: AdminPermissions; isSuperAdmin: boolean };
+const authClaimsInFlight = new Map<string, Promise<FirebaseRoleClaims>>();
+export async function syncFirebaseAuthClaims() {
+  const user = firebaseAuth.currentUser;
+  if (!user) throw Object.assign(new Error("Ingia kwanza."), { code: "unauthenticated" });
+  if (usingFirebaseEmulators) return { role: "user", permissions: {}, isSuperAdmin: false } as FirebaseRoleClaims;
+  const existing = authClaimsInFlight.get(user.uid);
+  if (existing) return existing;
+  const pending = invokeWorker<FirebaseRoleClaims>("syncAuthClaims", {}).then(async (claims) => {
+    await user.getIdToken(true);
+    return claims;
+  }).catch((error) => {
+    authClaimsInFlight.delete(user.uid);
+    throw error;
+  });
+  authClaimsInFlight.set(user.uid, pending);
+  return pending;
+}
+export async function signOutFirebaseUser() {
+  const uid = firebaseAuth.currentUser?.uid;
+  await signOut(firebaseAuth);
+  if (uid) authClaimsInFlight.delete(uid);
 }
 
-export function sendVerificationEmail(user: User) {
-  return sendEmailVerification(user);
-}
-
-export function subscribeToProfile(uid: string, callback: (profile: FirebaseProfile | null) => void) {
-  return onSnapshot(doc(firestore, "users", uid), (snapshot) => callback(snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null));
+export function subscribeToProfile(uid: string, callback: (profile: FirebaseProfile | null) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(doc(firestore, "users", uid), (snapshot) => callback(snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null), onError);
 }
 
 export async function saveFirebaseProfile(uid: string, values: Partial<FirebaseProfile>) {
@@ -454,7 +503,6 @@ export type LipaApplication = {
   applicationId: string;
   userId: string;
   userName?: string;
-  userEmail?: string;
   network: string;
   networkId: string;
   serviceId: string;
@@ -472,7 +520,7 @@ export type LipaApplication = {
   submittedAt?: unknown;
   updatedAt?: unknown;
 };
-export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; userEmail?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
+export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
 
 export async function seedServiceCatalog() {
   const callable = createWorkerCall("seedServiceCatalog");
@@ -579,4 +627,96 @@ export function subscribeUserServiceApplications(uid: string, callback: (rows: S
 export function subscribeUserMessages(uid: string, callback: (rows: Array<Record<string, unknown> & { id: string }>) => void, onError?: (error: unknown) => void) {
   const userQuery = query(collection(firestore, "messages"), where("recipientId", "==", uid));
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")))), onError);
+}
+
+export type ChatUser = { uid: string; name: string; phone: string };
+export type ChatMessage = { id: string; senderId: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
+export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
+
+export async function findChatUser(phone: string) {
+  return invokeWorker<ChatUser>("findChatUser", { phone });
+}
+
+export async function openPrivateConversation(current: ChatUser, other: ChatUser) {
+  const participants = [current.uid, other.uid].sort();
+  const id = participants.join("__");
+  const ref = doc(firestore, "conversations", id);
+  if (!(await getDoc(ref)).exists()) await setDoc(ref, {
+    participants,
+    names: { [current.uid]: current.name, [other.uid]: other.name },
+    phones: { [current.uid]: current.phone, [other.uid]: other.phone },
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(), lastMessage: "",
+  });
+  return id;
+}
+
+function subscribeChatRows(collectionRef: ReturnType<typeof collection>, callback: (rows: any[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(query(collectionRef, orderBy("createdAt", "asc")), (snapshot) => {
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as any)));
+  }, onError);
+}
+export function subscribePublicChat(callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
+  return subscribeChatRows(collection(firestore, "publicChatMessages"), callback, onError);
+}
+export function subscribeConversations(uid: string, callback: (rows: PrivateConversation[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(query(collection(firestore, "conversations"), where("participants", "array-contains", uid)), (snapshot) => {
+    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as PrivateConversation));
+    rows.sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
+    callback(rows);
+  }, onError);
+}
+export function subscribePrivateChat(roomId: string, callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
+  return subscribeChatRows(collection(firestore, "conversations", roomId, "messages"), callback, onError);
+}
+export function subscribeTyping(roomId: string, callback: (uids: string[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(collection(firestore, "conversations", roomId, "typing"), (snapshot) => callback(snapshot.docs.map((item) => item.id)), onError);
+}
+export function subscribePresence(uid: string, callback: (presence: { online: boolean; lastSeen?: unknown } | null) => void) {
+  return onSnapshot(doc(firestore, "userPresence", uid), (snapshot) => callback(snapshot.exists() ? snapshot.data() as { online: boolean; lastSeen?: unknown } : null));
+}
+export async function updatePresence(uid: string, online: boolean) {
+  await setDoc(doc(firestore, "userPresence", uid), { online, lastSeen: online ? null : serverTimestamp() }, { merge: true });
+}
+export async function setChatTyping(roomId: string, uid: string, typing: boolean) {
+  const ref = doc(firestore, "conversations", roomId, "typing", uid);
+  if (typing) await setDoc(ref, { updatedAt: serverTimestamp() });
+  else await deleteDoc(ref);
+}
+export async function sendChatMessage(roomId: string | null, senderId: string, text: string, replyTo?: ChatMessage, isPublic = false, attachment?: { filePath: string; fileName: string; fileType: string }) {
+  const collectionRef = isPublic ? collection(firestore, "publicChatMessages") : collection(firestore, "conversations", roomId!, "messages");
+  const content = text.trim();
+  if (!content && !attachment) throw new Error("Andika ujumbe au chagua faili.");
+  const message = {
+    senderId,
+    ...(content ? { text: content } : {}),
+    ...(attachment ?? {}),
+    ...(replyTo ? { replyTo: { id: replyTo.id, text: String(replyTo.text ?? replyTo.fileName ?? "Kiambatisho"), senderId: replyTo.senderId } } : {}),
+    deliveredTo: [senderId], readBy: [senderId], createdAt: serverTimestamp(),
+  };
+  await addDoc(collectionRef, message);
+  if (!isPublic && roomId) await updateDoc(doc(firestore, "conversations", roomId), { lastMessage: content || attachment?.fileName || "Kiambatisho", updatedAt: serverTimestamp() });
+}
+export async function markChatMessageRead(roomId: string | null, message: ChatMessage, uid: string, isPublic = false) {
+  if (message.senderId === uid || message.readBy?.includes(uid)) return;
+  const ref = isPublic ? doc(firestore, "publicChatMessages", message.id) : doc(firestore, "conversations", roomId!, "messages", message.id);
+  await updateDoc(ref, { deliveredTo: arrayUnion(uid), readBy: arrayUnion(uid) });
+}
+export async function uploadChatFile(roomId: string | null, senderId: string, file: File, isPublic = false) {
+  if (file.size > 10 * 1024 * 1024) throw new Error("Faili isizidi MB 10.");
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf", "text/plain", "audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg"];
+  if (!allowed.includes(file.type)) throw new Error("Aina hii ya faili hairuhusiwi.");
+  const safeName = file.name.replace(/[^\w.-]/g, "_").slice(0, 100) || "attachment";
+  const path = isPublic ? `publicChatFiles/${senderId}/${Date.now()}_${safeName}` : `chatFiles/${roomId}/${senderId}/${Date.now()}_${safeName}`;
+  const reference = storageRef(firebaseStorage, path);
+  await uploadBytes(reference, file, { contentType: file.type });
+  return { filePath: path, fileName: safeName, fileType: file.type };
+}
+export async function loadChatAttachment(path: string) {
+  return getBlob(storageRef(firebaseStorage, path));
+}
+export async function blockChatUser(uid: string, targetUid: string) {
+  await setDoc(doc(firestore, "userBlocks", uid, "blocked", targetUid), { createdAt: serverTimestamp() });
+}
+export async function reportChatUser(uid: string, targetUid: string, roomId: string, reason: string) {
+  await addDoc(collection(firestore, "chatReports"), { reporterId: uid, targetUid, roomId, reason: reason.slice(0, 500), createdAt: serverTimestamp(), status: "open" });
 }

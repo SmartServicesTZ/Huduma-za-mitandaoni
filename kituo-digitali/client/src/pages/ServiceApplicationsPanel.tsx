@@ -316,7 +316,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                         </div>
                       </td>
                       <td>{service?.name ?? application.serviceName ?? "—"}</td>
-                      <td>{application.userName || application.userEmail || application.userId || "—"}<small className="service-app-admin-muted">{application.userEmail && application.userName ? application.userEmail : application.userId}</small></td>
+                      <td>{application.userName || application.userId || "—"}<small className="service-app-admin-muted">UID: {application.userId}</small></td>
                       <td>{dateText(application.submittedAt)}</td>
                       <td><StatusBadge status={application.status} /></td>
                       <td>
@@ -348,7 +348,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
               <div className="service-app-admin-detail-item"><dt>Application</dt><dd>{selected.applicationId || selected.id}</dd></div>
               <div className="service-app-admin-detail-item"><dt>Reference</dt><dd>{reference}</dd></div>
               <div className="service-app-admin-detail-item"><dt>Service</dt><dd>{selectedService?.name ?? selected.serviceName ?? "—"}</dd></div>
-              <div className="service-app-admin-detail-item"><dt>User account</dt><dd>{selected.userName || selected.userEmail || selected.userId || "—"}<br />{selected.userEmail && selected.userName ? selected.userEmail : ""}<small className="service-app-admin-muted">ID: {selected.userId || "—"}</small></dd></div>
+              <div className="service-app-admin-detail-item"><dt>User account</dt><dd>{selected.userName || selected.userId || "—"}<small className="service-app-admin-muted">ID: {selected.userId || "—"}</small></dd></div>
               <div className="service-app-admin-detail-item"><dt>Submitted</dt><dd>{dateText(selected.submittedAt)}</dd></div>
               <div className="service-app-admin-detail-item"><dt>Status</dt><dd><StatusBadge status={selected.status} /></dd></div>
             </div>

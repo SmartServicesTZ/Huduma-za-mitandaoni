@@ -10,6 +10,7 @@ import {
   createTokenPurchaseOrder,
   ensureDefaultServiceCatalog,
   fimipayWebhook,
+  findChatUser,
   generateBusinessLicense,
   getLipaApplicationDocument,
   getServiceApplicationDocument,
@@ -24,6 +25,7 @@ import {
   setServiceApplicationStatus,
   setServiceLock,
   submitLipaApplication,
+  syncAuthClaims,
   updateUserAccess,
   verifyUser,
 } from "./handlers.js";
@@ -34,11 +36,11 @@ interface Env extends WorkerEnv {}
 
 const callableRoutes: Record<string, CallableRoute> = {
   adminDelete, adminWrite, adjustTokens, completeBusinessLicense, consumeTokens,
-  createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog,
+  createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
-  setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateUserAccess, verifyUser,
+  setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
 function paymentFlowsEnabled(env: Env) {

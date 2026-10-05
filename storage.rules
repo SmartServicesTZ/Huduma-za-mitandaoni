@@ -43,6 +43,29 @@ service firebase.storage {
       allow read, write, delete: if false;
     }
 
+    match /publicChatFiles/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /chatFiles/{roomId}/{userId}/{fileName} {
+      function isMember() {
+        return request.auth != null
+          && firestore.exists(/databases/(default)/documents/conversations/$(roomId))
+          && request.auth.uid in firestore.get(/databases/(default)/documents/conversations/$(roomId)).data.participants;
+      }
+      allow read: if isMember();
+      allow write: if isMember()
+        && request.auth.uid == userId
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
+      allow delete: if isMember() && request.auth.uid == userId;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }
