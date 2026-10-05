@@ -17,7 +17,7 @@ export const defaultServices: DefaultService[] = [
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "Huduma kuu", 7),
   paid("nakala-nida-2", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "Huduma kuu", 8),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "Huduma kuu", 9),
-  free("utafutaji-nida", "UTAFUTAJI WA NIDA", "Tafuta taarifa za NIDA bila tokeni.", "search", "Huduma za bure", 10),
+  free("utafutaji-nida", "UTAFUTA WA NIDA", "Tafuta taarifa za NIDA bila tokeni.", "search", "Huduma za bure", 10),
   free("qr-mitandao", "MSIMBO WA QR MITANDAO YOTE", "Tengeneza msimbo wa QR wa mitandao yako.", "qr-code", "Huduma za bure", 11),
   paid("brela", "BRELA", "Msaada wa huduma za BRELA.", "landmark", "Huduma kuu", 12),
   locked("cheti-kuzaliwa", "CHETI CHA KUZALIWA", "Huduma hii inasubiri kufunguliwa.", "baby", 13),
