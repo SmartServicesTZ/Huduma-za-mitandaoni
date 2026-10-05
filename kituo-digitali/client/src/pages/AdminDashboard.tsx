@@ -129,7 +129,7 @@ export default function AdminDashboard() {
       {panel === "security" && <SecurityPanel isSuper={isSuper} users={users} audit={audit} />}
       {panel === "messages" && <MessagesPanel users={users} form={message} setForm={setMessage} onRun={run} adminId={firebaseUser!.uid} />}
       {panel === "licenses" && <CollectionPanel title="Usimamizi wa Leseni" collectionName="licenseTemplates" rows={licenses} form={{ id: "", name: "", fileType: "", fileSize: "", status: "disabled" }} setForm={() => undefined} fields={[["name", "Template name"], ["fileType", "File type"], ["fileSize", "File size"]]} onRun={run} adminId={firebaseUser!.uid} readOnly />}
-    </section>{selectedUser && <UserModal person={selectedUser} onClose={() => setSelectedUser(null)} />}</div>;
+    </> }</section>{selectedUser && <UserModal person={selectedUser} onClose={() => setSelectedUser(null)} />}</div>;
 }
 
 const permissionOptions = [
