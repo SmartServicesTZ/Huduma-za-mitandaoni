@@ -916,3 +916,17 @@ body{overflow-x:hidden;}
 .admin-pulse-list span{display:flex;align-items:center;gap:7px;color:#52657a;font-size:10px;font-weight:800}.admin-pulse-list span svg{color:#15975a}.admin-pulse-list strong{min-width:30px;height:30px;display:grid;place-items:center;border-radius:9px;color:#08723f;background:#dcf9e8;font-size:11px}
 @media(max-width:800px){.admin-overview-strip{grid-template-columns:1fr}.admin-pulse-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.admin-pulse-list{grid-template-columns:1fr}.admin-overview-intro{padding:18px}.admin-overview-intro h2{font-size:18px}}
+
+
+/* Mobile drawer hardening: the drawer owns its width/overflow so it cannot remain stuck or spill across the page. */
+@media (max-width: 800px) {
+  .portal-sidebar-wrap { width: min(86vw, 310px) !important; max-width: 310px; overflow: hidden; visibility: hidden; transform: translate3d(-100%,0,0); }
+  .portal-sidebar-wrap.open { width: min(86vw, 310px) !important; visibility: visible; transform: translate3d(0,0,0); }
+  .portal-sidebar-wrap .sidebar-portal { width: 100%; max-width: 100%; height: 100dvh; min-height: 100vh; overflow-y: auto; overscroll-behavior: contain; }
+  .portal-overlay { z-index: 100; }
+  .portal-sidebar-wrap { z-index: 110; }
+  body:has(.portal-sidebar-wrap.open) { overflow: hidden; }
+}
+@media (max-width: 360px) {
+  .portal-sidebar-wrap, .portal-sidebar-wrap.open { width: 88vw !important; }
+}
