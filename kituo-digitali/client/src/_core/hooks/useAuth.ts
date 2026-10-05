@@ -16,7 +16,7 @@ export function useAuth(options?: UseAuthOptions) {
     setError(null);
     setFirebaseUser(nextUser);
     if (!nextUser) { setProfile(null); setLoading(false); return; }
-    try { await ensureUserProfile(nextUser); setLoading(false); }
+    try { await nextUser.reload(); await ensureUserProfile(nextUser, { emailVerified: nextUser.emailVerified }); setLoading(false); }
     catch (cause) { setError(cause); setLoading(false); }
   }), []);
 
