@@ -60,7 +60,7 @@ export function useAuth(options?: UseAuthOptions) {
     localStorage.removeItem("firebase-user-profile");
   }, []);
 
-  const user = useMemo(() => profile ? { ...profile, id: profile.uid, email: profile.email, name: profile.name, phone: profile.phone, role: profile.role } : null, [profile]);
+  const user = useMemo(() => firebaseUser ? { ...(profile ?? {}), id: firebaseUser.uid, uid: firebaseUser.uid, email: profile?.email ?? firebaseUser.email ?? "", name: profile?.name ?? firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "Mwanachama", phone: profile?.phone ?? "", role: profile?.role ?? "user" } as FirebaseProfile & { id: string } : null, [firebaseUser, profile]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated || loading || user || typeof window === "undefined") return;
@@ -70,7 +70,7 @@ export function useAuth(options?: UseAuthOptions) {
 
   return {
     user, firebaseUser, profile, loading, error,
-    isAuthenticated: Boolean(firebaseUser && profile),
+    isAuthenticated: Boolean(firebaseUser),
     refresh: async () => { if (firebaseUser) await ensureUserProfile(firebaseUser); },
     updateProfile: async (values: Partial<FirebaseProfile>) => { if (firebaseUser) await saveFirebaseProfile(firebaseUser.uid, values); },
     logout,
