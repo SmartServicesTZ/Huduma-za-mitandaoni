@@ -43,6 +43,34 @@ function explainAuthError(error: any, mode: "login" | "register") {
   return { title: known?.title ?? `Imeshindikana ${mode === "login" ? "kuingia" : "kusajili"}`, detail: known?.detail ?? String(error?.message ?? "Firebase imerudisha hitilafu isiyojulikana."), code: code || "unknown" };
 }
 
+function PasswordChangeGate({ firebaseUser, saveProfile }: { firebaseUser: import("firebase/auth").User; saveProfile: (values: any) => Promise<void> }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
+  const submit = async () => {
+    if (password.length < 6) { toast.error("Password mpya iwe na angalau herufi 6."); return; }
+    if (password !== confirm) { toast.error("Password hazifanani."); return; }
+    setBusy(true);
+    try {
+      await updatePassword(firebaseUser, password);
+      await saveProfile({ mustChangePassword: false });
+      setPassword(""); setConfirm("");
+      toast.success("Password mpya imewekwa. Akaunti yako iko tayari kutumia.");
+    } catch (error: any) {
+      toast.error(error?.message ?? "Imeshindikana kubadilisha password. Jaribu tena.");
+    } finally { setBusy(false); }
+  };
+  return <div className="admin-modal-backdrop password-gate-backdrop"><div className="admin-modal password-gate" onClick={(event) => event.stopPropagation()}>
+    <span className="admin-kicker">USALAMA WA AKAUNTI</span><h2>Weka password yako mpya</h2>
+    <p>Admin amekuwekea password ya muda. Kwa usalama, unatakiwa kuiweka password yako binafsi kabla ya kuendelea.</p>
+    <label className="control-field"><span>Password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+    <label className="control-field"><span>Rudia password mpya</span><input type={show ? "text" : "password"} autoComplete="new-password" value={confirm} onChange={(event) => setConfirm(event.target.value)} /></label>
+    <label className="check-inline"><input type="checkbox" checked={show} onChange={(event) => setShow(event.target.checked)} /> Onyesha password</label>
+    <button className="admin-primary" disabled={busy} onClick={submit}>{busy ? "Inahifadhi..." : "Weka password mpya"}</button>
+  </div></div>;
+}
+
 function VerifiedTick({ verified }: { verified?: boolean }) {
   return verified ? <span className="verified-tick" title="Akaunti imethibitishwa na admin" aria-label="Verified">✓</span> : null;
 }
