@@ -116,6 +116,8 @@ jobs:
   deploy-firebase-rules:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
     needs: build
     steps:
       - name: Checkout
