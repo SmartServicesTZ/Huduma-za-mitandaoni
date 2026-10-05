@@ -894,3 +894,13 @@ body{overflow-x:hidden;}
 }
 
 .hero-trust-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.hero-trust-row span{display:inline-flex;align-items:center;gap:5px;padding:7px 9px;border-radius:999px;color:#c5d6e8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:9px;font-weight:800}.hero-trust-row svg{color:#74e7a4}@media(max-width:480px){.hero-trust-row{margin-top:13px}.hero-trust-row span{font-size:8px;padding:6px 8px}}
+
+
+/* $TEWARD TZ — Service discovery empty state */
+.empty-service-state{display:flex;align-items:center;gap:16px;margin-top:18px;padding:24px 26px;border:1px dashed #cbd8e5;border-radius:18px;background:linear-gradient(135deg,#fff,#f7fafc);box-shadow:0 10px 28px rgba(8,31,52,.04)}
+.empty-service-state__icon{width:48px;height:48px;display:grid;place-items:center;flex:0 0 48px;border-radius:14px;color:#0b6f43;background:#dcf9e8;border:1px solid #bdeed2}
+.empty-service-state h3{margin:4px 0 3px;color:#10213a;font-size:17px}
+.empty-service-state p{margin:0;color:#708196;font-size:11px}
+.empty-service-state button{margin-left:auto;border:1px solid #bdeed2;border-radius:10px;padding:9px 13px;background:#fff;color:#08723f;font-size:10px;font-weight:900;cursor:pointer}
+.empty-service-state button:hover{background:#dcf9e8}
+@media(max-width:600px){.empty-service-state{align-items:flex-start;padding:18px;flex-wrap:wrap}.empty-service-state__icon{width:42px;height:42px;flex-basis:42px}.empty-service-state h3{font-size:15px}.empty-service-state p{font-size:10px}.empty-service-state button{margin-left:58px}}
