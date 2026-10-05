@@ -267,7 +267,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     {announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}
     <TokenCard />
     <section className="service-discovery"><div><span className="overline">CHAGUA UNACHOHITAJI</span><h2>Huduma za mtandaoni</h2><p>Tafuta huduma au chagua kundi hapa chini.</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
-    {lockedCount > 0 && search === "" ? <div className="portal-mini-note"><LockKeyhole size={15}/><span>Huduma {lockedCount} zinasubiri kufunguliwa na admin.</span></div> : null}{orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>)}
+    {lockedCount > 0 && search === "" ? <div className="portal-mini-note"><LockKeyhole size={15}/><span>Huduma {lockedCount} zinasubiri kufunguliwa na admin.</span></div> : null}{matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
 }
 
