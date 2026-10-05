@@ -310,6 +310,11 @@ export async function adminAdjustTokens(adminId: string, userId: string, amount:
   return (await callable({ userId, amount, description, requestId })).data;
 }
 
+export async function adminResetUserPassword(adminId: string, userId: string, temporaryPassword: string) {
+  const callable = createWorkerCall("resetUserPassword");
+  return (await callable({ userId, temporaryPassword })).data as { ok: boolean; mustChangePassword: boolean };
+}
+
 export async function adminUpdateUser(adminId: string, userId: string, values: Partial<AdminUserRecord>) {
   if (values.role !== undefined || values.permissions !== undefined) {
     const callable = createWorkerCall("updateUserAccess");
