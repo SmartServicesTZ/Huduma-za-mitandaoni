@@ -42,7 +42,7 @@ const locked = (slug: string, name: string, description: string, icon: string, c
 
 export const serviceCatalog: ServiceCatalogItem[] = [
   paid("cheti-tin", "CHETI CHA TIN", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "Huduma kuu"),
-  paid("thibitisha-tin", "THIBITISHA TIN", "Thibitisha taarifa za TIN yako.", "badge-check", "Huduma kuu"),
+  paid("verify-tin", "VERIFY TIN", "Jaza na hakiki taarifa za TIN yako.", "badge-check", "Huduma kuu"),
   paid("nakala-nida", "NAKALA LAINI YA NIDA", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "Huduma kuu"),
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "Huduma kuu"),
   paid("mpiga-kura", "MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "Huduma kuu"),
