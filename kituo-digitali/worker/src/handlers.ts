@@ -4,6 +4,7 @@ import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot
 import { getStorage } from "./storage-rest.js";
 import { ApiError, defineWorkerSecret, callable, httpEndpoint, type ApiRequest } from "./api-adapter.js";
 import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
+import { resolveAuthRole } from "./authClaims.js";
 import { defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
 
@@ -692,13 +693,23 @@ export const updateUserAccess = callable(async (request) => {
 
 export const syncAuthClaims = callable(async (request) => {
   const uid = authUid(request);
-  const snapshot = await db.collection("users").doc(uid).get();
+  const profileRef = db.collection("users").doc(uid);
+  const snapshot = await profileRef.get();
   if (!snapshot.exists) throw new ApiError("failed-precondition", "Profile ya akaunti bado haijapatikana.");
   const profile = snapshot.data() as Profile;
-  let role = profile.role ?? "user";
-  const configuredPhone = normalizeTanzaniaPhone(getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313");
-  const profilePhone = normalizeTanzaniaPhone(profile.phone);
-  if (role === "super_admin" && (!configuredPhone || profilePhone !== configuredPhone)) role = "user";
+  const resolution = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313");
+  const role = resolution.role;
+  if (resolution.shouldPromote) {
+    await profileRef.update({
+      role: "super_admin",
+      permissions: {},
+      verificationStatus: "approved",
+      accountStatus: "active",
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  } else if (resolution.shouldDemote) {
+    await profileRef.update({ role: "user", permissions: {}, updatedAt: FieldValue.serverTimestamp() });
+  }
   const safePermissions = role === "user" || role === "super_admin"
     ? {}
     : Object.fromEntries(permissions.filter((key) => profile.permissions?.[key] === true).map((key) => [key, true]));
