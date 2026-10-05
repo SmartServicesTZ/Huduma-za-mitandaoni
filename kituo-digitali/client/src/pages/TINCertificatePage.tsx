@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Download, FileCheck2 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -11,8 +11,15 @@ function formatTIN(value: string) {
 }
 
 export default function TINCertificatePage() {
-  const [tin, setTin] = useState("");
-  const [name, setName] = useState("");
+  const [tin, setTin] = useState("123-456-789");
+  const [name, setName] = useState("STEWART JACKSON NJIWA");
+  const [layout, setLayout] = useState({ tinTopX: 200, tinTopY: 100, tinTopSize: 22, nameX: 200, nameY: 150, nameSize: 22, tinBottomX: 200, tinBottomY: 200, tinBottomSize: 22 });
+  useEffect(() => {
+    void import("@/lib/firebase").then(({ getPublicSiteSettings }) => getPublicSiteSettings()).then((settings: any) => {
+      const saved = settings?.templateLayouts?.verifyTin ?? settings?.templateLayouts?.tin;
+      if (saved) setLayout((current) => Object.fromEntries(Object.keys(current).map((key) => [key, Number(saved[key] ?? (current as any)[key])])) as typeof current);
+    }).catch(() => undefined);
+  }, []);
   const formattedTin = formatTIN(tin);
   const templateSrc = `${import.meta.env.BASE_URL}Verify.png`;
 
@@ -101,9 +108,9 @@ export default function TINCertificatePage() {
         <div className="verify-preview-wrapper">
           <div className="verify-document">
             <img src={templateSrc} alt="Verify TIN Template" id="verify-template" />
-            <div className="preview-tin-top" id="previewTinTop">{formattedTin}</div>
-            <div className="preview-name" id="previewName">{name}</div>
-            <div className="preview-tin-bottom" id="previewTinBottom">{formattedTin}</div>
+            <div className="preview-tin-top" id="previewTinTop" style={{ left: layout.tinTopX, top: layout.tinTopY, fontSize: layout.tinTopSize }}>{formattedTin}</div>
+            <div className="preview-name" id="previewName" style={{ left: layout.nameX, top: layout.nameY, fontSize: layout.nameSize }}>{name}</div>
+            <div className="preview-tin-bottom" id="previewTinBottom" style={{ left: layout.tinBottomX, top: layout.tinBottomY, fontSize: layout.tinBottomSize }}>{formattedTin}</div>
           </div>
         </div>
       </section>
