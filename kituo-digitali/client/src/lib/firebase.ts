@@ -113,6 +113,7 @@ export type FirebaseProfile = {
   role: "user" | "admin" | "moderator" | "support" | "super_admin";
   permissions?: AdminPermissions;
   profileImageUrl?: string;
+  mustChangePassword?: boolean;
   language?: "sw" | "en";
   createdAt?: unknown;
 };
