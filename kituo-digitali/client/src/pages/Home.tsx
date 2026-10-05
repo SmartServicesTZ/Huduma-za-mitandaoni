@@ -330,7 +330,9 @@ export default function Home() {
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogInitialized, setCatalogInitialized] = useState(false);
-  // Closing the mobile drawer on route changes prevents a stuck drawer after navigation/refresh.\n  useEffect(() => { setMenuOpen(false); }, [location]);\n  useEffect(() => subscribeToCollection("services", (rows) => {
+  // Closing the mobile drawer on route changes prevents a stuck drawer after navigation/refresh.
+  useEffect(() => { setMenuOpen(false); }, [location]);
+  useEffect(() => subscribeToCollection("services", (rows) => {
     setServices(rows.map((item) => ({ slug: String(item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "nakala-nida-2" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "nakala-nida-2" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true })));
     setServicesLoading(false);
   }, () => setServicesLoading(false)), []);
