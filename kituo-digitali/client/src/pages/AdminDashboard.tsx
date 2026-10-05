@@ -63,7 +63,8 @@ export default function AdminDashboard() {
   const isSuper = user?.role === "super_admin";
   const hasPermission = (permission: string) => isSuper || permissions[permission as keyof typeof permissions] === true;
   const canManage = isAuthenticated && (isSuper || Object.values(permissions).some(Boolean));
-  const panel = (location.split("/admin/")[1] || "overview") as Panel;
+  const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
+  const panel = (nav.some(([key]) => key === rawPanel) ? rawPanel : "overview") as Panel;
   const visibleNav = nav.filter(([key]) => key === "overview" || (key === "ordering" ? isSuper : !panelPermission[key] || hasPermission(panelPermission[key]!)));
 
   const refresh = async () => {
