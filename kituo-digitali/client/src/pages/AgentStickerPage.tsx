@@ -46,8 +46,8 @@ function cleanNumber(value: string) {
 
 export default function AgentStickerPage() {
   const [network, setNetwork] = useState<NetworkKey>("airtel");
-  const [agentName, setAgentName] = useState("");
-  const [agentNumber, setAgentNumber] = useState("");
+  const [agentName, setAgentName] = useState("STEWART NJIWA");
+  const [agentNumber, setAgentNumber] = useState("1461417");
   const [imageError, setImageError] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [layout, setLayout] = useState<{
