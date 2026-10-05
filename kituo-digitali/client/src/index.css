@@ -920,10 +920,10 @@ body{overflow-x:hidden;}
 
 /* Mobile drawer hardening: the drawer owns its width/overflow so it cannot remain stuck or spill across the page. */
 @media (max-width: 800px) {
-  .portal-sidebar-wrap { width: min(86vw, 310px) !important; max-width: 310px; overflow: hidden; visibility: hidden; transform: translate3d(-100%,0,0); }
-  .portal-sidebar-wrap.open { width: min(86vw, 310px) !important; visibility: visible; transform: translate3d(0,0,0); }
+  .portal-sidebar-wrap { width: min(86vw, 310px) !important; max-width: 310px; overflow: hidden; visibility: hidden; pointer-events: none; transform: translate3d(-100%,0,0); transition: transform .22s ease, visibility 0s linear .22s; will-change: transform; }
+  .portal-sidebar-wrap.open { width: min(86vw, 310px) !important; visibility: visible; pointer-events: auto; transform: translate3d(0,0,0); transition: transform .22s ease, visibility 0s linear 0s; }
   .portal-sidebar-wrap .sidebar-portal { width: 100%; max-width: 100%; height: 100dvh; min-height: 100vh; overflow-y: auto; overscroll-behavior: contain; }
-  .portal-overlay { z-index: 100; }
+  .portal-overlay { z-index: 100; touch-action: manipulation; }
   .portal-sidebar-wrap { z-index: 110; }
   body:has(.portal-sidebar-wrap.open) { overflow: hidden; }
 }
