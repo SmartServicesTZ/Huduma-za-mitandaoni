@@ -51,7 +51,7 @@ const app = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(app);
 export const firestore = getFirestore(app);
 export const firebaseStorage = getStorage(app);
-const authPersistenceReady = setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
+export const authPersistenceReady = setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
   console.warn("Firebase auth persistence could not be configured:", error);
 });
 // Keep login across page refreshes/browser restarts. Explicitly selecting local persistence avoids accidental session-only auth.\n
