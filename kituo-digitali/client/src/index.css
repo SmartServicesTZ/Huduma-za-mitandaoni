@@ -930,3 +930,19 @@ body{overflow-x:hidden;}
 @media (max-width: 360px) {
   .portal-sidebar-wrap, .portal-sidebar-wrap.open { width: 88vw !important; }
 }
+
+
+/* VERIFY TIN — live template form */
+.verify-tin-layout{display:grid;grid-template-columns:minmax(320px,.8fr) minmax(0,1.2fr);gap:18px;align-items:start}
+.verify-tin-page .license-form-card,.verify-tin-page .license-preview-card{border-radius:18px}
+.verify-tin-note{display:flex;flex-direction:column;gap:5px;margin:14px 0;padding:12px 14px;border:1px solid #dfe8ef;border-radius:12px;background:#f8fafc;color:#52657a;font-size:11px;line-height:1.5}
+.verify-tin-note strong{color:#10233d;font-size:12px}
+.verify-preview-wrapper{width:100%;overflow:auto;text-align:center;background:#f3f4f6;padding:15px;border-radius:12px;-webkit-overflow-scrolling:touch}
+.verify-document{position:relative;display:inline-block;line-height:0;text-align:left}
+.verify-document>img{display:block;width:900px;max-width:none;height:auto}
+.verify-document .preview-tin-top,.verify-document .preview-name,.verify-document .preview-tin-bottom{position:absolute;font-size:22px;font-weight:700;color:#000;line-height:normal;white-space:nowrap}
+.verify-document .preview-tin-top{top:100px;left:200px}
+.verify-document .preview-name{top:150px;left:200px}
+.verify-document .preview-tin-bottom{top:200px;left:200px}
+@media(max-width:900px){.verify-tin-layout{grid-template-columns:1fr}}
+@media(max-width:700px){.verify-tin-page .page-heading h1{font-size:22px}.verify-tin-page .license-form-card,.verify-tin-page .license-preview-card{padding:15px}.verify-preview-wrapper{padding:10px}.verify-document>img{width:900px}.verify-document .preview-tin-top,.verify-document .preview-name,.verify-document .preview-tin-bottom{font-size:22px}}
