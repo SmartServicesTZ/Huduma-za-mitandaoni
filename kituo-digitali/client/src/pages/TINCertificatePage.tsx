@@ -1,117 +1,127 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft, Download, FileCheck2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Download, FileBadge, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { renderTinCertificateCanvas, type TinCertificateForm } from "@/lib/tinCertificateCanvas";
+import { getPublicSiteSettings } from "@/lib/firebase";
 
-function formatTIN(value: string) {
-  const numbers = value.replace(/\D/g, "").substring(0, 9);
-  if (numbers.length > 6) return numbers.substring(0, 3) + "-" + numbers.substring(3, 6) + "-" + numbers.substring(6, 9);
-  if (numbers.length > 3) return numbers.substring(0, 3) + "-" + numbers.substring(3);
-  return numbers;
+type FieldProps = { label: string; english?: string; children: React.ReactNode };
+
+function Field({ label, english, children }: FieldProps) {
+  return <div className="license-field">
+    <label><strong>{label}</strong>{english ? <small>{english}</small> : null}</label>
+    {children}
+  </div>;
 }
 
 export default function TINCertificatePage() {
-  const [tin, setTin] = useState("123-456-789");
-  const [name, setName] = useState("STEWART JACKSON NJIWA");
-  const [layout, setLayout] = useState({ tinTopX: 200, tinTopY: 100, tinTopSize: 22, nameX: 200, nameY: 150, nameSize: 22, tinBottomX: 200, tinBottomY: 200, tinBottomSize: 22 });
+  const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:"", traLocation:"", taxOffice:"", physicalLocation:"", streetArea:"", commissioner:"" });
+  const [busy, setBusy] = useState(false);
+  const [layout, setLayout] = useState<Record<string, {x:number;y:number;fontSize:number}>>({
+    taxpayer:{x:480,y:620,fontSize:23}, tinValue:{x:506,y:760,fontSize:25}, effectValue:{x:390,y:835,fontSize:15}, locationValue:{x:390,y:875,fontSize:15}, officeValue:{x:390,y:915,fontSize:15}, physicalValue:{x:390,y:955,fontSize:15}, streetValue:{x:390,y:995,fontSize:15}, commissioner:{x:795,y:1110,fontSize:16}
+  });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
-    void import("@/lib/firebase").then(({ getPublicSiteSettings }) => getPublicSiteSettings()).then((settings: any) => {
-      const saved = settings?.templateLayouts?.verifyTin ?? settings?.templateLayouts?.tin;
-      if (saved) setLayout((current) => Object.fromEntries(Object.keys(current).map((key) => [key, Number(saved[key] ?? (current as any)[key])])) as typeof current);
-    }).catch(() => undefined);
+    let cancelled = false;
+    void getPublicSiteSettings().then((settings) => {
+      if (cancelled) return;
+      const saved = (settings as any)?.templateLayouts?.tin;
+      if (!saved || typeof saved !== "object") return;
+      setLayout((current) => ({
+        ...current,
+        taxpayer: { ...current.taxpayer, x: Number(saved.taxpayer ?? current.taxpayer.x), y: Number(saved.taxpayerY ?? current.taxpayer.y), fontSize: Number(saved.taxpayerSize ?? current.taxpayer.fontSize) },
+        tinValue: { ...current.tinValue, x: Number(saved.tinX ?? current.tinValue.x), y: Number(saved.tinY ?? current.tinValue.y), fontSize: Number(saved.tinSize ?? current.tinValue.fontSize) },
+        effectValue: { ...current.effectValue, x: Number(saved.effectX ?? current.effectValue.x), y: Number(saved.effectY ?? current.effectValue.y) },
+        locationValue: { ...current.locationValue, x: Number(saved.locationX ?? current.locationValue.x), y: Number(saved.locationY ?? current.locationValue.y) },
+        officeValue: { ...current.officeValue, x: Number(saved.officeX ?? current.officeValue.x), y: Number(saved.officeY ?? current.officeValue.y) },
+        physicalValue: { ...current.physicalValue, x: Number(saved.physicalX ?? current.physicalValue.x), y: Number(saved.physicalY ?? current.physicalValue.y) },
+        streetValue: { ...current.streetValue, x: Number(saved.streetX ?? current.streetValue.x), y: Number(saved.streetY ?? current.streetValue.y) },
+        commissioner: { ...current.commissioner, x: Number(saved.commissionerX ?? current.commissioner.x), y: Number(saved.commissionerY ?? current.commissioner.y) },
+      }));
+    }).catch(() => {});
   }, []);
-  const formattedTin = formatTIN(tin);
-  const templateSrc = `${import.meta.env.BASE_URL}Verify.png`;
 
-  const downloadPreview = () => {
-    const image = document.getElementById("verify-template") as HTMLImageElement | null;
-    if (!image?.complete || !image.naturalWidth) {
-      toast.error("Verify.png haijapatikana. Weka picha hiyo kwenye public/Verify.png.");
-      return;
+  useEffect(() => {
+    let cancelled = false;
+    const render = async () => {
+      try {
+        const output = document.createElement("canvas");
+        await renderTinCertificateCanvas(form, output, layout);
+        if (cancelled || !canvasRef.current) return;
+        canvasRef.current.width = output.width;
+        canvasRef.current.height = output.height;
+        const ctx = canvasRef.current.getContext("2d");
+        if (!ctx) return;
+        ctx.clearRect(0, 0, output.width, output.height);
+        ctx.drawImage(output, 0, 0);
+      } catch (error) {
+        if (!cancelled) toast.error(error instanceof Error ? error.message : "Imeshindikana kuonyesha template.");
+      }
+    };
+    void render();
+    return () => { cancelled = true; };
+  }, [form, layout]);
+
+  const set = (key: keyof TinCertificateForm, value: string) => setForm((current) => ({ ...current, [key]: value }));
+
+  const download = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const output = document.createElement("canvas");
+      await renderTinCertificateCanvas(form, output, layout);
+      const link = document.createElement("a");
+      link.download = "tin-preview.png";
+      link.href = output.toDataURL("image/png");
+      link.click();
+      toast.success("PNG imepakuliwa.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PNG.");
+    } finally {
+      setBusy(false);
     }
-
-    const scale = image.naturalWidth / 900;
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-    for (const id of ["previewTinTop", "previewName", "previewTinBottom"]) {
-      const element = document.getElementById(id);
-      if (!element) continue;
-      const rect = element.getBoundingClientRect();
-      const parent = image.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      const x = (rect.left - parent.left) * scale;
-      const y = (rect.top - parent.top) * scale;
-      ctx.font = `${style.fontWeight} ${Number.parseFloat(style.fontSize) * scale}px ${style.fontFamily}`;
-      ctx.fillStyle = style.color;
-      ctx.fillText(element.textContent ?? "", x, y + Number.parseFloat(style.fontSize) * scale);
-    }
-
-    const link = document.createElement("a");
-    link.download = "VERIFY-TIN.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-    toast.success("VERIFY TIN imepakuliwa.");
   };
 
-  return <main className="portal-main tin-page verify-tin-page">
+  return <main className="portal-main tin-page">
     <div className="license-topbar">
       <Link href="/" className="license-back"><ArrowLeft size={17} /> Rudi kwenye huduma</Link>
-      <span className="license-security"><FileCheck2 size={16} /> VERIFY TIN</span>
+      <span className="license-security"><ShieldCheck size={16} /> PREVIEW</span>
     </div>
 
     <div className="page-heading">
-      <span className="overline">VERIFY TIN</span>
-      <h1>VERIFY TIN</h1>
-      <p>Jaza taarifa za TIN na uone Live Preview kwenye template.</p>
+      <span className="overline">HUDUMA YA TIN</span>
+      <h1>CHETI CHA TIN</h1>
+      <p>Jaza taarifa na uone Live Preview</p>
     </div>
 
-    <div className="verify-tin-layout">
+    <div className="tin-layout">
       <section className="license-form-card">
-        <div className="license-card-title"><FileCheck2 size={21} /><div><h2>VERIFY TIN</h2><p>Jaza taarifa zinazohitajika</p></div></div>
+        <div className="license-card-title"><FileBadge size={21} /><div><h2>Fomu ya Cheti cha TIN</h2><p>Badilisha taarifa uone Live Preview</p></div></div>
 
-        <div className="license-form-section">
-          <div className="license-form-grid">
-            <label className="license-field">
-              <strong>TIN Number</strong>
-              <input type="text" id="tinInput" maxLength={11} inputMode="numeric" placeholder="123-456-789" autoComplete="off" value={tin} onChange={(e) => setTin(formatTIN(e.target.value))} />
-            </label>
+        <div className="license-form-section"><h3>1. Taarifa za Mlipakodi</h3><div className="license-form-grid">
+          <Field label="Jina la Mlipakodi" english="Taxpayer Name"><input value={form.name} onChange={(e) => set("name", e.target.value.toUpperCase())} /></Field>
+          <Field label="Namba ya TIN" english="TIN Number — 9 digits"><input inputMode="numeric" maxLength={11} value={form.tin} onChange={(e) => { const digits = e.target.value.replace(/\D/g, "").slice(0, 9); set("tin", digits.replace(/(\d{3})(?=\d)/g, "$1-")); }} placeholder="123-456-789" /><small>Format: 123-456-789</small></Field>
+          <Field label="Tarehe ya Kuanza" english="With Effect From"><input type="date" value={form.effectDate} onChange={(e) => set("effectDate", e.target.value)} /></Field>
+        </div></div>
 
-            <label className="license-field">
-              <strong>Taxpayer Name</strong>
-              <input type="text" id="nameInput" placeholder="FIRST NAME SECOND NAME SURNAME" autoComplete="off" value={name} onChange={(e) => setName(e.target.value.toUpperCase().replace(/[^A-ZÀ-ÿ\s'-]/g, ""))} />
-            </label>
+        <div className="license-form-section"><h3>2. Taarifa za TRA</h3><div className="license-form-grid">
+          <Field label="TRA Location" english="TRA Location"><input value={form.traLocation} onChange={(e) => set("traLocation", e.target.value.toUpperCase())} /></Field>
+          <Field label="Tax Office" english="Tax Office"><input value={form.taxOffice} onChange={(e) => set("taxOffice", e.target.value.toUpperCase())} /></Field>
+          <Field label="Physical Location" english="Physical Location"><input value={form.physicalLocation} onChange={(e) => set("physicalLocation", e.target.value.toUpperCase())} /></Field>
+          <Field label="Street / Area" english="Street / Area"><input value={form.streetArea} onChange={(e) => set("streetArea", e.target.value.toUpperCase())} /></Field>
+          <Field label="Commissioner" english="Commissioner General"><input value={form.commissioner} onChange={(e) => set("commissioner", e.target.value.toUpperCase())} /></Field>
+        </div></div>
 
-            <label className="license-field">
-              <strong>TIN Number</strong>
-              <input id="secondTin" value={formattedTin} readOnly placeholder="123-456-789" />
-            </label>
-          </div>
+        <div className="tin-actions">
+          <button className="button button--green" disabled={busy} onClick={() => void download()}><Download size={16} /> {busy ? "INATENGENEZA..." : "PAKUA PNG"}</button>
         </div>
-
-        <div className="verify-tin-note">
-          <strong>Live Preview</strong>
-          <span>TIN ya pili hujazwa yenyewe, na taarifa zinaonekana moja kwa moja kwenye template.</span>
-        </div>
-
-        <button className="button button--green" onClick={downloadPreview}>
-          <Download size={17} /> PAKUA VERIFY TIN
-        </button>
       </section>
 
       <section className="license-preview-card">
-        <div className="license-card-title"><FileCheck2 size={21} /><div><h2>LIVE PREVIEW</h2><p>Verify.png</p></div></div>
-        <div className="verify-preview-wrapper">
-          <div className="verify-document">
-            <img src={templateSrc} alt="Verify TIN Template" id="verify-template" />
-            <div className="preview-tin-top" id="previewTinTop" style={{ left: layout.tinTopX, top: layout.tinTopY, fontSize: layout.tinTopSize }}>{formattedTin}</div>
-            <div className="preview-name" id="previewName" style={{ left: layout.nameX, top: layout.nameY, fontSize: layout.nameSize }}>{name}</div>
-            <div className="preview-tin-bottom" id="previewTinBottom" style={{ left: layout.tinBottomX, top: layout.tinBottomY, fontSize: layout.tinBottomSize }}>{formattedTin}</div>
-          </div>
+        <div className="license-card-title"><FileBadge size={21} /><div><h2>LIVE PREVIEW</h2><p>Preview ya cheti</p></div></div>
+        <div className="license-preview-wrap">
+          <canvas ref={canvasRef} className="license-preview-canvas" />
         </div>
       </section>
     </div>
