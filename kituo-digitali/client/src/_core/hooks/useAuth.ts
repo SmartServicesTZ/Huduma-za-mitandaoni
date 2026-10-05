@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ensureUserProfile, firebaseAuth, onAuthStateChanged, saveFirebaseProfile, signOut, subscribeToProfile, type FirebaseProfile } from "@/lib/firebase";
+import { ensureUserProfile, authPersistenceReady, firebaseAuth, onAuthStateChanged, saveFirebaseProfile, signOut, subscribeToProfile, type FirebaseProfile } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 
 type UseAuthOptions = { redirectOnUnauthenticated?: boolean; redirectPath?: string };
