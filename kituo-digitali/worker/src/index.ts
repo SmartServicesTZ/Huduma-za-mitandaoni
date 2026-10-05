@@ -40,7 +40,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateUserAccess, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
-const PAYMENT_FLOWS_ENABLED = String(env.PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() === "true"; // Keep payments OFF by default; enable only after live credentials/webhook verification.
+function paymentFlowsEnabled(env: Env) {\n  return String(env.PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() === "true"; // Keep payments OFF by default; enable only after live credentials/webhook verification.\n}
 const firebaseJwks = createRemoteJWKSet(new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"));
 
 function allowedOrigins(env: Env) {
@@ -169,7 +169,7 @@ const worker = {
       return jsonResponse({ ready: missing.length === 0, missing }, missing.length === 0 ? 200 : 503, cors);
     }
     if (url.pathname === "/webhooks/fimipay") {
-      if (!PAYMENT_FLOWS_ENABLED) {
+      if (!paymentFlowsEnabled(env)) {
         return jsonResponse({ error: { code: "unavailable", message: "Malipo yamesitishwa kwa muda." } }, 503, cors);
       }
       return withWorkerEnv(env, () => handleWebhook(request, cors).catch((error) => {
@@ -180,7 +180,7 @@ const worker = {
     }
     const match = /^\/call\/([A-Za-z][A-Za-z0-9]*)$/.exec(url.pathname);
     if (match) {
-      if (match[1] === "createTokenPurchaseOrder" && !PAYMENT_FLOWS_ENABLED) {
+      if (match[1] === "createTokenPurchaseOrder" && !paymentFlowsEnabled(env)) {
         return jsonResponse({ error: { code: "unavailable", message: "Ununuzi wa tokeni umesitishwa kwa muda." } }, 503, cors);
       }
       return withWorkerEnv(env, () => handleCallable(request, match[1], cors, env).catch((error) => {
