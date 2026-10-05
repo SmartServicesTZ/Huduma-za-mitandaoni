@@ -82,7 +82,7 @@ function num(v: unknown, fallback: number) { const n = Number(v); return Number.
 async function getLicenseLayout() {
   try {
     const settings = await getPublicLicenseTemplateSettings();
-    const raw = (settings as any)?.license ?? settings ?? {};
+    const raw = (settings as any)?.license ?? (settings as any)?.templateLayouts?.license ?? settings ?? {};
     const out: any = { ...DEFAULT_LICENSE_LAYOUT };
     for (const key of Object.keys(DEFAULT_LICENSE_LAYOUT)) out[key] = num(raw?.[key], out[key]);
     return out;
