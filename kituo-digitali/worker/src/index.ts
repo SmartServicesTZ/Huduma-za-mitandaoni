@@ -40,7 +40,9 @@ const callableRoutes: Record<string, CallableRoute> = {
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateUserAccess, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
-function paymentFlowsEnabled(env: Env) {\n  return String(env.PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() === "true"; // Keep payments OFF by default; enable only after live credentials/webhook verification.\n}
+function paymentFlowsEnabled(env: Env) {
+  return String(env.PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() === "true"; // Keep payments OFF by default; enable only after live credentials/webhook verification.
+}
 const firebaseJwks = createRemoteJWKSet(new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"));
 
 function allowedOrigins(env: Env) {
