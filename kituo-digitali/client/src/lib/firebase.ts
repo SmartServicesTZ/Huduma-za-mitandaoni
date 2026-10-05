@@ -468,7 +468,7 @@ let publicLicenseTemplateCache: Record<string, unknown> | null | undefined;
 export async function getPublicLicenseTemplateSettings() {
   if (publicLicenseTemplateCache !== undefined) return publicLicenseTemplateCache;
   const settings = await getPublicSiteSettings();
-  const value = settings?.licenseTemplateSettings;
+  const value = settings?.licenseTemplateSettings ?? (settings?.templateLayouts && typeof settings.templateLayouts === "object" ? { license: (settings.templateLayouts as any).license } : null);
   publicLicenseTemplateCache = value && typeof value === "object" ? value as Record<string, unknown> : null;
   return publicLicenseTemplateCache;
 }
