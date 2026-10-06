@@ -80,13 +80,13 @@ const BL_NO_SIZE = 18;
 
 const DYNAMIC_TEXT_Y_OFFSET = 0;
 const DEFAULT_LICENSE_LAYOUT = {
-  nameX: 35.1, nameY: 35.04, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
-  officeX: 35.1, officeY: 28.73, officeSize: 14, tinX: 35.1, tinY: 31.81, tinSize: 14,
-  businessX: 35.1, businessY: 38.12, businessSize: 14, typeX: 35.1, typeY: 41.42, typeSize: 14,
-  issueX: 35.1, issueY: 44.73, issueSize: 14, expiryX: 35.1, expiryY: 48.19, expirySize: 14,
-  branchX: 35.1, branchY: 51.6, branchSize: 14, regionX: 35.1, regionY: 58.6, regionSize: 14,
-  wardX: 35.1, wardY: 61.65, wardSize: 14, streetX: 35.1, streetY: 65.45, streetSize: 14,
-  amountX: 35.1, amountY: 70.42, amountSize: 14, qrX: 65.2, qrY: 62.5, qrSize: 220,
+  nameX: 35.1, nameY: 41.96, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
+  officeX: 35.1, officeY: 35.65, officeSize: 14, tinX: 35.1, tinY: 38.73, tinSize: 14,
+  businessX: 35.1, businessY: 45.04, businessSize: 14, typeX: 35.1, typeY: 48.34, typeSize: 14,
+  issueX: 35.1, issueY: 51.65, issueSize: 14, expiryX: 35.1, expiryY: 55.11, expirySize: 14,
+  branchX: 35.1, branchY: 58.52, branchSize: 14, regionX: 35.1, regionY: 65.52, regionSize: 14,
+  wardX: 35.1, wardY: 68.57, wardSize: 14, streetX: 35.1, streetY: 72.37, streetSize: 14,
+  amountX: 35.1, amountY: 77.34, amountSize: 14, qrX: 65.2, qrY: 69.4, qrSize: 220,
 };
 
 const FONT_SANS = '"Roboto", "Arial Narrow", Arial, sans-serif';
@@ -98,21 +98,21 @@ const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 225, size: 20, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 900, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, family: FONT_SERIF, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 45, y: 360, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Issuing office", x: 75, y: 393.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Tax Identification No.:", x: 75, y: 433.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "License Issued To:", x: 75, y: 475.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "For the Business Of:", x: 75, y: 518.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Business Licensing:", x: 75, y: 561.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Date of Issue:", x: 75, y: 601.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Expiring Date:", x: 75, y: 646.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Principal / Branch:", x: 75, y: 688.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Business Location", x: 45, y: 721, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Region:", x: 75, y: 761.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Ward:", x: 75, y: 801.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Street:", x: 75, y: 843.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Payment Details", x: 45, y: 891, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Amount of Fee Paid:", x: 75, y: 915.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "License Details", x: 45, y: 450, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Issuing office", x: 75, y: 483.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Tax Identification No.:", x: 75, y: 523.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "License Issued To:", x: 75, y: 565.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "For the Business Of:", x: 75, y: 608.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Licensing:", x: 75, y: 651.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Date of Issue:", x: 75, y: 691.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Expiring Date:", x: 75, y: 736.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Principal / Branch:", x: 75, y: 778.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Location", x: 45, y: 811, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Region:", x: 75, y: 851.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Ward:", x: 75, y: 891.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Street:", x: 75, y: 933.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Payment Details", x: 45, y: 981, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Amount of Fee Paid:", x: 75, y: 1005.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
 ];
 
 export async function renderBusinessLicenseCanvas(
