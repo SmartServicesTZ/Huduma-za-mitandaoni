@@ -3,7 +3,6 @@ import { ArrowLeft, Download, FileBadge, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { renderTinCertificateCanvas, type TinCertificateForm } from "@/lib/tinCertificateCanvas";
-import { getPublicSiteSettings } from "@/lib/firebase";
 
 type FieldProps = { label: string; english?: string; children: React.ReactNode };
 
@@ -17,37 +16,14 @@ function Field({ label, english, children }: FieldProps) {
 export default function TINCertificatePage() {
   const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:"", traLocation:"", taxOffice:"", physicalLocation:"", streetArea:"", commissioner:"" });
   const [busy, setBusy] = useState(false);
-  const [layout, setLayout] = useState<Record<string, {x:number;y:number;fontSize:number}>>({
-    taxpayer:{x:480,y:620,fontSize:23}, tinValue:{x:506,y:760,fontSize:25}, effectValue:{x:390,y:835,fontSize:15}, locationValue:{x:390,y:875,fontSize:15}, officeValue:{x:390,y:915,fontSize:15}, physicalValue:{x:390,y:955,fontSize:15}, streetValue:{x:390,y:995,fontSize:15}, commissioner:{x:795,y:1110,fontSize:16}
-  });
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void getPublicSiteSettings().then((settings) => {
-      if (cancelled) return;
-      const saved = (settings as any)?.templateLayouts?.tin;
-      if (!saved || typeof saved !== "object") return;
-      setLayout((current) => ({
-        ...current,
-        taxpayer: { ...current.taxpayer, x: Number(saved.taxpayer ?? current.taxpayer.x), y: Number(saved.taxpayerY ?? current.taxpayer.y), fontSize: Number(saved.taxpayerSize ?? current.taxpayer.fontSize) },
-        tinValue: { ...current.tinValue, x: Number(saved.tinX ?? current.tinValue.x), y: Number(saved.tinY ?? current.tinValue.y), fontSize: Number(saved.tinSize ?? current.tinValue.fontSize) },
-        effectValue: { ...current.effectValue, x: Number(saved.effectX ?? current.effectValue.x), y: Number(saved.effectY ?? current.effectValue.y) },
-        locationValue: { ...current.locationValue, x: Number(saved.locationX ?? current.locationValue.x), y: Number(saved.locationY ?? current.locationValue.y) },
-        officeValue: { ...current.officeValue, x: Number(saved.officeX ?? current.officeValue.x), y: Number(saved.officeY ?? current.officeValue.y) },
-        physicalValue: { ...current.physicalValue, x: Number(saved.physicalX ?? current.physicalValue.x), y: Number(saved.physicalY ?? current.physicalValue.y) },
-        streetValue: { ...current.streetValue, x: Number(saved.streetX ?? current.streetValue.x), y: Number(saved.streetY ?? current.streetValue.y) },
-        commissioner: { ...current.commissioner, x: Number(saved.commissionerX ?? current.commissioner.x), y: Number(saved.commissionerY ?? current.commissioner.y) },
-      }));
-    }).catch(() => {});
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
     const render = async () => {
       try {
         const output = document.createElement("canvas");
-        await renderTinCertificateCanvas(form, output, layout);
+        await renderTinCertificateCanvas(form, output);
         if (cancelled || !canvasRef.current) return;
         canvasRef.current.width = output.width;
         canvasRef.current.height = output.height;
@@ -61,7 +37,7 @@ export default function TINCertificatePage() {
     };
     void render();
     return () => { cancelled = true; };
-  }, [form, layout]);
+  }, [form]);
 
   const set = (key: keyof TinCertificateForm, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
