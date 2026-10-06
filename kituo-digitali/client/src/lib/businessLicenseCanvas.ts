@@ -103,7 +103,7 @@ const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 246, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 329, size: 14, weight: 400, family: FONT_SERIF, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 70, y: 361, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
+  { text: "License Details", x: 50, y: 361, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
   { text: "Issuing Office:", x: 70, y: 412, size: 14, weight: 500, family: FONT_LABEL },
   { text: "Tax Identification No.:", x: 70, y: 452, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "License Issued To:", x: 70, y: 496, size: 13.5, weight: 400, family: FONT_LABEL },
@@ -112,11 +112,11 @@ const staticText: TextItem[] = [
   { text: "Date of Issue:", x: 70, y: 625, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Expiring Date:", x: 70, y: 671, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Principal/Branch:", x: 70, y: 707, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Business Location", x: 70, y: 772, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
+  { text: "Business Location", x: 50, y: 772, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
   { text: "Region:", x: 70, y: 820, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Ward:", x: 70, y: 862, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Street:", x: 70, y: 905, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Payment Details", x: 70, y: 953, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
+  { text: "Payment Details", x: 50, y: 953, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
   { text: "Amount of Fee Paid:", x: 70, y: 1001, size: 13.5, weight: 400, family: FONT_LABEL },
 ];
 
