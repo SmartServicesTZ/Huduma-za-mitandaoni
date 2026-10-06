@@ -83,7 +83,9 @@ function text(ctx: CanvasRenderingContext2D, style: TextStyle, value: string) {
 function dateText(value: string) {
   if (!value) return "—";
   const [year, month, day] = value.split("-");
-  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];\n  const suffix = day === "1" ? "(st)" : day === "2" ? "(nd)" : day === "3" ? "(rd)" : "(th)";\n  return Number(day) + suffix + " " + monthNames[Number(month) - 1] + " " + year;
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const suffix = day === "1" ? "(st)" : day === "2" ? "(nd)" : day === "3" ? "(rd)" : "(th)";
+  return Number(day) + suffix + " " + monthNames[Number(month) - 1] + " " + year;
 }
 
 function drawDefaultBackground(ctx: CanvasRenderingContext2D) {
