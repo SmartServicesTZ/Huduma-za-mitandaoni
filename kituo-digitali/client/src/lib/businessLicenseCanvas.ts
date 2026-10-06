@@ -69,7 +69,7 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
 // Template position/size settings are intentionally kept here in code (not in the website UI).
 const DYNAMIC_TEXT_Y_OFFSET = 30;
 const DEFAULT_LICENSE_LAYOUT = {
-  nameX: 35.1, nameY: 35.0, nameSize: 14, numberX: 50, numberY: 15.8, numberSize: 18,
+  nameX: 35.1, nameY: 35.0, nameSize: 14, numberX: 50, numberY: 36.8, numberSize: 18,
   officeX: 35.1, officeY: 28.5, officeSize: 14, tinX: 35.1, tinY: 31.6, tinSize: 14,
   businessX: 35.1, businessY: 38.4, businessSize: 14, typeX: 35.1, typeY: 41.8, typeSize: 14,
   issueX: 35.1, issueY: 45.0, issueSize: 14, expiryX: 35.1, expiryY: 48.35, expirySize: 14,
