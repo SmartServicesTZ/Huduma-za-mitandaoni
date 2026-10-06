@@ -80,39 +80,39 @@ const BL_NO_SIZE = 18;
 
 const DYNAMIC_TEXT_Y_OFFSET = 0;
 const DEFAULT_LICENSE_LAYOUT = {
-  nameX: 35.1, nameY: 39.00, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
-  officeX: 35.1, officeY: 32.31, officeSize: 14, tinX: 35.1, tinY: 35.77, tinSize: 14,
-  businessX: 35.1, businessY: 42.23, businessSize: 14, typeX: 35.1, typeY: 45.31, typeSize: 14,
-  issueX: 35.1, issueY: 48.23, issueSize: 14, expiryX: 35.1, expiryY: 51.38, expirySize: 14,
-  branchX: 35.1, branchY: 54.54, branchSize: 14, regionX: 35.1, regionY: 64.2, regionSize: 14,
-  wardX: 35.1, wardY: 67.0, wardSize: 14, streetX: 35.1, streetY: 70.0, streetSize: 14,
-  amountX: 35.1, amountY: 73.72, amountSize: 14, qrX: 65.2, qrY: 67.0, qrSize: 220,
+  nameX: 35.1, nameY: 37.73, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
+  officeX: 35.1, officeY: 31.51, officeSize: 14, tinX: 35.1, tinY: 34.57, tinSize: 14,
+  businessX: 35.1, businessY: 40.85, businessSize: 14, typeX: 35.1, typeY: 44.27, typeSize: 14,
+  issueX: 35.1, issueY: 47.20, issueSize: 14, expiryX: 35.1, expiryY: 50.78, expirySize: 14,
+  branchX: 35.1, branchY: 53.45, branchSize: 14, regionX: 35.1, regionY: 61.68, regionSize: 14,
+  wardX: 35.1, wardY: 64.65, wardSize: 14, streetX: 35.1, streetY: 67.97, streetSize: 14,
+  amountX: 35.1, amountY: 75.00, amountSize: 14, qrX: 61.3, qrY: 57.90, qrSize: 255,
 };
 
-const FONT_SANS = '"Roboto", "Arial Narrow", Arial, sans-serif';
-const FONT_SANS_LIGHT = '"Roboto", "Arial Narrow", Arial, sans-serif';
-const FONT_MONO = '"Roboto Mono", "Courier New", monospace';
-const FONT_SERIF = 'Georgia, "Times New Roman", serif';
+const FONT_SANS = 'Arial, Helvetica, sans-serif';
+const FONT_SANS_LIGHT = 'Arial, Helvetica, sans-serif';
+const FONT_MONO = '"Courier New", monospace';
+const FONT_SERIF = '"Times New Roman", Times, serif';
 
 const staticText: TextItem[] = [
-  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 225, size: 20, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, family: FONT_SERIF, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 45, y: 386, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Issuing office", x: 75, y: 420, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Tax Identification No.:", x: 75, y: 465, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "License Issued To:", x: 75, y: 507, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "For the Business Of:", x: 75, y: 549, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Business Licensing:", x: 75, y: 589, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Date of Issue:", x: 75, y: 627, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Expiring Date:", x: 75, y: 668, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Principal / Branch:", x: 75, y: 709, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Business Location", x: 45, y: 780, size: 20, weight: 650, family: FONT_SANS },
-  { text: "Region:", x: 75, y: 821, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Ward:", x: 75, y: 861, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Street:", x: 75, y: 901, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Payment Details", x: 45, y: 955, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Amount of Fee Paid:", x: 75, y: 993, size: 11, weight: 450, family: FONT_SANS_LIGHT },
+  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "BUSINESS LICENSE", x: 506, y: 246, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 329, size: 14, weight: 400, family: FONT_SERIF, align: "center", maxWidth: 850 },
+  { text: "License Details", x: 70, y: 361, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Issuing Office:", x: 70, y: 410, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Tax Identification No.:", x: 70, y: 449, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "License Issued To:", x: 70, y: 491, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "For the Business Of:", x: 70, y: 531, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Licensing:", x: 70, y: 576, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Date of Issue:", x: 70, y: 614, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Expiring Date:", x: 70, y: 660, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Principal/Branch:", x: 70, y: 695, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Location", x: 70, y: 755, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Region:", x: 70, y: 802, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Ward:", x: 70, y: 840, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Street:", x: 70, y: 884, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Payment Details", x: 70, y: 933, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Amount of Fee Paid:", x: 70, y: 975, size: 11, weight: 400, family: FONT_SANS_LIGHT },
 ];
 
 export async function renderBusinessLicenseCanvas(
@@ -135,10 +135,11 @@ export async function renderBusinessLicenseCanvas(
 
   const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
-  const amount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number(form.licenseFee) || 0);
+  const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.licenseFee) || 0);
   const valueStyle = { size: 14, weight: 400, family: FONT_SANS, color: "#111827", maxWidth: 600 };
+  const titleCase = (value: string) => value.trim().toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#00b0d8", align: "center", maxWidth: 920 }, `B.L. NO: ${licenseNumber || "—"}`);
+  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#58b9d1", align: "center", maxWidth: 920 }, `B.L. NO : ${licenseNumber || "—"}`);
   drawText(ctx, { x: layout.officeX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.officeY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.officeSize }, "DAR ES SALAAM CITY COUNCIL");
   drawText(ctx, { x: layout.tinX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.tinY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.tinSize }, form.tin);
   drawText(ctx, { x: layout.nameX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.nameY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.nameSize }, owner);
@@ -147,9 +148,9 @@ export async function renderBusinessLicenseCanvas(
   drawText(ctx, { x: layout.issueX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.issueY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.issueSize }, formatTemplateDate(issueDate));
   drawText(ctx, { x: layout.expiryX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.expiryY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.expirySize }, formatTemplateDate(expiryDate));
   drawText(ctx, { x: layout.branchX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.branchY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.branchSize }, form.principalBranch);
-  drawText(ctx, { x: layout.regionX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.regionY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.regionSize }, form.region.toUpperCase());
-  drawText(ctx, { x: layout.wardX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.wardY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.wardSize }, form.ward.toUpperCase());
-  drawText(ctx, { x: layout.streetX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.streetY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.streetSize }, form.street.toUpperCase());
+  drawText(ctx, { x: layout.regionX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.regionY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.regionSize }, titleCase(form.region));
+  drawText(ctx, { x: layout.wardX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.wardY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.wardSize }, titleCase(form.ward));
+  drawText(ctx, { x: layout.streetX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.streetY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.streetSize }, titleCase(form.street));
   drawText(ctx, { x: layout.amountX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.amountY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.amountSize }, amount);
 
   const qrReady = Boolean(licenseNumber && /^\d{3}-\d{3}-\d{3}$/.test(form.tin) && expiryDate);
