@@ -25,6 +25,8 @@ type TextItem = {
   size: number;
   weight?: number;
   color?: string;
+  family?: string;
+  italic?: boolean;
   align?: CanvasTextAlign;
   maxWidth?: number;
 };
@@ -57,7 +59,7 @@ function formatTemplateDate(date: string) {
 function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   if (!text) return;
   ctx.save();
-  ctx.font = `${item.weight ?? 400} ${item.size}px Arial, sans-serif`;
+  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Arial, sans-serif"}`;
   ctx.fillStyle = item.color ?? "#111827";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
@@ -87,25 +89,30 @@ const DEFAULT_LICENSE_LAYOUT = {
   amountX: 35.1, amountY: 70.42, amountSize: 14, qrX: 65.2, qrY: 56.2, qrSize: 220,
 };
 
+const FONT_SANS = '"Helvetica Neue", Arial, sans-serif';
+const FONT_SANS_LIGHT = '"Helvetica Neue", Arial, sans-serif';
+const FONT_MONO = '"Courier New", Courier, monospace';
+const FONT_SERIF = 'Georgia, "Times New Roman", serif';
+
 const staticText: TextItem[] = [
-  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 225, size: 20, weight: 700, align: "center", maxWidth: 900 },
-  { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 700, align: "center", maxWidth: 900 },
-  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 45, y: 340, size: 20, weight: 700 },
-  { text: "Issuing office", x: 75, y: 373.5, size: 11, weight: 700 },
-  { text: "Tax Identification No.:", x: 75, y: 413.5, size: 11, weight: 700 },
-  { text: "License Issued To:", x: 75, y: 455.5, size: 11, weight: 700 },
-  { text: "For the Business Of:", x: 75, y: 498.5, size: 11, weight: 700 },
-  { text: "Business Licensing:", x: 75, y: 541.5, size: 11, weight: 700 },
-  { text: "Date of Issue:", x: 75, y: 581.5, size: 11, weight: 700 },
-  { text: "Expiring Date:", x: 75, y: 626.5, size: 11, weight: 700 },
-  { text: "Principal / Branch:", x: 75, y: 668.5, size: 11, weight: 700 },
-  { text: "Business Location", x: 45, y: 721, size: 20, weight: 700 },
-  { text: "Region:", x: 75, y: 761.5, size: 11, weight: 700 },
-  { text: "Ward:", x: 75, y: 801.5, size: 11, weight: 700 },
-  { text: "Street:", x: 75, y: 843.5, size: 11, weight: 700 },
-  { text: "Payment Details", x: 45, y: 891, size: 20, weight: 700 },
-  { text: "Amount of Fee Paid:", x: 75, y: 915.5, size: 11, weight: 700 },
+  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 225, size: 20, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 900, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, family: FONT_SERIF, align: "center", maxWidth: 850 },
+  { text: "License Details", x: 45, y: 340, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Issuing office", x: 75, y: 373.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Tax Identification No.:", x: 75, y: 413.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "License Issued To:", x: 75, y: 455.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "For the Business Of:", x: 75, y: 498.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Licensing:", x: 75, y: 541.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Date of Issue:", x: 75, y: 581.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Expiring Date:", x: 75, y: 626.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Principal / Branch:", x: 75, y: 668.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Location", x: 45, y: 721, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Region:", x: 75, y: 761.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Ward:", x: 75, y: 801.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Street:", x: 75, y: 843.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Payment Details", x: 45, y: 891, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Amount of Fee Paid:", x: 75, y: 915.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
 ];
 
 export async function renderBusinessLicenseCanvas(
@@ -129,9 +136,9 @@ export async function renderBusinessLicenseCanvas(
   const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number(form.licenseFee) || 0);
-  const valueStyle = { size: 14, weight: 700, color: "#111827", maxWidth: 600 };
+  const valueStyle = { size: 14, weight: 400, family: FONT_SANS, color: "#111827", maxWidth: 600 };
 
-  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#00b0d8", align: "center", maxWidth: 920 }, `B.L. NO: ${licenseNumber || "—"}`);
+  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 400, family: FONT_MONO, color: "#00b0d8", align: "center", maxWidth: 920 }, `B.L. NO: ${licenseNumber || "—"}`);
   drawText(ctx, { x: layout.officeX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.officeY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.officeSize }, "DAR ES SALAAM CITY COUNCIL");
   drawText(ctx, { x: layout.tinX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.tinY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.tinSize }, form.tin);
   drawText(ctx, { x: layout.nameX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.nameY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.nameSize }, owner);
