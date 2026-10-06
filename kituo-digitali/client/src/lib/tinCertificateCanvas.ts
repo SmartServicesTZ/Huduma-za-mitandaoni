@@ -39,12 +39,12 @@ export const TIN_TEMPLATE = {
   taxpayer: { x: 506, y: 570, fontSize: 23, weight: 700, align: "center" },
   assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
   tinValue: { x: 506, y: 688, fontSize: 25, weight: 700, align: "center" },
-  effectValue: { x: 506, y: 835, fontSize: 15, weight: 400, align: "center" },
-  locationValue: { x: 390, y: 875, fontSize: 15, weight: 400 },
+  effectValue: { x: 506, y: 800, fontSize: 15, weight: 400, align: "center" },
+  locationValue: { x: 390, y: 845, fontSize: 15, weight: 400 },
   officeValue: { x: 390, y: 915, fontSize: 15, weight: 400 },
   physicalValue: { x: 390, y: 955, fontSize: 15, weight: 400 },
-  streetValue: { x: 390, y: 995, fontSize: 15, weight: 400 },
-  commissioner: { x: 795, y: 1075, fontSize: 16, weight: 700, align: "center" },
+  streetValue: { x: 390, y: 935, fontSize: 15, weight: 400 },
+  commissioner: { x: 795, y: 1045, fontSize: 16, weight: 700, align: "center" },
 } as const;
 
 const assetUrl = (name: string) => import.meta.env.BASE_URL + "tin-assets/" + name;
