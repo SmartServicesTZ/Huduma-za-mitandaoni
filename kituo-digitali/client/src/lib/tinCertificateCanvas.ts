@@ -1,11 +1,5 @@
 import QRCode from "qrcode";
 
-/**
- * TIN CERTIFICATE TEMPLATE
- * ------------------------
- * HAPA NDIYO SEHEMU YA KUBADILISHA MUONEKANO WA CHETI HALISI CHA TIN.
- */
-
 export const TIN_CANVAS_WIDTH = 1012;
 export const TIN_CANVAS_HEIGHT = 1300;
 export const BACKGROUND_ASSET = "tin-template.png";
@@ -42,8 +36,8 @@ export const TIN_TEMPLATE = {
   effectValue: { x: 470, y: 750, fontSize: 15, weight: 700, align: "center" },
   locationValue: { x: 370, y: 799.9, fontSize: 15, weight: 700 },
   officeValue: { x: 700, y: 799.9, fontSize: 15, weight: 700 },
-  physicalValue: { x: 385, y: 820, fontSize: 15, weight: 700 },
-  streetValue: { x: 390, y: 860, fontSize: 15, weight: 700 },
+  physicalValue: { x: 385, y: 818, fontSize: 15, weight: 700 },
+  streetValue: { x: 390, y: 858, fontSize: 15, weight: 700 },
   commissioner: { x: 765, y: 999.5, fontSize: 16, weight: 600, align: "center" },
 } as const;
 
@@ -84,15 +78,15 @@ function drawDate(ctx: CanvasRenderingContext2D, style: TextStyle, value: string
   const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const suffix = day === "1" ? "st" : day === "2" ? "nd" : day === "3" ? "rd" : "th";
   const dayNumber = String(Number(day));
-  const full = dayNumber + " " + monthNames[Number(month) - 1] + " " + year;
+  const dayWidth = (() => {
+    ctx.font = (style.weight ?? 400) + " " + style.fontSize + "px " + (style.family ?? "Arial, sans-serif");
+    return ctx.measureText(dayNumber).width;
+  })();
 
   ctx.save();
-  ctx.font = (style.weight ?? 400) + " " + style.fontSize + "px " + (style.family ?? "Arial, sans-serif");
   ctx.fillStyle = "#151922";
-  ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-
-  const dayWidth = ctx.measureText(dayNumber).width;
+  ctx.textAlign = "left";
   const gap = 3;
   const suffixSize = Math.max(9, Math.round(style.fontSize * 0.58));
   ctx.font = (style.weight ?? 400) + " " + suffixSize + "px " + (style.family ?? "Arial, sans-serif");
@@ -101,7 +95,6 @@ function drawDate(ctx: CanvasRenderingContext2D, style: TextStyle, value: string
   const rest = " " + monthNames[Number(month) - 1] + " " + year;
   const totalWidth = dayWidth + gap + suffixWidth + ctx.measureText(rest).width;
   let x = style.x - totalWidth / 2;
-
   ctx.fillText(dayNumber, x, style.y);
   x += dayWidth + gap;
   ctx.font = (style.weight ?? 400) + " " + suffixSize + "px " + (style.family ?? "Arial, sans-serif");
@@ -142,8 +135,6 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
 
   const pos = (key: keyof typeof TIN_TEMPLATE) => ({ ...TIN_TEMPLATE[key], ...(layout?.[key] ?? {}) });
 
-  // IMPORTANT: Background template tayari ina labels/text zake.
-  // Hapa tunachora VALUES ZA FORM TU ili kuepuka maandishi kujirudia.
   text(ctx, pos("taxpayer"), form.name.toUpperCase());
   text(ctx, pos("tinValue"), form.tin);
   drawDate(ctx, pos("effectValue"), form.effectDate);
