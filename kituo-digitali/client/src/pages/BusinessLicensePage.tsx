@@ -8,9 +8,7 @@ import locations from "@/data/tanzaniaLocations.json";
 import LicenseTemplatePreview from "./LicenseTemplatePreview";
 
 type FormState = {
-  firstName: string;
-  middleName: string;
-  lastName: string;
+  applicantName: string;
   businessType: string;
   otherBusinessType: string;
   licenseType: "" | "NEW LICENCE" | "RENEWED LICENCE";
@@ -33,9 +31,7 @@ type IssuedFiles = {
 
 const REQUEST_ID_KEY = "hmt-business-license-request-id";
 const initialForm: FormState = {
-  firstName: "STEWART",
-  middleName: "JACKSON",
-  lastName: "NJIWA",
+  applicantName: "STEWART JACKSON NJIWA",
   businessType: "MOBILE PHONE SHOP",
   otherBusinessType: "",
   licenseType: "NEW LICENCE",
@@ -109,6 +105,7 @@ export default function BusinessLicensePage() {
   const [form, setForm] = useState<FormState>({ ...initialForm });
   const [submitted, setSubmitted] = useState(false);
   const [licenseNumber, setLicenseNumber] = useState("");
+  const [renewedLicenseNumber, setRenewedLicenseNumber] = useState("");
   const [numberPending, setNumberPending] = useState(false);
   const [numberError, setNumberError] = useState(false);
   const [requestId, setRequestId] = useState(getOrCreateRequestId);
@@ -141,6 +138,7 @@ export default function BusinessLicensePage() {
   const rotateRequest = () => {
     setRequestId(createRequestId());
     setLicenseNumber("");
+    setRenewedLicenseNumber("");
     setNumberError(false);
     setSubmitted(false);
     setIssuedFiles(null);
@@ -162,8 +160,9 @@ export default function BusinessLicensePage() {
   const validate = (forIssuance: boolean) => {
     if (forIssuance && serviceLocked) { toast.error("Huduma ya Leseni ya Biashara imefungwa kwa sasa."); return false; }
     if (forIssuance && !isAuthenticated) { toast.error("Ingia kwanza ili kupakua leseni."); return false; }
-    if (!form.firstName.trim() || !form.middleName.trim() || !form.lastName.trim()) { toast.error("Tafadhali jaza majina yote matatu ya mwombaji."); return false; }
+    if (!form.applicantName.trim()) { toast.error("Tafadhali jaza majina yote matatu ya mwombaji kwenye sehemu moja."); return false; }
     if (!form.licenseType) { toast.error("Chagua aina ya leseni."); return false; }
+    if (form.licenseType === "RENEWED LICENCE" && !/^\d{3}(?:-\d{3}){6}$/.test(renewedLicenseNumber.trim())) { toast.error("Weka namba ya leseni kwa mfumo 385-632-452-321-008-645-678."); return false; }
     if (!form.principalBranch) { toast.error("Chagua Principal au Branch."); return false; }
     if (!form.businessType || (form.businessType === "OTHER" && !form.otherBusinessType.trim())) { toast.error("Tafadhali chagua aina ya biashara."); return false; }
     if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin.trim())) { toast.error("Format ya TIN si sahihi. Tumia mfumo 123-123-123."); return false; }
@@ -183,6 +182,7 @@ export default function BusinessLicensePage() {
         const payload = {
           requestId,
           ...form,
+          licenseNumber: form.licenseType === "RENEWED LICENCE" ? renewedLicenseNumber.trim() : undefined,
           licenseType: form.licenseType as "NEW LICENCE" | "RENEWED LICENCE",
           principalBranch: form.principalBranch as "PRINCIPAL" | "BRANCH",
         };
@@ -254,9 +254,7 @@ export default function BusinessLicensePage() {
         <div className="license-form-section">
           <h3>1. Taarifa za Mwombaji</h3>
           <div className="license-form-grid">
-            <Field label="Jina la Kwanza" english="First Name" required><input value={form.firstName} onChange={(event) => set("firstName", event.target.value.toUpperCase())} placeholder="Mfano: STAWARD" required /></Field>
-            <Field label="Jina la Pili" english="Middle Name" required><input value={form.middleName} onChange={(event) => set("middleName", event.target.value.toUpperCase())} placeholder="Mfano: NJUMBA" required /></Field>
-            <Field label="Jina la Mwisho" english="Last Name" required><input value={form.lastName} onChange={(event) => set("lastName", event.target.value.toUpperCase())} placeholder="Mfano: NJIWA" required /></Field>
+            <Field label="Majina Matatu" english="Full Name" required><input value={form.applicantName} onChange={(event) => set("applicantName", event.target.value.toUpperCase().replace(/\s+/g, " "))} placeholder="Mfano: STEWARD JACKSON NJIWA" required /></Field>
           </div>
         </div>
 
@@ -280,6 +278,7 @@ export default function BusinessLicensePage() {
                 <option value="NEW LICENCE">NEW LICENCE</option><option value="RENEWED LICENCE">RENEWED LICENCE</option>
               </SelectField>
             </Field>
+            {form.licenseType === "RENEWED LICENCE" && <Field label="Namba ya Leseni ya Zamani" english="Previous License Number" required><input inputMode="numeric" maxLength={27} value={renewedLicenseNumber} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 21); setRenewedLicenseNumber(digits.replace(/(\d{3})(?=\d)/g, "$1-")); }} placeholder="385-632-452-321-008-645-678" /></Field>}
             <Field label="Eneo la Biashara" english="Principal / Branch" required>
               <SelectField value={form.principalBranch} onChange={(value) => set("principalBranch", value as FormState["principalBranch"])} placeholder="Chagua eneo">
                 <option value="PRINCIPAL">PRINCIPAL — Biashara Kuu</option><option value="BRANCH">BRANCH — Tawi</option>
