@@ -95,7 +95,7 @@ const DEFAULT_LICENSE_LAYOUT = {
 
 const FONT_SANS = 'Arial, Helvetica, sans-serif';
 const FONT_SANS_LIGHT = 'Arial, Helvetica, sans-serif';
-const FONT_LABEL = '"Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif';
+const FONT_LABEL = 'Arial, Helvetica, sans-serif';
 const FONT_MONO = '"Courier New", monospace';
 const FONT_SERIF = '"Times New Roman", Times, serif';
 
@@ -104,7 +104,7 @@ const staticText: TextItem[] = [
   { text: "BUSINESS LICENSE", x: 506, y: 246, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 329, size: 14, weight: 400, family: FONT_SERIF, align: "center", maxWidth: 850 },
   { text: "License Details", x: 70, y: 361, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Issuing Office:", x: 70, y: 412, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Issuing Office:", x: 70, y: 412, size: 14, weight: 500, family: FONT_LABEL },
   { text: "Tax Identification No.:", x: 70, y: 452, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "License Issued To:", x: 70, y: 496, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "For the Business Of:", x: 70, y: 538, size: 13.5, weight: 400, family: FONT_LABEL },
@@ -141,7 +141,7 @@ export async function renderBusinessLicenseCanvas(
   const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.licenseFee) || 0);
-  const valueStyle = { size: 14, weight: 400, family: FONT_SANS, color: "#111827", maxWidth: 600 };
+  const valueStyle = { size: 14, weight: 500, family: FONT_SANS, color: "#0b0b0b", maxWidth: 600 };
   const titleCase = (value: string) => value.trim().toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#58b9d1", align: "center", maxWidth: 920 }, `B.L. NO : ${licenseNumber || "—"}`);
@@ -166,7 +166,7 @@ export async function renderBusinessLicenseCanvas(
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 64;
+    const logoSize = 88;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
