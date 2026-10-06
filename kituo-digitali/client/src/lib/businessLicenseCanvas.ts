@@ -64,7 +64,7 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
     const textCtx = ctx as CanvasRenderingContext2D & { fontStretch?: string };
     if ("fontStretch" in textCtx) textCtx.fontStretch = "condensed";
   }
-  ctx.fillStyle = item.color ?? "#111827";
+  ctx.fillStyle = item.color ?? "#050505";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
   if (item.maxWidth) ctx.fillText(text, item.x, item.y, item.maxWidth);
@@ -103,7 +103,7 @@ const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 246, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 329, size: 14, weight: 400, family: FONT_SERIF, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 70, y: 361, size: 20, weight: 600, family: FONT_SANS },
+  { text: "License Details", x: 70, y: 361, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
   { text: "Issuing Office:", x: 70, y: 412, size: 14, weight: 500, family: FONT_LABEL },
   { text: "Tax Identification No.:", x: 70, y: 452, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "License Issued To:", x: 70, y: 496, size: 13.5, weight: 400, family: FONT_LABEL },
@@ -112,11 +112,11 @@ const staticText: TextItem[] = [
   { text: "Date of Issue:", x: 70, y: 625, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Expiring Date:", x: 70, y: 671, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Principal/Branch:", x: 70, y: 707, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Business Location", x: 70, y: 772, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Business Location", x: 70, y: 772, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
   { text: "Region:", x: 70, y: 820, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Ward:", x: 70, y: 862, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Street:", x: 70, y: 905, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Payment Details", x: 70, y: 953, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Payment Details", x: 70, y: 953, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
   { text: "Amount of Fee Paid:", x: 70, y: 1001, size: 13.5, weight: 400, family: FONT_LABEL },
 ];
 
@@ -141,7 +141,7 @@ export async function renderBusinessLicenseCanvas(
   const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.licenseFee) || 0);
-  const valueStyle = { size: 14, weight: 500, family: FONT_SANS, color: "#0b0b0b", maxWidth: 600 };
+  const valueStyle = { size: 14, weight: 600, family: FONT_SANS, color: "#050505", maxWidth: 600 };
   const titleCase = (value: string) => value.trim().toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#58b9d1", align: "center", maxWidth: 920 }, `B.L. NO : ${licenseNumber || "—"}`);
