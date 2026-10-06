@@ -37,14 +37,14 @@ export const TIN_TEMPLATE = {
   numberTitle: { x: 506, y: 435, fontSize: 24, weight: 700 },
   certify: { x: 506, y: 510, fontSize: 27, weight: 700 },
   taxpayer: { x: 506, y: 570, fontSize: 23, weight: 700, align: "center" },
-  assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
+  assigned: { x: 506, y: 690, fontSize: 17, weight: 700 },
   tinValue: { x: 506, y: 688, fontSize: 25, weight: 700, align: "center" },
-  effectValue: { x: 470, y: 750, fontSize: 15, weight: 400, align: "center" },
-  locationValue: { x: 370, y: 799.5, fontSize: 15, weight: 400 },
-  officeValue: { x: 700, y: 500, fontSize: 15, weight: 400 },
-  physicalValue: { x: 385, y: 840, fontSize: 15, weight: 400 },
-  streetValue: { x: 390, y: 875, fontSize: 15, weight: 400 },
-  commissioner: { x: 750, y: 1000, fontSize: 16, weight: 700, align: "center" },
+  effectValue: { x: 470, y: 750, fontSize: 15, weight: 700, align: "center" },
+  locationValue: { x: 370, y: 799.8, fontSize: 15, weight: 700 },
+  officeValue: { x: 700, y: 500, fontSize: 15, weight: 700 },
+  physicalValue: { x: 385, y: 840, fontSize: 15, weight: 700 },
+  streetValue: { x: 390, y: 875, fontSize: 15, weight: 700 },
+  commissioner: { x: 765, y: 1000, fontSize: 16, weight: 600, align: "center" },
 } as const;
 
 const assetUrl = (name: string) => import.meta.env.BASE_URL + "tin-assets/" + name;
