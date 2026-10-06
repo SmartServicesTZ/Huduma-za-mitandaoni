@@ -138,7 +138,7 @@ export async function renderBusinessLicenseCanvas(
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
   staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
 
-  const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
+  const owner = form.applicantName.trim().replace(/\s+/g, " ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.licenseFee) || 0);
   const valueStyle = { size: 14, weight: 600, family: FONT_SANS, color: "#050505", maxWidth: 600 };
