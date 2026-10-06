@@ -66,7 +66,7 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   ctx.restore();
 }
 
-// Template position/size settings are intentionally kept here in code (not in the website UI).
+// Template position/size settings are intentionally kept here in code (not in the website UI).\nconst DYNAMIC_TEXT_Y_OFFSET = 10;
 const DEFAULT_LICENSE_LAYOUT = {
   nameX: 35.1, nameY: 35.0, nameSize: 14, numberX: 50, numberY: 19.6, numberSize: 18,
   officeX: 35.1, officeY: 28.5, officeSize: 14, tinX: 35.1, tinY: 31.6, tinSize: 14,
@@ -121,7 +121,7 @@ export async function renderBusinessLicenseCanvas(
   const amount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number(form.licenseFee) || 0);
   const valueStyle = { size: 14, weight: 700, color: "#111827", maxWidth: 600 };
 
-  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT, size: layout.numberSize, weight: 700, color: "#00b0d8", align: "center", maxWidth: 920 }, `B.L. NO: ${licenseNumber || "—"}`);
+  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#00b0d8", align: "center", maxWidth: 920 }, `B.L. NO: ${licenseNumber || "—"}`);
   drawText(ctx, { x: layout.officeX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.officeY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT, ...valueStyle, size: layout.officeSize }, "DAR ES SALAAM CITY COUNCIL");
   drawText(ctx, { x: layout.tinX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.tinY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT, ...valueStyle, size: layout.tinSize }, form.tin);
   drawText(ctx, { x: layout.nameX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.nameY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT, ...valueStyle, size: layout.nameSize }, owner);
