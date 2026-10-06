@@ -130,7 +130,10 @@ export async function renderBusinessLicenseCanvas(
   const template = await loadImage(assetUrl("business-license-template.png"));
   const layout = DEFAULT_LICENSE_LAYOUT;
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
+  ctx.save();
+  ctx.filter = "contrast(1.14) brightness(1.03)";
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
+  ctx.restore();
   staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
 
   const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
