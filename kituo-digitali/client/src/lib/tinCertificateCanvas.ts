@@ -38,7 +38,7 @@ export const TIN_TEMPLATE = {
   certify: { x: 506, y: 510, fontSize: 27, weight: 700 },
   taxpayer: { x: 506, y: 570, fontSize: 23, weight: 700, align: "center" },
   assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
-  tinValue: { x: 506, y: 730, fontSize: 25, weight: 700, align: "center" },
+  tinValue: { x: 506, y: 710, fontSize: 25, weight: 700, align: "center" },
   effectLabel: { x: 150, y: 835, fontSize: 15, weight: 700 },
   effectValue: { x: 506, y: 835, fontSize: 15, weight: 400, align: "center" },
   locationLabel: { x: 150, y: 875, fontSize: 15, weight: 700 },
