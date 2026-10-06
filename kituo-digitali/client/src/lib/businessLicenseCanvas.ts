@@ -86,7 +86,7 @@ const DEFAULT_LICENSE_LAYOUT = {
   issueX: 35.1, issueY: 44.73, issueSize: 14, expiryX: 35.1, expiryY: 48.19, expirySize: 14,
   branchX: 35.1, branchY: 51.6, branchSize: 14, regionX: 35.1, regionY: 58.6, regionSize: 14,
   wardX: 35.1, wardY: 61.65, wardSize: 14, streetX: 35.1, streetY: 65.45, streetSize: 14,
-  amountX: 35.1, amountY: 70.42, amountSize: 14, qrX: 65.2, qrY: 67.5, qrSize: 220,
+  amountX: 35.1, amountY: 70.42, amountSize: 14, qrX: 65.2, qrY: 62.5, qrSize: 220,
 };
 
 const FONT_SANS = '"Roboto", "Arial Narrow", Arial, sans-serif';
@@ -99,14 +99,14 @@ const staticText: TextItem[] = [
   { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 900, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, family: FONT_SERIF, align: "center", maxWidth: 850 },
   { text: "License Details", x: 45, y: 360, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Issuing office", x: 75, y: 373.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Tax Identification No.:", x: 75, y: 413.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "License Issued To:", x: 75, y: 455.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "For the Business Of:", x: 75, y: 498.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Business Licensing:", x: 75, y: 541.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Date of Issue:", x: 75, y: 581.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Expiring Date:", x: 75, y: 626.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Principal / Branch:", x: 75, y: 668.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Issuing office", x: 75, y: 393.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Tax Identification No.:", x: 75, y: 433.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "License Issued To:", x: 75, y: 475.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "For the Business Of:", x: 75, y: 518.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Licensing:", x: 75, y: 561.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Date of Issue:", x: 75, y: 601.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Expiring Date:", x: 75, y: 646.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Principal / Branch:", x: 75, y: 688.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "Business Location", x: 45, y: 721, size: 20, weight: 600, family: FONT_SANS },
   { text: "Region:", x: 75, y: 761.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "Ward:", x: 75, y: 801.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
@@ -138,7 +138,7 @@ export async function renderBusinessLicenseCanvas(
   const amount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number(form.licenseFee) || 0);
   const valueStyle = { size: 14, weight: 400, family: FONT_SANS, color: "#111827", maxWidth: 600 };
 
-  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 400, family: FONT_MONO, color: "#00b0d8", align: "center", maxWidth: 920 }, `B.L. NO: ${licenseNumber || "—"}`);
+  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#00b0d8", align: "center", maxWidth: 920 }, `B.L. NO: ${licenseNumber || "—"}`);
   drawText(ctx, { x: layout.officeX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.officeY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.officeSize }, "DAR ES SALAAM CITY COUNCIL");
   drawText(ctx, { x: layout.tinX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.tinY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.tinSize }, form.tin);
   drawText(ctx, { x: layout.nameX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.nameY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.nameSize }, owner);
@@ -165,7 +165,7 @@ export async function renderBusinessLicenseCanvas(
     const centerY = qrY + qrSize / 2;
 
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+    ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
     ctx.save();
     ctx.beginPath();
