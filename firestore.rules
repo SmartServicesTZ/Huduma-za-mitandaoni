@@ -168,7 +168,7 @@ service cloud.firestore {
       allow delete: if false;
     }
     match /messages/{id} {
-      allow read: if accountMayRead() && (isAdmin() || resource.data.recipientId == request.auth.uid);
+      allow read: if accountMayRead() && (isAdmin() || resource.data.recipientId == request.auth.uid || resource.data.get('broadcast', false) == true);
       allow create, update, delete: if false;
     }
     match /publicChatMessages/{messageId} {

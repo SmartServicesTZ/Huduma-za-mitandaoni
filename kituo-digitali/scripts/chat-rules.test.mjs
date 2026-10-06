@@ -101,6 +101,29 @@ test("blocked accounts can read their own restriction notice but cannot access p
   await assertFails(uploadBytes(ref(member("blocked-user").storage(), "publicChatFiles/blocked-user/blocked.txt"), new Uint8Array([1]), { contentType: "text/plain" }));
 });
 
+test("broadcast notifications reach all readable accounts while personal messages stay private", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, "messages", "all-users-notice"), {
+      subject: "Taarifa kwa wote", body: "Ujumbe wa jumla", broadcast: true, recipientId: "", type: "adminMessage",
+    });
+    await setDoc(doc(db, "messages", "alice-only-notice"), {
+      subject: "Taarifa binafsi", body: "Ujumbe wa Alice", recipientId: "alice", type: "adminMessage",
+    });
+  });
+  const aliceDb = member("alice").firestore();
+  const bobDb = member("bob").firestore();
+  const aliceBroadcasts = await assertSucceeds(getDocs(query(collection(aliceDb, "messages"), where("broadcast", "==", true))));
+  const bobBroadcasts = await assertSucceeds(getDocs(query(collection(bobDb, "messages"), where("broadcast", "==", true))));
+  assert.equal(aliceBroadcasts.size, 1);
+  assert.equal(bobBroadcasts.size, 1);
+  assert.equal(aliceBroadcasts.docs[0].data().subject, "Taarifa kwa wote");
+  const alicePrivate = await assertSucceeds(getDocs(query(collection(aliceDb, "messages"), where("recipientId", "==", "alice"))));
+  assert.equal(alicePrivate.size, 1);
+  await assertFails(getDoc(doc(bobDb, "messages", "alice-only-notice")));
+  await assertFails(getDocs(collection(bobDb, "messages")));
+});
+
 test("read-only accounts can read but cannot edit profiles, post chat, or submit service requests", async () => {
   await env.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), "users", "readonly-user"), {

@@ -34,6 +34,7 @@ import {
   updateDoc,
   where,
   type DocumentData,
+  type QuerySnapshot,
 } from "firebase/firestore";
 import type { ServiceFormField, ServiceFormValues } from "../../../shared/serviceForms";
 import { omitUndefinedFields } from "../../../shared/omitUndefinedFields";
@@ -664,8 +665,24 @@ export function subscribeUserServiceApplications(uid: string, callback: (rows: S
 }
 
 export function subscribeUserMessages(uid: string, callback: (rows: Array<Record<string, unknown> & { id: string }>) => void, onError?: (error: unknown) => void) {
-  const userQuery = query(collection(firestore, "messages"), where("recipientId", "==", uid));
-  return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")))), onError);
+  const messages = collection(firestore, "messages");
+  const personalQuery = query(messages, where("recipientId", "==", uid));
+  const broadcastQuery = query(messages, where("broadcast", "==", true));
+  const personalRows = new Map<string, Record<string, unknown> & { id: string }>();
+  const broadcastRows = new Map<string, Record<string, unknown> & { id: string }>();
+  const emit = () => {
+    const rows = new Map(personalRows);
+    broadcastRows.forEach((row, id) => { if (!rows.has(id)) rows.set(id, row); });
+    callback(Array.from(rows.values()).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))));
+  };
+  const updateRows = (target: Map<string, Record<string, unknown> & { id: string }>, snapshot: QuerySnapshot<DocumentData>) => {
+    target.clear();
+    for (const item of snapshot.docs) target.set(item.id, { id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) });
+    emit();
+  };
+  const unsubscribePersonal = onSnapshot(personalQuery, (snapshot) => updateRows(personalRows, snapshot), onError);
+  const unsubscribeBroadcast = onSnapshot(broadcastQuery, (snapshot) => updateRows(broadcastRows, snapshot), onError);
+  return () => { unsubscribePersonal(); unsubscribeBroadcast(); };
 }
 
 export type ChatUser = { uid: string; name: string; phone: string };

@@ -187,12 +187,16 @@ try {
     await setDoc(doc(testContext.firestore(), "messages", "e2e-account-restriction"), {
       recipientId: registeredUid, subject: "Taarifa ya kufungiwa", body: "Ujumbe maalum wa arifa ya jaribio.", type: "accountRestriction", createdAt: serverTimestamp(),
     });
+    await setDoc(doc(testContext.firestore(), "messages", "e2e-all-users-broadcast"), {
+      recipientId: "", broadcast: true, subject: "Arifa kwa watumiaji wote", body: "Ujumbe wa jumla wa jaribio.", type: "adminMessage", createdAt: serverTimestamp(),
+    });
   });
   await page.reload();
   await page.locator(".header-user").waitFor({ state: "visible" });
   await page.goto(`${appUrl}/account`);
   await page.getByText("Ujumbe maalum wa arifa ya jaribio.", { exact: true }).waitFor({ state: "visible" });
-  console.log("PASS 11: account notification inbox displays the restriction message");
+  await page.getByText("Ujumbe wa jumla wa jaribio.", { exact: true }).waitFor({ state: "visible" });
+  console.log("PASS 11: account notification inbox displays personal and all-users broadcast messages");
 
   await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
     await updateDoc(doc(testContext.firestore(), "users", registeredUid), { mustChangePassword: true });
