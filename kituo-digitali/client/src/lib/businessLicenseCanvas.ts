@@ -153,14 +153,14 @@ export async function renderBusinessLicenseCanvas(
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 40;
+    const logoSize = 48;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = "#000000";
     ctx.fillRect(centerX - logoSize / 2 - 4, centerY - logoSize / 2 - 4, logoSize + 8, logoSize + 8);
     ctx.save();
     ctx.beginPath();
