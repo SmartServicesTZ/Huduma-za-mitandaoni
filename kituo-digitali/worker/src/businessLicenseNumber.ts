@@ -1,1 +1,5 @@
-export function generateRandomBusinessLicenseNumber() {\n  const values = new Uint32Array(7);\n  crypto.getRandomValues(values);\n  return Array.from(values, (value) => String(value % 1000).padStart(3, "0")).join("-");\n}\n
+export function generateRandomBusinessLicenseNumber() {
+  const values = new Uint32Array(7);
+  crypto.getRandomValues(values);
+  return Array.from(values, (value) => String(value % 1000).padStart(3, "0")).join("-");
+}
