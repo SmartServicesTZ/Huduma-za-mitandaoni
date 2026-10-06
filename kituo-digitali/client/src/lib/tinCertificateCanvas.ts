@@ -36,11 +36,11 @@ export const TIN_TEMPLATE = {
   subtitle: { x: 506, y: 365, fontSize: 25, weight: 400 },
   numberTitle: { x: 506, y: 435, fontSize: 24, weight: 700 },
   certify: { x: 506, y: 510, fontSize: 27, weight: 700 },
-  taxpayer: { x: 480, y: 620, fontSize: 23, weight: 700 },
+  taxpayer: { x: 506, y: 620, fontSize: 23, weight: 700, align: "center" },
   assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
-  tinValue: { x: 506, y: 760, fontSize: 25, weight: 700 },
+  tinValue: { x: 506, y: 760, fontSize: 25, weight: 700, align: "center" },
   effectLabel: { x: 150, y: 835, fontSize: 15, weight: 700 },
-  effectValue: { x: 390, y: 835, fontSize: 15, weight: 400 },
+  effectValue: { x: 506, y: 835, fontSize: 15, weight: 400, align: "center" },
   locationLabel: { x: 150, y: 875, fontSize: 15, weight: 700 },
   locationValue: { x: 390, y: 875, fontSize: 15, weight: 400 },
   officeLabel: { x: 150, y: 915, fontSize: 15, weight: 700 },
@@ -49,7 +49,7 @@ export const TIN_TEMPLATE = {
   physicalValue: { x: 390, y: 955, fontSize: 15, weight: 400 },
   streetLabel: { x: 150, y: 995, fontSize: 15, weight: 700 },
   streetValue: { x: 390, y: 995, fontSize: 15, weight: 400 },
-  commissioner: { x: 795, y: 1110, fontSize: 16, weight: 700 },
+  commissioner: { x: 795, y: 1075, fontSize: 16, weight: 700, align: "center" },
 } as const;
 
 const assetUrl = (name: string) => import.meta.env.BASE_URL + "tin-assets/" + name;
@@ -83,7 +83,7 @@ function text(ctx: CanvasRenderingContext2D, style: TextStyle, value: string) {
 function dateText(value: string) {
   if (!value) return "—";
   const [year, month, day] = value.split("-");
-  return day + "/" + month + "/" + year;
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];\n  const suffix = day === "1" ? "(st)" : day === "2" ? "(nd)" : day === "3" ? "(rd)" : "(th)";\n  return Number(day) + suffix + " " + monthNames[Number(month) - 1] + " " + year;
 }
 
 function drawDefaultBackground(ctx: CanvasRenderingContext2D) {
@@ -129,7 +129,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   if (form.tin) {
     const qr = await QRCode.toDataURL(JSON.stringify({ tin: form.tin, name: form.name, date: form.effectDate }), { width: 240, margin: 1, errorCorrectionLevel: "M" });
     const qrImage = await loadImage(qr);
-    ctx.drawImage(qrImage, 735, 855, 110, 110);
+    ctx.drawImage(qrImage, 835, 105, 105, 105);
   }
 
   text(ctx, pos("commissioner"), form.commissioner);
