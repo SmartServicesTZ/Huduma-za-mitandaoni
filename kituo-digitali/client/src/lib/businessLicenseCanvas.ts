@@ -36,7 +36,6 @@ const LICENSE_HC = "6B87892F9074A360C1D081BF05E76FC3F26D40E48BE363FBD52645A43714
 function loadImage(src: string): Promise<HTMLImageElement> {
   const cached = imageCache.get(src);
   if (cached) return cached;
-
   const promise = new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
@@ -67,7 +66,6 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   ctx.restore();
 }
 
-
 // Template position/size settings are intentionally kept here in code (not in the website UI).
 const DEFAULT_LICENSE_LAYOUT = {
   nameX: 35.1, nameY: 35.0, nameSize: 14, numberX: 50, numberY: 19.6, numberSize: 18,
@@ -76,8 +74,9 @@ const DEFAULT_LICENSE_LAYOUT = {
   issueX: 35.1, issueY: 45.0, issueSize: 14, expiryX: 35.1, expiryY: 48.35, expirySize: 14,
   branchX: 35.1, branchY: 51.6, branchSize: 14, regionX: 35.1, regionY: 58.6, regionSize: 14,
   wardX: 35.1, wardY: 61.65, wardSize: 14, streetX: 35.1, streetY: 65.45, streetSize: 14,
-  amountX: 35.1, amountY: 70.9, amountSize: 14, qrX: 69.17, qrY: 58.46, qrSize: 150,
+  amountX: 35.1, amountY: 70.9, amountSize: 14, qrX: 65.2, qrY: 56.2, qrSize: 220,
 };
+
 const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 185, size: 20, weight: 700, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 220, size: 20, weight: 700, align: "center", maxWidth: 900 },
@@ -117,11 +116,7 @@ export async function renderBusinessLicenseCanvas(
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
   staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
 
-  const owner = [form.firstName, form.middleName, form.lastName]
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .join(" ")
-    .toUpperCase();
+  const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number(form.licenseFee) || 0);
   const valueStyle = { size: 14, weight: 700, color: "#111827", maxWidth: 600 };
@@ -143,20 +138,20 @@ export async function renderBusinessLicenseCanvas(
   const qrReady = Boolean(licenseNumber && /^\d{3}-\d{3}-\d{3}$/.test(form.tin) && expiryDate);
   if (qrReady) {
     const qrData = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc: LICENSE_HC });
-    const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 700 });
+    const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 900 });
     const [qrImage, logo] = await Promise.all([loadImage(qrUrl), loadImage(assetUrl("tausi-logo.png"))]);
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 28;
+    const logoSize = 24;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
+    ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
+    ctx.fillRect(centerX - logoSize / 2 - 2, centerY - logoSize / 2 - 2, logoSize + 4, logoSize + 4);
     ctx.save();
     ctx.beginPath();
     ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
