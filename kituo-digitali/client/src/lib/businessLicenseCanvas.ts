@@ -81,7 +81,7 @@ const BL_NO_SIZE = 18;
 const DYNAMIC_TEXT_Y_OFFSET = 0;
 const DEFAULT_LICENSE_LAYOUT = {
   nameX: 35.1, nameY: 41.96, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
-  officeX: 35.1, officeY: 25.65, officeSize: 14, tinX: 35.1, tinY: 38.73, tinSize: 14,
+  officeX: 35.1, officeY: 40.65, officeSize: 14, tinX: 35.1, tinY: 38.73, tinSize: 14,
   businessX: 35.1, businessY: 45.04, businessSize: 14, typeX: 35.1, typeY: 48.34, typeSize: 14,
   issueX: 35.1, issueY: 51.65, issueSize: 14, expiryX: 35.1, expiryY: 55.11, expirySize: 14,
   branchX: 35.1, branchY: 58.52, branchSize: 14, regionX: 35.1, regionY: 64.2, regionSize: 14,
