@@ -111,8 +111,8 @@ const staticText: TextItem[] = [
   { text: "Region:", x: 75, y: 821, size: 11, weight: 450, family: FONT_SANS_LIGHT },
   { text: "Ward:", x: 75, y: 861, size: 11, weight: 450, family: FONT_SANS_LIGHT },
   { text: "Street:", x: 75, y: 901, size: 11, weight: 450, family: FONT_SANS_LIGHT },
-  { text: "Payment Details", x: 45, y: 949, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Amount of Fee Paid:", x: 75, y: 978, size: 11, weight: 450, family: FONT_SANS_LIGHT },
+  { text: "Payment Details", x: 45, y: 955, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Amount of Fee Paid:", x: 75, y: 985, size: 11, weight: 450, family: FONT_SANS_LIGHT },
 ];
 
 export async function renderBusinessLicenseCanvas(
