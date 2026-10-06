@@ -60,6 +60,10 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   if (!text) return;
   ctx.save();
   ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Arial, sans-serif"}`;
+  if (item.family === FONT_LABEL) {
+    const textCtx = ctx as CanvasRenderingContext2D & { fontStretch?: string };
+    if ("fontStretch" in textCtx) textCtx.fontStretch = "condensed";
+  }
   ctx.fillStyle = item.color ?? "#111827";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
@@ -91,6 +95,7 @@ const DEFAULT_LICENSE_LAYOUT = {
 
 const FONT_SANS = 'Arial, Helvetica, sans-serif';
 const FONT_SANS_LIGHT = 'Arial, Helvetica, sans-serif';
+const FONT_LABEL = '"Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif';
 const FONT_MONO = '"Courier New", monospace';
 const FONT_SERIF = '"Times New Roman", Times, serif';
 
@@ -99,20 +104,20 @@ const staticText: TextItem[] = [
   { text: "BUSINESS LICENSE", x: 506, y: 246, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 329, size: 14, weight: 400, family: FONT_SERIF, align: "center", maxWidth: 850 },
   { text: "License Details", x: 70, y: 361, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Issuing Office:", x: 70, y: 412, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "Tax Identification No.:", x: 70, y: 452, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "License Issued To:", x: 70, y: 496, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "For the Business Of:", x: 70, y: 538, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "Business Licensing:", x: 70, y: 584, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "Date of Issue:", x: 70, y: 625, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "Expiring Date:", x: 70, y: 671, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "Principal/Branch:", x: 70, y: 707, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
+  { text: "Issuing Office:", x: 70, y: 412, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Tax Identification No.:", x: 70, y: 452, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "License Issued To:", x: 70, y: 496, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "For the Business Of:", x: 70, y: 538, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Business Licensing:", x: 70, y: 584, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Date of Issue:", x: 70, y: 625, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Expiring Date:", x: 70, y: 671, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Principal/Branch:", x: 70, y: 707, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Business Location", x: 70, y: 772, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Region:", x: 70, y: 820, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "Ward:", x: 70, y: 862, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
-  { text: "Street:", x: 70, y: 905, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
+  { text: "Region:", x: 70, y: 820, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Ward:", x: 70, y: 862, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "Street:", x: 70, y: 905, size: 13.5, weight: 400, family: FONT_LABEL },
   { text: "Payment Details", x: 70, y: 953, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Amount of Fee Paid:", x: 70, y: 1001, size: 13.5, weight: 500, family: FONT_SANS_LIGHT },
+  { text: "Amount of Fee Paid:", x: 70, y: 1001, size: 13.5, weight: 400, family: FONT_LABEL },
 ];
 
 export async function renderBusinessLicenseCanvas(
@@ -130,10 +135,7 @@ export async function renderBusinessLicenseCanvas(
   const template = await loadImage(assetUrl("business-license-template.png"));
   const layout = DEFAULT_LICENSE_LAYOUT;
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
-  ctx.save();
-  ctx.filter = "contrast(1.14) brightness(1.03)";
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
-  ctx.restore();
   staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
 
   const owner = [form.firstName, form.middleName, form.lastName].map((name) => name.trim()).filter(Boolean).join(" ").toUpperCase();
