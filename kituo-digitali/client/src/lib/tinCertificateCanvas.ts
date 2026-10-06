@@ -42,7 +42,7 @@ export const TIN_TEMPLATE = {
   effectLabel: { x: 150, y: 650, fontSize: 15, weight: 700 },
   effectValue: { x: 506, y: 650, fontSize: 15, weight: 400, align: "center" },
   locationLabel: { x: 150, y: 700, fontSize: 15, weight: 700 },
-  locationValue: { x: 390, y: 700, fontSize: 15, weight: 400 },
+  locationValue: { x: 390, y: 670, fontSize: 15, weight: 400 },
   officeLabel: { x: 150, y: 915, fontSize: 15, weight: 700 },
   officeValue: { x: 390, y: 915, fontSize: 15, weight: 400 },
   physicalLabel: { x: 150, y: 955, fontSize: 15, weight: 700 },
