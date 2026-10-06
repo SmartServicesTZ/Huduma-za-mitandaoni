@@ -39,7 +39,7 @@ export const TIN_TEMPLATE = {
   taxpayer: { x: 506, y: 570, fontSize: 23, weight: 700, align: "center" },
   assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
   tinValue: { x: 506, y: 688, fontSize: 25, weight: 700, align: "center" },
-  effectValue: { x: 485, y: 750, fontSize: 15, weight: 400, align: "center" },
+  effectValue: { x: 470, y: 750, fontSize: 15, weight: 400, align: "center" },
   locationValue: { x: 370, y: 799.5, fontSize: 15, weight: 400 },
   officeValue: { x: 390, y: 915, fontSize: 15, weight: 400 },
   physicalValue: { x: 390, y: 955, fontSize: 15, weight: 400 },
