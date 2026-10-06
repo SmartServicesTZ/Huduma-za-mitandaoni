@@ -46,7 +46,7 @@ export default function TINCertificatePage() {
     setBusy(true);
     try {
       const output = document.createElement("canvas");
-      await renderTinCertificateCanvas(form, output, layout);
+      await renderTinCertificateCanvas(form, output);
       const link = document.createElement("a");
       link.download = "tin-preview.png";
       link.href = output.toDataURL("image/png");
