@@ -143,12 +143,12 @@ export async function renderBusinessLicenseCanvas(
   const qrReady = Boolean(licenseNumber && /^\d{3}-\d{3}-\d{3}$/.test(form.tin) && expiryDate);
   if (qrReady) {
     const qrData = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc: LICENSE_HC });
-    const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 1, width: 700 });
+    const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 700 });
     const [qrImage, logo] = await Promise.all([loadImage(qrUrl), loadImage(assetUrl("tausi-logo.png"))]);
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 45;
+    const logoSize = 28;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
