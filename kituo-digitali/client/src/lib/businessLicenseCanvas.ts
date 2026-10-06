@@ -86,7 +86,7 @@ const DEFAULT_LICENSE_LAYOUT = {
   issueX: 35.1, issueY: 48.23, issueSize: 14, expiryX: 35.1, expiryY: 51.38, expirySize: 14,
   branchX: 35.1, branchY: 54.54, branchSize: 14, regionX: 35.1, regionY: 64.2, regionSize: 14,
   wardX: 35.1, wardY: 67.0, wardSize: 14, streetX: 35.1, streetY: 70.0, streetSize: 14,
-  amountX: 35.1, amountY: 73.1, amountSize: 14, qrX: 65.2, qrY: 67.0, qrSize: 220,
+  amountX: 35.1, amountY: 73.72, amountSize: 14, qrX: 65.2, qrY: 67.0, qrSize: 220,
 };
 
 const FONT_SANS = '"Roboto", "Arial Narrow", Arial, sans-serif';
@@ -112,7 +112,7 @@ const staticText: TextItem[] = [
   { text: "Ward:", x: 75, y: 861, size: 11, weight: 450, family: FONT_SANS_LIGHT },
   { text: "Street:", x: 75, y: 901, size: 11, weight: 450, family: FONT_SANS_LIGHT },
   { text: "Payment Details", x: 45, y: 955, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Amount of Fee Paid:", x: 75, y: 985, size: 11, weight: 450, family: FONT_SANS_LIGHT },
+  { text: "Amount of Fee Paid:", x: 75, y: 993, size: 11, weight: 450, family: FONT_SANS_LIGHT },
 ];
 
 export async function renderBusinessLicenseCanvas(
