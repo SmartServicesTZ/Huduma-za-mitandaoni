@@ -963,12 +963,12 @@ function cleanText(value: unknown, label: string, max = 180) {
   return value.trim();
 }
 
-const BUSINESS_LICENSE_PREFIX = "BL01396902025-26000";
-const BUSINESS_LICENSE_COUNTER_ID = "BL01396902025-26000";
-const FIRST_BUSINESS_LICENSE_SUFFIX = 35809;
+const BUSINESS_LICENSE_PREFIX = "BL01699682026-270000";
+const BUSINESS_LICENSE_COUNTER_ID = "BL01699682026-270000";
+const FIRST_BUSINESS_LICENSE_SUFFIX = 349;
 
 function formatBusinessLicenseNumber(suffix: number) {
-  return `${BUSINESS_LICENSE_PREFIX}${String(suffix).padStart(5, "0")}`;
+  return `${BUSINESS_LICENSE_PREFIX}${String(suffix).padStart(4, "0")}`;
 }
 function titleCaseLocation(value: string) {
   return value.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
@@ -1035,7 +1035,7 @@ export const reserveBusinessLicenseNumber = callable(async (request) => {
     const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
     const counterSnapshot = await transaction.get(counterRef);
     const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
-    if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 99999) throw new ApiError("resource-exhausted", "Namba za leseni zimejaa.");
+    if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 9999) throw new ApiError("resource-exhausted", "Namba za leseni zimejaa.");
     licenseNumber = formatBusinessLicenseNumber(nextSuffix);
     transaction.create(reservationRef, { reservationId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
     transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
