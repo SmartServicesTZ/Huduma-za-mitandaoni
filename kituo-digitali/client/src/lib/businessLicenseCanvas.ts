@@ -1,5 +1,4 @@
 import QRCode from "qrcode";
-import { getPublicLicenseTemplateSettings } from "@/lib/firebase";
 
 export const BUSINESS_LICENSE_CANVAS_WIDTH = 1012;
 export const BUSINESS_LICENSE_CANVAS_HEIGHT = 1300;
@@ -78,17 +77,6 @@ const DEFAULT_LICENSE_LAYOUT = {
   wardX: 35.1, wardY: 61.65, wardSize: 14, streetX: 35.1, streetY: 65.45, streetSize: 14,
   amountX: 35.1, amountY: 70.9, amountSize: 14, qrX: 69.17, qrY: 58.46, qrSize: 150,
 };
-function num(v: unknown, fallback: number) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
-async function getLicenseLayout() {
-  try {
-    const settings = await getPublicLicenseTemplateSettings();
-    const raw = (settings as any)?.license ?? (settings as any)?.templateLayouts?.license ?? settings ?? {};
-    const out: any = { ...DEFAULT_LICENSE_LAYOUT };
-    for (const key of Object.keys(DEFAULT_LICENSE_LAYOUT)) out[key] = num(raw?.[key], out[key]);
-    return out;
-  } catch { return { ...DEFAULT_LICENSE_LAYOUT }; }
-}
-
 const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 185, size: 20, weight: 700, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 220, size: 20, weight: 700, align: "center", maxWidth: 900 },
@@ -123,7 +111,7 @@ export async function renderBusinessLicenseCanvas(
   if (!ctx) throw new Error("Kivinjari hakikuweza kuandaa muonekano wa hati.");
 
   const template = await loadImage(assetUrl("business-license-template.png"));
-  const layout = await getLicenseLayout();
+  const layout = DEFAULT_LICENSE_LAYOUT;
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
   staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
