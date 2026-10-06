@@ -79,12 +79,12 @@ const BL_NO_SIZE = 18;
 const DYNAMIC_TEXT_Y_OFFSET = 0;
 const DEFAULT_LICENSE_LAYOUT = {
   nameX: 35.1, nameY: 35.0, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
-  officeX: 35.1, officeY: 28.5, officeSize: 14, tinX: 35.1, tinY: 31.6, tinSize: 14,
-  businessX: 35.1, businessY: 38.4, businessSize: 14, typeX: 35.1, typeY: 41.8, typeSize: 14,
-  issueX: 35.1, issueY: 45.0, issueSize: 14, expiryX: 35.1, expiryY: 48.35, expirySize: 14,
+  officeX: 35.1, officeY: 31.04, officeSize: 14, tinX: 35.1, tinY: 34.12, tinSize: 14,
+  businessX: 35.1, businessY: 40.42, businessSize: 14, typeX: 35.1, typeY: 43.96, typeSize: 14,
+  issueX: 35.1, issueY: 47.04, issueSize: 14, expiryX: 35.1, expiryY: 50.5, expirySize: 14,
   branchX: 35.1, branchY: 51.6, branchSize: 14, regionX: 35.1, regionY: 58.6, regionSize: 14,
   wardX: 35.1, wardY: 61.65, wardSize: 14, streetX: 35.1, streetY: 65.45, streetSize: 14,
-  amountX: 35.1, amountY: 70.9, amountSize: 14, qrX: 65.2, qrY: 56.2, qrSize: 220,
+  amountX: 35.1, amountY: 72.73, amountSize: 14, qrX: 65.2, qrY: 56.2, qrSize: 220,
 };
 
 const staticText: TextItem[] = [
