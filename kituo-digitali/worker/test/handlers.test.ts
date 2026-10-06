@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
-import { changeOwnPassword, claimRegistrationPhone, enforceAccountRestriction } from "../src/handlers.js";
+import { changeOwnPassword, claimRegistrationPhone, enforceAccountRestriction, setAccountStatus } from "../src/handlers.js";
 import { withWorkerEnv, type WorkerEnv } from "../src/runtime.js";
 
 const phone = "255712345678";
@@ -35,9 +35,10 @@ function firestoreDocument(path: string, fields: Record<string, unknown>) {
 }
 
 async function withMockedGoogleFetch(
-  profile: { uid?: string; phone?: string; role?: string; mustChangePassword?: boolean; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string } | null,
+  profile: { uid?: string; phone?: string; role?: string; mustChangePassword?: boolean; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string } | null,
   registryUid: string | null,
   callback: (calls: Array<{ url: string; method: string; body: Record<string, any> }>) => Promise<unknown>,
+  extraProfiles: Record<string, { uid?: string; phone?: string; role?: string; mustChangePassword?: boolean; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string }> = {},
 ) {
   const originalFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string; body: Record<string, any> }> = [];
@@ -57,15 +58,19 @@ async function withMockedGoogleFetch(
         ? jsonResponse(firestoreDocument(`phoneRegistry/${phone}`, { uid: registryUid, phone }))
         : jsonResponse({ error: { status: "NOT_FOUND", message: "not found" } }, 404);
     }
-    if (url.includes(`/users/${uid}`) && profile) {
-      return jsonResponse(firestoreDocument(`users/${uid}`, {
-        phone: profile.phone ?? phone,
-        role: profile.role ?? "user",
-        mustChangePassword: profile.mustChangePassword ?? false,
-        accountStatus: profile.accountStatus,
-        accessMode: profile.accessMode,
-        allowedActions: profile.allowedActions,
-        restrictionReason: profile.restrictionReason,
+    const userId = /\/documents\/users\/([^?]+)/.exec(url)?.[1];
+    if (userId) {
+      const userProfile = userId === uid ? profile : extraProfiles[userId];
+      if (!userProfile) return jsonResponse({ error: { status: "NOT_FOUND", message: "not found" } }, 404);
+      return jsonResponse(firestoreDocument(`users/${userId}`, {
+        phone: userProfile.phone ?? phone,
+        role: userProfile.role ?? "user",
+        mustChangePassword: userProfile.mustChangePassword ?? false,
+        accountStatus: userProfile.accountStatus,
+        accessMode: userProfile.accessMode,
+        allowedActions: userProfile.allowedActions,
+        restrictionReason: userProfile.restrictionReason,
+        restrictionMessage: userProfile.restrictionMessage,
       }));
     }
     throw new Error(`Unexpected mocked request: ${method} ${url}`);
@@ -128,6 +133,32 @@ test("central account restrictions deny blocked users and include their reason a
     );
     await assert.doesNotReject(withWorkerEnv(env, () => enforceAccountRestriction(uid, "syncAuthClaims")));
   });
+});
+
+test("setAccountStatus saves a custom user notice and atomically creates an in-app restriction notification", async () => {
+  const env = environment();
+  const targetUid = "restricted-user-99";
+  const notice = "Tafadhali wasiliana nasi ili tukusaidie kurekebisha taarifa zako.";
+  await withMockedGoogleFetch({ phone: "255698232313", role: "super_admin" }, null, async (calls) => {
+    const result = await withWorkerEnv(env, () => setAccountStatus.handler({
+      auth: { uid },
+      data: { userId: targetUid, accessMode: "denied", reason: "Taarifa zinahitaji uhakiki.", restrictionMessage: notice, allowedActions: [] },
+    }));
+    assert.deepEqual(result, { ok: true });
+    const commit = calls.find((call) => call.url.includes(":commit"));
+    assert.ok(commit);
+    const writes = commit.body.writes as Array<{ update?: { name?: string; fields?: Record<string, any> } }>;
+    const profileWrite = writes.find((write) => write.update?.name?.endsWith(`/users/${targetUid}`));
+    assert.equal(profileWrite?.update?.fields?.accessMode?.stringValue, "denied");
+    assert.equal(profileWrite?.update?.fields?.accountStatus?.stringValue, "blocked");
+    assert.equal(profileWrite?.update?.fields?.restrictionMessage?.stringValue, notice);
+    const notificationWrite = writes.find((write) => write.update?.name?.includes("/messages/"));
+    assert.equal(notificationWrite?.update?.fields?.recipientId?.stringValue, targetUid);
+    assert.equal(notificationWrite?.update?.fields?.type?.stringValue, "accountRestriction");
+    assert.ok(notificationWrite?.update?.fields?.body?.stringValue.includes(notice));
+    assert.ok(notificationWrite?.update?.fields?.body?.stringValue.includes("Sababu: Taarifa zinahitaji uhakiki."));
+    assert.ok(notificationWrite?.update?.fields?.body?.stringValue.includes("0698232313"));
+  }, { [targetUid]: { phone: "255712345678", role: "user" } });
 });
 
 test("read-only accounts may use read callables but cannot submit or perform actions", async () => {

@@ -127,6 +127,7 @@ export type FirebaseProfile = {
   accessMode?: AccountAccessMode;
   allowedActions?: AccountRestrictionAction[];
   restrictionReason?: string;
+  restrictionMessage?: string;
   restrictionUpdatedBy?: string;
   restrictionUpdatedAt?: unknown;
   language?: "sw" | "en";
@@ -409,7 +410,7 @@ export async function adminUpdateUser(adminId: string, userId: string, values: P
   } else if (values.accessMode !== undefined || values.accountStatus !== undefined) {
     const callable = createWorkerCall("setAccountStatus");
     const accessMode = values.accessMode ?? (values.accountStatus === "blocked" || values.accountStatus === "deleted" ? "denied" : "active");
-    await callable({ userId, accessMode, reason: values.restrictionReason ?? "", allowedActions: values.allowedActions ?? [] });
+    await callable({ userId, accessMode, reason: values.restrictionReason ?? "", restrictionMessage: values.restrictionMessage ?? "", allowedActions: values.allowedActions ?? [] });
   } else if (values.verificationStatus !== undefined) {
     const callable = createWorkerCall("verifyUser");
     await callable({ userId, status: values.verificationStatus });

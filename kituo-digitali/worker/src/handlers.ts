@@ -19,7 +19,7 @@ type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
-type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; name?: string; phone?: string; mustChangePassword?: boolean };
+type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; phone?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
@@ -881,12 +881,19 @@ export const setAccountStatus = callable(async (request) => {
   const mode = String(requestedMode);
   const reason = data.reason === undefined ? "" : typeof data.reason === "string" ? data.reason.trim().slice(0, 500) : null;
   if (reason === null) throw new ApiError("invalid-argument", "Sababu ya kufungia lazima iwe maandishi.");
+  const customMessage = data.restrictionMessage === undefined ? "" : typeof data.restrictionMessage === "string" ? data.restrictionMessage.trim().slice(0, 1000) : null;
+  if (customMessage === null) throw new ApiError("invalid-argument", "Ujumbe wa arifa lazima uwe maandishi.");
   const allowedActions = data.allowedActions === undefined ? [] : data.allowedActions;
   if (!Array.isArray(allowedActions) || allowedActions.some((action) => typeof action !== "string" || !accountRestrictionActions.includes(action as AccountRestrictionAction))) {
     throw new ApiError("invalid-argument", "Vitendo vilivyoruhusiwa si sahihi.");
   }
   if (mode === "limited" && allowedActions.length === 0) throw new ApiError("invalid-argument", "Chagua angalau kitendo kimoja, au tumia hali ya kusoma tu.");
   if (userId === uid) throw new ApiError("permission-denied", "Huwezi kubadilisha status ya akaunti yako mwenyewe.");
+  const defaultMessage = mode === "denied" ? "Akaunti yako imezuiwa kutumia mfumo kwa sasa."
+    : mode === "read_only" ? "Akaunti yako imewekwa kwenye hali ya kusoma tu."
+    : mode === "limited" ? "Akaunti yako imewekewa ruhusa maalum."
+    : "";
+  const userMessage = mode === "active" ? "" : customMessage || defaultMessage;
   const targetRef = db.collection("users").doc(userId);
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(targetRef);
@@ -899,14 +906,27 @@ export const setAccountStatus = callable(async (request) => {
       accessMode: mode,
       allowedActions: mode === "limited" ? allowedActions : [],
       restrictionReason: mode === "active" ? "" : reason,
+      restrictionMessage: userMessage,
       restrictionUpdatedBy: uid,
       restrictionUpdatedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
     transaction.update(targetRef, next);
+    if (mode !== "active") {
+      const messageSubject = mode === "denied" ? "Ufikiaji wa akaunti umezuiwa" : "Taarifa ya ufikiaji wa akaunti";
+      const messageBody = [userMessage, reason ? `Sababu: ${reason}` : "", "Kwa msaada, wasiliana na admin kupitia 0698232313."].filter(Boolean).join("\n\n");
+      transaction.create(db.collection("messages").doc(), {
+        recipientId: userId,
+        subject: messageSubject,
+        body: messageBody,
+        type: "accountRestriction",
+        accessMode: mode,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
     recordAudit(transaction, uid, String(actor.role), "SET_ACCOUNT_STATUS", "user", userId,
       { accessMode: resolveAccountAccessMode(target), reason: target.restrictionReason ?? "", allowedActions: target.allowedActions ?? [] },
-      { accessMode: mode, reason, allowedActions: next.allowedActions });
+      { accessMode: mode, reason, allowedActions: next.allowedActions, customNotice: Boolean(customMessage) });
     return { ok: true };
   });
 });

@@ -956,3 +956,6 @@ body{overflow-x:hidden;}
 .account-restriction-gate p{line-height:1.6}
 .account-restriction-gate a{color:#08723f;font-weight:900;text-decoration:underline}
 @media(max-width:640px){.restriction-filter-grid{grid-template-columns:1fr}.restriction-reason-preview{max-width:180px}}
+
+.restriction-custom-message{white-space:pre-wrap;overflow-wrap:anywhere}
+.account-notification p{white-space:pre-wrap}

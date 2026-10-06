@@ -173,19 +173,26 @@ try {
   console.log("PASS 9: read-only restriction is visible after auth refresh");
 
   await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
-    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { accessMode: "denied", accountStatus: "blocked", restrictionReason: "E2E full access restriction" });
+    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { accessMode: "denied", accountStatus: "blocked", restrictionReason: "E2E full access restriction", restrictionMessage: "Ujumbe maalum wa jaribio la kufungiwa." });
   });
   await page.reload();
   await page.getByRole("heading", { name: "Ufikiaji wa akaunti umezuiwa" }).waitFor({ state: "visible" });
   await page.getByText("E2E full access restriction", { exact: false }).waitFor({ state: "visible" });
+  await page.getByText("Ujumbe maalum wa jaribio la kufungiwa.", { exact: true }).waitFor({ state: "visible" });
   await page.getByRole("link", { name: "0698232313" }).waitFor({ state: "visible" });
-  console.log("PASS 10: full restriction blocks the portal and displays the admin reason and support contact");
+  console.log("PASS 10: full restriction blocks the portal and displays the custom message, reason and support contact");
 
   await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
-    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { accessMode: "active", accountStatus: "active", allowedActions: [], restrictionReason: "" });
+    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { accessMode: "active", accountStatus: "active", allowedActions: [], restrictionReason: "", restrictionMessage: "" });
+    await setDoc(doc(testContext.firestore(), "messages", "e2e-account-restriction"), {
+      recipientId: registeredUid, subject: "Taarifa ya kufungiwa", body: "Ujumbe maalum wa arifa ya jaribio.", type: "accountRestriction", createdAt: serverTimestamp(),
+    });
   });
   await page.reload();
   await page.locator(".header-user").waitFor({ state: "visible" });
+  await page.goto(`${appUrl}/account`);
+  await page.getByText("Ujumbe maalum wa arifa ya jaribio.", { exact: true }).waitFor({ state: "visible" });
+  console.log("PASS 11: account notification inbox displays the restriction message");
 
   await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
     await updateDoc(doc(testContext.firestore(), "users", registeredUid), { mustChangePassword: true });
@@ -203,12 +210,12 @@ try {
   });
   assert.equal(updatedProfile.data()?.mustChangePassword, false);
   assert.equal(Object.hasOwn(updatedProfile.data() ?? {}, "password"), false);
-  console.log("PASS 11: forced-password gate completes once and does not save password to profile");
+  console.log("PASS 12: forced-password gate completes once and does not save password to profile");
 
   await logout(page);
   await page.reload();
   await page.getByRole("button", { name: "Ingia / Jisajili", exact: true }).waitFor({ state: "visible" });
-  console.log("PASS 12: logout clears session across reload");
+  console.log("PASS 13: logout clears session across reload");
   console.log("AUTH_EMULATOR_E2E_OK");
 } catch (error) {
   console.error("E2E_CURRENT_URL", page?.url());

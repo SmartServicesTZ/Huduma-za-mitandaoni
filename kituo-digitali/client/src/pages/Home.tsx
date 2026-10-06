@@ -81,12 +81,12 @@ function PasswordChangeGate() {
   </div>;
 }
 
-function AccountRestrictionGate({ reason, onLogout }: { reason?: string; onLogout: () => Promise<void> }) {
+function AccountRestrictionGate({ reason, message, onLogout }: { reason?: string; message?: string; onLogout: () => Promise<void> }) {
   return <div className="admin-modal-backdrop password-gate-backdrop">
     <section className="admin-modal password-gate account-restriction-gate" role="alertdialog" aria-modal="true" aria-labelledby="account-restriction-title">
       <span className="admin-kicker">TAARIFA YA AKAUNTI</span>
       <h2 id="account-restriction-title">Ufikiaji wa akaunti umezuiwa</h2>
-      <p>Huwezi kutumia huduma za mfumo kwa sasa.</p>
+      <p className="restriction-custom-message">{message?.trim() || "Huwezi kutumia huduma za mfumo kwa sasa."}</p>
       <p><strong>Sababu:</strong> {reason?.trim() || "Admin hajaweka sababu maalum."}</p>
       <p>Wasiliana na admin kwa msaada: <a href="tel:0698232313">0698232313</a></p>
       <button className="admin-primary" onClick={() => void onLogout()}>Toka kwenye akaunti</button>
@@ -376,12 +376,12 @@ export default function Home() {
       ? `Akaunti yako imewekewa ruhusa maalum: ${accountRestrictionActions.filter((action) => user?.allowedActions?.includes(action)).map((action) => accountRestrictionActionLabels[action]).join(", ") || "hakuna kitendo kilichoruhusiwa"}.`
       : null;
   return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}>
-    {fullAccessBlocked ? <AccountRestrictionGate reason={user?.restrictionReason} onLogout={logout} /> : <>
+    {fullAccessBlocked ? <AccountRestrictionGate reason={user?.restrictionReason} message={user?.restrictionMessage} onLogout={logout} /> : <>
       <div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} />
       <div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div>
       <div className="portal-content">
         <AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />
-        {restrictionNotice && <div className="portal-main"><Notice tone="info">{restrictionNotice}</Notice></div>}
+        {restrictionNotice && <div className="portal-main"><Notice tone="info">{restrictionNotice}{user?.restrictionMessage?.trim() && <><br /><strong>{user.restrictionMessage}</strong></>}</Notice></div>}
         {page}
         <footer className="portal-footer">Programu hii ilitengenezwa na Bw. $teward Tz <span>© Haki zote zimehifadhiwa 2026</span></footer>
       </div>
