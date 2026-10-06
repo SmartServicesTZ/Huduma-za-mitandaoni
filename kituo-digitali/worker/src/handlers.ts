@@ -6,7 +6,7 @@ import { ApiError, defineWorkerSecret, callable, httpEndpoint, type ApiRequest }
 import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
 import { resolveAuthRole } from "./authClaims.js";
 import { defaultLipaServices, defaultServices } from "./defaultCatalog.js";
-import { BUSINESS_LICENSE_COUNTER_ID, BUSINESS_LICENSE_PREFIX, FIRST_BUSINESS_LICENSE_SUFFIX, formatBusinessLicenseNumber } from "./businessLicenseNumber.js";
+import { generateRandomBusinessLicenseNumber } from "./businessLicenseNumber.js";
 import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
 import { phoneAuthAlias } from "../../shared/tanzaniaPhone.js";
 import { accountRestrictionActions, resolveAccountAccessMode, type AccountRestrictionAction } from "../../shared/accountAccess.js";
@@ -953,10 +953,10 @@ export const verifyUser = callable(async (request) => {
 
 type LicenseRequest = {
   requestId?: unknown;
-  firstName?: unknown; middleName?: unknown; lastName?: unknown;
+  applicantName?: unknown;
   businessType?: unknown; otherBusinessType?: unknown;
   licenseType?: unknown; principalBranch?: unknown; region?: unknown; district?: unknown;
-  ward?: unknown; street?: unknown; tin?: unknown; licenseFee?: unknown;
+  ward?: unknown; street?: unknown; tin?: unknown; licenseFee?: unknown; licenseNumber?: unknown;
 };
 
 function cleanText(value: unknown, label: string, max = 180) {
@@ -970,9 +970,7 @@ function titleCaseLocation(value: string) {
 
 function normalizeLicenseRequest(data: LicenseRequest) {
   const form = {
-    firstName: cleanText(data.firstName, "Jina la kwanza", 80).toUpperCase(),
-    middleName: cleanText(data.middleName, "Jina la pili", 80).toUpperCase(),
-    lastName: cleanText(data.lastName, "Jina la mwisho", 80).toUpperCase(),
+    applicantName: cleanText(data.applicantName, "Majina matatu", 240).replace(/\s+/g, " ").toUpperCase(),
     businessType: cleanText(data.businessType, "Aina ya biashara", 100).toUpperCase(),
     otherBusinessType: typeof data.otherBusinessType === "string" ? data.otherBusinessType.trim().slice(0, 100).toUpperCase() : "",
     licenseType: data.licenseType === "NEW LICENCE" || data.licenseType === "RENEWED LICENCE" ? data.licenseType : "",
@@ -995,7 +993,7 @@ function normalizeLicenseRequest(data: LicenseRequest) {
 function licenseFormFromApplication(application: Record<string, any>) {
   if (application.licenseForm && typeof application.licenseForm === "object") return application.licenseForm as Record<string, unknown>;
   return {
-    firstName: String(application.applicantData?.firstName ?? ""), middleName: String(application.applicantData?.middleName ?? ""), lastName: String(application.applicantData?.lastName ?? ""),
+    applicantName: String(application.applicantData?.applicantName ?? [application.applicantData?.firstName, application.applicantData?.middleName, application.applicantData?.lastName].filter(Boolean).join(" ")),
     businessType: String(application.businessData?.businessType ?? ""), otherBusinessType: String(application.businessData?.otherBusinessType ?? ""),
     licenseType: String(application.licenseData?.licenseType ?? "NEW LICENCE"), principalBranch: String(application.licenseData?.principalBranch ?? "PRINCIPAL"),
     region: String(application.locationData?.region ?? ""), district: String(application.locationData?.district ?? "DAR ES SALAAM"), ward: String(application.locationData?.ward ?? ""), street: String(application.locationData?.street ?? ""),
@@ -1014,7 +1012,9 @@ function licenseDates() {
 
 export const reserveBusinessLicenseNumber = callable(async (request) => {
   const uid = authUid(request);
-  const reservationId = cleanText((request.data as { reservationId?: unknown } | undefined)?.reservationId ?? randomUUID(), "Reservation ID", 160);
+  const data = (request.data ?? {}) as { reservationId?: unknown; licenseType?: unknown };
+  const reservationId = cleanText(data.reservationId ?? randomUUID(), "Reservation ID", 160);
+  if (data.licenseType === "RENEWED LICENCE") throw new ApiError("failed-precondition", "Renewed Licence hutumii namba mpya.");
   const reservationRef = db.collection("licenseNumberReservations").doc(reservationId);
   let licenseNumber = "";
   await db.runTransaction(async (transaction) => {
@@ -1026,13 +1026,8 @@ export const reserveBusinessLicenseNumber = callable(async (request) => {
       return;
     }
     if (await serviceIsLocked(transaction, "leseni-biashara")) throw new ApiError("failed-precondition", "Huduma ya Leseni ya Biashara imefungwa kwa sasa.");
-    const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
-    const counterSnapshot = await transaction.get(counterRef);
-    const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
-    if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 9999) throw new ApiError("resource-exhausted", "Namba za leseni zimejaa.");
-    licenseNumber = formatBusinessLicenseNumber(nextSuffix);
-    transaction.create(reservationRef, { reservationId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
-    transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    licenseNumber = generateRandomBusinessLicenseNumber();
+    transaction.create(reservationRef, { reservationId, userId: uid, licenseNumber, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
   });
   return { reservationId, licenseNumber };
 });
@@ -1070,25 +1065,23 @@ export const generateBusinessLicense = callable(async (request) => {
 
     const reservationSnapshot = await transaction.get(reservationRef);
     let licenseNumber: string;
-    if (reservationSnapshot.exists) {
+    if (form.licenseType === "RENEWED LICENCE") {
+      licenseNumber = cleanText(data.licenseNumber, "Namba ya leseni ya zamani", 30);
+      if (!/^\d{3}(?:-\d{3}){6}$/.test(licenseNumber)) throw new ApiError("invalid-argument", "Namba ya leseni lazima iwe kama 385-632-452-321-008-645-678.");
+    } else if (reservationSnapshot.exists) {
       const reservation = reservationSnapshot.data()!;
       if (reservation.userId !== uid) throw new ApiError("permission-denied", "Reservation ID si sahihi.");
       licenseNumber = String(reservation.licenseNumber);
     } else {
-      const counterRef = db.collection("licenseNumberCounters").doc(BUSINESS_LICENSE_COUNTER_ID);
-      const counterSnapshot = await transaction.get(counterRef);
-      const nextSuffix = counterSnapshot.exists ? Number(counterSnapshot.data()?.nextSuffix ?? FIRST_BUSINESS_LICENSE_SUFFIX) : FIRST_BUSINESS_LICENSE_SUFFIX;
-      if (!Number.isInteger(nextSuffix) || nextSuffix < 0 || nextSuffix > 9999) throw new ApiError("resource-exhausted", "Namba za leseni zimejaa.");
-      licenseNumber = formatBusinessLicenseNumber(nextSuffix);
-      transaction.create(reservationRef, { reservationId: requestId, userId: uid, licenseNumber, prefix: BUSINESS_LICENSE_PREFIX, suffix: nextSuffix, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
-      transaction.set(counterRef, { counterId: BUSINESS_LICENSE_COUNTER_ID, prefix: BUSINESS_LICENSE_PREFIX, nextSuffix: nextSuffix + 1, lastSuffix: nextSuffix, lastLicenseNumber: licenseNumber, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      licenseNumber = generateRandomBusinessLicenseNumber();
+      transaction.create(reservationRef, { reservationId: requestId, userId: uid, licenseNumber, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
     }
     const applicationId = String(existing?.applicationId ?? `APP-${randomUUID().replaceAll("-", "").slice(0, 18).toUpperCase()}`);
     const issueDate = String(existing?.licenseData?.dateOfIssue ?? dates.issueDate);
     const expiryDate = String(existing?.licenseData?.expiryDate ?? dates.expiryDate);
     const applicationData = {
       applicationId, requestId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", licenseForm: form,
-      applicantData: { firstName: form.firstName, middleName: form.middleName, lastName: form.lastName },
+      applicantData: { applicantName: form.applicantName },
       businessData: { businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin },
       locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street },
       licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: "DAR ES SALAAM CITY COUNCIL", dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee },
