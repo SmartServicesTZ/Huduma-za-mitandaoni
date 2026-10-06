@@ -49,7 +49,7 @@ export const TIN_TEMPLATE = {
   physicalValue: { x: 390, y: 955, fontSize: 15, weight: 400 },
   streetLabel: { x: 150, y: 995, fontSize: 15, weight: 700 },
   streetValue: { x: 390, y: 995, fontSize: 15, weight: 400 },
-  commissioner: { x: 795, y: 1000, fontSize: 16, weight: 700, align: "center" },
+  commissioner: { x: 795, y: 1075, fontSize: 16, weight: 700, align: "center" },
 } as const;
 
 const assetUrl = (name: string) => import.meta.env.BASE_URL + "tin-assets/" + name;
