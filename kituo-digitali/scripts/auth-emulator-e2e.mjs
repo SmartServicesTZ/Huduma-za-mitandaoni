@@ -18,6 +18,7 @@ let rulesEnv;
 let registeredUid;
 let passwordChangeMockCalls = 0;
 let workerMockError = "";
+let licenseReservationSuffix = 349;
 const phone = `067${String(Math.floor(Math.random() * 10_000_000)).padStart(7, "0")}`;
 const password = `AuthTest-${Math.random().toString(36).slice(2, 10)}!`;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -78,6 +79,11 @@ async function installWorkerTestRoutes(context) {
       workerMockError = String(error?.message ?? error);
       await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: { code: "internal", message: "Worker test mock failed." } }) });
     }
+  });
+  await context.route("**/call/reserveBusinessLicenseNumber", async (route) => {
+    const body = route.request().postDataJSON();
+    const suffix = String(licenseReservationSuffix++).padStart(4, "0");
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { reservationId: body?.data?.reservationId, licenseNumber: `BL01699682026-270000${suffix}` } }) });
   });
 }
 
@@ -144,6 +150,16 @@ try {
   await page.getByRole("button", { name: "Futa ujumbe", exact: true }).click();
   await page.getByText(editedMessage, { exact: true }).waitFor({ state: "detached" });
   console.log("PASS 5: public chat send, own-message edit, and delete");
+
+  await page.goto(`${appUrl}/service/leseni-biashara`);
+  await page.getByRole("heading", { name: "LIVE BUSINESS LICENSE" }).waitFor({ state: "visible" });
+  const licenseNumberValue = page.locator(".license-number-field b");
+  await page.waitForFunction(() => document.querySelector(".license-number-field b")?.textContent === "BL01699682026-2700000349");
+  await page.locator(".license-template-canvas").waitFor({ state: "visible" });
+  await page.getByRole("button", { name: "Badilisha namba" }).click();
+  await page.waitForFunction(() => document.querySelector(".license-number-field b")?.textContent === "BL01699682026-2700000350");
+  assert.equal(await licenseNumberValue.innerText(), "BL01699682026-2700000350");
+  console.log("PASS 5A: live business-license preview uses the fixed prefix and refresh changes only the four-digit suffix");
 
   await page.reload();
   await page.locator(".header-user").waitFor({ state: "visible" });

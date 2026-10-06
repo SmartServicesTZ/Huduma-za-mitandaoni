@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, Download, FileCheck2, RotateCcw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronDown, Download, FileCheck2, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -109,6 +109,8 @@ export default function BusinessLicensePage() {
   const [form, setForm] = useState<FormState>({ ...initialForm });
   const [submitted, setSubmitted] = useState(false);
   const [licenseNumber, setLicenseNumber] = useState("");
+  const [numberPending, setNumberPending] = useState(false);
+  const [numberError, setNumberError] = useState(false);
   const [requestId, setRequestId] = useState(getOrCreateRequestId);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [serviceLocked, setServiceLocked] = useState(false);
@@ -120,11 +122,17 @@ export default function BusinessLicensePage() {
   }), []);
 
   useEffect(() => {
-    if (!isAuthenticated || licenseNumber || serviceLocked) return;
+    if (!isAuthenticated || licenseNumber || serviceLocked) {
+      setNumberPending(false);
+      return;
+    }
     let cancelled = false;
     void reserveBusinessLicenseNumber(requestId)
       .then((result) => { if (!cancelled) setLicenseNumber(result.licenseNumber); })
-      .catch(() => undefined);
+      .catch(() => { if (!cancelled) setNumberError(true); })
+      .finally(() => { if (!cancelled) setNumberPending(false); });
+    setNumberPending(true);
+    setNumberError(false);
     return () => { cancelled = true; };
   }, [isAuthenticated, licenseNumber, requestId, serviceLocked]);
 
@@ -133,8 +141,15 @@ export default function BusinessLicensePage() {
   const rotateRequest = () => {
     setRequestId(createRequestId());
     setLicenseNumber("");
+    setNumberError(false);
     setSubmitted(false);
     setIssuedFiles(null);
+  };
+
+  const refreshLicenseNumber = () => {
+    if (numberPending || downloadBusy || submitted || serviceLocked || !isAuthenticated) return;
+    if (!licenseNumber && !numberError) return;
+    rotateRequest();
   };
 
   const set = (key: keyof FormState, value: string | number) => {
@@ -290,7 +305,7 @@ export default function BusinessLicensePage() {
             <Field label="Malipo ya Leseni" english="License Fee Paid" required><input type="number" min="0" step="0.01" value={form.licenseFee} onChange={(event) => set("licenseFee", Number(event.target.value))} /></Field>
           </div>
           <div className="license-auto-fields">
-            <span>B.L. NO. <b>{licenseNumber || "Itatolewa na mfumo baada ya kuingia"}</b><small>READ ONLY — namba ya kipekee hutolewa na Worker</small></span>
+            <span className="license-number-field">B.L. NO. <b>{licenseNumber || (numberError ? "Haikupatikana" : isAuthenticated ? "Inatolewa na mfumo..." : "Itatolewa baada ya kuingia")}</b><button type="button" className="license-number-refresh" disabled={!isAuthenticated || serviceLocked || downloadBusy || submitted || numberPending || (!licenseNumber && !numberError)} onClick={refreshLicenseNumber} title="Badilisha tarakimu nne za mwisho za namba ya leseni"><RefreshCw size={13} /> {numberPending ? "Inatolewa..." : numberError ? "Jaribu tena" : "Badilisha namba"}</button><small>{submitted ? "READ ONLY — namba imefungwa kwenye leseni iliyotengenezwa" : "READ ONLY — badilisha kabla ya kutengeneza hati; hakuna tokeni inayokatwa kwa refresh"}</small></span>
             <span>Tarehe ya Kutolewa <b>{displayDate(issueDate)}</b></span>
             <span>Tarehe ya Kumalizika <b>{displayDate(expiryDate)}</b></span>
             <span>Ofisi Inayotoa Leseni <b>{issuingOffice(form.district)}</b></span>

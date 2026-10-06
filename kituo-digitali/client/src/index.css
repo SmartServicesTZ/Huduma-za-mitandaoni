@@ -83,6 +83,8 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-auto-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 13px; margin-top: 13px; border-radius: 10px; background: #f3f7fb; color: #64748b; font-size: 10px; line-height: 1.35; }
 .license-auto-fields span { display: grid; gap: 3px; }
 .license-auto-fields b { color: #0f172a; font-size: 10px; }
+.license-number-refresh { display: inline-flex; align-items: center; justify-self: start; gap: 5px; width: max-content; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; color: #164e63; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.license-number-refresh:disabled { cursor: not-allowed; opacity: .55; }
 .license-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 19px; }
 .license-actions .button { flex: 1 1 135px; justify-content: center; }
 .license-output-note { margin: 10px 0 0; color: #52616b; font-size: 11px; line-height: 1.5; }
