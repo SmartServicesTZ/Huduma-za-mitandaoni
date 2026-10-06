@@ -99,7 +99,7 @@ const staticText: TextItem[] = [
   { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 900, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, family: FONT_SERIF, align: "center", maxWidth: 850 },
   { text: "License Details", x: 45, y: 375, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Issuing office", x: 75, y: 395, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Issuing office", x: 75, y: 403, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "Tax Identification No.:", x: 75, y: 468, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "License Issued To:", x: 75, y: 510, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "For the Business Of:", x: 75, y: 552, size: 11, weight: 400, family: FONT_SANS_LIGHT },
