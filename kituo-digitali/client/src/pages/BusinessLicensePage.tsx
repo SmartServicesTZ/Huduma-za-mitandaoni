@@ -119,21 +119,23 @@ export default function BusinessLicensePage() {
   }), []);
 
   useEffect(() => {
-    if (!isAuthenticated || licenseNumber || serviceLocked) {
+    if (!isAuthenticated || licenseNumber || serviceLocked || form.licenseType === "RENEWED LICENCE") {
       setNumberPending(false);
       return;
     }
     let cancelled = false;
-    void reserveBusinessLicenseNumber(requestId)
+    void reserveBusinessLicenseNumber(requestId, "NEW LICENCE")
       .then((result) => { if (!cancelled) setLicenseNumber(result.licenseNumber); })
       .catch(() => { if (!cancelled) setNumberError(true); })
       .finally(() => { if (!cancelled) setNumberPending(false); });
     setNumberPending(true);
     setNumberError(false);
     return () => { cancelled = true; };
-  }, [isAuthenticated, licenseNumber, requestId, serviceLocked]);
+  }, [isAuthenticated, licenseNumber, requestId, serviceLocked, form.licenseType]);
 
   const expiryDate = useMemo(() => expiryIso(issueDate), [issueDate]);
+
+  useEffect(() => { if (form.licenseType === "RENEWED LICENCE") setLicenseNumber(renewedLicenseNumber); }, [form.licenseType, renewedLicenseNumber]);
 
   const rotateRequest = () => {
     setRequestId(createRequestId());
