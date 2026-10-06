@@ -30,6 +30,7 @@ import {
   syncAuthClaims,
   updateUserAccess,
   verifyUser,
+  enforceAccountRestriction,
 } from "./handlers.js";
 import { ApiError, ApiHttpResponse, type CallableRoute, type HttpRoute } from "./api-adapter.js";
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
@@ -128,6 +129,7 @@ async function handleCallable(request: Request, name: string, cors: Headers, env
   if (typeof body !== "object" || body === null || Array.isArray(body)) return jsonResponse({ error: { code: "invalid-argument", message: "Muundo wa ombi si sahihi." } }, 400, cors);
   const data = (body as { data?: unknown }).data ?? {};
   try {
+    await enforceAccountRestriction(auth.uid, name);
     const result = await descriptor.handler({ auth, data });
     return jsonResponse({ data: result }, 200, cors);
   } catch (error) {

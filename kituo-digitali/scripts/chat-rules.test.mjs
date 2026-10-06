@@ -86,6 +86,50 @@ test("phone registry is private and a reserved phone can create only its owner's
   await assertFails(setDoc(doc(bobDb, "phoneRegistry", "255712345678"), { uid: "bob", phone: "255712345678" }));
 });
 
+test("blocked accounts can read their own restriction notice but cannot access portal data or write", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "users", "blocked-user"), {
+      uid: "blocked-user", phone: "255712345678", accessMode: "denied", accountStatus: "blocked", restrictionReason: "Taarifa zinahitaji uhakiki.", allowedActions: [],
+    });
+  });
+  const db = member("blocked-user").firestore();
+  const profile = await assertSucceeds(getDoc(doc(db, "users", "blocked-user")));
+  assert.equal(profile.data().restrictionReason, "Taarifa zinahitaji uhakiki.");
+  await assertFails(getDocs(collection(db, "publicChatMessages")));
+  await assertFails(setDoc(doc(db, "publicChatMessages", "blocked-message"), message("blocked-user", "Siwezi kutuma")));
+  await assertFails(updateDoc(doc(db, "users", "blocked-user"), { bio: "attempt", updatedAt: serverTimestamp() }));
+  await assertFails(uploadBytes(ref(member("blocked-user").storage(), "publicChatFiles/blocked-user/blocked.txt"), new Uint8Array([1]), { contentType: "text/plain" }));
+});
+
+test("read-only accounts can read but cannot edit profiles, post chat, or submit service requests", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "users", "readonly-user"), {
+      uid: "readonly-user", phone: "255712345678", accessMode: "read_only", accountStatus: "active", allowedActions: [],
+    });
+    await setDoc(doc(context.firestore(), "publicChatMessages", "existing-message"), message("alice", "Read only sees this"));
+  });
+  const db = member("readonly-user").firestore();
+  await assertSucceeds(getDoc(doc(db, "publicChatMessages", "existing-message")));
+  await assertFails(setDoc(doc(db, "publicChatMessages", "readonly-message"), message("readonly-user", "No write")));
+  await assertFails(updateDoc(doc(db, "users", "readonly-user"), { bio: "attempt", updatedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(db, "serviceRequests", "readonly-request"), { userId: "readonly-user", serviceSlug: "help-request", createdAt: serverTimestamp() }));
+  await assertFails(uploadBytes(ref(member("readonly-user").storage(), "users/readonly-user/profile/avatar.png"), new Uint8Array([1]), { contentType: "image/png" }));
+});
+
+test("limited accounts may use only explicitly selected action categories", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "users", "limited-user"), {
+      uid: "limited-user", phone: "255712345678", accessMode: "limited", accountStatus: "active", allowedActions: ["chat"],
+    });
+  });
+  const db = member("limited-user").firestore();
+  await assertSucceeds(setDoc(doc(db, "publicChatMessages", "limited-message"), message("limited-user", "Chat imeruhusiwa")));
+  await assertFails(updateDoc(doc(db, "users", "limited-user"), { bio: "attempt", updatedAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(db, "serviceRequests", "limited-request"), { userId: "limited-user", serviceSlug: "help-request", createdAt: serverTimestamp() }));
+  await assertSucceeds(uploadBytes(ref(member("limited-user").storage(), "publicChatFiles/limited-user/chat.txt"), new Uint8Array([1]), { contentType: "text/plain" }));
+  await assertFails(uploadBytes(ref(member("limited-user").storage(), "users/limited-user/profile/avatar.png"), new Uint8Array([1]), { contentType: "image/png" }));
+});
+
 test("Lipa applications are private to the applicant and the authorized admin inbox", async () => {
   await env.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();

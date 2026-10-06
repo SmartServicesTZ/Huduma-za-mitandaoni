@@ -1,34 +1,47 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
+    function currentAccessMode() {
+      return request.auth == null ? 'active'
+        : !firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) ? 'active'
+        : firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('accountStatus', 'active') in ['blocked', 'deleted'] ? 'denied'
+        : firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('accessMode', 'active');
+    }
+    function accountMayRead() { return request.auth != null && currentAccessMode() != 'denied'; }
+    function accountMay(action) {
+      let mode = currentAccessMode();
+      return request.auth != null && mode != 'denied'
+        && (mode == 'active' || action == 'read'
+          || (mode == 'limited' && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+            && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('allowedActions', []).hasAny([action])));
+    }
     function canModerateChat() {
-      return request.auth != null
+      return accountMay('admin')
         && ((request.auth.token.get('role', '') == 'super_admin' && request.auth.token.get('isSuperAdmin', false) == true)
           || request.auth.token.get('permissions', {}).get('manageMessages', false) == true);
     }
     match /users/{userId}/profile/{fileName} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null
+      allow read: if accountMayRead() && request.auth.uid == userId;
+      allow write: if accountMay('profile')
         && request.auth.uid == userId
         && request.resource.size <= 2 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow delete: if accountMay('profile') && request.auth.uid == userId;
     }
 
     match /license-documents/{userId}/{fileName} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if accountMayRead() && request.auth.uid == userId;
       allow write, delete: if false;
     }
 
     match /lipaUploads/{userId}/{applicationId}/{fileName} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null
+      allow read: if accountMayRead() && request.auth.uid == userId;
+      allow write: if accountMay('applications')
         && request.auth.uid == userId
         && applicationId.matches('[A-Za-z0-9_-]{16,80}')
         && request.resource.size <= 10 * 1024 * 1024
         && request.resource.contentType.matches('(image/(jpeg|png|webp)|application/pdf)');
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow delete: if accountMay('applications') && request.auth.uid == userId;
     }
 
     match /lipaApplications/{applicationId}/documents/{fileName} {
@@ -36,25 +49,25 @@ service firebase.storage {
     }
 
     match /serviceUploads/{userId}/{applicationId}/{fileName} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null
+      allow read: if accountMayRead() && request.auth.uid == userId;
+      allow write: if accountMay('applications')
         && request.auth.uid == userId
         && applicationId.matches('[A-Za-z0-9_-]{16,80}')
         && request.resource.size <= 10 * 1024 * 1024
         && request.resource.contentType.matches('(image/(jpeg|png|webp)|application/pdf)');
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow delete: if accountMay('applications') && request.auth.uid == userId;
     }
     match /serviceApplications/{applicationId}/documents/{fileName} {
       allow read, write, delete: if false;
     }
 
     match /publicChatFiles/{userId}/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null
+      allow read: if accountMayRead();
+      allow write: if accountMay('chat')
         && request.auth.uid == userId
         && request.resource.size <= 10 * 1024 * 1024
         && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
-      allow delete: if (request.auth != null && request.auth.uid == userId) || canModerateChat();
+      allow delete: if (accountMay('chat') && request.auth.uid == userId) || canModerateChat();
     }
 
     match /chatFiles/{roomId}/{userId}/{fileName} {
@@ -63,12 +76,13 @@ service firebase.storage {
           && firestore.exists(/databases/(default)/documents/conversations/$(roomId))
           && request.auth.uid in firestore.get(/databases/(default)/documents/conversations/$(roomId)).data.participants;
       }
-          allow read: if isMember() || canModerateChat();
-      allow write: if isMember()
+      allow read: if accountMayRead() && (isMember() || canModerateChat());
+      allow write: if accountMay('chat')
+        && isMember()
         && request.auth.uid == userId
         && request.resource.size <= 10 * 1024 * 1024
         && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
-      allow delete: if (isMember() && request.auth.uid == userId) || canModerateChat();
+      allow delete: if (accountMay('chat') && isMember() && request.auth.uid == userId) || canModerateChat();
     }
 
     match /{allPaths=**} {

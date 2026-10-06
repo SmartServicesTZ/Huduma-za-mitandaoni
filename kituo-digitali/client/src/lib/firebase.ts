@@ -38,6 +38,7 @@ import {
 import type { ServiceFormField, ServiceFormValues } from "../../../shared/serviceForms";
 import { omitUndefinedFields } from "../../../shared/omitUndefinedFields";
 import { normalizeTanzaniaPhone, phoneAuthAlias } from "../../../shared/tanzaniaPhone";
+import type { AccountAccessMode, AccountRestrictionAction } from "../../../shared/accountAccess";
 import type { BrowserLicenseForm } from "./businessLicensePdf";
 
 const firebaseConfig = {
@@ -122,6 +123,12 @@ export type FirebaseProfile = {
   permissions?: AdminPermissions;
   profileImageUrl?: string;
   mustChangePassword?: boolean;
+  accountStatus?: "active" | "blocked" | "deleted" | "restricted";
+  accessMode?: AccountAccessMode;
+  allowedActions?: AccountRestrictionAction[];
+  restrictionReason?: string;
+  restrictionUpdatedBy?: string;
+  restrictionUpdatedAt?: unknown;
   language?: "sw" | "en";
   createdAt?: unknown;
 };
@@ -349,7 +356,7 @@ export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentDa
 }
 
 
-export type AdminUserRecord = FirebaseProfile & { accountStatus?: "active" | "blocked"; lastLoginAt?: unknown; totalTokensReceived?: number; totalTokensUsed?: number };
+export type AdminUserRecord = FirebaseProfile & { lastLoginAt?: unknown; totalTokensReceived?: number; totalTokensUsed?: number };
 
 function timestampValue(value: unknown) {
   if (value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function") {
@@ -399,9 +406,10 @@ export async function adminUpdateUser(adminId: string, userId: string, values: P
   if (values.role !== undefined || values.permissions !== undefined) {
     const callable = createWorkerCall("updateUserAccess");
     await callable({ userId, role: values.role, permissions: values.permissions });
-  } else if (values.accountStatus !== undefined) {
+  } else if (values.accessMode !== undefined || values.accountStatus !== undefined) {
     const callable = createWorkerCall("setAccountStatus");
-    await callable({ userId, status: values.accountStatus });
+    const accessMode = values.accessMode ?? (values.accountStatus === "blocked" || values.accountStatus === "deleted" ? "denied" : "active");
+    await callable({ userId, accessMode, reason: values.restrictionReason ?? "", allowedActions: values.allowedActions ?? [] });
   } else if (values.verificationStatus !== undefined) {
     const callable = createWorkerCall("verifyUser");
     await callable({ userId, status: values.verificationStatus });

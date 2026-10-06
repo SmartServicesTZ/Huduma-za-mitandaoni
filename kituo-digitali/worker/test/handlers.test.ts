@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
-import { changeOwnPassword, claimRegistrationPhone } from "../src/handlers.js";
+import { changeOwnPassword, claimRegistrationPhone, enforceAccountRestriction } from "../src/handlers.js";
 import { withWorkerEnv, type WorkerEnv } from "../src/runtime.js";
 
 const phone = "255712345678";
@@ -23,14 +23,19 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 function firestoreDocument(path: string, fields: Record<string, unknown>) {
+  const encode = (value: unknown): Record<string, unknown> => Array.isArray(value)
+    ? { arrayValue: { values: value.map(encode) } }
+    : typeof value === "string" ? { stringValue: value }
+    : typeof value === "boolean" ? { booleanValue: value }
+    : { nullValue: null };
   return {
     name: `projects/worker-handler-test/databases/(default)/documents/${path}`,
-    fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, typeof value === "string" ? { stringValue: value } : { booleanValue: value } ])),
+    fields: Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined).map(([key, value]) => [key, encode(value)])),
   };
 }
 
 async function withMockedGoogleFetch(
-  profile: { uid?: string; phone?: string; role?: string; mustChangePassword?: boolean } | null,
+  profile: { uid?: string; phone?: string; role?: string; mustChangePassword?: boolean; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string } | null,
   registryUid: string | null,
   callback: (calls: Array<{ url: string; method: string; body: Record<string, any> }>) => Promise<unknown>,
 ) {
@@ -57,6 +62,10 @@ async function withMockedGoogleFetch(
         phone: profile.phone ?? phone,
         role: profile.role ?? "user",
         mustChangePassword: profile.mustChangePassword ?? false,
+        accountStatus: profile.accountStatus,
+        accessMode: profile.accessMode,
+        allowedActions: profile.allowedActions,
+        restrictionReason: profile.restrictionReason,
       }));
     }
     throw new Error(`Unexpected mocked request: ${method} ${url}`);
@@ -107,5 +116,35 @@ test("changeOwnPassword updates Firebase Auth then clears the server-only gate w
     assert.ok(commit);
     assert.equal(commit.body.writes[0].update.fields.mustChangePassword.booleanValue, false);
     assert.equal(JSON.stringify(commit.body).includes(testPassword), false);
+  });
+});
+
+test("central account restrictions deny blocked users and include their reason and support contact", async () => {
+  const env = environment();
+  await withMockedGoogleFetch({ accessMode: "denied", accountStatus: "blocked", restrictionReason: "Taarifa zinahitaji uhakiki." }, null, async () => {
+    await assert.rejects(
+      withWorkerEnv(env, () => enforceAccountRestriction(uid, "findChatUser")),
+      (error: { code?: string; message?: string }) => error.code === "permission-denied" && error.message?.includes("Taarifa zinahitaji uhakiki.") === true && error.message.includes("0698232313"),
+    );
+    await assert.doesNotReject(withWorkerEnv(env, () => enforceAccountRestriction(uid, "syncAuthClaims")));
+  });
+});
+
+test("read-only accounts may use read callables but cannot submit or perform actions", async () => {
+  const env = environment();
+  await withMockedGoogleFetch({ accessMode: "read_only" }, null, async () => {
+    await assert.doesNotReject(withWorkerEnv(env, () => enforceAccountRestriction(uid, "getLipaApplicationDocument")));
+    await assert.doesNotReject(withWorkerEnv(env, () => enforceAccountRestriction(uid, "changeOwnPassword")));
+    await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "submitLipaApplication")), { code: "permission-denied" });
+    await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "consumeTokens")), { code: "permission-denied" });
+  });
+});
+
+test("limited accounts can call only the selected action categories", async () => {
+  const env = environment();
+  await withMockedGoogleFetch({ accessMode: "limited", allowedActions: ["chat"] }, null, async () => {
+    await assert.doesNotReject(withWorkerEnv(env, () => enforceAccountRestriction(uid, "findChatUser")));
+    await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "submitLipaApplication")), { code: "permission-denied" });
+    await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "createTokenPurchaseOrder")), { code: "permission-denied" });
   });
 });

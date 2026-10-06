@@ -8,6 +8,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, createTokenPurchaseOrder, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeToTokenPurchaseOrders, type TokenPurchaseOrder } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
+import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
 import AdminDashboard from "./AdminDashboard";
 import BusinessLicensePage from "./BusinessLicensePage";
@@ -77,6 +78,19 @@ function PasswordChangeGate() {
         <button type="submit" className="admin-primary" disabled={busy}>{busy ? "Inahifadhi..." : "Weka password mpya"}</button>
       </form>
     </div>
+  </div>;
+}
+
+function AccountRestrictionGate({ reason, onLogout }: { reason?: string; onLogout: () => Promise<void> }) {
+  return <div className="admin-modal-backdrop password-gate-backdrop">
+    <section className="admin-modal password-gate account-restriction-gate" role="alertdialog" aria-modal="true" aria-labelledby="account-restriction-title">
+      <span className="admin-kicker">TAARIFA YA AKAUNTI</span>
+      <h2 id="account-restriction-title">Ufikiaji wa akaunti umezuiwa</h2>
+      <p>Huwezi kutumia huduma za mfumo kwa sasa.</p>
+      <p><strong>Sababu:</strong> {reason?.trim() || "Admin hajaweka sababu maalum."}</p>
+      <p>Wasiliana na admin kwa msaada: <a href="tel:0698232313">0698232313</a></p>
+      <button className="admin-primary" onClick={() => void onLogout()}>Toka kwenye akaunti</button>
+    </section>
   </div>;
 }
 
@@ -322,7 +336,7 @@ export default function Home() {
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const { isAuthenticated, firebaseUser, user } = useAuth();
+  const { isAuthenticated, firebaseUser, user, logout } = useAuth();
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogInitialized, setCatalogInitialized] = useState(false);
@@ -354,5 +368,25 @@ export default function Home() {
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
   const serviceFields = Array.isArray(selectedService?.fields) ? selectedService.fields : [];
   const page = location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <TINCertificatePage /> : serviceSlug === "nakala-nida-2" ? <AirtelSmeContractPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/chat" ? <ChatPage /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa taarifa kuhusu salio lililopo, wasiliana na support kupitia WhatsApp +255 698 232 313.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} />;
-  return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}><div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} /><div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div><div className="portal-content"><AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />{page}<footer className="portal-footer">Programu hii ilitengenezwa na Bw. $teward Tz <span>© Haki zote zimehifadhiwa 2026</span></footer></div><BottomNav />{isAuthenticated && firebaseUser && user?.mustChangePassword === true ? <PasswordChangeGate /> : null}</div>;
+  const accessMode = resolveAccountAccessMode(user);
+  const fullAccessBlocked = isAuthenticated && accessMode === "denied";
+  const restrictionNotice = accessMode === "read_only"
+    ? "Akaunti yako iko kwenye hali ya kusoma tu. Huwezi kutuma, kuhariri au kufanya maombi kwa sasa."
+    : accessMode === "limited"
+      ? `Akaunti yako imewekewa ruhusa maalum: ${accountRestrictionActions.filter((action) => user?.allowedActions?.includes(action)).map((action) => accountRestrictionActionLabels[action]).join(", ") || "hakuna kitendo kilichoruhusiwa"}.`
+      : null;
+  return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}>
+    {fullAccessBlocked ? <AccountRestrictionGate reason={user?.restrictionReason} onLogout={logout} /> : <>
+      <div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} />
+      <div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div>
+      <div className="portal-content">
+        <AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />
+        {restrictionNotice && <div className="portal-main"><Notice tone="info">{restrictionNotice}</Notice></div>}
+        {page}
+        <footer className="portal-footer">Programu hii ilitengenezwa na Bw. $teward Tz <span>© Haki zote zimehifadhiwa 2026</span></footer>
+      </div>
+      <BottomNav />
+      {isAuthenticated && firebaseUser && user?.mustChangePassword === true ? <PasswordChangeGate /> : null}
+    </>}
+  </div>;
 }

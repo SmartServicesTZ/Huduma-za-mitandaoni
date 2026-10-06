@@ -166,6 +166,28 @@ try {
   console.log("PASS 8: session persists after closing/reopening the browser profile");
 
   await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
+    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { accessMode: "read_only", accountStatus: "active", allowedActions: [], restrictionReason: "E2E read-only restriction" });
+  });
+  await page.reload();
+  await page.getByText(/Akaunti yako iko kwenye hali ya kusoma tu/).waitFor({ state: "visible" });
+  console.log("PASS 9: read-only restriction is visible after auth refresh");
+
+  await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
+    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { accessMode: "denied", accountStatus: "blocked", restrictionReason: "E2E full access restriction" });
+  });
+  await page.reload();
+  await page.getByRole("heading", { name: "Ufikiaji wa akaunti umezuiwa" }).waitFor({ state: "visible" });
+  await page.getByText("E2E full access restriction", { exact: false }).waitFor({ state: "visible" });
+  await page.getByRole("link", { name: "0698232313" }).waitFor({ state: "visible" });
+  console.log("PASS 10: full restriction blocks the portal and displays the admin reason and support contact");
+
+  await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
+    await updateDoc(doc(testContext.firestore(), "users", registeredUid), { accessMode: "active", accountStatus: "active", allowedActions: [], restrictionReason: "" });
+  });
+  await page.reload();
+  await page.locator(".header-user").waitFor({ state: "visible" });
+
+  await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
     await updateDoc(doc(testContext.firestore(), "users", registeredUid), { mustChangePassword: true });
   });
   await page.reload();
@@ -181,12 +203,12 @@ try {
   });
   assert.equal(updatedProfile.data()?.mustChangePassword, false);
   assert.equal(Object.hasOwn(updatedProfile.data() ?? {}, "password"), false);
-  console.log("PASS 9: forced-password gate completes once and does not save password to profile");
+  console.log("PASS 11: forced-password gate completes once and does not save password to profile");
 
   await logout(page);
   await page.reload();
   await page.getByRole("button", { name: "Ingia / Jisajili", exact: true }).waitFor({ state: "visible" });
-  console.log("PASS 10: logout clears session across reload");
+  console.log("PASS 12: logout clears session across reload");
   console.log("AUTH_EMULATOR_E2E_OK");
 } catch (error) {
   console.error("E2E_CURRENT_URL", page?.url());

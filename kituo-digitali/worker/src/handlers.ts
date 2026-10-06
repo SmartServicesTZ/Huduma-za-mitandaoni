@@ -8,6 +8,7 @@ import { resolveAuthRole } from "./authClaims.js";
 import { defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
 import { phoneAuthAlias } from "../../shared/tanzaniaPhone.js";
+import { accountRestrictionActions, resolveAccountAccessMode, type AccountRestrictionAction } from "../../shared/accountAccess.js";
 
 const db = getFirestore();
 const bucket = getStorage().bucket();
@@ -18,7 +19,7 @@ type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
-type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; name?: string; phone?: string; mustChangePassword?: boolean };
+type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; name?: string; phone?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
@@ -31,6 +32,31 @@ async function profileFor(uid: string) {
   const profile = snapshot.data() as Profile;
   const role = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
   return { ...profile, role };
+}
+
+const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat" | "applications" | "services" | "payments" | "auth"> = {
+  adminDelete: "admin", adminWrite: "admin", adjustTokens: "admin", resetUserPassword: "admin", seedServiceCatalog: "admin",
+  setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin",
+  setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
+  changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
+  createServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
+  submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications",
+  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", findChatUser: "chat", createTokenPurchaseOrder: "payments",
+  syncAuthClaims: "auth",
+};
+
+export async function enforceAccountRestriction(uid: string, callableName: string) {
+  const action = callableAccessAction[callableName] ?? "admin";
+  if (action === "auth") return;
+  const snapshot = await db.collection("users").doc(uid).get();
+  if (!snapshot.exists) return;
+  const profile = snapshot.data() as Profile;
+  const mode = resolveAccountAccessMode(profile);
+  if (mode === "active") return;
+  if (mode === "read_only" && (action === "read" || action === "profile")) return;
+  if (mode === "limited" && (action === "read" || accountRestrictionActions.includes(action as AccountRestrictionAction) && profile.allowedActions?.includes(action))) return;
+  const reason = typeof profile.restrictionReason === "string" && profile.restrictionReason.trim() ? ` Sababu: ${profile.restrictionReason.trim()}` : " Admin hakuweka sababu maalum.";
+  throw new ApiError("permission-denied", `Akaunti hii imewekewa kizuizi.${reason} Wasiliana na admin kupitia 0698232313.`);
 }
 
 function can(profile: Profile, permission: string) {
@@ -850,8 +876,16 @@ export const setAccountStatus = callable(async (request) => {
   requirePermission(actor, "manageUsers");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
-  const status = data.status;
-  if (!['active', 'blocked', 'deleted'].includes(String(status))) throw new ApiError("invalid-argument", "Account status si sahihi.");
+  const requestedMode = data.accessMode ?? (data.status === "blocked" || data.status === "deleted" ? "denied" : "active");
+  if (!['active', 'read_only', 'limited', 'denied'].includes(String(requestedMode))) throw new ApiError("invalid-argument", "Aina ya ufungaji si sahihi.");
+  const mode = String(requestedMode);
+  const reason = data.reason === undefined ? "" : typeof data.reason === "string" ? data.reason.trim().slice(0, 500) : null;
+  if (reason === null) throw new ApiError("invalid-argument", "Sababu ya kufungia lazima iwe maandishi.");
+  const allowedActions = data.allowedActions === undefined ? [] : data.allowedActions;
+  if (!Array.isArray(allowedActions) || allowedActions.some((action) => typeof action !== "string" || !accountRestrictionActions.includes(action as AccountRestrictionAction))) {
+    throw new ApiError("invalid-argument", "Vitendo vilivyoruhusiwa si sahihi.");
+  }
+  if (mode === "limited" && allowedActions.length === 0) throw new ApiError("invalid-argument", "Chagua angalau kitendo kimoja, au tumia hali ya kusoma tu.");
   if (userId === uid) throw new ApiError("permission-denied", "Huwezi kubadilisha status ya akaunti yako mwenyewe.");
   const targetRef = db.collection("users").doc(userId);
   return db.runTransaction(async (transaction) => {
@@ -860,8 +894,19 @@ export const setAccountStatus = callable(async (request) => {
     const target = snapshot.data() as Profile;
     const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
     if (targetRole === "super_admin") throw new ApiError("permission-denied", "Super Admin inalindwa.");
-    transaction.update(targetRef, { accountStatus: status, updatedAt: FieldValue.serverTimestamp() });
-    recordAudit(transaction, uid, String(actor.role), "SET_ACCOUNT_STATUS", "user", userId, { accountStatus: target.accountStatus ?? "active" }, { accountStatus: status });
+    const next = {
+      accountStatus: mode === "denied" ? "blocked" : "active",
+      accessMode: mode,
+      allowedActions: mode === "limited" ? allowedActions : [],
+      restrictionReason: mode === "active" ? "" : reason,
+      restrictionUpdatedBy: uid,
+      restrictionUpdatedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    transaction.update(targetRef, next);
+    recordAudit(transaction, uid, String(actor.role), "SET_ACCOUNT_STATUS", "user", userId,
+      { accessMode: resolveAccountAccessMode(target), reason: target.restrictionReason ?? "", allowedActions: target.allowedActions ?? [] },
+      { accessMode: mode, reason, allowedActions: next.allowedActions });
     return { ok: true };
   });
 });
