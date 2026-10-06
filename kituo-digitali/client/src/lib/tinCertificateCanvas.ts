@@ -36,9 +36,9 @@ export const TIN_TEMPLATE = {
   subtitle: { x: 506, y: 365, fontSize: 25, weight: 400 },
   numberTitle: { x: 506, y: 435, fontSize: 24, weight: 700 },
   certify: { x: 506, y: 510, fontSize: 27, weight: 700 },
-  taxpayer: { x: 506, y: 620, fontSize: 23, weight: 700, align: "center" },
+  taxpayer: { x: 506, y: 570, fontSize: 23, weight: 700, align: "center" },
   assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
-  tinValue: { x: 506, y: 760, fontSize: 25, weight: 700, align: "center" },
+  tinValue: { x: 506, y: 795, fontSize: 25, weight: 700, align: "center" },
   effectLabel: { x: 150, y: 835, fontSize: 15, weight: 700 },
   effectValue: { x: 506, y: 835, fontSize: 15, weight: 400, align: "center" },
   locationLabel: { x: 150, y: 875, fontSize: 15, weight: 700 },
@@ -80,12 +80,41 @@ function text(ctx: CanvasRenderingContext2D, style: TextStyle, value: string) {
   ctx.restore();
 }
 
-function dateText(value: string) {
-  if (!value) return "—";
+function drawDate(ctx: CanvasRenderingContext2D, style: TextStyle, value: string) {
+  if (!value) {
+    text(ctx, style, "—");
+    return;
+  }
   const [year, month, day] = value.split("-");
   const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const suffix = day === "1" ? "(st)" : day === "2" ? "(nd)" : day === "3" ? "(rd)" : "(th)";
-  return Number(day) + suffix + " " + monthNames[Number(month) - 1] + " " + year;
+  const suffix = day === "1" ? "st" : day === "2" ? "nd" : day === "3" ? "rd" : "th";
+  const dayNumber = String(Number(day));
+  const full = dayNumber + " " + monthNames[Number(month) - 1] + " " + year;
+
+  ctx.save();
+  ctx.font = (style.weight ?? 400) + " " + style.fontSize + "px " + (style.family ?? "Arial, sans-serif");
+  ctx.fillStyle = "#151922";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+
+  const dayWidth = ctx.measureText(dayNumber).width;
+  const gap = 3;
+  const suffixSize = Math.max(9, Math.round(style.fontSize * 0.58));
+  ctx.font = (style.weight ?? 400) + " " + suffixSize + "px " + (style.family ?? "Arial, sans-serif");
+  const suffixWidth = ctx.measureText(suffix).width;
+  ctx.font = (style.weight ?? 400) + " " + style.fontSize + "px " + (style.family ?? "Arial, sans-serif");
+  const rest = " " + monthNames[Number(month) - 1] + " " + year;
+  const totalWidth = dayWidth + gap + suffixWidth + ctx.measureText(rest).width;
+  let x = style.x - totalWidth / 2;
+
+  ctx.fillText(dayNumber, x, style.y);
+  x += dayWidth + gap;
+  ctx.font = (style.weight ?? 400) + " " + suffixSize + "px " + (style.family ?? "Arial, sans-serif");
+  ctx.fillText(suffix, x, style.y - style.fontSize * 0.34);
+  x += suffixWidth;
+  ctx.font = (style.weight ?? 400) + " " + style.fontSize + "px " + (style.family ?? "Arial, sans-serif");
+  ctx.fillText(rest, x, style.y);
+  ctx.restore();
 }
 
 function drawDefaultBackground(ctx: CanvasRenderingContext2D) {
@@ -122,7 +151,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   // Hapa tunachora VALUES ZA FORM TU ili kuepuka maandishi kujirudia.
   text(ctx, pos("taxpayer"), form.name.toUpperCase());
   text(ctx, pos("tinValue"), form.tin);
-  text(ctx, pos("effectValue"), dateText(form.effectDate));
+  drawDate(ctx, pos("effectValue"), form.effectDate);
   text(ctx, pos("locationValue"), form.traLocation.toUpperCase());
   text(ctx, pos("officeValue"), form.taxOffice.toUpperCase());
   text(ctx, pos("physicalValue"), form.physicalLocation.toUpperCase());
