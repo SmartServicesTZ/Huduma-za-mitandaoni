@@ -98,7 +98,7 @@ const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 225, size: 20, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 900, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, family: FONT_SERIF, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 45, y: 438, size: 20, weight: 600, family: FONT_SANS },
+  { text: "License Details", x: 45, y: 410, size: 20, weight: 600, family: FONT_SANS },
   { text: "Issuing office", x: 75, y: 470, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "Tax Identification No.:", x: 75, y: 508, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "License Issued To:", x: 75, y: 550, size: 11, weight: 400, family: FONT_SANS_LIGHT },
