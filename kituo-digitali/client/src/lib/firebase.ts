@@ -511,9 +511,9 @@ export async function adminGetSiteSettings() {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
-export async function reserveBusinessLicenseNumber(reservationId: string) {
-  const callable = createWorkerCall<{ reservationId: string }, { reservationId: string; licenseNumber: string }>("reserveBusinessLicenseNumber");
-  return (await callable({ reservationId })).data;
+export async function reserveBusinessLicenseNumber(reservationId: string, licenseType: "NEW LICENCE" | "RENEWED LICENCE" = "NEW LICENCE") {
+  const callable = createWorkerCall<{ reservationId: string; licenseType: "NEW LICENCE" | "RENEWED LICENCE" }, { reservationId: string; licenseNumber: string }>("reserveBusinessLicenseNumber");
+  return (await callable({ reservationId, licenseType })).data;
 }
 
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
