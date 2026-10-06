@@ -81,12 +81,12 @@ const BL_NO_SIZE = 18;
 const DYNAMIC_TEXT_Y_OFFSET = 0;
 const DEFAULT_LICENSE_LAYOUT = {
   nameX: 35.1, nameY: 37.73, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
-  officeX: 35.1, officeY: 31.51, officeSize: 14, tinX: 35.1, tinY: 34.57, tinSize: 14,
-  businessX: 35.1, businessY: 40.85, businessSize: 14, typeX: 35.1, typeY: 44.27, typeSize: 14,
-  issueX: 35.1, issueY: 47.20, issueSize: 14, expiryX: 35.1, expiryY: 50.78, expirySize: 14,
-  branchX: 35.1, branchY: 53.45, branchSize: 14, regionX: 35.1, regionY: 61.68, regionSize: 14,
-  wardX: 35.1, wardY: 64.65, wardSize: 14, streetX: 35.1, streetY: 67.97, streetSize: 14,
-  amountX: 35.1, amountY: 75.00, amountSize: 14, qrX: 61.3, qrY: 57.90, qrSize: 255,
+  officeX: 35.1, officeY: 31.75, officeSize: 14, tinX: 35.1, tinY: 34.72, tinSize: 14,
+  businessX: 35.1, businessY: 41.08, businessSize: 14, typeX: 35.1, typeY: 44.52, typeSize: 14,
+  issueX: 35.1, issueY: 47.43, issueSize: 14, expiryX: 35.1, expiryY: 51.03, expirySize: 14,
+  branchX: 35.1, branchY: 53.72, branchSize: 14, regionX: 35.1, regionY: 62.05, regionSize: 14,
+  wardX: 35.1, wardY: 65.02, wardSize: 14, streetX: 35.1, streetY: 68.42, streetSize: 14,
+  amountX: 35.1, amountY: 77.20, amountSize: 14, qrX: 61.3, qrY: 59.55, qrSize: 255,
 };
 
 const FONT_SANS = 'Arial, Helvetica, sans-serif';
@@ -99,20 +99,20 @@ const staticText: TextItem[] = [
   { text: "BUSINESS LICENSE", x: 506, y: 246, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 329, size: 14, weight: 400, family: FONT_SERIF, align: "center", maxWidth: 850 },
   { text: "License Details", x: 70, y: 361, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Issuing Office:", x: 70, y: 410, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Tax Identification No.:", x: 70, y: 449, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "License Issued To:", x: 70, y: 491, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "For the Business Of:", x: 70, y: 531, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Business Licensing:", x: 70, y: 576, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Date of Issue:", x: 70, y: 614, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Expiring Date:", x: 70, y: 660, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Principal/Branch:", x: 70, y: 695, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Business Location", x: 70, y: 755, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Region:", x: 70, y: 802, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Ward:", x: 70, y: 840, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Street:", x: 70, y: 884, size: 11, weight: 400, family: FONT_SANS_LIGHT },
-  { text: "Payment Details", x: 70, y: 933, size: 20, weight: 600, family: FONT_SANS },
-  { text: "Amount of Fee Paid:", x: 70, y: 975, size: 11, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Issuing Office:", x: 70, y: 412, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Tax Identification No.:", x: 70, y: 452, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "License Issued To:", x: 70, y: 496, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "For the Business Of:", x: 70, y: 538, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Licensing:", x: 70, y: 584, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Date of Issue:", x: 70, y: 625, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Expiring Date:", x: 70, y: 671, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Principal/Branch:", x: 70, y: 707, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Business Location", x: 70, y: 772, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Region:", x: 70, y: 820, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Ward:", x: 70, y: 862, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Street:", x: 70, y: 905, size: 12, weight: 400, family: FONT_SANS_LIGHT },
+  { text: "Payment Details", x: 70, y: 953, size: 20, weight: 600, family: FONT_SANS },
+  { text: "Amount of Fee Paid:", x: 70, y: 1001, size: 12, weight: 400, family: FONT_SANS_LIGHT },
 ];
 
 export async function renderBusinessLicenseCanvas(
