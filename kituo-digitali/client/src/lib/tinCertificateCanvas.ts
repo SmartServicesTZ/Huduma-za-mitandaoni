@@ -41,9 +41,9 @@ export const TIN_TEMPLATE = {
   tinValue: { x: 506, y: 688, fontSize: 25, weight: 700, align: "center" },
   effectValue: { x: 470, y: 750, fontSize: 15, weight: 700, align: "center" },
   locationValue: { x: 370, y: 799.8, fontSize: 15, weight: 700 },
-  officeValue: { x: 700, y: 825, fontSize: 15, weight: 700 },
-  physicalValue: { x: 385, y: 820, fontSize: 15, weight: 700 },
-  streetValue: { x: 390, y: 855, fontSize: 15, weight: 700 },
+  officeValue: { x: 700, y: 815, fontSize: 15, weight: 700 },
+  physicalValue: { x: 385, y: 810, fontSize: 15, weight: 700 },
+  streetValue: { x: 390, y: 815, fontSize: 15, weight: 700 },
   commissioner: { x: 765, y: 1000, fontSize: 16, weight: 600, align: "center" },
 } as const;
 
