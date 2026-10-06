@@ -40,7 +40,7 @@ export const TIN_TEMPLATE = {
   assigned: { x: 506, y: 690, fontSize: 17, weight: 400 },
   tinValue: { x: 506, y: 688, fontSize: 25, weight: 700, align: "center" },
   effectValue: { x: 506, y: 750, fontSize: 15, weight: 400, align: "center" },
-  locationValue: { x: 390, y: 798, fontSize: 15, weight: 400 },
+  locationValue: { x: 390, y: 799.5, fontSize: 15, weight: 400 },
   officeValue: { x: 390, y: 915, fontSize: 15, weight: 400 },
   physicalValue: { x: 390, y: 955, fontSize: 15, weight: 400 },
   streetValue: { x: 390, y: 935, fontSize: 15, weight: 400 },
