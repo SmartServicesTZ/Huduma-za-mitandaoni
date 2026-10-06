@@ -92,6 +92,11 @@ export const activitySeed: ActivityItem[] = [
 ];
 
 export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], initialized: boolean): ServiceCatalogItem[] {
+  // Once Firestore has been initialized, it is the source of truth.
+  // Defaults are only used during the initial bootstrap so deleted services
+  // are not silently resurrected on every page load.
+  if (initialized) return configured;
+
   const merged = new Map(serviceCatalog.map((service) => [service.slug, service]));
   configured.forEach((service) => merged.set(service.slug, service));
   return Array.from(merged.values());
