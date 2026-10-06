@@ -86,19 +86,19 @@ const DEFAULT_LICENSE_LAYOUT = {
   issueX: 35.1, issueY: 44.73, issueSize: 14, expiryX: 35.1, expiryY: 48.19, expirySize: 14,
   branchX: 35.1, branchY: 51.6, branchSize: 14, regionX: 35.1, regionY: 58.6, regionSize: 14,
   wardX: 35.1, wardY: 61.65, wardSize: 14, streetX: 35.1, streetY: 65.45, streetSize: 14,
-  amountX: 35.1, amountY: 70.42, amountSize: 14, qrX: 65.2, qrY: 56.2, qrSize: 220,
+  amountX: 35.1, amountY: 70.42, amountSize: 14, qrX: 65.2, qrY: 67.5, qrSize: 220,
 };
 
-const FONT_SANS = '"Helvetica Neue", Arial, sans-serif';
-const FONT_SANS_LIGHT = '"Helvetica Neue", Arial, sans-serif';
-const FONT_MONO = '"Courier New", Courier, monospace';
+const FONT_SANS = '"Roboto", "Arial Narrow", Arial, sans-serif';
+const FONT_SANS_LIGHT = '"Roboto", "Arial Narrow", Arial, sans-serif';
+const FONT_MONO = '"Roboto Mono", "Courier New", monospace';
 const FONT_SERIF = 'Georgia, "Times New Roman", serif';
 
 const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 225, size: 20, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 260, size: 20, weight: 900, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 325, size: 14, family: FONT_SERIF, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 45, y: 340, size: 20, weight: 600, family: FONT_SANS },
+  { text: "License Details", x: 45, y: 360, size: 20, weight: 600, family: FONT_SANS },
   { text: "Issuing office", x: 75, y: 373.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "Tax Identification No.:", x: 75, y: 413.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
   { text: "License Issued To:", x: 75, y: 455.5, size: 11, weight: 400, family: FONT_SANS_LIGHT },
@@ -160,15 +160,13 @@ export async function renderBusinessLicenseCanvas(
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 48;
+    const logoSize = 64;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(centerX - logoSize / 2 - 4, centerY - logoSize / 2 - 4, logoSize + 8, logoSize + 8);
     ctx.save();
     ctx.beginPath();
     ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
