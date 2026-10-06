@@ -14,7 +14,7 @@ function Field({ label, english, children }: FieldProps) {
 }
 
 export default function TINCertificatePage() {
-  const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:"", traLocation:"", taxOffice:"", physicalLocation:"", streetArea:"", commissioner:"" });
+  const [form, setForm] = useState<TinCertificateForm>({ name:"JUMA ALLY MWAKALONGA", tin:"123-456-789", effectDate:"2026-01-01", traLocation:"DAR ES SALAAM", taxOffice:"KINONDONI", physicalLocation:"KIJITONYAMA", streetArea:"MWENGE / KIJITONYAMA", commissioner:"COMMISSIONER GENERAL" });
   const [busy, setBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
