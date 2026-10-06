@@ -7,10 +7,10 @@ type Network = "Airtel" | "Vodacom" | "Yas" | "Halotel";
 const NETWORKS: Record<Network, {
   logo: string; color: string; dark: string; accent: string; slogan: string; footer: string; pattern: string;
 }> = {
-  Airtel: { logo: "/airtel-logo.png", color: "#e60000", dark: "#a90000", accent: "#fff0f0", slogan: "AIRTEL TANZANIA", footer: "This card remains the property of Airtel Tanzania PLC.", pattern: "airtel" },
-  Vodacom: { logo: "/vodacom-logo.png", color: "#e60000", dark: "#b00000", accent: "#fff1f1", slogan: "VODACOM TANZANIA", footer: "This card remains the property of Vodacom Tanzania PLC.", pattern: "vodacom" },
-  Yas: { logo: "/yas-logo.png", color: "#111111", dark: "#000000", accent: "#f2f2f2", slogan: "YAS TANZANIA", footer: "This card is issued for authorized agent use only.", pattern: "yas" },
-  Halotel: { logo: "/halotel-logo.png", color: "#ff6900", dark: "#d94f00", accent: "#fff3e8", slogan: "HALOTEL TANZANIA", footer: "This card remains the property of Halotel Tanzania.", pattern: "halotel" },
+  Airtel: { logo: "/Airtel.png", color: "#e60000", dark: "#a90000", accent: "#fff0f0", slogan: "AIRTEL TANZANIA", footer: "This card remains the property of Airtel Tanzania PLC.", pattern: "airtel" },
+  Vodacom: { logo: "/Vodacom.png", color: "#e60000", dark: "#b00000", accent: "#fff1f1", slogan: "VODACOM TANZANIA", footer: "This card remains the property of Vodacom Tanzania PLC.", pattern: "vodacom" },
+  Yas: { logo: "/Yas.png", color: "#111111", dark: "#000000", accent: "#f2f2f2", slogan: "YAS TANZANIA", footer: "This card is issued for authorized agent use only.", pattern: "yas" },
+  Halotel: { logo: "/Halotel.png", color: "#ff6900", dark: "#d94f00", accent: "#fff3e8", slogan: "HALOTEL TANZANIA", footer: "This card remains the property of Halotel Tanzania.", pattern: "halotel" },
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
