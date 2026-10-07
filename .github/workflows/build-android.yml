@@ -3,10 +3,6 @@ name: Build $teward Tz Android APK
 on:
   push:
     branches: [main]
-    paths:
-      - "manifest.webmanifest"
-      - "pwa-icon.svg"
-      - ".github/workflows/build-android.yml"
   workflow_dispatch:
 
 permissions:
