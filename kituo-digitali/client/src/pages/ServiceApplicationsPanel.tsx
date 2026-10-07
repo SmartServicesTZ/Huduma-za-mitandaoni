@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  adminSaveCollectionItem,
   getServiceApplicationDocument,
   markServiceApplicationViewed,
   setServiceApplicationStatus,
@@ -136,6 +137,12 @@ function PanelStyles() {
       .service-app-admin-button-danger { background: #fff4f3; border-color: #e6b7b2; color: #a63b30; }
       .service-app-admin-button:disabled, .service-app-admin-open:disabled, .service-app-admin-tab:disabled { cursor: not-allowed; opacity: .55; }
       .service-app-admin-actions { justify-content: flex-end; margin-top: 22px; }
+      .service-app-admin-actions-inline { margin-top: 0; }
+      .service-app-admin-reply-modes { display: flex; gap: 7px; flex-wrap: wrap; }
+      .service-app-admin-mode, .service-app-admin-mode-active { border: 1px solid #cbd9d0; border-radius: 8px; cursor: pointer; font-size: .78rem; font-weight: 800; padding: 8px 11px; }
+      .service-app-admin-mode { background: #fff; color: #52625a; }
+      .service-app-admin-mode-active { background: #e9f8ef; border-color: #168653; color: #126c44; }
+      .service-app-admin-reply-input { background: #fff; border: 1px solid #cad8cf; border-radius: 8px; color: #17251f; font: inherit; padding: 9px 10px; width: 100%; }
       .service-app-admin-error { background: #fff4f3; border: 1px solid #e7bbb6; border-radius: 8px; color: #9d332b; font-size: .84rem; margin-top: 10px; padding: 9px 11px; }
       .service-app-admin-form { display: grid; gap: 13px; }
       .service-app-admin-form label { color: #4e5d55; font-size: .78rem; font-weight: 700; }
@@ -159,6 +166,9 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   const [selected, setSelected] = useState<ServiceApplication | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [replyBody, setReplyBody] = useState("");
+  const [replySubject, setReplySubject] = useState("");
+  const [replyMode, setReplyMode] = useState<"reply" | "request-info">("reply");
   const [error, setError] = useState("");
   const [documentBusy, setDocumentBusy] = useState<string | null>(null);
   const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
@@ -176,6 +186,9 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     setSelected(application);
     setRejecting(false);
     setRejectReason("");
+    setReplyBody("");
+    setReplySubject("");
+    setReplyMode("reply");
     setError("");
     setDocumentPreview(null);
   };
@@ -222,6 +235,42 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
       return;
     }
     await runStatus("REJECTED", reason);
+  };
+
+  const sendApplicationMessage = async () => {
+    if (!selected) return;
+    const body = replyBody.trim();
+    if (!body) {
+      setError("Andika ujumbe kabla ya kutuma.");
+      return;
+    }
+    const subject = replySubject.trim() || (replyMode === "request-info" ? "Tafadhali ongeza taarifa kwenye ombi lako" : "Majibu kuhusu ombi lako");
+    setError("");
+    try {
+      const result = await onRun(
+        () => adminSaveCollectionItem(adminId, "messages", {
+          recipientId: selected.userId,
+          subject,
+          body,
+          applicationId: selected.applicationId || selected.id,
+          applicationReference: String((selected as ServiceApplication & { reference?: string }).reference ?? selected.applicationId ?? selected.id),
+          serviceSlug: selected.serviceSlug,
+          serviceName: selected.serviceName,
+          messageType: "service_application_reply",
+          broadcast: false,
+        }),
+        replyMode === "request-info" ? "Ombi la taarifa za ziada limetumwa kwa mtumiaji." : "Jibu limetumwa kwa mtumiaji.",
+      );
+      if (result !== false) {
+        setReplyBody("");
+        setReplySubject("");
+        setReplyMode("reply");
+      } else {
+        setError("Ujumbe haukutumwa. Jaribu tena.");
+      }
+    } catch (messageError) {
+      setError(errorText(messageError));
+    }
   };
 
   const loadDocument = async (field: ServiceFormField, action: DocumentAction) => {
@@ -395,6 +444,21 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                 </div>
               </>
             )}
+
+            <h4 className="service-app-admin-section-title">Mawasiliano na mtumiaji</h4>
+            <div className="service-app-admin-form">
+              <div className="service-app-admin-reply-modes">
+                <button type="button" className={replyMode === "reply" ? "service-app-admin-mode-active" : "service-app-admin-mode"} onClick={() => setReplyMode("reply")}>Jibu ombi</button>
+                <button type="button" className={replyMode === "request-info" ? "service-app-admin-mode-active" : "service-app-admin-mode"} onClick={() => setReplyMode("request-info")}>Omba taarifa za ziada</button>
+              </div>
+              <label htmlFor="service-app-admin-reply-subject">Kichwa cha ujumbe</label>
+              <input id="service-app-admin-reply-subject" className="service-app-admin-reply-input" value={replySubject} onChange={(event) => setReplySubject(event.target.value)} placeholder={replyMode === "request-info" ? "Tafadhali kamilisha taarifa za ombi" : "Majibu kuhusu ombi lako"} />
+              <label htmlFor="service-app-admin-reply-body">{replyMode === "request-info" ? "Taarifa zinazohitajika" : "Ujumbe wa admin"}</label>
+              <textarea id="service-app-admin-reply-body" value={replyBody} onChange={(event) => setReplyBody(event.target.value)} placeholder={replyMode === "request-info" ? "Mwambie mtumiaji taarifa gani akamilishe..." : "Andika jibu kwa mtumiaji..."} />
+              <div className="service-app-admin-actions service-app-admin-actions-inline">
+                <button className="service-app-admin-button" type="button" disabled={busy || !replyBody.trim()} onClick={() => void sendApplicationMessage()}>{replyMode === "request-info" ? "Tuma ombi la taarifa" : "Tuma jibu kwa mtumiaji"}</button>
+              </div>
+            </div>
 
             {selected.rejectionReason && <p className="service-app-admin-error"><strong>Rejection reason:</strong> {selected.rejectionReason}</p>}
             {error && <p className="service-app-admin-error" role="alert">{error}</p>}
