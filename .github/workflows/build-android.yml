@@ -12,8 +12,6 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      ANDROID_BUILD_TARGET: "debug"
 
     steps:
       - name: Checkout
@@ -24,26 +22,68 @@ jobs:
         with:
           node-version: 22
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
       - name: Install Bubblewrap
         run: npm install --global @bubblewrap/cli
 
-      - name: Initialize Android TWA project
+      - name: Generate TWA project without interactive prompts
         run: |
           rm -rf android-twa
           mkdir -p android-twa
+          cat > android-twa/twa-manifest.json <<'EOF'
+          {
+            "manifestVersion": "1",
+            "name": "$teward Tz",
+            "launcherName": "$teward Tz",
+            "packageId": "tz.steward.huduma",
+            "host": "steward-tz.github.io",
+            "startUrl": "/Huduma-za-mtandao/",
+            "webManifestUrl": "https://steward-tz.github.io/Huduma-za-mtandao/manifest.webmanifest",
+            "display": "standalone",
+            "orientation": "portrait",
+            "themeColor": "#071a36",
+            "themeColorDark": "#071a36",
+            "navigationColor": "#071a36",
+            "navigationColorDark": "#071a36",
+            "navigationDividerColor": "#071a36",
+            "navigationDividerColorDark": "#071a36",
+            "backgroundColor": "#071a36",
+            "iconUrl": "https://steward-tz.github.io/Huduma-za-mtandao/pwa-icon.svg",
+            "maskableIconUrl": "https://steward-tz.github.io/Huduma-za-mtandao/pwa-icon.svg",
+            "splashScreenFadeOutDuration": 300,
+            "enableNotifications": true,
+            "appVersionCode": 1,
+            "appVersionName": "1.0.0",
+            "minSdkVersion": 23,
+            "signingKey": {
+              "path": "./android.keystore",
+              "alias": "android"
+            },
+            "generatorApp": "@bubblewrap/cli"
+          }
+          EOF
+          bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_HOME"
           cd android-twa
-          { printf '\n%.0s' {1..17}; printf 'n\n'; } | bubblewrap init --manifest="https://steward-tz.github.io/Huduma-za-mtandao/manifest.webmanifest" --directory="."
+          bubblewrap update --skipVersionUpgrade --manifest="./twa-manifest.json"
 
-      - name: Build Android project
-        working-directory: android-twa
-        run: |
-          bubblewrap build --skipSigning
-
-      - name: Build installable debug APK
+      - name: Build debug APK
         working-directory: android-twa
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
