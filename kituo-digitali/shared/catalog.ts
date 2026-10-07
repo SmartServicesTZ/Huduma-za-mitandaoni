@@ -93,11 +93,15 @@ export const activitySeed: ActivityItem[] = [
 ];
 
 export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], initialized: boolean): ServiceCatalogItem[] {
-  // Once Firestore has been initialized, it is the source of truth.
-  // Defaults are only used during the initial bootstrap so deleted services
-  // are not silently resurrected on every page load.
-  if (initialized) return configured;
-
+  // Firestore remains the source of truth for existing services. The new
+  // Access Lipa Namba entry is kept available while its backend seed is
+  // being rolled out, so the public portal does not depend on an admin
+  // opening the dashboard first.
+  if (initialized) {
+    const access = serviceCatalog.find((service) => service.slug === "access-lipa-number");
+    if (access && !configured.some((service) => service.slug === access.slug)) return [...configured, access];
+    return configured;
+  }
   const merged = new Map(serviceCatalog.map((service) => [service.slug, service]));
   configured.forEach((service) => merged.set(service.slug, service));
   return Array.from(merged.values());
