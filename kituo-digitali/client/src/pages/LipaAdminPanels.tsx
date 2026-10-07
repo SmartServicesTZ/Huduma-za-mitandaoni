@@ -151,8 +151,6 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const [rewardSaving, setRewardSaving] = useState(false);
   const [replySaving, setReplySaving] = useState(false);
   const [replyForm, setReplyForm] = useState({ reply: "", infoRequest: "" });
-  const [replySaving, setReplySaving] = useState(false);
-  const [replyForm, setReplyForm] = useState({ reply: "", infoRequest: "" });
   const [rewardForm, setRewardForm] = useState({
     lipaNumber: "",
     verifiedTransactions: 0,
@@ -189,7 +187,6 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
       rewardPaymentReference: application.rewardPaymentReference ?? "",
       rewardNote: application.rewardNote ?? "",
     });
-    setReplyForm({ reply: application.adminReply ?? "", infoRequest: application.additionalInfoRequest ?? "" });
     setReplyForm({ reply: application.adminReply ?? "", infoRequest: application.additionalInfoRequest ?? "" });
     const key = application.applicationId || application.id;
     if (!viewedApplications.current.has(key)) {
@@ -243,18 +240,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     }
   };
 
-  const saveAdminReply = async () => {
-    if (!selected || (!replyForm.reply.trim() && !replyForm.infoRequest.trim())) return;
-    setReplySaving(true);
-    try {
-      await replyToLipaApplication(selected.applicationId || selected.id, replyForm.reply, replyForm.infoRequest);
-      toast.success("Jibu/ombi la taarifa limehifadhiwa na kutumwa.");
-      setSelected((current) => current ? { ...current, adminReply: replyForm.reply.trim(), additionalInfoRequest: replyForm.infoRequest.trim() } : current);
-    } catch (error) { toast.error(errorText(error)); }
-    finally { setReplySaving(false); }
-  };
-
-  const saveRewardTracking = async () =>
+  const saveRewardTracking = async () => {
     if (!selected || Number(selected.reward ?? 0) <= 0) return;
     setRewardSaving(true);
     try {
