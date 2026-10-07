@@ -138,27 +138,27 @@ export async function renderBusinessLicenseCanvas(
   const valueStyle = { size: 14, weight: 600, family: FONT_SANS, color: "#050505" };
   const titleCase = (value: string) => value.trim().toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#58b9d1", align: "center", maxWidth: 920 }, `B.L. NO : ${licenseNumber || "—"}`);
-  drawText(ctx, { x: layout.officeX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.officeY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.officeSize }, "DAR ES SALAAM CITY COUNCIL");
-  drawText(ctx, { x: layout.tinX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.tinY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.tinSize }, form.tin);
-  drawText(ctx, { x: layout.nameX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.nameY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.nameSize }, owner);
-  drawText(ctx, { x: layout.businessX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.businessY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.businessSize }, businessType);
-  drawText(ctx, { x: layout.typeX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.typeY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.typeSize }, form.licenseType);
-  drawText(ctx, { x: layout.issueX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.issueY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.issueSize }, formatTemplateDate(issueDate));
-  drawText(ctx, { x: layout.expiryX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.expiryY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.expirySize }, formatTemplateDate(expiryDate));
-  drawText(ctx, { x: layout.branchX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.branchY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.branchSize }, form.principalBranch);
-  drawText(ctx, { x: layout.regionX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.regionY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.regionSize }, titleCase(form.region));
-  drawText(ctx, { x: layout.wardX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.wardY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.wardSize }, titleCase(form.ward));
-  drawText(ctx, { x: layout.streetX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.streetY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.streetSize }, titleCase(form.street));
-  drawText(ctx, { x: layout.amountX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.amountY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.amountSize }, amount);
+  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#58b9d1", align: "center", maxWidth: 920 }, `B.L. NO : ${licenseNumber || "—"}`);
+  drawText(ctx, { x: layout.officeX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.officeSize }, "DAR ES SALAAM CITY COUNCIL");
+  drawText(ctx, { x: layout.tinX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.tinSize }, form.tin);
+  drawText(ctx, { x: layout.nameX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.nameSize }, owner);
+  drawText(ctx, { x: layout.businessX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.businessSize }, businessType);
+  drawText(ctx, { x: layout.typeX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.typeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.typeSize }, form.licenseType);
+  drawText(ctx, { x: layout.issueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.issueY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.issueSize }, formatTemplateDate(issueDate));
+  drawText(ctx, { x: layout.expiryX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.expiryY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.expirySize }, formatTemplateDate(expiryDate));
+  drawText(ctx, { x: layout.branchX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.branchY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.branchSize }, form.principalBranch);
+  drawText(ctx, { x: layout.regionX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.regionY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.regionSize }, titleCase(form.region));
+  drawText(ctx, { x: layout.wardX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.wardY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.wardSize }, titleCase(form.ward));
+  drawText(ctx, { x: layout.streetX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.streetY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.streetSize }, titleCase(form.street));
+  drawText(ctx, { x: layout.amountX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.amountY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.amountSize }, amount);
 
   const qrReady = Boolean(licenseNumber && /^\d{3}-\d{3}-\d{3}$/.test(form.tin) && expiryDate);
   if (qrReady) {
     const qrData = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc: LICENSE_HC });
     const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 900 });
     const [qrImage, logo] = await Promise.all([loadImage(qrUrl), loadImage(assetUrl("tausi-logo.png"))]);
-    const qrX = layout.qrX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH;
-    const qrY = layout.qrY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT;
+    const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
+    const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
     const qrSize = layout.qrSize;
     const logoSize = 88;
     const centerX = qrX + qrSize / 2;
