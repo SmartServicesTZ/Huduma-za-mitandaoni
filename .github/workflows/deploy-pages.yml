@@ -47,11 +47,12 @@ jobs:
           VITE_FIREBASE_STORAGE_READY: ${{ vars.VITE_FIREBASE_STORAGE_READY }}
         run: pnpm build
 
-      - name: Verify Pages files
+      - name: Prepare GitHub Pages SPA fallback
         working-directory: kituo-digitali
         run: |
           test -f dist/public/index.html
-          echo "Pages artifact ready."
+          cp dist/public/index.html dist/public/404.html
+          echo "Pages artifact ready with SPA 404 fallback."
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
