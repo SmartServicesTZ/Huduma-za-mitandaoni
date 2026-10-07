@@ -430,8 +430,10 @@ export const submitLipaApplication = callable(async (request) => {
   if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new ApiError("invalid-argument", "Namba ya ombi si sahihi.");
   const configRef = db.collection("lipaServices").doc(networkId);
   const configSnapshot = await configRef.get();
-  if (!configSnapshot.exists) throw new ApiError("not-found", "Mtandao huu haujapatikana.");
-  const config = configSnapshot.data()!;
+  const configured = configSnapshot.exists ? configSnapshot.data()! : null;
+  const fallback = defaultLipaServices.find((item) => String(item.id) === networkId) ?? null;
+  const config = configured ?? fallback;
+  if (!config) throw new ApiError("not-found", "Mtandao huu haujapatikana.");
   if (config.active !== true) throw new ApiError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
   const fields = Array.isArray(config.fields) ? config.fields as Array<Record<string, unknown>> : [];
   const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId);
