@@ -47,7 +47,7 @@ export default function TINCertificatePage() {
     await renderTinCertificateCanvas(form, output);
 
     const cropX = 34;
-    const cropY = 34;
+    const cropY = 30;
     const cropWidth = output.width - 68;
     const cropBottom = 1190;
     const cropHeight = cropBottom - cropY;
