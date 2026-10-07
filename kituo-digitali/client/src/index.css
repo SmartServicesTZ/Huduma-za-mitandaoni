@@ -966,3 +966,55 @@ body{overflow-x:hidden;}
 
 .restriction-custom-message{white-space:pre-wrap;overflow-wrap:anywhere}
 .account-notification p{white-space:pre-wrap}
+
+
+/* FORM CONTAINMENT FIX — keep user-entered data inside its field/card */
+form, fieldset, form > *, .auth-fields, .auth-fields > *, .admin-form-grid, .admin-form-grid > *,
+.license-form-grid, .license-form-grid > *, .license-field, .license-field > *,
+.form-grid, .form-grid > *, .form-row, .form-row > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+input, textarea, select {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+textarea {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  resize: vertical;
+}
+input, select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+label {
+  min-width: 0;
+  max-width: 100%;
+}
+label > span, label > div, .field-label, .form-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+input[type="file"] {
+  overflow: hidden;
+  max-width: 100%;
+}
+@media (max-width: 700px) {
+  form, .form-grid, .form-row, .license-form-grid, .admin-form-grid, .auth-fields {
+    width: 100%;
+    max-width: 100%;
+  }
+  .license-field input, .license-field textarea, .license-field select,
+  .auth-fields input, .admin-form-grid input, .admin-form-grid textarea,
+  .admin-form-grid select {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}
