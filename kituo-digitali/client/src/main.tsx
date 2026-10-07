@@ -27,9 +27,18 @@ if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", recover);
 }
 
-// Register the PWA service worker on the GitHub Pages project scope.
+// Reset stale PWA state once after the repository rename, then register the current worker.
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
+    const resetKey = "smartservices-tz-pwa-reset-v4";
+    if (sessionStorage.getItem(resetKey) !== "1") {
+      sessionStorage.setItem(resetKey, "1");
+      Promise.all([
+        navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((r) => r.unregister()))),
+        "caches" in window ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))) : Promise.resolve(),
+      ]).finally(() => window.location.reload());
+      return;
+    }
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
   });
 }
