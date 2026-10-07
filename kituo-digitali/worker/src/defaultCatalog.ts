@@ -72,7 +72,7 @@ const accessBackend = (slug: string, name: string, fields: ServiceFormField[], o
   icon: "wallet-cards",
   category: "Maombi ya Access Lipa Namba",
   tokenCost: 0,
-  isVisible: false,
+  isVisible: true,
   active: true,
   isFree: true,
   isLocked: false,
