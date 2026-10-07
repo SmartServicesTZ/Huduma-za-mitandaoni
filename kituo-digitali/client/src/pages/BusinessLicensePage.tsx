@@ -92,7 +92,7 @@ function issuingOffice(_district: string) {
 }
 
 function Field({ label, english, children, required = false }: { label: string; english: string; children: React.ReactNode; required?: boolean }) {
-  return <label className="license-field"><span><b>{label}{required ? " *" : ""}</b><small>{english}</small></span>{children}</label>;
+  return <label className="license-field"><span><b>{label}{required && <span className="required-star">*</span>}</b><small>{english}</small></span>{children}</label>;
 }
 
 function SelectField({ value, onChange, placeholder, children }: { value: string; onChange: (value: string) => void; placeholder: string; children: React.ReactNode }) {
