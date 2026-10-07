@@ -1,4 +1,4 @@
-name: Build $teward Tz Android APK
+name: Build SmartServicesTZ Android APK
 
 on:
   push:
@@ -49,8 +49,8 @@ jobs:
           cat > android-twa/twa-manifest.json <<'EOF'
           {
             "manifestVersion": "1",
-            "name": "$teward Tz",
-            "launcherName": "$teward Tz",
+            "name": "SmartServicesTZ",
+            "launcherName": "SmartServicesTZ",
             "packageId": "tz.steward.huduma",
             "host": "smartservicestz.github.io",
             "startUrl": "/Huduma-za-mitandaoni/?v=3",
@@ -68,8 +68,8 @@ jobs:
             "maskableIconUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/pwa-icon.svg?v=3",
             "splashScreenFadeOutDuration": 450,
             "enableNotifications": true,
-            "appVersionCode": 3,
-            "appVersionName": "2.0.0",
+            "appVersionCode": 4,
+            "appVersionName": "3.0.0",
             "minSdkVersion": 23,
             "signingKey": {
               "path": "./android.keystore",
@@ -95,7 +95,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: steward-tz-debug-apk-v2
+          name: smartservicestz-debug-apk-v3
           path: android-twa/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
