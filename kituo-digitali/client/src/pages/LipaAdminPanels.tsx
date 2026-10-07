@@ -151,6 +151,8 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const [rewardSaving, setRewardSaving] = useState(false);
   const [replySaving, setReplySaving] = useState(false);
   const [replyForm, setReplyForm] = useState({ reply: "", infoRequest: "" });
+  const [replySaving, setReplySaving] = useState(false);
+  const [replyForm, setReplyForm] = useState({ reply: "", infoRequest: "" });
   const [rewardForm, setRewardForm] = useState({
     lipaNumber: "",
     verifiedTransactions: 0,
@@ -187,6 +189,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
       rewardPaymentReference: application.rewardPaymentReference ?? "",
       rewardNote: application.rewardNote ?? "",
     });
+    setReplyForm({ reply: application.adminReply ?? "", infoRequest: application.additionalInfoRequest ?? "" });
     setReplyForm({ reply: application.adminReply ?? "", infoRequest: application.additionalInfoRequest ?? "" });
     const key = application.applicationId || application.id;
     if (!viewedApplications.current.has(key)) {
@@ -240,7 +243,18 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     }
   };
 
-  const saveRewardTracking = async () => {
+  const saveAdminReply = async () => {
+    if (!selected || (!replyForm.reply.trim() && !replyForm.infoRequest.trim())) return;
+    setReplySaving(true);
+    try {
+      await replyToLipaApplication(selected.applicationId || selected.id, replyForm.reply, replyForm.infoRequest);
+      toast.success("Jibu/ombi la taarifa limehifadhiwa na kutumwa.");
+      setSelected((current) => current ? { ...current, adminReply: replyForm.reply.trim(), additionalInfoRequest: replyForm.infoRequest.trim() } : current);
+    } catch (error) { toast.error(errorText(error)); }
+    finally { setReplySaving(false); }
+  };
+
+  const saveRewardTracking = async () =>
     if (!selected || Number(selected.reward ?? 0) <= 0) return;
     setRewardSaving(true);
     try {
@@ -263,6 +277,13 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     <div className="lipa-admin-card lipa-admin-table-wrap"><table className="lipa-admin-table"><caption className="lipa-admin-muted">Lipa applications filtered by {tab}</caption><thead><tr>{columns.map(([key, label]) => <th key={key} scope="col"><button type="button" className="lipa-admin-sort" onClick={() => changeSort(key)}>{label}{sortKey === key ? (descending ? <ArrowDown size={13} aria-label="descending" /> : <ArrowUp size={13} aria-label="ascending" />) : null}</button></th>)}<th scope="col">Action</th></tr></thead><tbody>{visibleApplications.length === 0 ? <tr><td colSpan={columns.length + 1}><div className="lipa-admin-empty">Hakuna maombi kwenye kichupo hiki.</div></td></tr> : visibleApplications.map((application) => <tr key={application.id || application.applicationId}><td>{application.applicationId || application.id}</td><td>{application.userName || application.userId || "—"}<small>UID: {application.userId}</small></td><td>{byNetwork[application.networkId]?.name ?? application.network ?? "—"}</td><td>{application.applicantName || "—"}</td><td>{application.phone || "—"}</td><td>{application.nidaNumber || "—"}</td><td>{application.tinNumber || "—"}</td><td>{application.businessName || "—"}</td><td>{dateText(application.submittedAt)}</td><td><StatusBadge status={application.status} /></td><td>{application.assignedAdmin || "—"}</td><td>{application.lipaNumber || "—"}</td><td>{application.rewardStatus === "PAID" ? "AMELIPWA" : application.rewardStatus === "NOT_ELIGIBLE" ? "HASTAHILI" : application.rewardStatus === "UNPAID" ? "BADO" : "INASUBIRI"}<small>{Number(application.reward ?? 0) > 0 ? ` · TZS ${Number(application.reward).toLocaleString()}` : ""}</small></td><td><button type="button" className="lipa-admin-row-action" onClick={() => openApplication(application)}><Eye size={15} /> OPEN</button></td></tr>)}</tbody></table></div>
     {selected && <div className="lipa-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="lipa-admin-modal" role="dialog" aria-modal="true" aria-labelledby="lipa-application-detail-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-application-detail-heading">Application {selected.applicationId || selected.id}</h3><p>{byNetwork[selected.networkId]?.name ?? selected.network ?? "Unknown network"} · <StatusBadge status={selected.status} /></p></div><button type="button" className="lipa-admin-close" aria-label="Close application details" onClick={() => setSelected(null)}><X size={19} /></button></div>
       <dl className="lipa-admin-detail-grid"><div className="lipa-admin-detail-item"><dt>Applicant</dt><dd>{selected.applicantName || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>User account</dt><dd>{selected.userName || selected.userId || "—"}<br /></dd></div><div className="lipa-admin-detail-item"><dt>Phone</dt><dd>{selected.phone || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>NIDA</dt><dd>{selected.nidaNumber || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>TIN</dt><dd>{selected.tinNumber || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Business name</dt><dd>{selected.businessName || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>User ID</dt><dd>{selected.userId || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Submitted</dt><dd>{dateText(selected.submittedAt)}</dd></div><div className="lipa-admin-detail-item"><dt>Updated</dt><dd>{dateText(selected.updatedAt)}</dd></div><div className="lipa-admin-detail-item"><dt>Assigned admin</dt><dd>{selected.assignedAdmin || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Rejection reason</dt><dd>{selected.rejectionReason || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Maelezo ya ziada</dt><dd>{selected.additionalNotes || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Zawadi</dt><dd>TZS {Number(selected.reward ?? 0).toLocaleString()} · {selected.rewardStatus || "UNPAID"}</dd></div><div className="lipa-admin-detail-item"><dt>Namba ya Lipa</dt><dd>{selected.lipaNumber || "Bado haijawekwa"}</dd></div><div className="lipa-admin-detail-item"><dt>Miamala iliyothibitishwa</dt><dd>{Number(selected.verifiedTransactions ?? 0).toLocaleString()}</dd></div></dl>
+       <section className="lipa-admin-card" style={{marginTop:18,padding:16}}>
+         <h4 className="lipa-admin-section-title" style={{marginTop:0}}>Mawasiliano na mwombaji</h4>
+         <p className="lipa-admin-muted">Jibu ombi au mwombe mtumiaji taarifa za ziada. Ujumbe utatumwa moja kwa moja kwenye mfumo wake.</p>
+         <div className="lipa-admin-field" style={{marginTop:12}}><label>Jibu la Admin</label><textarea value={replyForm.reply} onChange={(e) => setReplyForm((v) => ({...v, reply:e.target.value}))} placeholder="Andika jibu kwa mwombaji..." /></div>
+         <div className="lipa-admin-field" style={{marginTop:12}}><label>Taarifa za ziada zinazohitajika</label><textarea value={replyForm.infoRequest} onChange={(e) => setReplyForm((v) => ({...v, infoRequest:e.target.value}))} placeholder="Mfano: Tafadhali tuma picha iliyo wazi ya NIDA..." /></div>
+         <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={replySaving || (!replyForm.reply.trim() && !replyForm.infoRequest.trim())} onClick={() => void saveAdminReply()}>{replySaving ? "Inatuma..." : "TUMA JIBU / OMBI LA TAARIFA"}</button></div>
+       </section>
       <h4 className="lipa-admin-section-title">Status timestamps</h4><dl className="lipa-admin-detail-grid">{(["PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-detail-item" key={status}><dt>{status}</dt><dd>{dateText(applicationStatusTimestamp(selected, status))}</dd></div>)}</dl>
       {selected.status === "APPROVED" && Number(selected.reward ?? 0) > 0 && <section className="lipa-admin-card" style={{marginTop:18,padding:16}}>
         <h4 className="lipa-admin-section-title" style={{marginTop:0}}>Ufuatiliaji wa Lipa & Zawadi</h4>
