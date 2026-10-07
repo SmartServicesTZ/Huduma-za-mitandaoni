@@ -3,6 +3,7 @@ import { ArrowLeft, Download, FileBadge, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { renderTinCertificateCanvas, type TinCertificateForm } from "@/lib/tinCertificateCanvas";
+import { PDFDocument } from "pdf-lib";
 
 type FieldProps = { label: string; english?: string; children: React.ReactNode };
 
@@ -41,35 +42,63 @@ export default function TINCertificatePage() {
 
   const set = (key: keyof TinCertificateForm, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
-  const download = async () => {
+  const prepareDownloadCanvas = async () => {
+    const output = document.createElement("canvas");
+    await renderTinCertificateCanvas(form, output);
+
+    const cropX = 34;
+    const cropY = 34;
+    const cropWidth = output.width - 68;
+    const cropBottom = 1190;
+    const cropHeight = cropBottom - cropY;
+
+    const cropped = document.createElement("canvas");
+    cropped.width = cropWidth;
+    cropped.height = cropHeight;
+    const ctx = cropped.getContext("2d");
+    if (!ctx) throw new Error("Imeshindikana kuandaa cheti.");
+    ctx.drawImage(output, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+    return cropped;
+  };
+
+  const downloadPng = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const output = document.createElement("canvas");
-      await renderTinCertificateCanvas(form, output);
-      // Crop the downloaded file to the actual certificate area.
-      // Keep the Live Preview unchanged; only the exported PNG is cropped.
-      const cropX = 34;
-      const cropY = 34;
-      const cropWidth = output.width - 68;
-      // Kata zaidi sehemu ya chini ili download ibaki na eneo halisi la cheti.
-      // Live Preview haibadiliki.
-      const cropBottom = 1190;
-      const cropHeight = cropBottom - cropY;
-      const cropped = document.createElement("canvas");
-      cropped.width = cropWidth;
-      cropped.height = cropHeight;
-      const cropCtx = cropped.getContext("2d");
-      if (!cropCtx) throw new Error("Imeshindikana kuandaa picha ya kupakua.");
-      cropCtx.drawImage(output, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-
+      const cropped = await prepareDownloadCanvas();
       const link = document.createElement("a");
-      link.download = "tin-preview.png";
+      link.download = "tin-certificate.png";
       link.href = cropped.toDataURL("image/png");
       link.click();
       toast.success("PNG imepakuliwa.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PNG.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const downloadPdf = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const cropped = await prepareDownloadCanvas();
+      const pngDataUrl = cropped.toDataURL("image/png");
+      const pdf = await PDFDocument.create();
+      const image = await pdf.embedPng(pngDataUrl);
+      const page = pdf.addPage([cropped.width, cropped.height]);
+      page.drawImage(image, { x: 0, y: 0, width: cropped.width, height: cropped.height });
+      const bytes = await pdf.save({ useObjectStreams: true });
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = "tin-certificate.pdf";
+      link.href = url;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("PDF imepakuliwa.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PDF.");
     } finally {
       setBusy(false);
     }
@@ -106,7 +135,8 @@ export default function TINCertificatePage() {
         </div></div>
 
         <div className="tin-actions">
-          <button className="button button--green" disabled={busy} onClick={() => void download()}><Download size={16} /> {busy ? "INATENGENEZA..." : "PAKUA PNG"}</button>
+          <button className="button button--green" disabled={busy} onClick={() => void downloadPng()}><Download size={16} /> {busy ? "INATENGENEZA..." : "PAKUA PNG"}</button>
+          <button className="button button--green" disabled={busy} onClick={() => void downloadPdf()}><Download size={16} /> {busy ? "INATENGENEZA..." : "PAKUA PDF"}</button>
         </div>
       </section>
 
