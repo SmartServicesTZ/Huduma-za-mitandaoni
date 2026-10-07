@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Download, Edit3, ExternalLink, Eye, FileText, Image as ImageIcon, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { adminDeleteCollectionItem, adminSaveCollectionItem, getLipaApplicationDocument, markLipaApplicationViewed, seedServiceCatalog, setLipaApplicationStatus, type LipaApplication, type LipaNetworkConfig } from "@/lib/firebase";
+import { adminDeleteCollectionItem, adminSaveCollectionItem, getLipaApplicationDocument, markLipaApplicationViewed, seedServiceCatalog, setLipaApplicationStatus, updateLipaRewardTracking, type LipaApplication, type LipaNetworkConfig } from "@/lib/firebase";
 import { serviceFieldTypes, type ServiceFormField } from "../../../shared/serviceForms";
 
 type RunAction = (action: () => Promise<unknown>, successMessage: string) => void | boolean | Promise<void | boolean>;
@@ -148,6 +148,15 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
   const [documentBusy, setDocumentBusy] = useState<string | null>(null);
   const [documentError, setDocumentError] = useState("");
+  const [rewardSaving, setRewardSaving] = useState(false);
+  const [rewardForm, setRewardForm] = useState({
+    lipaNumber: "",
+    verifiedTransactions: 0,
+    qualificationStatus: "PENDING_CHECK" as "PENDING_CHECK" | "QUALIFIED" | "NOT_QUALIFIED",
+    rewardStatus: "UNPAID" as "UNPAID" | "PAID" | "NOT_ELIGIBLE",
+    rewardPaymentReference: "",
+    rewardNote: "",
+  });
   const viewedApplications = useRef(new Set<string>());
   const byNetwork = useMemo(() => networkMap(networks), [networks]);
   const pendingCount = applications.filter((application) => application.status === "PENDING").length;
@@ -168,6 +177,14 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     setRejectReason("");
     setDocumentPreview(null);
     setDocumentError("");
+    setRewardForm({
+      lipaNumber: application.lipaNumber ?? "",
+      verifiedTransactions: Number(application.verifiedTransactions ?? 0),
+      qualificationStatus: application.qualificationStatus ?? "PENDING_CHECK",
+      rewardStatus: application.rewardStatus ?? (Number(application.reward ?? 0) > 0 ? "UNPAID" : "NOT_ELIGIBLE"),
+      rewardPaymentReference: application.rewardPaymentReference ?? "",
+      rewardNote: application.rewardNote ?? "",
+    });
     const key = application.applicationId || application.id;
     if (!viewedApplications.current.has(key)) {
       viewedApplications.current.add(key);
@@ -202,6 +219,20 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     if (key === sortKey) setDescending((value) => !value);
     else { setSortKey(key); setDescending(true); }
   };
+
+  const saveRewardTracking = async () => {
+    if (!selected || Number(selected.reward ?? 0) <= 0) return;
+    setRewardSaving(true);
+    try {
+      await updateLipaRewardTracking(selected.applicationId || selected.id, rewardForm);
+      toast.success("Taarifa za Lipa na zawadi zimehifadhiwa.");
+      setSelected((current) => current ? { ...current, ...rewardForm } : current);
+    } catch (error) {
+      toast.error(errorText(error));
+    } finally {
+      setRewardSaving(false);
+    }
+  };
   const columns: Array<[SortKey, string]> = [["applicationId", "Application ID"], ["userName", "User / account"], ["network", "Network"], ["applicantName", "Applicant"], ["phone", "Phone"], ["nidaNumber", "NIDA"], ["tinNumber", "TIN"], ["businessName", "Business"], ["submittedAt", "Date"], ["status", "Status"], ["assignedAdmin", "Assigned admin"]];
 
   return <section className="lipa-admin-panel" aria-labelledby="lipa-applications-heading">
@@ -211,8 +242,21 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     <div className="lipa-admin-tabs" role="tablist" aria-label="Application status filter">{(["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <button key={status} type="button" role="tab" aria-selected={tab === status} className={`lipa-admin-tab ${tab === status ? "lipa-admin-tab-active" : ""}`} onClick={() => setTab(status)}>{status}<span className="lipa-admin-count">{counts[status]}</span></button>)}</div>
     <div className="lipa-admin-card lipa-admin-table-wrap"><table className="lipa-admin-table"><caption className="lipa-admin-muted">Lipa applications filtered by {tab}</caption><thead><tr>{columns.map(([key, label]) => <th key={key} scope="col"><button type="button" className="lipa-admin-sort" onClick={() => changeSort(key)}>{label}{sortKey === key ? (descending ? <ArrowDown size={13} aria-label="descending" /> : <ArrowUp size={13} aria-label="ascending" />) : null}</button></th>)}<th scope="col">Action</th></tr></thead><tbody>{visibleApplications.length === 0 ? <tr><td colSpan={columns.length + 1}><div className="lipa-admin-empty">Hakuna maombi kwenye kichupo hiki.</div></td></tr> : visibleApplications.map((application) => <tr key={application.id || application.applicationId}><td>{application.applicationId || application.id}</td><td>{application.userName || application.userId || "—"}<small>UID: {application.userId}</small></td><td>{byNetwork[application.networkId]?.name ?? application.network ?? "—"}</td><td>{application.applicantName || "—"}</td><td>{application.phone || "—"}</td><td>{application.nidaNumber || "—"}</td><td>{application.tinNumber || "—"}</td><td>{application.businessName || "—"}</td><td>{dateText(application.submittedAt)}</td><td><StatusBadge status={application.status} /></td><td>{application.assignedAdmin || "—"}</td><td><button type="button" className="lipa-admin-row-action" onClick={() => openApplication(application)}><Eye size={15} /> OPEN</button></td></tr>)}</tbody></table></div>
     {selected && <div className="lipa-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="lipa-admin-modal" role="dialog" aria-modal="true" aria-labelledby="lipa-application-detail-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-application-detail-heading">Application {selected.applicationId || selected.id}</h3><p>{byNetwork[selected.networkId]?.name ?? selected.network ?? "Unknown network"} · <StatusBadge status={selected.status} /></p></div><button type="button" className="lipa-admin-close" aria-label="Close application details" onClick={() => setSelected(null)}><X size={19} /></button></div>
-      <dl className="lipa-admin-detail-grid"><div className="lipa-admin-detail-item"><dt>Applicant</dt><dd>{selected.applicantName || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>User account</dt><dd>{selected.userName || selected.userId || "—"}<br /></dd></div><div className="lipa-admin-detail-item"><dt>Phone</dt><dd>{selected.phone || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>NIDA</dt><dd>{selected.nidaNumber || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>TIN</dt><dd>{selected.tinNumber || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Business name</dt><dd>{selected.businessName || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>User ID</dt><dd>{selected.userId || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Submitted</dt><dd>{dateText(selected.submittedAt)}</dd></div><div className="lipa-admin-detail-item"><dt>Updated</dt><dd>{dateText(selected.updatedAt)}</dd></div><div className="lipa-admin-detail-item"><dt>Assigned admin</dt><dd>{selected.assignedAdmin || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Rejection reason</dt><dd>{selected.rejectionReason || "—"}</dd></div></dl>
+      <dl className="lipa-admin-detail-grid"><div className="lipa-admin-detail-item"><dt>Applicant</dt><dd>{selected.applicantName || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>User account</dt><dd>{selected.userName || selected.userId || "—"}<br /></dd></div><div className="lipa-admin-detail-item"><dt>Phone</dt><dd>{selected.phone || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>NIDA</dt><dd>{selected.nidaNumber || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>TIN</dt><dd>{selected.tinNumber || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Business name</dt><dd>{selected.businessName || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>User ID</dt><dd>{selected.userId || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Submitted</dt><dd>{dateText(selected.submittedAt)}</dd></div><div className="lipa-admin-detail-item"><dt>Updated</dt><dd>{dateText(selected.updatedAt)}</dd></div><div className="lipa-admin-detail-item"><dt>Assigned admin</dt><dd>{selected.assignedAdmin || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Rejection reason</dt><dd>{selected.rejectionReason || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Maelezo ya ziada</dt><dd>{selected.additionalNotes || "—"}</dd></div><div className="lipa-admin-detail-item"><dt>Zawadi</dt><dd>TZS {Number(selected.reward ?? 0).toLocaleString()} · {selected.rewardStatus || "UNPAID"}</dd></div><div className="lipa-admin-detail-item"><dt>Namba ya Lipa</dt><dd>{selected.lipaNumber || "Bado haijawekwa"}</dd></div><div className="lipa-admin-detail-item"><dt>Miamala iliyothibitishwa</dt><dd>{Number(selected.verifiedTransactions ?? 0).toLocaleString()}</dd></div></dl>
       <h4 className="lipa-admin-section-title">Status timestamps</h4><dl className="lipa-admin-detail-grid">{(["PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-detail-item" key={status}><dt>{status}</dt><dd>{dateText(applicationStatusTimestamp(selected, status))}</dd></div>)}</dl>
+      {selected.status === "APPROVED" && Number(selected.reward ?? 0) > 0 && <section className="lipa-admin-card" style={{marginTop:18,padding:16}}>
+        <h4 className="lipa-admin-section-title" style={{marginTop:0}}>Ufuatiliaji wa Lipa & Zawadi</h4>
+        <p className="lipa-admin-muted">Hapa utaweka Lipa Namba iliyotolewa, idadi ya miamala kutoka report ya kesho, kisha utatenganisha waliohitimu, ambao hawajafuzu na waliolipwa.</p>
+        <div className="lipa-admin-form-grid" style={{marginTop:12}}>
+          <div className="lipa-admin-field"><label>Lipa Namba iliyotolewa</label><input value={rewardForm.lipaNumber} onChange={(e) => setRewardForm((v) => ({...v,lipaNumber:e.target.value}))} placeholder="Mfano 123456" /></div>
+          <div className="lipa-admin-field"><label>Miamala iliyothibitishwa</label><input type="number" min="0" value={rewardForm.verifiedTransactions} onChange={(e) => setRewardForm((v) => ({...v,verifiedTransactions:Number(e.target.value)||0}))} /></div>
+          <div className="lipa-admin-field"><label>Qualification</label><select value={rewardForm.qualificationStatus} onChange={(e) => setRewardForm((v) => ({...v,qualificationStatus:e.target.value as typeof v.qualificationStatus}))}><option value="PENDING_CHECK">Bado inafuatiliwa</option><option value="QUALIFIED">Amefikia vigezo</option><option value="NOT_QUALIFIED">Hajafikia vigezo</option></select></div>
+          <div className="lipa-admin-field"><label>Hali ya zawadi</label><select value={rewardForm.rewardStatus} onChange={(e) => setRewardForm((v) => ({...v,rewardStatus:e.target.value as typeof v.rewardStatus}))}><option value="UNPAID">Bado hajalipwa</option><option value="PAID">Amelipwa</option><option value="NOT_ELIGIBLE">Hastahili</option></select></div>
+          <div className="lipa-admin-field lipa-admin-field-wide"><label>Reference ya malipo</label><input value={rewardForm.rewardPaymentReference} onChange={(e) => setRewardForm((v) => ({...v,rewardPaymentReference:e.target.value}))} placeholder="Mfano TXN/MPESA reference ya TZS 500" /></div>
+          <div className="lipa-admin-field lipa-admin-field-wide"><label>Maelezo ya ufuatiliaji</label><textarea value={rewardForm.rewardNote} onChange={(e) => setRewardForm((v) => ({...v,rewardNote:e.target.value}))} placeholder="Mfano report ya 08/10/2026, Lipa ilifikisha miamala 12..." /></div>
+        </div>
+        <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={rewardSaving} onClick={() => void saveRewardTracking()}>{rewardSaving ? "Inahifadhi..." : "HIFADHI TAARIFA ZA ZAWADI"}</button></div>
+      </section>}
       <h4 className="lipa-admin-section-title">Applicant data</h4><div className="lipa-admin-detail-grid">{(byNetwork[selected.networkId]?.fields ?? []).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isFile = field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD"; return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName} <span className="lipa-admin-muted">({field.type})</span></dt><dd>{isFile && value ? <div className="lipa-admin-file"><span className="lipa-admin-file-label">{field.type === "IMAGE_UPLOAD" ? <ImageIcon size={15} /> : <FileText size={15} />}<span>Private uploaded document</span></span><span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}>{field.type === "IMAGE_UPLOAD" ? <><Eye size={14} /> Preview</> : <><ExternalLink size={14} /> Open</>}</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> Download</button></span></div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
       {documentError && <div className="lipa-admin-error" role="alert">{documentError}</div>}
       <div className="lipa-admin-actions">{selected.status === "PENDING" && <button type="button" className="lipa-admin-button" disabled={busy} onClick={() => void runStatus("PROCESSING")}><Check size={15} /> PROCESSING</button>}{selected.status === "PROCESSING" && <><button type="button" className="lipa-admin-button" disabled={busy} onClick={() => void runStatus("APPROVED")}><Check size={15} /> APPROVE</button><button type="button" className="lipa-admin-button lipa-admin-button-danger" disabled={busy} onClick={() => setRejecting(true)}><X size={15} /> REJECT</button></>}</div>
