@@ -7,7 +7,7 @@ import { serviceFieldTypes, type ServiceFormField } from "../../../shared/servic
 type RunAction = (action: () => Promise<unknown>, successMessage: string) => void | boolean | Promise<void | boolean>;
 type NetworkCollection = LipaNetworkConfig[] | Record<string, LipaNetworkConfig>;
 type ApplicationStatus = LipaApplication["status"];
-type SortKey = "applicationId" | "userName" | "network" | "applicantName" | "phone" | "nidaNumber" | "tinNumber" | "businessName" | "submittedAt" | "status" | "assignedAdmin";
+type SortKey = "applicationId" | "userName" | "network" | "applicantName" | "phone" | "nidaNumber" | "tinNumber" | "businessName" | "submittedAt" | "status" | "assignedAdmin" | "lipaNumber" | "rewardStatus";
 
 type DocumentPreview = { url: string; label: string; image: boolean };
 
