@@ -316,11 +316,17 @@ export default function BusinessLicensePage() {
         <div className="license-actions">
           <Link href="/" className="button button--outline"><ArrowLeft size={17} /> BACK</Link>
           <button type="button" className="button button--dark" onClick={() => { if (validate(false)) toast.success("Muonekano wa template uko tayari; hakiki taarifa kabla ya kuomba hati."); }}><FileCheck2 size={17} /> ANGALIA HATI</button>
-          <button type="button" className="button button--dark" disabled={downloadBusy || serviceLocked} onClick={() => void download("png")}><Download size={17} /> {downloadBusy ? "INATENGENEZA..." : submitted ? "PAKUA PNG TENA" : "PAKUA PNG"}</button>
-          <button type="button" className="button button--green" disabled={downloadBusy || serviceLocked} onClick={() => void download("pdf")}><Download size={17} /> {downloadBusy ? "INATENGENEZA..." : submitted ? "PAKUA PDF TENA" : "PAKUA PDF"}</button>
+          <div className="license-download-option">
+            <button type="button" className="button button--dark" disabled={downloadBusy || serviceLocked} onClick={() => void download("png")}><Download size={17} /> {downloadBusy ? "INATENGENEZA..." : submitted ? "PAKUA PNG TENA" : "PAKUA PNG"}</button>
+            <small className="license-download-note">Quality 85%</small>
+          </div>
+          <div className="license-download-option license-download-option--recommended">
+            <button type="button" className="button button--green" disabled={downloadBusy || serviceLocked} onClick={() => void download("pdf")}><Download size={17} /> {downloadBusy ? "INATENGENEZA..." : submitted ? "PAKUA PDF TENA" : "PAKUA PDF"}</button>
+            <small className="license-download-note">Quality 100% · Inapendekezwa zaidi</small>
+          </div>
           <button type="button" className="button button--outline" disabled={downloadBusy} onClick={resetForm}><RotateCcw size={16} /> FUTA FOMU</button>
         </div>
-        <p className="license-output-note">PDF na PNG zinatengenezwa pamoja; tokeni 2 hukatwa mara moja kwa hati, si kwa kila format.</p>
+        <p className="license-output-note">PDF na PNG zinatengenezwa pamoja; tokeni 2 hukatwa mara moja kwa hati, si kwa kila format. <strong>Pendekezo: tumia PDF kwa ubora wa juu zaidi (100%).</strong></p>
       </section>
 
       <LicenseTemplatePreview form={form} issueDate={issueDate} expiryDate={expiryDate} licenseNumber={licenseNumber} />
