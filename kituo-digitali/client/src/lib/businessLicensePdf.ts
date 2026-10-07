@@ -10,18 +10,7 @@ export type GeneratedLicenseDocuments = {
 
 function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = canvas.width * 2;
-    exportCanvas.height = canvas.height * 2;
-    const exportContext = exportCanvas.getContext("2d");
-    if (!exportContext) {
-      reject(new Error("Imeshindikana kuandaa picha ya leseni."));
-      return;
-    }
-    exportContext.imageSmoothingEnabled = true;
-    exportContext.imageSmoothingQuality = "high";
-    exportContext.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height);
-    exportCanvas.toBlob((blob) => {
+    canvas.toBlob((blob) => {
       if (blob) resolve(blob);
       else reject(new Error("Imeshindikana kutengeneza PNG ya leseni."));
     }, "image/png");
