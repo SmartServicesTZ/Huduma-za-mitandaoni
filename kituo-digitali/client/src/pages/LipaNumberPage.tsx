@@ -85,6 +85,76 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
   };
 }
 
+const defaultLipaNetworks: LipaNetworkConfig[] = [
+  {
+    id: "airtel",
+    name: "Airtel",
+    title: "AIRTEL — PATA LIPA NAMBA",
+    introduction: "Ndugu Agent, utajipatia sh 500 kwa Lipa Namba itakayotengenezwa hapa.",
+    requirements: "Ifanye miamala jumla isiyopungua sh 10,000.",
+    paymentInfo: "Malipo hulipwa kwenye namba uliyotumia kufungua account yako.",
+    reward: 500,
+    active: true,
+    fields: [
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Hakikisha namba haijafunguliwa Lipa Namba nyingine.", order: 1 },
+    ],
+  },
+  {
+    id: "vodacom",
+    name: "Vodacom",
+    title: "VODACOM — PATA LIPA NAMBA",
+    introduction: "Omba Lipa Namba ya Vodacom kwa kujaza taarifa zako.",
+    requirements: "Taarifa zako ziwe sahihi na ziambatane na kitambulisho kinachotakiwa.",
+    paymentInfo: "Malipo hulipwa kwenye namba uliyotumia kufungua account yako.",
+    reward: 5000,
+    active: true,
+    fields: [
+      { fieldName: "firstName", label: "Jina la Kwanza", type: "TEXT", required: true, order: 0 },
+      { fieldName: "middleName", label: "Jina la Pili", type: "TEXT", required: true, order: 1 },
+      { fieldName: "lastName", label: "Jina la Mwisho", type: "TEXT", required: true, order: 2 },
+      { fieldName: "businessName", label: "Majina ya Biashara", type: "TEXT", required: false, order: 3 },
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 4 },
+      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 5 },
+      { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 6 },
+      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", required: true, options: ["National ID", "Voter ID", "Driving License", "Passport"], order: 4 },
+      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, helpText: "JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
+    ],
+  },
+  {
+    id: "yas-tigo",
+    name: "Yas / Tigo",
+    title: "YAS / TIGO — PATA LIPA NAMBA",
+    introduction: "Karibu ujipatie huduma ya Lipa Namba.",
+    requirements: "Jaza taarifa sahihi za maombi yako.",
+    paymentInfo: "Malipo yatafuata utaratibu wa mtandao baada ya ombi kukamilika.",
+    reward: 0,
+    active: true,
+    fields: [
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 1 },
+      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
+      { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 3 },
+      { fieldName: "businessLicense", label: "Leseni ya Biashara", type: "TEXTAREA", required: false, order: 4 },
+    ],
+  },
+  {
+    id: "halotel",
+    name: "Halotel",
+    title: "HALOTEL — PATA LIPA NAMBA",
+    introduction: "Karibu ujipatie huduma ya Lipa Namba.",
+    requirements: "Jaza taarifa sahihi na pakia kitambulisho kinachotakiwa.",
+    paymentInfo: "Malipo yatafuata utaratibu wa mtandao baada ya ombi kukamilika.",
+    reward: 0,
+    active: true,
+    fields: [
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 1 },
+      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
+      { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 3 },
+      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", required: true, options: ["National ID", "Voter ID", "Driving License", "Passport"], order: 4 },
+      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, helpText: "JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
+    ],
+  },
+];
+
 function displayDate(value: unknown) {
   if (!value) return "—";
   try {
@@ -164,11 +234,16 @@ export default function LipaNumberPage() {
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => subscribeToCollection("lipaServices", (rows) => {
-    const active = rows.map((row) => normalizeConfig(row as Record<string, unknown>)).filter((row): row is LipaNetworkConfig => Boolean(row?.active));
+    const configured = rows.map((row) => normalizeConfig(row as Record<string, unknown>)).filter((row): row is LipaNetworkConfig => Boolean(row?.active));
+    const active = configured.length > 0 ? configured : defaultLipaNetworks;
     setConfigs(active);
     setConfigsLoading(false);
     setSelectedId((current) => active.some((item) => item.id === current) ? current : active[0]?.id ?? "");
-  }, () => { setConfigsLoading(false); toast.error("Imeshindikana kupakia mitandao ya Lipa."); }), []);
+  }, () => {
+    setConfigs(defaultLipaNetworks);
+    setConfigsLoading(false);
+    setSelectedId((current) => current || defaultLipaNetworks[0]?.id || "");
+  }), []);
 
   useEffect(() => {
     if (!firebaseUser) { setApplications([]); return; }
