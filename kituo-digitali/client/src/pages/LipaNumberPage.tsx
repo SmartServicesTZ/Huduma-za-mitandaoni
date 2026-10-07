@@ -209,6 +209,9 @@ function ApplicationModal({ application, onClose, onDocument }: { application: L
         <div><span>Limesasishwa</span><strong>{displayDate(application.updatedAt)}</strong></div>
       </div>
       {application.rejectionReason && <div className="lipa-rejection"><strong>Sababu ya kukataliwa</strong><p>{application.rejectionReason}</p></div>}
+      {application.adminReply && <div className="lipa-rejection" style={{color:"#14532d",borderLeftColor:"#22c55e",background:"#ecfdf3"}}><strong>Jibu la Admin</strong><p>{application.adminReply}</p></div>}
+      {application.additionalInfoRequest && <div className="lipa-rejection" style={{color:"#7c2d12",borderLeftColor:"#f59e0b",background:"#fff7ed"}}><strong>Taarifa za ziada zinahitajika</strong><p>{application.additionalInfoRequest}</p></div>}
+
       {entries.length > 0 && <div className="lipa-dialog-section"><h3>Taarifa ulizowasilisha</h3>{entries.map(([key, value]) => <div className="lipa-dialog-row" key={key}><span>{key}</span><strong>{String(value)}</strong></div>)}</div>}
       {documents.length > 0 && <div className="lipa-dialog-section"><h3>Nyaraka</h3>{documents.map(([key]) => <button className="lipa-document-row" key={key} onClick={() => onDocument(key, key)}><FileImage size={18} /><span>{key}</span><Eye size={16} /></button>)}</div>}
       <button className="lipa-button lipa-button--outline lipa-button--wide" onClick={onClose}>Funga</button>
