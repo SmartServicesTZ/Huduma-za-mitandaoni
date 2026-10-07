@@ -154,8 +154,8 @@ const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(
 
 export default defineConfig({
   plugins,
-  // GitHub Pages serves this project below /Huduma-za-mtandao/.
-  base: process.env.GITHUB_ACTIONS ? "/Huduma-za-mtandao/" : "/",
+  // GitHub Pages serves this project below /Huduma-za-mitandaoni/.
+  base: process.env.GITHUB_ACTIONS ? "/Huduma-za-mitandaoni/" : "/",
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
