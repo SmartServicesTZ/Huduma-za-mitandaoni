@@ -1067,7 +1067,7 @@ export const generateBusinessLicense = callable(async (request) => {
     let licenseNumber: string;
     if (form.licenseType === "RENEWED LICENCE") {
       licenseNumber = cleanText(data.licenseNumber, "Namba ya leseni ya zamani", 30);
-      if (!/^\d{3}(?:-\d{3}){6}$/.test(licenseNumber)) throw new ApiError("invalid-argument", "Namba ya leseni lazima iwe kama 385-632-452-321-008-645-678.");
+      if (!/^BL01699682026-270000\d{3}$/.test(licenseNumber)) throw new ApiError("invalid-argument", "Namba ya leseni lazima iwe kama BL01699682026-270000123.");
     } else if (reservationSnapshot.exists) {
       const reservation = reservationSnapshot.data()!;
       if (reservation.userId !== uid) throw new ApiError("permission-denied", "Reservation ID si sahihi.");
