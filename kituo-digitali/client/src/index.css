@@ -72,7 +72,7 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .license-field { display: grid; gap: 7px; min-width: 0; color: #334155; font-size: 11px; font-weight: 800; }
 .license-field > span { display: grid; gap: 2px; }
-.license-field b { font-weight: 800; }
+.license-field b { font-weight: 800; }\n.license-field b .required-star, .required-star { color: #dc2626; font-weight: 900; margin-left: 3px; }
 .license-field small { color: #94a3b8; font-size: 9px; font-weight: 600; }
 .license-field input, .license-field select { width: 100%; min-height: 42px; padding: 10px 11px; border: 1px solid #dbe3eb; border-radius: 8px; outline: none; color: #0f172a; background: #f8fafc; font-size: 11px; }
 .license-field input:focus, .license-field select:focus { border-color: #18b969; box-shadow: 0 0 0 3px rgba(24,185,105,.12); }
