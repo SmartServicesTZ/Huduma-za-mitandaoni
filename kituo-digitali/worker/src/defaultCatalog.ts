@@ -14,10 +14,11 @@ export const defaultServices: DefaultService[] = [
   paid("mpiga-kura", "MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "Huduma kuu", 4),
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "Huduma kuu", 5),
   free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia.", "landmark", "Huduma kuu", 6),
-  paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "Huduma kuu", 7),
-  free("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA", "Tengeneza kitambulisho cha wakala cha pande mbili kwa Airtel, Vodacom, Yas au Halotel.", "badge-check", "Huduma kuu", 8),
-  paid("nakala-nida-2", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "Huduma kuu", 9),
-  paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "Huduma kuu", 10),
+  free("access-lipa-number", "MAOMBI YA ACCESS LIPA NAMBA", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "Huduma kuu", 7),
+  paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "Huduma kuu", 8),
+  free("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA", "Tengeneza kitambulisho cha wakala cha pande mbili kwa Airtel, Vodacom, Yas au Halotel.", "badge-check", "Huduma kuu", 9),
+  paid("nakala-nida-2", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "Huduma kuu", 10),
+  paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "Huduma kuu", 11),
   free("utafutaji-nida", "UTAFUTAJI WA NIDA", "Tafuta taarifa za NIDA bila tokeni.", "search", "Huduma za bure", 11),
   free("qr-mitandao", "MSIMBO WA QR MITANDAO YOTE", "Tengeneza msimbo wa QR wa mitandao yako.", "qr-code", "Huduma za bure", 12),
   paid("brela", "BRELA", "Msaada wa huduma za BRELA.", "landmark", "Huduma kuu", 13),
@@ -37,6 +38,52 @@ export const defaultServices: DefaultService[] = [
   paid("azam-tv", "AZAM TV", "Fungua huduma ya Azam TV.", "tv", "Zana za ziada", 26),
 ];
 
+
+const accessFields = {
+  airtel: [
+    { fieldName: "network", label: "Mtandao", type: "TEXT", required: true, order: 0 },
+    { fieldName: "phone", label: "Namba ya simu", type: "PHONE", required: true, order: 1 },
+    { fieldName: "fullName", label: "Majina 2 au 3 kama yalivyo kwenye NIDA", type: "TEXT", required: true, order: 2 },
+    { fieldName: "contact", label: "Namba ya mawasiliano Normal / WhatsApp", type: "PHONE", required: true, order: 3 },
+  ] as ServiceFormField[],
+  yas: [
+    { fieldName: "network", label: "Mtandao", type: "TEXT", required: true, order: 0 },
+    { fieldName: "phone", label: "Namba ya simu", type: "PHONE", required: true, order: 1 },
+    { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
+    { fieldName: "passportPhoto", label: "Picha ya Passport Size", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 3 },
+    { fieldName: "contact", label: "Namba ya mawasiliano Normal / WhatsApp", type: "PHONE", required: true, order: 4 },
+  ] as ServiceFormField[],
+  vodacom: [
+    { fieldName: "network", label: "Mtandao", type: "TEXT", required: true, order: 0 },
+    { fieldName: "phone", label: "Namba ya simu", type: "PHONE", required: true, order: 1 },
+    { fieldName: "fullName", label: "Majina 3", type: "TEXT", required: true, order: 2 },
+    { fieldName: "email", label: "Email", type: "TEXT", required: true, order: 3 },
+    { fieldName: "contact", label: "Namba ya mawasiliano", type: "PHONE", required: true, order: 4 },
+  ] as ServiceFormField[],
+  halotel: [
+    { fieldName: "network", label: "Mtandao", type: "TEXT", required: true, order: 0 },
+  ] as ServiceFormField[],
+};
+
+const accessBackend = (slug: string, name: string, fields: ServiceFormField[], order: number): DefaultService => ({
+  slug,
+  name,
+  description: `Ombi la access Lipa Namba — ${name}.`,
+  icon: "wallet-cards",
+  category: "Maombi ya Access Lipa Namba",
+  tokenCost: 0,
+  isVisible: false,
+  active: true,
+  isFree: true,
+  isLocked: false,
+  order,
+  fields,
+  instructions: "Ombi linatumwa kwa admin kwa ajili ya kukaguliwa na kufanyiwa kazi.",
+  buttonText: "TUMA OMBI",
+  statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"],
+  adminWorkflow: true,
+});
+
 const commonNida: ServiceFormField = { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, helpText: "Namba ya tarakimu 20 kama ilivyo kwenye kitambulisho.", order: 2 };
 const commonPhone: ServiceFormField = { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Hakikisha namba haijafunguliwa Lipa Namba nyingine.", order: 1 };
 const commonTin: ServiceFormField = { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 3 };
@@ -50,6 +97,13 @@ const names: ServiceFormField[] = [
 const network = (id: string, name: string, title: string, reward: number, introduction: string, requirements: string, fields: ServiceFormField[]) => ({
   id, name, title, reward, introduction, requirements, paymentInfo: "Malipo hulipwa kwenye namba uliyotumia kufungua account yako.", active: true, fields,
 });
+
+export const defaultAccessLipaServices = [
+  accessBackend("access-lipa-airtel", "ACCESS LIPA NAMBA — AIRTEL", accessFields.airtel, 100),
+  accessBackend("access-lipa-yas", "ACCESS LIPA NAMBA — YAS", accessFields.yas, 101),
+  accessBackend("access-lipa-vodacom", "ACCESS LIPA NAMBA — VODACOM", accessFields.vodacom, 102),
+  accessBackend("access-lipa-halotel", "ACCESS LIPA NAMBA — HALOTEL", accessFields.halotel, 103),
+];
 
 export const defaultLipaServices = [
   network("airtel", "Airtel", "AIRTEL — PATA LIPA NAMBA", 500, "Ndugu Agent, utajipatia sh 500 kwa Lipa Namba itakayotengenezwa hapa.", "Ifanye miamala jumla isiyopungua sh 10,000.", [commonPhone]),
