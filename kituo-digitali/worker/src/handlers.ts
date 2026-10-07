@@ -567,7 +567,8 @@ export const createServiceApplication = callable(async (request) => {
   const seededAccessService = defaultAccessLipaServices.find((item) => item.slug === serviceSlug);
   const service = serviceSnapshot.empty ? seededAccessService : serviceSnapshot.docs[0]?.data();
   if (!service) throw new ApiError("not-found", "Huduma haikupatikana.");
-  if (service.active === false || (serviceSnapshot.empty && service.isVisible === false)) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
+  const isAccessService = defaultAccessLipaServices.some((item) => item.slug === serviceSlug);
+  if (service.active === false || (!isAccessService && service.isVisible === false)) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
   if (serviceSlug === "pata-lipa-namba" || serviceSlug === "leseni-biashara") throw new ApiError("failed-precondition", "Tumia fomu maalum ya huduma hii.");
   const fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
   const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId, "serviceUploads");
