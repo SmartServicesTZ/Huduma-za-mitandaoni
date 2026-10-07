@@ -53,7 +53,7 @@ jobs:
             "launcherName": "$teward Tz",
             "packageId": "tz.steward.huduma",
             "host": "smartservicestz.github.io",
-            "startUrl": "/Huduma-za-mitandaoni/?v=2",
+            "startUrl": "/Huduma-za-mitandaoni/?v=3",
             "webManifestUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/manifest.webmanifest?v=3",
             "display": "standalone",
             "orientation": "portrait",
