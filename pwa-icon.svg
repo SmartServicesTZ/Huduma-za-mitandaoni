@@ -1,5 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="112" fill="#071a36"/>
-<circle cx="256" cy="256" r="184" fill="#4f46e5"/>
-<text x="256" y="315" text-anchor="middle" font-family="Arial,sans-serif" font-size="180" font-weight="800" fill="#fff">$</text>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#071a36"/>
+    <stop offset="1" stop-color="#111c4e"/>
+  </linearGradient>
+  <linearGradient id="orb" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6366f1"/>
+    <stop offset="1" stop-color="#8b5cf6"/>
+  </linearGradient>
+</defs>
+<rect width="512" height="512" rx="116" fill="url(#bg)"/>
+<circle cx="256" cy="256" r="178" fill="url(#orb)"/>
+<circle cx="256" cy="256" r="151" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3"/>
+<path d="M323 190c-20-24-48-36-83-36-51 0-88 28-88 68 0 42 32 59 87 70 31 6 43 13 43 27 0 14-14 23-39 23-29 0-50-10-69-32l-32 29c25 31 57 46 100 46 54 0 91-27 91-70 0-41-28-60-86-72-33-7-45-13-45-27 0-12 12-21 36-21 25 0 43 9 59 27z" fill="#fff"/>
+<circle cx="392" cy="119" r="10" fill="#fff" fill-opacity=".8"/>
+<circle cx="119" cy="392" r="7" fill="#fff" fill-opacity=".55"/>
 </svg>
