@@ -60,56 +60,76 @@ function formatTemplateDate(date: string) {
 function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   if (!text) return;
   ctx.save();
-  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Arial, sans-serif"}`;
-  ctx.fillStyle = item.color ?? "#050505";
+  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Manrope, Arial, sans-serif"}`;
+  ctx.fillStyle = item.color ?? "#111827";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
+  ctx.imageSmoothingEnabled = true;
   if (item.maxWidth) ctx.fillText(text, item.x, item.y, item.maxWidth);
   else ctx.fillText(text, item.x, item.y);
   ctx.restore();
 }
 
-const BL_NO_X = 50;
-const BL_NO_Y = 22.5;
-const BL_NO_SIZE = 18;
-const DYNAMIC_TEXT_Y_OFFSET = 0;
-
 const DEFAULT_LICENSE_LAYOUT = {
-  nameX: 35.1, nameY: 37.73, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
-  officeX: 35.1, officeY: 31.75, officeSize: 14, tinX: 35.1, tinY: 34.72, tinSize: 14,
-  businessX: 35.1, businessY: 41.08, businessSize: 14, typeX: 35.1, typeY: 44.52, typeSize: 14,
-  issueX: 35.1, issueY: 47.43, issueSize: 14, expiryX: 35.1, expiryY: 51.03, expirySize: 14,
-  branchX: 35.1, branchY: 53.72, branchSize: 14, regionX: 35.1, regionY: 63.08, regionSize: 14,
-  wardX: 35.1, wardY: 66.31, wardSize: 14, streetX: 35.1, streetY: 69.62, streetSize: 14,
-  amountX: 35.1, amountY: 77.20, amountSize: 14, qrX: 61.3, qrY: 59.55, qrSize: 255,
+  valueX: 35.8,
+  nameY: 37.85,
+  officeY: 31.85,
+  tinY: 34.72,
+  businessY: 41.18,
+  typeY: 44.55,
+  issueY: 47.48,
+  expiryY: 50.98,
+  branchY: 53.70,
+  regionY: 63.10,
+  wardY: 66.48,
+  streetY: 69.78,
+  amountY: 77.20,
+  valueSize: 16,
+  nameSize: 16,
+  numberX: 50,
+  numberY: 22.45,
+  numberSize: 19,
+  qrX: 64.0,
+  qrY: 58.35,
+  qrSize: 265,
 };
 
-const FONT_SANS = "Arial, Helvetica, sans-serif";
-const FONT_SANS_LIGHT = "Arial, Helvetica, sans-serif";
-const FONT_LABEL = "Arial, Helvetica, sans-serif";
-const FONT_MONO = "\"Courier New\", monospace";
-const FONT_SERIF = "\"Times New Roman\", Times, serif";
+const FONT_SANS = "Manrope, Arial, Helvetica, sans-serif";
+const FONT_LABEL = "Manrope, Arial, Helvetica, sans-serif";
+const FONT_SERIF = "Georgia, Times New Roman, serif";
 
 const staticText: TextItem[] = [
-  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "BUSINESS LICENSE", x: 506, y: 246, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 329, size: 14, weight: 400, family: FONT_SERIF, align: "center", maxWidth: 850 },
-  { text: "License Details", x: 50, y: 361, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
-  { text: "Issuing Office:", x: 70, y: 412, size: 14, weight: 500, family: FONT_LABEL },
-  { text: "Tax Identification No.:", x: 70, y: 452, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "License Issued To:", x: 70, y: 496, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "For the Business Of:", x: 70, y: 538, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Business Licensing:", x: 70, y: 584, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Date of Issue:", x: 70, y: 625, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Expiring Date:", x: 70, y: 671, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Principal/Branch:", x: 70, y: 707, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Business Location", x: 50, y: 772, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
-  { text: "Region:", x: 70, y: 820, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Ward:", x: 70, y: 862, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Street:", x: 70, y: 905, size: 13.5, weight: 400, family: FONT_LABEL },
-  { text: "Payment Details", x: 50, y: 953, size: 20, weight: 700, family: FONT_SANS, color: "#050505" },
-  { text: "Amount of Fee Paid:", x: 70, y: 1001, size: 13.5, weight: 400, family: FONT_LABEL },
+  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 198, size: 22, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "BUSINESS LICENSE", x: 506, y: 244, size: 23, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "THE BUSINESS LICENSING", x: 506, y: 286, size: 15, weight: 800, family: FONT_SANS, align: "center", maxWidth: 850 },
+  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 318, size: 12.5, weight: 500, family: FONT_SERIF, align: "center", maxWidth: 850 },
+
+  { text: "LICENSE DETAILS", x: 50, y: 362, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Issuing Office:", x: 72, y: 412, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Tax Identification No.:", x: 72, y: 452, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "License Issued To:", x: 72, y: 495, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "For the Business Of:", x: 72, y: 539, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Business Licensing:", x: 72, y: 584, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Date of Issue:", x: 72, y: 626, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Expiring Date:", x: 72, y: 670, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Principal / Branch:", x: 72, y: 708, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+
+  { text: "BUSINESS LOCATION", x: 50, y: 772, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Region:", x: 72, y: 820, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Ward:", x: 72, y: 863, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Street:", x: 72, y: 906, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+
+  { text: "PAYMENT DETAILS", x: 50, y: 954, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Amount of Fee Paid:", x: 72, y: 1002, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 ];
+
+async function ensureLicenseFonts() {
+  if (typeof document === "undefined" || !("fonts" in document)) return;
+  await Promise.all([
+    document.fonts.load("800 22px Manrope"),
+    document.fonts.load("600 15px Manrope"),
+  ]);
+}
 
 export async function renderBusinessLicenseCanvas(
   form: BusinessLicenseCanvasForm,
@@ -123,49 +143,82 @@ export async function renderBusinessLicenseCanvas(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Kivinjari hakikuweza kuandaa muonekano wa hati.");
 
+  await ensureLicenseFonts();
   const template = await loadImage(assetUrl("business-license-template.png"));
   const layout = DEFAULT_LICENSE_LAYOUT;
+
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
   ctx.save();
   ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_LAYOUT_WIDTH, BUSINESS_LICENSE_LAYOUT_HEIGHT);
+
   staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
 
   const owner = form.applicantName.trim().replace(/\s+/g, " ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.licenseFee) || 0);
-  const valueStyle = { size: 14, weight: 600, family: FONT_SANS, color: "#050505" };
   const titleCase = (value: string) => value.trim().toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-  drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#58b9d1", align: "center", maxWidth: 920 }, `B.L. NO : ${licenseNumber || "—"}`);
-  drawText(ctx, { x: layout.officeX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.officeSize }, "DAR ES SALAAM CITY COUNCIL");
-  drawText(ctx, { x: layout.tinX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.tinSize }, form.tin);
-  drawText(ctx, { x: layout.nameX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.nameSize }, owner);
-  drawText(ctx, { x: layout.businessX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.businessSize }, businessType);
-  drawText(ctx, { x: layout.typeX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.typeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.typeSize }, form.licenseType);
-  drawText(ctx, { x: layout.issueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.issueY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.issueSize }, formatTemplateDate(issueDate));
-  drawText(ctx, { x: layout.expiryX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.expiryY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.expirySize }, formatTemplateDate(expiryDate));
-  drawText(ctx, { x: layout.branchX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.branchY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.branchSize }, form.principalBranch);
-  drawText(ctx, { x: layout.regionX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.regionY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.regionSize }, titleCase(form.region));
-  drawText(ctx, { x: layout.wardX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.wardY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.wardSize }, titleCase(form.ward));
-  drawText(ctx, { x: layout.streetX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.streetY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.streetSize }, titleCase(form.street));
-  drawText(ctx, { x: layout.amountX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.amountY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.amountSize }, amount);
+  const valueStyle = {
+    size: layout.valueSize,
+    weight: 750,
+    family: FONT_SANS,
+    color: "#111827",
+  };
 
-  const qrReady = Boolean(licenseNumber && /^BL01699682026-270000\d{3}$/.test(licenseNumber) && /^\d{3}-\d{3}-\d{3}$/.test(form.tin) && expiryDate);
+  const valueX = layout.valueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
+
+  drawText(
+    ctx,
+    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 800, family: FONT_SANS, color: "#168da6", align: "center", maxWidth: 920 },
+    `B.L. NO : ${licenseNumber || "—"}`,
+  );
+
+  drawText(ctx, { x: valueX, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: 15.5, maxWidth: 560 }, "DAR ES SALAAM CITY COUNCIL");
+  drawText(ctx, { x: valueX, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.tin);
+  drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 570 }, owner);
+  drawText(ctx, { x: valueX, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, maxWidth: 560 }, businessType);
+  drawText(ctx, { x: valueX, y: layout.typeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.licenseType);
+  drawText(ctx, { x: valueX, y: layout.issueY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, formatTemplateDate(issueDate));
+  drawText(ctx, { x: valueX, y: layout.expiryY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, formatTemplateDate(expiryDate));
+  drawText(ctx, { x: valueX, y: layout.branchY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.principalBranch);
+
+  drawText(ctx, { x: valueX, y: layout.regionY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, titleCase(form.region));
+  drawText(ctx, { x: valueX, y: layout.wardY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, titleCase(form.ward));
+  drawText(ctx, { x: valueX, y: layout.streetY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, titleCase(form.street));
+  drawText(ctx, { x: valueX, y: layout.amountY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, amount);
+
+  const qrReady = Boolean(
+    licenseNumber &&
+    /^BL01699682026-270000\d{3}$/.test(licenseNumber) &&
+    /^\d{3}-\d{3}-\d{3}$/.test(form.tin) &&
+    expiryDate,
+  );
+
   if (qrReady) {
-    const qrData = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc: LICENSE_HC });
-    const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 900 });
-    const [qrImage, logo] = await Promise.all([loadImage(qrUrl), loadImage(assetUrl("tausi-logo.png"))]);
+    const qrData = JSON.stringify({
+      licenceNumber: licenseNumber,
+      tin: form.tin,
+      expireDate: expiryDate,
+      hc: LICENSE_HC,
+    });
+    const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 1000 });
+    const [qrImage, logo] = await Promise.all([
+      loadImage(qrUrl),
+      loadImage(assetUrl("tausi-logo.png")),
+    ]);
+
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 88;
+    const logoSize = 94;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
+    ctx.fillRect(qrX - 7, qrY - 7, qrSize + 14, qrSize + 14);
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
     ctx.save();
     ctx.beginPath();
     ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
