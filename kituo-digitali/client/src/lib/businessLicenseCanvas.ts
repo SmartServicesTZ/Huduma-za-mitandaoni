@@ -58,10 +58,6 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   if (!text) return;
   ctx.save();
   ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Arial, sans-serif"}`;
-  if (item.family === FONT_LABEL) {
-    const textCtx = ctx as CanvasRenderingContext2D & { fontStretch?: string };
-    if ("fontStretch" in textCtx) textCtx.fontStretch = "condensed";
-  }
   ctx.fillStyle = item.color ?? "#050505";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
@@ -139,7 +135,7 @@ export async function renderBusinessLicenseCanvas(
   const owner = form.applicantName.trim().replace(/\s+/g, " ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.licenseFee) || 0);
-  const valueStyle = { size: 14, weight: 600, family: FONT_SANS, color: "#050505", maxWidth: 600 };
+  const valueStyle = { size: 14, weight: 600, family: FONT_SANS, color: "#050505" };
   const titleCase = (value: string) => value.trim().toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   drawText(ctx, { x: layout.numberX / 100 * BUSINESS_LICENSE_CANVAS_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_CANVAS_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, size: layout.numberSize, weight: 700, color: "#58b9d1", align: "center", maxWidth: 920 }, `B.L. NO : ${licenseNumber || "—"}`);
