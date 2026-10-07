@@ -1,7 +1,10 @@
 import QRCode from "qrcode";
 
-export const BUSINESS_LICENSE_CANVAS_WIDTH = 1012;
-export const BUSINESS_LICENSE_CANVAS_HEIGHT = 1300;
+export const BUSINESS_LICENSE_CANVAS_WIDTH = 2024;
+export const BUSINESS_LICENSE_CANVAS_HEIGHT = 2600;
+const BUSINESS_LICENSE_RENDER_SCALE = 2;
+const BUSINESS_LICENSE_LAYOUT_WIDTH = 1012;
+const BUSINESS_LICENSE_LAYOUT_HEIGHT = 1300;
 
 export type BusinessLicenseCanvasForm = {
   applicantName: string;
@@ -66,17 +69,11 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   ctx.restore();
 }
 
-// Template position/size settings are intentionally kept here in code (not in the website UI).
-// ===============================
-// EASY BUSINESS LICENSE POSITION SETTINGS
-// ===============================
-// X = left/right   Y = up/down   SIZE = text size
-// Change these numbers only when adjusting the live preview/PDF/PNG.
 const BL_NO_X = 50;
 const BL_NO_Y = 22.5;
 const BL_NO_SIZE = 18;
-
 const DYNAMIC_TEXT_Y_OFFSET = 0;
+
 const DEFAULT_LICENSE_LAYOUT = {
   nameX: 35.1, nameY: 37.73, nameSize: 14, numberX: BL_NO_X, numberY: BL_NO_Y, numberSize: BL_NO_SIZE,
   officeX: 35.1, officeY: 31.75, officeSize: 14, tinX: 35.1, tinY: 34.72, tinSize: 14,
@@ -87,11 +84,11 @@ const DEFAULT_LICENSE_LAYOUT = {
   amountX: 35.1, amountY: 77.20, amountSize: 14, qrX: 61.3, qrY: 59.55, qrSize: 255,
 };
 
-const FONT_SANS = 'Arial, Helvetica, sans-serif';
-const FONT_SANS_LIGHT = 'Arial, Helvetica, sans-serif';
-const FONT_LABEL = 'Arial, Helvetica, sans-serif';
-const FONT_MONO = '"Courier New", monospace';
-const FONT_SERIF = '"Times New Roman", Times, serif';
+const FONT_SANS = "Arial, Helvetica, sans-serif";
+const FONT_SANS_LIGHT = "Arial, Helvetica, sans-serif";
+const FONT_LABEL = "Arial, Helvetica, sans-serif";
+const FONT_MONO = "\"Courier New\", monospace";
+const FONT_SERIF = "\"Times New Roman\", Times, serif";
 
 const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
@@ -129,6 +126,8 @@ export async function renderBusinessLicenseCanvas(
   const template = await loadImage(assetUrl("business-license-template.png"));
   const layout = DEFAULT_LICENSE_LAYOUT;
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
+  ctx.save();
+  ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_LAYOUT_WIDTH, BUSINESS_LICENSE_LAYOUT_HEIGHT);
   staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
 
@@ -176,5 +175,6 @@ export async function renderBusinessLicenseCanvas(
     ctx.restore();
   }
 
+  ctx.restore();
   return canvas;
 }
