@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="smartservices-build" content="v4" />
     <meta name="theme-color" content="#071a36" />
     <meta name="application-name" content="Huduma za Mtandaoni" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -11,6 +12,29 @@
     <link rel="manifest" href="/Huduma-za-mitandaoni/manifest.webmanifest" />
     <meta name="description" content="HUDUMA ZA MTANDAONI — huduma za kidigitali, tokeni, mafunzo na msaada wa huduma za serikali na biashara." />
     <title>HUDUMA ZA MTANDAONI</title>
+    <script>
+      (function () {
+        var key = "smartservices-pages-v4";
+        try {
+          if (sessionStorage.getItem(key) !== "1") {
+            sessionStorage.setItem(key, "1");
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister(); }));
+              }).then(function () {
+                return caches ? caches.keys().then(function (keys) {
+                  return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                }) : null;
+              }).then(function () {
+                var u = new URL(location.href);
+                u.searchParams.set("v", "4");
+                location.replace(u.toString());
+              }).catch(function () {});
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" crossorigin src="/Huduma-za-mitandaoni/assets/index-BxC5NOMx.js"></script>
     <link rel="stylesheet" crossorigin href="/Huduma-za-mitandaoni/assets/index-BHN9ox11.css">
   </head>
