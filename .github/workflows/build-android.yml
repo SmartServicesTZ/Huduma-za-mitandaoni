@@ -84,7 +84,13 @@ jobs:
             "generatorApp": "@bubblewrap/cli"
           }
           EOF
-          bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_HOME"
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" <<EOF
+          {
+            "jdkPath": "$JAVA_HOME",
+            "androidSdkPath": "$ANDROID_HOME"
+          }
+          EOF
           cd android-twa
           bubblewrap update --skipVersionUpgrade --manifest="./twa-manifest.json"
 
