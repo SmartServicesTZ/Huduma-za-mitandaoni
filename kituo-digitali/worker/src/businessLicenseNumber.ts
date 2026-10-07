@@ -1,5 +1,7 @@
+export const BUSINESS_LICENSE_PREFIX = "BL01699682026-270000";
+
 export function generateRandomBusinessLicenseNumber() {
-  const values = new Uint32Array(7);
+  const values = new Uint32Array(1);
   crypto.getRandomValues(values);
-  return Array.from(values, (value) => String(value % 1000).padStart(3, "0")).join("-");
+  return `${BUSINESS_LICENSE_PREFIX}${String(values[0] % 1000).padStart(3, "0")}`;
 }
