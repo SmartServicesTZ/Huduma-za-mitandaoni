@@ -151,7 +151,7 @@ export async function renderBusinessLicenseCanvas(
   drawText(ctx, { x: layout.streetX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.streetY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.streetSize }, titleCase(form.street));
   drawText(ctx, { x: layout.amountX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.amountY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT + DYNAMIC_TEXT_Y_OFFSET, ...valueStyle, size: layout.amountSize }, amount);
 
-  const qrReady = Boolean(licenseNumber && /^\d{3}-\d{3}-\d{3}$/.test(form.tin) && expiryDate);
+  const qrReady = Boolean(licenseNumber && /^BL01699682026-270000\d{3}$/.test(licenseNumber) && /^\d{3}-\d{3}-\d{3}$/.test(form.tin) && expiryDate);
   if (qrReady) {
     const qrData = JSON.stringify({ licenceNumber: licenseNumber, tin: form.tin, expireDate: expiryDate, hc: LICENSE_HC });
     const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 900 });
