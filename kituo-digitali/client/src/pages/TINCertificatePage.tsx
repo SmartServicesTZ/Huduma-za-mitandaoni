@@ -47,9 +47,22 @@ export default function TINCertificatePage() {
     try {
       const output = document.createElement("canvas");
       await renderTinCertificateCanvas(form, output);
+      // Crop the downloaded file to the actual certificate area.
+      // Keep the Live Preview unchanged; only the exported PNG is cropped.
+      const cropX = 34;
+      const cropY = 34;
+      const cropWidth = output.width - 68;
+      const cropHeight = output.height - 68;
+      const cropped = document.createElement("canvas");
+      cropped.width = cropWidth;
+      cropped.height = cropHeight;
+      const cropCtx = cropped.getContext("2d");
+      if (!cropCtx) throw new Error("Imeshindikana kuandaa picha ya kupakua.");
+      cropCtx.drawImage(output, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
       const link = document.createElement("a");
       link.download = "tin-preview.png";
-      link.href = output.toDataURL("image/png");
+      link.href = cropped.toDataURL("image/png");
       link.click();
       toast.success("PNG imepakuliwa.");
     } catch (error) {
