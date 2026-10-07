@@ -552,6 +552,10 @@ export type LipaApplication = {
   rejectionReason?: string;
   assignedAdmin?: string;
   additionalNotes?: string;
+  adminReply?: string;
+  additionalInfoRequest?: string;
+  lastAdminReplyAt?: unknown;
+  lastAdminReplyBy?: string;
   reward?: number;
   lipaNumber?: string;
   verifiedTransactions?: number;
@@ -584,6 +588,11 @@ export async function submitLipaApplication(applicationId: string, networkId: st
 export async function setLipaApplicationStatus(applicationId: string, status: "PROCESSING" | "APPROVED" | "REJECTED", rejectionReason = "") {
   const callable = createWorkerCall("setLipaApplicationStatus");
   return (await callable({ applicationId, status, rejectionReason })).data;
+}
+
+export async function replyToLipaApplication(applicationId: string, reply = "", infoRequest = "") {
+  const callable = createWorkerCall("replyToLipaApplication");
+  return (await callable({ applicationId, reply, infoRequest })).data;
 }
 
 export async function updateLipaRewardTracking(applicationId: string, values: {
