@@ -4,15 +4,15 @@
   "description": "Huduma za kidigitali za $teward Tz",
   "lang": "sw",
   "dir": "ltr",
-  "start_url": "/Huduma-za-mtandao/?v=2",
-  "scope": "/Huduma-za-mtandao/",
+  "start_url": "/Huduma-za-mitandaoni/?v=3",
+  "scope": "/Huduma-za-mitandaoni/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#071a36",
   "theme_color": "#071a36",
   "icons": [
     {
-      "src": "/Huduma-za-mtandao/pwa-icon.svg?v=2",
+      "src": "/Huduma-za-mitandaoni/pwa-icon.svg?v=3",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
