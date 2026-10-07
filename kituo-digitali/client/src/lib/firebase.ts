@@ -551,6 +551,16 @@ export type LipaApplication = {
   status: "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
   rejectionReason?: string;
   assignedAdmin?: string;
+  additionalNotes?: string;
+  reward?: number;
+  lipaNumber?: string;
+  verifiedTransactions?: number;
+  qualificationStatus?: "PENDING_CHECK" | "QUALIFIED" | "NOT_QUALIFIED";
+  rewardStatus?: "UNPAID" | "PAID" | "NOT_ELIGIBLE";
+  rewardPaymentReference?: string;
+  rewardPaidAt?: unknown;
+  rewardPaidBy?: string;
+  rewardNote?: string;
   submittedAt?: unknown;
   updatedAt?: unknown;
 };
@@ -574,6 +584,18 @@ export async function submitLipaApplication(applicationId: string, networkId: st
 export async function setLipaApplicationStatus(applicationId: string, status: "PROCESSING" | "APPROVED" | "REJECTED", rejectionReason = "") {
   const callable = createWorkerCall("setLipaApplicationStatus");
   return (await callable({ applicationId, status, rejectionReason })).data;
+}
+
+export async function updateLipaRewardTracking(applicationId: string, values: {
+  lipaNumber: string;
+  verifiedTransactions: number;
+  qualificationStatus: "PENDING_CHECK" | "QUALIFIED" | "NOT_QUALIFIED";
+  rewardStatus: "UNPAID" | "PAID" | "NOT_ELIGIBLE";
+  rewardPaymentReference?: string;
+  rewardNote?: string;
+}) {
+  const callable = createWorkerCall("updateLipaRewardTracking");
+  return (await callable({ applicationId, ...values })).data;
 }
 
 export async function markLipaApplicationViewed(applicationId: string) {
