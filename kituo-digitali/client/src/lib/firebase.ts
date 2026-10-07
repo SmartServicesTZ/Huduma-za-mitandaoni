@@ -299,7 +299,7 @@ export function subscribeToTokenPurchaseOrders(uid: string, callback: (orders: T
 
 export type BusinessLicensePayload = {
   requestId: string;
-  firstName: string; middleName: string; lastName: string;
+  applicantName: string;
   businessType: string; otherBusinessType?: string;
   licenseType: "NEW LICENCE" | "RENEWED LICENCE"; principalBranch: "PRINCIPAL" | "BRANCH";
   region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
