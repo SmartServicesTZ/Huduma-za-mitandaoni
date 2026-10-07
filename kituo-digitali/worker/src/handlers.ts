@@ -1074,7 +1074,17 @@ export const reserveBusinessLicenseNumber = callable(async (request) => {
     if (existing.exists) {
       const current = existing.data()!;
       if (current.userId !== uid) throw new ApiError("already-exists", "Reservation ID si sahihi.");
-      licenseNumber = String(current.licenseNumber);
+      const currentNumber = String(current.licenseNumber ?? "");
+      if (/^BL01699682026-270000\d{5}$/.test(currentNumber)) {
+        licenseNumber = currentNumber;
+      } else {
+        licenseNumber = generateRandomBusinessLicenseNumber();
+        transaction.update(reservationRef, {
+          licenseNumber,
+          status: "RESERVED",
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
       return;
     }
     if (await serviceIsLocked(transaction, "leseni-biashara")) throw new ApiError("failed-precondition", "Huduma ya Leseni ya Biashara imefungwa kwa sasa.");
@@ -1123,7 +1133,17 @@ export const generateBusinessLicense = callable(async (request) => {
     } else if (reservationSnapshot.exists) {
       const reservation = reservationSnapshot.data()!;
       if (reservation.userId !== uid) throw new ApiError("permission-denied", "Reservation ID si sahihi.");
-      licenseNumber = String(reservation.licenseNumber);
+      const reservedNumber = String(reservation.licenseNumber ?? "");
+      if (/^BL01699682026-270000\d{5}$/.test(reservedNumber)) {
+        licenseNumber = reservedNumber;
+      } else {
+        licenseNumber = generateRandomBusinessLicenseNumber();
+        transaction.update(reservationRef, {
+          licenseNumber,
+          status: "RESERVED",
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
     } else {
       licenseNumber = generateRandomBusinessLicenseNumber();
       transaction.create(reservationRef, { reservationId: requestId, userId: uid, licenseNumber, status: "RESERVED", createdAt: FieldValue.serverTimestamp() });
