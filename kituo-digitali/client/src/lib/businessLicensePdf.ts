@@ -8,11 +8,13 @@ export type GeneratedLicenseDocuments = {
   pngBlob: Blob;
 };
 
-function dataUrlBytes(dataUrl: string) {
-  const comma = dataUrl.indexOf(",");
-  if (comma < 0) throw new Error("Imeshindikana kusoma picha ya hati.");
-  const binary = atob(dataUrl.slice(comma + 1));
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Imeshindikana kutengeneza PNG ya leseni."));
+    }, "image/png");
+  });
 }
 
 export async function renderBusinessLicenseDocuments(
@@ -22,9 +24,8 @@ export async function renderBusinessLicenseDocuments(
   expiryDate: string,
 ): Promise<GeneratedLicenseDocuments> {
   const canvas = await renderBusinessLicenseCanvas(form, licenseNumber, issueDate, expiryDate);
-  const pngBytes = dataUrlBytes(canvas.toDataURL("image/png"));
-  const pngBuffer = pngBytes.buffer.slice(pngBytes.byteOffset, pngBytes.byteOffset + pngBytes.byteLength) as ArrayBuffer;
-  const pngBlob = new Blob([pngBuffer], { type: "image/png" });
+  const pngBlob = await canvasToPngBlob(canvas);
+  const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
 
   const pdf = await PDFDocument.create();
   const pageWidth = 612;
