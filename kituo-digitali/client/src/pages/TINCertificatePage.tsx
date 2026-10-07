@@ -52,7 +52,10 @@ export default function TINCertificatePage() {
       const cropX = 34;
       const cropY = 34;
       const cropWidth = output.width - 68;
-      const cropHeight = output.height - 68;
+      // Kata zaidi sehemu ya chini ili download ibaki na eneo halisi la cheti.
+      // Live Preview haibadiliki.
+      const cropBottom = 1150;
+      const cropHeight = cropBottom - cropY;
       const cropped = document.createElement("canvas");
       cropped.width = cropWidth;
       cropped.height = cropHeight;
