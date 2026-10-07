@@ -8,7 +8,7 @@ workers_dev = true
 FIREBASE_PROJECT_ID = "huduma-za-mtandaoni-b1c0c"
 FIREBASE_STORAGE_BUCKET = "huduma-za-mtandaoni-b1c0c.firebasestorage.app"
 SUPER_ADMIN_PHONE = "255698232313"
-ALLOWED_ORIGINS = "https://steward-tz.github.io,http://localhost:5173,http://127.0.0.1:5173"
+ALLOWED_ORIGINS = "https://smartservicestz.github.io,https://steward-tz.github.io,http://localhost:5173,http://127.0.0.1:5173"
 PAYMENT_FLOWS_ENABLED = "false" # Safety default; switch to true only after live payment/webhook verification.
 
 [observability]
