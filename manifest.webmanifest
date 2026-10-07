@@ -1,18 +1,18 @@
 {
-  "name": "$teward Tz — Huduma za Mtandaoni",
-  "short_name": "$teward Tz",
-  "description": "Huduma za kidigitali za $teward Tz",
+  "name": "SmartServicesTZ — Huduma za Mtandaoni",
+  "short_name": "SmartServicesTZ",
+  "description": "Huduma za kidigitali, maombi na huduma za mtandaoni.",
   "lang": "sw",
   "dir": "ltr",
-  "start_url": "/Huduma-za-mitandaoni/?v=3",
+  "start_url": "/Huduma-za-mitandaoni/?v=4",
   "scope": "/Huduma-za-mitandaoni/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#071a36",
-  "theme_color": "#071a36",
+  "background_color": "#06152d",
+  "theme_color": "#06152d",
   "icons": [
     {
-      "src": "/Huduma-za-mitandaoni/pwa-icon.svg?v=3",
+      "src": "/Huduma-za-mitandaoni/pwa-icon.svg?v=4",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
