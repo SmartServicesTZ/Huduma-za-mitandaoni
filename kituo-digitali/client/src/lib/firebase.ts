@@ -40,7 +40,7 @@ import type { ServiceFormField, ServiceFormValues } from "../../../shared/servic
 import { omitUndefinedFields } from "../../../shared/omitUndefinedFields";
 import { normalizeTanzaniaPhone, phoneAuthAlias } from "../../../shared/tanzaniaPhone";
 import type { AccountAccessMode, AccountRestrictionAction } from "../../../shared/accountAccess";
-import type { BrowserLicenseForm } from "./businessLicensePdf";
+import { renderBusinessLicenseDocuments, type BrowserLicenseForm } from "./businessLicensePdf";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCjzY-MjV40lJSyZr8b47AimYMybJoVEac",
@@ -331,7 +331,6 @@ export async function generateBusinessLicense(payload: BusinessLicensePayload): 
   const form = preparation.form ?? payload;
   const issueDate = preparation.issueDate ?? "";
   const expiryDate = preparation.expiryDate ?? "";
-  const { renderBusinessLicenseDocuments } = await import("./businessLicensePdf");
   const documents = await renderBusinessLicenseDocuments(form, preparation.licenseNumber, issueDate, expiryDate);
   let completed: Omit<GeneratedBusinessLicense, "pdfBlob" | "pngBlob"> = preparation;
   if (preparation.status !== "COMPLETED") {
