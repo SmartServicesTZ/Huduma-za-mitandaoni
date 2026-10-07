@@ -34,7 +34,7 @@ jobs:
           rm -rf android-twa
           mkdir -p android-twa
           cd android-twa
-          printf '\n%.0s' {1..16}; printf 'n\n' | bubblewrap init --manifest="https://steward-tz.github.io/Huduma-za-mtandao/manifest.webmanifest" --directory="."
+          { printf '\n%.0s' {1..16}; printf 'n\n'; } | bubblewrap init --manifest="https://steward-tz.github.io/Huduma-za-mtandao/manifest.webmanifest" --directory="."
 
       - name: Build Android project
         working-directory: android-twa
