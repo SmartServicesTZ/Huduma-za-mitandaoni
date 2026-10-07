@@ -23,6 +23,6 @@ describe("legacy service catalogue migration fallback", () => {
 
   it("does not resurrect deleted defaults after Firestore migration is marked complete", () => {
     const services = mergeServiceCatalogDefaults([], true);
-    expect(services).toEqual(serviceCatalog.filter((service) => service.slug !== "access-lipa-number"));
+    expect(services).toEqual([serviceCatalog.find((service) => service.slug === "access-lipa-number")]);
   });
 });
