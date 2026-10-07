@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Download, Edit3, ExternalLink, Eye, FileText, Image as ImageIcon, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { adminDeleteCollectionItem, adminSaveCollectionItem, getLipaApplicationDocument, markLipaApplicationViewed, seedServiceCatalog, setLipaApplicationStatus, updateLipaRewardTracking, type LipaApplication, type LipaNetworkConfig } from "@/lib/firebase";
+import { adminDeleteCollectionItem, adminSaveCollectionItem, getLipaApplicationDocument, markLipaApplicationViewed, replyToLipaApplication, seedServiceCatalog, setLipaApplicationStatus, updateLipaRewardTracking, type LipaApplication, type LipaNetworkConfig } from "@/lib/firebase";
 import { serviceFieldTypes, type ServiceFormField } from "../../../shared/serviceForms";
 
 type RunAction = (action: () => Promise<unknown>, successMessage: string) => void | boolean | Promise<void | boolean>;
@@ -149,6 +149,8 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const [documentBusy, setDocumentBusy] = useState<string | null>(null);
   const [documentError, setDocumentError] = useState("");
   const [rewardSaving, setRewardSaving] = useState(false);
+  const [replySaving, setReplySaving] = useState(false);
+  const [replyForm, setReplyForm] = useState({ reply: "", infoRequest: "" });
   const [rewardForm, setRewardForm] = useState({
     lipaNumber: "",
     verifiedTransactions: 0,
@@ -185,6 +187,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
       rewardPaymentReference: application.rewardPaymentReference ?? "",
       rewardNote: application.rewardNote ?? "",
     });
+    setReplyForm({ reply: application.adminReply ?? "", infoRequest: application.additionalInfoRequest ?? "" });
     const key = application.applicationId || application.id;
     if (!viewedApplications.current.has(key)) {
       viewedApplications.current.add(key);
@@ -218,6 +221,23 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const changeSort = (key: SortKey) => {
     if (key === sortKey) setDescending((value) => !value);
     else { setSortKey(key); setDescending(true); }
+  };
+
+  const saveAdminReply = async () => {
+    if (!selected || (!replyForm.reply.trim() && !replyForm.infoRequest.trim())) {
+      toast.error("Andika jibu au ombi la taarifa za ziada.");
+      return;
+    }
+    setReplySaving(true);
+    try {
+      await replyToLipaApplication(selected.applicationId || selected.id, replyForm.reply, replyForm.infoRequest);
+      toast.success(replyForm.infoRequest.trim() ? "Jibu/ombi la taarifa limetumwa kwa mtumiaji." : "Jibu limetumwa kwa mtumiaji.");
+      setSelected((current) => current ? { ...current, adminReply: replyForm.reply.trim(), additionalInfoRequest: replyForm.infoRequest.trim() } : current);
+    } catch (error) {
+      toast.error(errorText(error));
+    } finally {
+      setReplySaving(false);
+    }
   };
 
   const saveRewardTracking = async () => {
@@ -255,7 +275,18 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
           <div className="lipa-admin-field lipa-admin-field-wide"><label>Reference ya malipo</label><input value={rewardForm.rewardPaymentReference} onChange={(e) => setRewardForm((v) => ({...v,rewardPaymentReference:e.target.value}))} placeholder="Mfano TXN/MPESA reference ya TZS 500" /></div>
           <div className="lipa-admin-field lipa-admin-field-wide"><label>Maelezo ya ufuatiliaji</label><textarea value={rewardForm.rewardNote} onChange={(e) => setRewardForm((v) => ({...v,rewardNote:e.target.value}))} placeholder="Mfano report ya 08/10/2026, Lipa ilifikisha miamala 12..." /></div>
         </div>
-        <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={rewardSaving} onClick={() => void saveRewardTracking()}>{rewardSaving ? "Inahifadhi..." : "HIFADHI TAARIFA ZA ZAWADI"}</button></div>
+        <section className="lipa-admin-card" style={{marginTop:18,padding:16}}>
+         <h4 className="lipa-admin-section-title" style={{marginTop:0}}>Jibu / omba taarifa za ziada</h4>
+         <p className="lipa-admin-muted">Mtumiaji ataona ujumbe huu kwenye maelezo ya ombi lake na pia atapokea ujumbe kwenye mfumo.</p>
+         {selected.adminReply && <div className="lipa-admin-detail-item"><dt>Jibu la mwisho la Admin</dt><dd>{selected.adminReply}</dd></div>}
+         {selected.additionalInfoRequest && <div className="lipa-admin-detail-item"><dt>Taarifa za ziada zinazoombwa</dt><dd>{selected.additionalInfoRequest}</dd></div>}
+         <div className="lipa-admin-form-grid" style={{marginTop:12}}>
+           <div className="lipa-admin-field lipa-admin-field-wide"><label>Jibu la Admin</label><textarea value={replyForm.reply} onChange={(e) => setReplyForm((v) => ({...v,reply:e.target.value}))} placeholder="Andika jibu, maelekezo au taarifa kwa mtumiaji..." /></div>
+           <div className="lipa-admin-field lipa-admin-field-wide"><label>Omba taarifa za ziada</label><textarea value={replyForm.infoRequest} onChange={(e) => setReplyForm((v) => ({...v,infoRequest:e.target.value}))} placeholder="Mfano: Tafadhali tuma picha iliyo wazi ya NIDA na namba ya simu..." /></div>
+         </div>
+         <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={replySaving} onClick={() => void saveAdminReply()}>{replySaving ? "Inatuma..." : "TUMA UJUMBE KWA MTUMIAJI"}</button></div>
+       </section>
+       <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={rewardSaving} onClick={() => void saveRewardTracking()}>{rewardSaving ? "Inahifadhi..." : "HIFADHI TAARIFA ZA ZAWADI"}</button></div>
       </section>}
       <h4 className="lipa-admin-section-title">Applicant data</h4><div className="lipa-admin-detail-grid">{(byNetwork[selected.networkId]?.fields ?? []).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isFile = field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD"; return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName} <span className="lipa-admin-muted">({field.type})</span></dt><dd>{isFile && value ? <div className="lipa-admin-file"><span className="lipa-admin-file-label">{field.type === "IMAGE_UPLOAD" ? <ImageIcon size={15} /> : <FileText size={15} />}<span>Private uploaded document</span></span><span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}>{field.type === "IMAGE_UPLOAD" ? <><Eye size={14} /> Preview</> : <><ExternalLink size={14} /> Open</>}</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> Download</button></span></div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
       {documentError && <div className="lipa-admin-error" role="alert">{documentError}</div>}
