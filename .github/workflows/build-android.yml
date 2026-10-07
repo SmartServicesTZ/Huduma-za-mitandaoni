@@ -53,23 +53,23 @@ jobs:
             "launcherName": "SmartServicesTZ",
             "packageId": "tz.steward.huduma",
             "host": "smartservicestz.github.io",
-            "startUrl": "/Huduma-za-mitandaoni/?v=3",
-            "webManifestUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/manifest.webmanifest?v=3",
+            "startUrl": "/Huduma-za-mitandaoni/?v=4",
+            "webManifestUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/manifest.webmanifest?v=4",
             "display": "standalone",
             "orientation": "portrait",
-            "themeColor": "#071a36",
-            "themeColorDark": "#071a36",
-            "navigationColor": "#071a36",
-            "navigationColorDark": "#071a36",
-            "navigationDividerColor": "#071a36",
-            "navigationDividerColorDark": "#071a36",
-            "backgroundColor": "#071a36",
-            "iconUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/pwa-icon.svg?v=3",
-            "maskableIconUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/pwa-icon.svg?v=3",
-            "splashScreenFadeOutDuration": 450,
+            "themeColor": "#06152d",
+            "themeColorDark": "#06152d",
+            "navigationColor": "#06152d",
+            "navigationColorDark": "#06152d",
+            "navigationDividerColor": "#06152d",
+            "navigationDividerColorDark": "#06152d",
+            "backgroundColor": "#06152d",
+            "iconUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/pwa-icon.svg?v=4",
+            "maskableIconUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/pwa-icon.svg?v=4",
+            "splashScreenFadeOutDuration": 650,
             "enableNotifications": true,
-            "appVersionCode": 4,
-            "appVersionName": "3.0.0",
+            "appVersionCode": 5,
+            "appVersionName": "4.0.0",
             "minSdkVersion": 23,
             "signingKey": {
               "path": "./android.keystore",
@@ -95,7 +95,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: smartservicestz-debug-apk-v3
+          name: smartservicestz-debug-apk-v4
           path: android-twa/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
