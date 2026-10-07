@@ -86,6 +86,11 @@ button, input, textarea, select { font: inherit; } button, a { -webkit-tap-highl
 .license-number-refresh { display: inline-flex; align-items: center; justify-self: start; gap: 5px; width: max-content; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; color: #164e63; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .license-number-refresh:disabled { cursor: not-allowed; opacity: .55; }
 .license-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 19px; }
+.license-download-option { display: flex; flex: 1 1 135px; flex-direction: column; gap: 3px; }
+.license-download-option .button { width: 100%; }
+.license-download-note { text-align: center; color: #52616b; font-size: 10px; font-weight: 700; line-height: 1.2; }
+.license-download-option--recommended .license-download-note { color: #15803d; }
+
 .license-actions .button { flex: 1 1 135px; justify-content: center; }
 .license-output-note { margin: 10px 0 0; color: #52616b; font-size: 11px; line-height: 1.5; }
 .license-draft-badge { padding: 5px 8px; border-radius: 999px; color: #9a5500; background: #fff0c7; font-size: 9px; font-weight: 900; }
