@@ -17,7 +17,7 @@
     "worker:check": "pnpm --dir worker check",
     "worker:test": "pnpm --dir worker test",
     "worker:build": "pnpm --dir worker build",
-    "worker:deploy": "pnpm --dir worker deploy"
+    "worker:deploy": "cd worker && pnpm exec wrangler deploy"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
