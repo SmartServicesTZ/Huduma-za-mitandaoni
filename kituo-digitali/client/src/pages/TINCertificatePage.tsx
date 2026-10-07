@@ -89,7 +89,9 @@ export default function TINCertificatePage() {
       const page = pdf.addPage([cropped.width, cropped.height]);
       page.drawImage(image, { x: 0, y: 0, width: cropped.width, height: cropped.height });
       const bytes = await pdf.save({ useObjectStreams: true });
-      const pdfBytes = new Uint8Array(bytes.byteLength);\n      pdfBytes.set(bytes);\n      const blob = new Blob([pdfBytes.buffer], { type: "application/pdf" });
+      const pdfBytes = new Uint8Array(bytes.byteLength);
+      pdfBytes.set(bytes);
+      const blob = new Blob([pdfBytes.buffer], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = "tin-certificate.pdf";
