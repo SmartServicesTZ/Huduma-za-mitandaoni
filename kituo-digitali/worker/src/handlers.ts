@@ -526,6 +526,44 @@ export const setLipaApplicationStatus = callable(async (request) => {
   });
 });
 
+export const replyToLipaApplication = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageLipaApplications");
+  const data = objectValue(request.data, "Jibu la ombi");
+  const applicationId = text(data.applicationId, 80);
+  const reply = typeof data.reply === "string" ? data.reply.trim().slice(0, 2000) : "";
+  const infoRequest = typeof data.infoRequest === "string" ? data.infoRequest.trim().slice(0, 2000) : "";
+  if (!reply && !infoRequest) throw new ApiError("invalid-argument", "Andika jibu au ombi la taarifa za ziada.");
+  const ref = db.collection("lipaApplications").doc(applicationId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
+    const application = snapshot.data()!;
+    const now = FieldValue.serverTimestamp();
+    const patch: Record<string, unknown> = {
+      updatedAt: now,
+      lastAdminReplyAt: now,
+      lastAdminReplyBy: uid,
+    };
+    if (reply) Object.assign(patch, { adminReply: reply });
+    if (infoRequest) Object.assign(patch, { additionalInfoRequest: infoRequest });
+    transaction.update(ref, patch);
+    const subject = infoRequest ? `Taarifa za ziada kuhusu ombi la ${application.network}` : `Jibu kuhusu ombi la ${application.network}`;
+    const body = infoRequest ? `Admin anaomba taarifa za ziada: ${infoRequest}${reply ? `\n\nJibu la Admin: ${reply}` : ""}` : reply;
+    transaction.set(db.collection("messages").doc(), {
+      recipientId: application.userId,
+      subject,
+      body,
+      type: "lipaApplicationAdminReply",
+      applicationId,
+      createdAt: now,
+    });
+    recordAudit(transaction, uid, String(actor.role), "LIPA_APPLICATION_ADMIN_REPLY", "lipaApplication", applicationId, {}, { adminReply: Boolean(reply), additionalInfoRequest: Boolean(infoRequest) }, {});
+    return { applicationId, adminReply: reply, additionalInfoRequest: infoRequest };
+  });
+});
+
 export const updateLipaRewardTracking = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
