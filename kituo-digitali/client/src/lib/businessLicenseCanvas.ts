@@ -72,62 +72,61 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
 
 const DEFAULT_LICENSE_LAYOUT = {
   valueX: 35.8,
-  nameY: 37.85,
-  officeY: 31.85,
-  tinY: 34.72,
-  businessY: 41.18,
-  typeY: 44.55,
-  issueY: 47.48,
-  expiryY: 50.98,
-  branchY: 53.70,
-  regionY: 63.10,
-  wardY: 66.48,
-  streetY: 69.78,
-  amountY: 77.20,
-  valueSize: 16,
-  nameSize: 16,
+  nameY: 39.30,
+  officeY: 32.95,
+  tinY: 36.05,
+  businessY: 42.55,
+  typeY: 45.85,
+  issueY: 49.15,
+  expiryY: 52.45,
+  branchY: 55.30,
+  regionY: 63.45,
+  wardY: 66.75,
+  streetY: 70.05,
+  amountY: 77.30,
+  valueSize: 15,
+  nameSize: 15,
   numberX: 50,
-  numberY: 22.45,
-  numberSize: 19,
-  qrX: 64.0,
-  qrY: 58.35,
-  qrSize: 265,
+  numberY: 23.15,
+  numberSize: 18,
+  qrX: 65.6,
+  qrY: 61.7,
+  qrSize: 270,
 };
 
-const FONT_SANS = "Manrope, Arial, Helvetica, sans-serif";
-const FONT_LABEL = "Manrope, Arial, Helvetica, sans-serif";
+const FONT_SANS = "Arial, Helvetica, sans-serif";
+const FONT_LABEL = "Arial, Helvetica, sans-serif";
 const FONT_SERIF = "Georgia, Times New Roman, serif";
 
 const staticText: TextItem[] = [
-  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 198, size: 22, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "BUSINESS LICENSE", x: 506, y: 244, size: 23, weight: 800, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "THE BUSINESS LICENSING", x: 506, y: 286, size: 15, weight: 800, family: FONT_SANS, align: "center", maxWidth: 850 },
-  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 318, size: 12.5, weight: 500, family: FONT_SERIF, align: "center", maxWidth: 850 },
+  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 22, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "BUSINESS LICENSE", x: 506, y: 245, size: 23, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 12.5, weight: 400, family: FONT_SANS, align: "center", maxWidth: 850 },
 
-  { text: "LICENSE DETAILS", x: 50, y: 362, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
-  { text: "Issuing Office:", x: 72, y: 412, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Tax Identification No.:", x: 72, y: 452, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "License Issued To:", x: 72, y: 495, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "For the Business Of:", x: 72, y: 539, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Business Licensing:", x: 72, y: 584, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Date of Issue:", x: 72, y: 626, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Expiring Date:", x: 72, y: 670, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Principal / Branch:", x: 72, y: 708, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "LICENSE DETAILS", x: 50, y: 381, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Issuing Office:", x: 72, y: 428, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Tax Identification No:", x: 72, y: 469, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "For the Business Of:", x: 72, y: 553, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Business Licensing:", x: 72, y: 596, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Date of Issue:", x: 72, y: 639, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Expiring Date:", x: 72, y: 682, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Principal / Branch:", x: 72, y: 719, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 
-  { text: "BUSINESS LOCATION", x: 50, y: 772, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
-  { text: "Region:", x: 72, y: 820, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Ward:", x: 72, y: 863, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Street:", x: 72, y: 906, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "BUSINESS LOCATION", x: 50, y: 775, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Region:", x: 72, y: 823, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Ward:", x: 72, y: 866, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Street:", x: 72, y: 909, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 
-  { text: "PAYMENT DETAILS", x: 50, y: 954, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
-  { text: "Amount of Fee Paid:", x: 72, y: 1002, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "PAYMENT DETAILS", x: 50, y: 957, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Amount of Fee Paid:", x: 72, y: 1005, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 ];
 
 async function ensureLicenseFonts() {
   if (typeof document === "undefined" || !("fonts" in document)) return;
   await Promise.all([
-    document.fonts.load("800 22px Manrope"),
-    document.fonts.load("600 15px Manrope"),
+    document.fonts.load("700 22px Arial"),
+    document.fonts.load("600 15px Arial"),
   ]);
 }
 
