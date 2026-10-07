@@ -1,0 +1,56 @@
+name: Build $teward Tz Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "manifest.webmanifest"
+      - "pwa-icon.svg"
+      - ".github/workflows/build-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Bubblewrap
+        run: npm install --global @bubblewrap/cli
+
+      - name: Initialize Android TWA project
+        run: |
+          rm -rf android-twa
+          mkdir -p android-twa
+          cd android-twa
+          printf '\n\n\n\n\n\n\n\n\nn\n' | bubblewrap init --manifest="https://steward-tz.github.io/Huduma-za-mtandao/manifest.webmanifest" --directory="."
+
+      - name: Build Android project
+        working-directory: android-twa
+        run: |
+          bubblewrap build --skipSigning
+
+      - name: Build installable debug APK
+        working-directory: android-twa
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: steward-tz-debug-apk
+          path: android-twa/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
