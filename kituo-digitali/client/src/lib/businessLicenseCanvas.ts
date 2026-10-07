@@ -4,9 +4,7 @@ export const BUSINESS_LICENSE_CANVAS_WIDTH = 1012;
 export const BUSINESS_LICENSE_CANVAS_HEIGHT = 1300;
 
 export type BusinessLicenseCanvasForm = {
-  firstName: string;
-  middleName: string;
-  lastName: string;
+  applicantName: string;
   businessType: string;
   otherBusinessType?: string;
   licenseType: string;
