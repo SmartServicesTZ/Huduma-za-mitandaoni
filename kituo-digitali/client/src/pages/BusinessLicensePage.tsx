@@ -164,7 +164,7 @@ export default function BusinessLicensePage() {
     if (forIssuance && !isAuthenticated) { toast.error("Ingia kwanza ili kupakua leseni."); return false; }
     if (!form.applicantName.trim()) { toast.error("Tafadhali jaza majina yote matatu ya mwombaji kwenye sehemu moja."); return false; }
     if (!form.licenseType) { toast.error("Chagua aina ya leseni."); return false; }
-    if (form.licenseType === "RENEWED LICENCE" && !/^BL01699682026-270000\d{5}$/.test(renewedLicenseNumber.trim())) { toast.error("Weka namba ya leseni kwa mfumo BL01699682026-27000012345."); return false; }
+    if (form.licenseType === "RENEWED LICENCE" && !/^BL01699682026-27000\d{5}$/.test(renewedLicenseNumber.trim())) { toast.error("Weka namba ya leseni kwa mfumo BL01699682026-2700012345."); return false; }
     if (!form.principalBranch) { toast.error("Chagua Principal au Branch."); return false; }
     if (!form.businessType || (form.businessType === "OTHER" && !form.otherBusinessType.trim())) { toast.error("Tafadhali chagua aina ya biashara."); return false; }
     if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin.trim())) { toast.error("Format ya TIN si sahihi. Tumia mfumo 123-123-123."); return false; }
@@ -280,7 +280,7 @@ export default function BusinessLicensePage() {
                 <option value="NEW LICENCE">NEW LICENCE</option><option value="RENEWED LICENCE">RENEWED LICENCE</option>
               </SelectField>
             </Field>
-            {form.licenseType === "RENEWED LICENCE" && <Field label="Namba ya Leseni ya Zamani" english="Previous License Number" required><input inputMode="numeric" maxLength={25} value={renewedLicenseNumber} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 25); setRenewedLicenseNumber(digits); }} placeholder="BL01699682026-27000012345" /></Field>}
+            {form.licenseType === "RENEWED LICENCE" && <Field label="Namba ya Leseni ya Zamani" english="Previous License Number" required><input inputMode="numeric" maxLength={25} value={renewedLicenseNumber} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 25); setRenewedLicenseNumber(digits); }} placeholder="BL01699682026-2700012345" /></Field>}
             <Field label="Eneo la Biashara" english="Principal / Branch" required>
               <SelectField value={form.principalBranch} onChange={(value) => set("principalBranch", value as FormState["principalBranch"])} placeholder="Chagua eneo">
                 <option value="PRINCIPAL">PRINCIPAL — Biashara Kuu</option><option value="BRANCH">BRANCH — Tawi</option>
