@@ -280,7 +280,7 @@ export default function BusinessLicensePage() {
                 <option value="NEW LICENCE">NEW LICENCE</option><option value="RENEWED LICENCE">RENEWED LICENCE</option>
               </SelectField>
             </Field>
-            {form.licenseType === "RENEWED LICENCE" && <Field label="Namba ya Leseni ya Zamani" english="Previous License Number" required><input inputMode="numeric" maxLength={25} value={renewedLicenseNumber} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 25); setRenewedLicenseNumber(digits); }} placeholder="BL01699682026-270000123" /></Field>}
+            {form.licenseType === "RENEWED LICENCE" && <Field label="Namba ya Leseni ya Zamani" english="Previous License Number" required><input inputMode="numeric" maxLength={25} value={renewedLicenseNumber} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 25); setRenewedLicenseNumber(digits); }} placeholder="BL01699682026-27000012345" /></Field>}
             <Field label="Eneo la Biashara" english="Principal / Branch" required>
               <SelectField value={form.principalBranch} onChange={(value) => set("principalBranch", value as FormState["principalBranch"])} placeholder="Chagua eneo">
                 <option value="PRINCIPAL">PRINCIPAL — Biashara Kuu</option><option value="BRANCH">BRANCH — Tawi</option>
