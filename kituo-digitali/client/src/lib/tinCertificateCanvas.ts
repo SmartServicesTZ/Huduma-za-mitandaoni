@@ -36,8 +36,8 @@ export const TIN_TEMPLATE = {
   effectValue: { x: 470, y: 750, fontSize: 15, weight: 700, align: "center" },
   locationValue: { x: 370, y: 799.9, fontSize: 15, weight: 700 },
   officeValue: { x: 700, y: 799.9, fontSize: 15, weight: 700 },
-  physicalValue: { x: 506, y: 818, fontSize: 15, weight: 700 },
-  streetValue: { x: 506, y: 858, fontSize: 15, weight: 700 },
+  physicalValue: { x: 385, y: 823, fontSize: 15, weight: 700 },
+  streetValue: { x: 390, y: 863, fontSize: 15, weight: 700 },
   commissioner: { x: 765, y: 999.5, fontSize: 16, weight: 600, align: "center" },
 } as const;
 
