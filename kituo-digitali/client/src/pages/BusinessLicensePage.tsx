@@ -164,7 +164,7 @@ export default function BusinessLicensePage() {
     if (forIssuance && !isAuthenticated) { toast.error("Ingia kwanza ili kupakua leseni."); return false; }
     if (!form.applicantName.trim()) { toast.error("Tafadhali jaza majina yote matatu ya mwombaji kwenye sehemu moja."); return false; }
     if (!form.licenseType) { toast.error("Chagua aina ya leseni."); return false; }
-    if (form.licenseType === "RENEWED LICENCE" && !/^BL01699682026-270000\d{3}$/.test(renewedLicenseNumber.trim())) { toast.error("Weka namba ya leseni kwa mfumo BL01699682026-270000123."); return false; }
+    if (form.licenseType === "RENEWED LICENCE" && !/^BL01699682026-270000\d{5}$/.test(renewedLicenseNumber.trim())) { toast.error("Weka namba ya leseni kwa mfumo BL01699682026-27000012345."); return false; }
     if (!form.principalBranch) { toast.error("Chagua Principal au Branch."); return false; }
     if (!form.businessType || (form.businessType === "OTHER" && !form.otherBusinessType.trim())) { toast.error("Tafadhali chagua aina ya biashara."); return false; }
     if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin.trim())) { toast.error("Format ya TIN si sahihi. Tumia mfumo 123-123-123."); return false; }
@@ -280,7 +280,7 @@ export default function BusinessLicensePage() {
                 <option value="NEW LICENCE">NEW LICENCE</option><option value="RENEWED LICENCE">RENEWED LICENCE</option>
               </SelectField>
             </Field>
-            {form.licenseType === "RENEWED LICENCE" && <Field label="Namba ya Leseni ya Zamani" english="Previous License Number" required><input inputMode="numeric" maxLength={23} value={renewedLicenseNumber} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 23); setRenewedLicenseNumber(digits); }} placeholder="BL01699682026-270000123" /></Field>}
+            {form.licenseType === "RENEWED LICENCE" && <Field label="Namba ya Leseni ya Zamani" english="Previous License Number" required><input inputMode="numeric" maxLength={25} value={renewedLicenseNumber} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 25); setRenewedLicenseNumber(digits); }} placeholder="BL01699682026-270000123" /></Field>}
             <Field label="Eneo la Biashara" english="Principal / Branch" required>
               <SelectField value={form.principalBranch} onChange={(value) => set("principalBranch", value as FormState["principalBranch"])} placeholder="Chagua eneo">
                 <option value="PRINCIPAL">PRINCIPAL — Biashara Kuu</option><option value="BRANCH">BRANCH — Tawi</option>
@@ -306,7 +306,7 @@ export default function BusinessLicensePage() {
             <Field label="Malipo ya Leseni" english="License Fee Paid" required><input type="number" min="0" step="0.01" value={form.licenseFee} onChange={(event) => set("licenseFee", Number(event.target.value))} /></Field>
           </div>
           <div className="license-auto-fields">
-            <span className="license-number-field">B.L. NO. <b>{licenseNumber || (numberError ? "Haikupatikana" : isAuthenticated ? "Inatolewa na mfumo..." : "Itatolewa baada ya kuingia")}</b><button type="button" className="license-number-refresh" disabled={!isAuthenticated || serviceLocked || downloadBusy || submitted || numberPending || (!licenseNumber && !numberError)} onClick={refreshLicenseNumber} title="Badilisha tarakimu tatu za mwisho za namba ya leseni"><RefreshCw size={13} /> {numberPending ? "Inatolewa..." : numberError ? "Jaribu tena" : "Badilisha namba"}</button><small>{submitted ? "READ ONLY — namba imefungwa kwenye leseni iliyotengenezwa" : "READ ONLY — badilisha kabla ya kutengeneza hati; hakuna tokeni inayokatwa kwa refresh"}</small></span>
+            <span className="license-number-field">B.L. NO. <b>{licenseNumber || (numberError ? "Haikupatikana" : isAuthenticated ? "Inatolewa na mfumo..." : "Itatolewa baada ya kuingia")}</b><button type="button" className="license-number-refresh" disabled={!isAuthenticated || serviceLocked || downloadBusy || submitted || numberPending || (!licenseNumber && !numberError)} onClick={refreshLicenseNumber} title="Badilisha tarakimu tano za mwisho za namba ya leseni"><RefreshCw size={13} /> {numberPending ? "Inatolewa..." : numberError ? "Jaribu tena" : "Badilisha namba"}</button><small>{submitted ? "READ ONLY — namba imefungwa kwenye leseni iliyotengenezwa" : "READ ONLY — badilisha kabla ya kutengeneza hati; hakuna tokeni inayokatwa kwa refresh"}</small></span>
             <span>Tarehe ya Kutolewa <b>{displayDate(issueDate)}</b></span>
             <span>Tarehe ya Kumalizika <b>{displayDate(expiryDate)}</b></span>
             <span>Ofisi Inayotoa Leseni <b>{issuingOffice(form.district)}</b></span>
