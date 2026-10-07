@@ -82,8 +82,8 @@ const DEFAULT_LICENSE_LAYOUT = {
   officeX: 35.1, officeY: 31.75, officeSize: 14, tinX: 35.1, tinY: 34.72, tinSize: 14,
   businessX: 35.1, businessY: 41.08, businessSize: 14, typeX: 35.1, typeY: 44.52, typeSize: 14,
   issueX: 35.1, issueY: 47.43, issueSize: 14, expiryX: 35.1, expiryY: 51.03, expirySize: 14,
-  branchX: 35.1, branchY: 53.72, branchSize: 14, regionX: 35.1, regionY: 62.05, regionSize: 14,
-  wardX: 35.1, wardY: 65.02, wardSize: 14, streetX: 35.1, streetY: 68.42, streetSize: 14,
+  branchX: 35.1, branchY: 53.72, branchSize: 14, regionX: 35.1, regionY: 63.08, regionSize: 14,
+  wardX: 35.1, wardY: 66.31, wardSize: 14, streetX: 35.1, streetY: 69.62, streetSize: 14,
   amountX: 35.1, amountY: 77.20, amountSize: 14, qrX: 61.3, qrY: 59.55, qrSize: 255,
 };
 
