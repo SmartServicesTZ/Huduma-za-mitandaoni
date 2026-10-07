@@ -441,7 +441,9 @@ export const submitLipaApplication = callable(async (request) => {
   if (!config) throw new ApiError("not-found", "Mtandao huu haujapatikana.");
   if (config.active !== true) throw new ApiError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
   const fields = Array.isArray(config.fields) ? config.fields as Array<Record<string, unknown>> : [];
-  const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId);
+  const rawValues = objectValue(data.values, "Fomu");
+  const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId);
+  const additionalNotes = typeof rawValues.additionalNotes === "string" ? rawValues.additionalNotes.trim().slice(0, 2000) : "";
   const openRef = db.collection("lipaOpenApplications").doc(`${uid}_${networkId}`);
   const preexistingOpen = await openRef.get();
   if (preexistingOpen.exists) throw new ApiError("already-exists", "Una ombi la mtandao huu ambalo bado linasubiri kukamilika.", { applicationId: preexistingOpen.data()?.applicationId });
@@ -476,7 +478,7 @@ export const submitLipaApplication = callable(async (request) => {
       applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" "),
       phone: String(applicantData.phone ?? ""), businessName: String(applicantData.businessName ?? ""), nidaNumber: String(applicantData.nidaNumber ?? ""), tinNumber: String(applicantData.tinNumber ?? ""),
       businessLicense: String(applicantData.businessLicense ?? ""), idDocumentUrl: String(applicantData.idDocument ?? ""), idDocumentType: String(applicantData.idDocumentType ?? ""), applicantData,
-      reward: Number(config.reward ?? 0), status: "PENDING", rejectionReason: "", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
+      reward: Number(config.reward ?? 0), additionalNotes, rewardStatus: Number(config.reward ?? 0) > 0 ? "UNPAID" : "NOT_ELIGIBLE", qualificationStatus: Number(config.reward ?? 0) > 0 ? "PENDING_CHECK" : "NOT_QUALIFIED", verifiedTransactions: 0, lipaNumber: "", rewardPaymentReference: "", rewardNote: "", status: "PENDING", rejectionReason: "", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
     };
     transaction.create(applicationRef, application);
     transaction.create(openRef, { applicationId, userId: uid, networkId, createdAt: FieldValue.serverTimestamp() });
@@ -521,6 +523,44 @@ export const setLipaApplicationStatus = callable(async (request) => {
     transaction.create(auditRef, { action: status === "PROCESSING" ? "LIPA_APPLICATION_PROCESSING" : status === "APPROVED" ? "LIPA_APPLICATION_APPROVED" : "LIPA_APPLICATION_REJECTED", actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     recordAudit(transaction, uid, String(actor.role), `LIPA_APPLICATION_${status}`, "lipaApplication", applicationId, { status: from }, { status }, { reason: status === "REJECTED" ? rejectionReason : "" });
     return { applicationId, status };
+  });
+});
+
+export const updateLipaRewardTracking = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageLipaApplications");
+  const data = objectValue(request.data, "Taarifa za zawadi");
+  const applicationId = text(data.applicationId, 80);
+  const lipaNumber = typeof data.lipaNumber === "string" ? data.lipaNumber.trim().slice(0, 50) : "";
+  const verifiedTransactions = Number(data.verifiedTransactions);
+  if (!Number.isSafeInteger(verifiedTransactions) || verifiedTransactions < 0 || verifiedTransactions > 100000000) throw new ApiError("invalid-argument", "Idadi ya miamala si sahihi.");
+  const qualificationStatus = String(data.qualificationStatus ?? "");
+  if (!["PENDING_CHECK", "QUALIFIED", "NOT_QUALIFIED"].includes(qualificationStatus)) throw new ApiError("invalid-argument", "Hali ya qualification si sahihi.");
+  const rewardStatus = String(data.rewardStatus ?? "");
+  if (!["UNPAID", "PAID", "NOT_ELIGIBLE"].includes(rewardStatus)) throw new ApiError("invalid-argument", "Hali ya malipo ya zawadi si sahihi.");
+  const rewardPaymentReference = typeof data.rewardPaymentReference === "string" ? data.rewardPaymentReference.trim().slice(0, 120) : "";
+  const rewardNote = typeof data.rewardNote === "string" ? data.rewardNote.trim().slice(0, 1000) : "";
+  if (rewardStatus === "PAID" && !rewardPaymentReference) throw new ApiError("invalid-argument", "Weka reference ya malipo kabla ya kuweka PAID.");
+  const ref = db.collection("lipaApplications").doc(applicationId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
+    const application = snapshot.data()!;
+    const reward = Number(application.reward ?? 0);
+    if (!Number.isFinite(reward) || reward <= 0) throw new ApiError("failed-precondition", "Ombi hili halina zawadi ya kulipwa.");
+    if (String(application.status ?? "") !== "APPROVED") throw new ApiError("failed-precondition", "Ombi lazima liwe APPROVED kabla ya kufuatilia zawadi.");
+    if (rewardStatus === "PAID" && qualificationStatus !== "QUALIFIED") throw new ApiError("failed-precondition", "Zawadi haiwezi kuwa PAID bila kuthibitisha qualification.");
+    const now = FieldValue.serverTimestamp();
+    const patch: Record<string, unknown> = { lipaNumber, verifiedTransactions, qualificationStatus, rewardStatus, rewardPaymentReference, rewardNote, updatedAt: now, rewardUpdatedAt: now, rewardUpdatedBy: uid };
+    if (rewardStatus === "PAID") { patch.rewardPaidAt = now; patch.rewardPaidBy = uid; }
+    transaction.update(ref, patch);
+    recordAudit(transaction, uid, String(actor.role), "LIPA_REWARD_TRACKING_UPDATED", "lipaApplication", applicationId, {
+      qualificationStatus: application.qualificationStatus ?? "PENDING_CHECK",
+      rewardStatus: application.rewardStatus ?? "UNPAID",
+      lipaNumber: application.lipaNumber ?? "",
+    }, { qualificationStatus, rewardStatus, lipaNumber }, { verifiedTransactions, reward, rewardPaymentReference });
+    return { applicationId, reward, qualificationStatus, rewardStatus, lipaNumber, verifiedTransactions };
   });
 });
 
