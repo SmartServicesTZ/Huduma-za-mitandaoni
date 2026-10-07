@@ -146,7 +146,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   if (form.tin) {
     const qr = await QRCode.toDataURL(JSON.stringify({ tin: form.tin, name: form.name, date: form.effectDate }), { width: 240, margin: 1, errorCorrectionLevel: "M" });
     const qrImage = await loadImage(qr);
-    ctx.drawImage(qrImage, 740, 130, 90, 90);
+    ctx.drawImage(qrImage, 720, 110, 90, 90);
   }
 
   text(ctx, pos("commissioner"), form.commissioner);
