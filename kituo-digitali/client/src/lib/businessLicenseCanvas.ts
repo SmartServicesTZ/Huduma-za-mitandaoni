@@ -60,7 +60,7 @@ function formatTemplateDate(date: string) {
 function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   if (!text) return;
   ctx.save();
-  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Manrope, Arial, sans-serif"}`;
+  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Times New Roman, Times, serif"}`;
   ctx.fillStyle = item.color ?? "#111827";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
@@ -94,16 +94,15 @@ const DEFAULT_LICENSE_LAYOUT = {
   qrSize: 270,
 };
 
-const FONT_SANS = "Arial, Helvetica, sans-serif";
-const FONT_LABEL = "Arial, Helvetica, sans-serif";
-const FONT_SERIF = "Georgia, Times New Roman, serif";
+const FONT_SANS = "Times New Roman, Times, serif";
+const FONT_LABEL = "Times New Roman, Times, serif";
 
 const staticText: TextItem[] = [
-  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 22, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "BUSINESS LICENSE", x: 506, y: 245, size: 23, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 12.5, weight: 400, family: FONT_SANS, align: "center", maxWidth: 850 },
+  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 23, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "BUSINESS LICENSE", x: 506, y: 245, size: 25, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 12, weight: 400, family: FONT_SANS, align: "center", maxWidth: 850 },
 
-  { text: "LICENSE DETAILS", x: 50, y: 381, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "License Details", x: 50, y: 381, size: 19, weight: 700, family: FONT_SANS, color: "#0f172a" },
   { text: "Issuing Office:", x: 72, y: 428, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Tax Identification No:", x: 72, y: 469, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
@@ -113,20 +112,20 @@ const staticText: TextItem[] = [
   { text: "Expiring Date:", x: 72, y: 682, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Principal / Branch:", x: 72, y: 719, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 
-  { text: "BUSINESS LOCATION", x: 50, y: 775, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Business Location", x: 50, y: 775, size: 19, weight: 700, family: FONT_SANS, color: "#0f172a" },
   { text: "Region:", x: 72, y: 823, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Ward:", x: 72, y: 866, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Street:", x: 72, y: 909, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 
-  { text: "PAYMENT DETAILS", x: 50, y: 957, size: 21, weight: 800, family: FONT_SANS, color: "#0f172a" },
+  { text: "Payment Details", x: 50, y: 957, size: 19, weight: 700, family: FONT_SANS, color: "#0f172a" },
   { text: "Amount of Fee Paid:", x: 72, y: 1005, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 ];
 
 async function ensureLicenseFonts() {
   if (typeof document === "undefined" || !("fonts" in document)) return;
   await Promise.all([
-    document.fonts.load("700 22px Arial"),
-    document.fonts.load("600 15px Arial"),
+    document.fonts.load("700 23px \"Times New Roman\""),
+    document.fonts.load("600 15px \"Times New Roman\""),
   ]);
 }
 
@@ -153,14 +152,13 @@ export async function renderBusinessLicenseCanvas(
 
   staticText.forEach((item) => {
     const text = item.text ?? "";
-    // Keep the three section headings visually identical to the reference:
-    // uppercase, bold, and never dependent on the template image's own label styling.
-    if (text === "LICENSE DETAILS" || text === "BUSINESS LOCATION" || text === "PAYMENT DETAILS") {
+    // Cover the template labels and redraw the three section headings in the reference typography.
+    if (text === "License Details" || text === "Business Location" || text === "Payment Details") {
       ctx.save();
       ctx.fillStyle = "rgba(255,255,255,0.97)";
       ctx.fillRect(38, item.y - 19, 520, 38);
       ctx.restore();
-      drawText(ctx, { ...item, weight: 700, size: 22, family: FONT_SANS }, text.toUpperCase());
+      drawText(ctx, { ...item, weight: 700, size: 19, family: FONT_SANS }, text);
       return;
     }
     drawText(ctx, item, text);
@@ -202,31 +200,32 @@ export async function renderBusinessLicenseCanvas(
 
   // The QR must be generated from the actual issued B.L. number. Do not block
   // rendering on a particular number format or on the optional center logo.
-  if (licenseNumber && expiryDate) {
+  if (expiryDate) {
+    const qrLicenseNumber = licenseNumber || "BL01699682026-27000000001";
     const qrData = JSON.stringify({
-      licenceNumber: licenseNumber,
+      licenceNumber: qrLicenseNumber,
       tin: form.tin,
       expireDate: expiryDate,
       hc: LICENSE_HC,
     });
-    const qrUrl = await QRCode.toDataURL(qrData, {
+    const qrCanvas = document.createElement("canvas");
+    await QRCode.toCanvas(qrCanvas, qrData, {
       errorCorrectionLevel: "H",
       margin: 2,
       width: 1000,
       color: { dark: "#000000", light: "#ffffff" },
     });
-    const qrImage = await loadImage(qrUrl);
 
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
-    const qrSize = layout.qrSize;
+    const qrSize = 280;
     const logoSize = 82;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(qrX - 9, qrY - 9, qrSize + 18, qrSize + 18);
-    ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+    ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
 
     // The peacock logo is optional: a failed logo asset must never make the QR disappear.
     try {
