@@ -1,4 +1,4 @@
-export const BUSINESS_LICENSE_PREFIX = "BL01699682026-270000";
+export const BUSINESS_LICENSE_PREFIX = "BL01699682026-27000";
 
 export function generateRandomBusinessLicenseNumber() {
   const values = new Uint32Array(1);
