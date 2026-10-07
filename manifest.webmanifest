@@ -4,7 +4,7 @@
   "description": "Huduma za kidigitali za $teward Tz",
   "lang": "sw",
   "dir": "ltr",
-  "start_url": "/Huduma-za-mtandao/",
+  "start_url": "/Huduma-za-mtandao/?v=2",
   "scope": "/Huduma-za-mtandao/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -12,7 +12,7 @@
   "theme_color": "#071a36",
   "icons": [
     {
-      "src": "/Huduma-za-mtandao/pwa-icon.svg",
+      "src": "/Huduma-za-mtandao/pwa-icon.svg?v=2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
