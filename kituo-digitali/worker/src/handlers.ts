@@ -330,14 +330,18 @@ export const setServiceLock = callable(async (request) => {
 async function initializeServiceCatalog(uid: string, actorRole: string, skipIfInitialized: boolean) {
   const refs = [
     ...defaultServices.map((service) => ({ ref: db.collection("services").doc(service.slug), data: service })),
+    ...defaultAccessLipaServices.map((service) => ({ ref: db.collection("services").doc(service.slug), data: service })),
     ...defaultLipaServices.map((service) => ({ ref: db.collection("lipaServices").doc(service.id), data: service })),
   ];
   const settingsRef = db.collection("siteSettings").doc("public");
   return db.runTransaction(async (transaction) => {
     const settingsSnapshot = await transaction.get(settingsRef);
-    if (skipIfInitialized && settingsSnapshot.data()?.catalogInitialized === true) return { createdServices: 0, createdNetworks: 0, initialized: true };
+    const alreadyInitialized = settingsSnapshot.data()?.catalogInitialized === true;
+    const refsToSeed = alreadyInitialized && skipIfInitialized
+      ? refs.filter((item) => item.ref.parent.id === "services" && ["access-lipa-number", "access-lipa-airtel", "access-lipa-yas", "access-lipa-vodacom", "access-lipa-halotel"].includes(String((item.data as { slug?: string }).slug ?? "")))
+      : refs;
     const existingRecords: Array<{ item: (typeof refs)[number]; snapshot: DocumentSnapshot; targetRef: DocumentReference }> = [];
-    for (const item of refs) {
+    for (const item of refsToSeed) {
       const direct = await transaction.get(item.ref);
       const catalogData = item.data as { slug?: string; id?: string };
       const snapshot = direct.exists
