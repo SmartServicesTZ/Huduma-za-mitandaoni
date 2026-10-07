@@ -360,6 +360,11 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
       }
       const existing = snapshot.data()!;
       const backfill = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
+      const isAccessService = targetRef.parent.id === "services" && /^access-lipa-(airtel|yas|vodacom|halotel)$/.test(String((item.data as { slug?: string }).slug ?? ""));
+      if (isAccessService) {
+        backfill.isVisible = true;
+        backfill.active = true;
+      }
       if (Object.keys(backfill).length) transaction.set(targetRef, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     });
     transaction.set(settingsRef, { catalogInitialized: true, catalogInitializedAt: FieldValue.serverTimestamp() }, { merge: true });
