@@ -27,6 +27,13 @@ if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", recover);
 }
 
+// Register the PWA service worker on the GitHub Pages project scope.
+if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
+  });
+}
+
 // Production bootstrap v2: the portal uses Firebase Authentication, Firestore,
 // Firebase Storage for legacy file uploads, and the Cloudflare Worker API. GitHub Pages is a static host, so do not create
 // the old tRPC client here: it would incorrectly request /api/trpc from the
