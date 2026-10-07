@@ -99,11 +99,11 @@ export default function AccessLipaNumberPage() {
     setSubmitting(true);
     try {
       const serviceSlug = selected === "airtel" ? "access-lipa-airtel" : selected === "yas" ? "access-lipa-yas" : "access-lipa-vodacom";
-      const values = selected === "airtel"
-        ? { network: "Airtel", phone: phone.trim(), fullName: fullName.trim(), contact: contact.trim() }
+      const values: Record<string, string | number | null> = selected === "airtel"
+        ? { network: "Airtel", phone: phone.trim(), fullName: fullName.trim(), contact: contact.trim(), nidaNumber: null, passportPhoto: null, email: null }
         : selected === "yas"
-          ? { network: "Yas", phone: phone.trim(), nidaNumber: nida.trim(), passportPhoto: passportPath, contact: contact.trim() }
-          : { network: "Vodacom", phone: phone.trim(), fullName: fullName.trim(), email: email.trim(), contact: contact.trim() };
+          ? { network: "Yas", phone: phone.trim(), nidaNumber: nida.trim(), passportPhoto: passportPath, contact: contact.trim(), fullName: null, email: null }
+          : { network: "Vodacom", phone: phone.trim(), fullName: fullName.trim(), email: email.trim(), contact: contact.trim(), nidaNumber: null, passportPhoto: null };
       const result = await createServiceApplication(applicationId, serviceSlug, values);
       setSubmittedRef(String(result.reference ?? result.applicationId ?? applicationId));
       toast.success("Ombi limetumwa kwa admin.");
