@@ -1,0 +1,21 @@
+{
+  "name": "$teward Tz — Huduma za Mtandaoni",
+  "short_name": "$teward Tz",
+  "description": "Huduma za kidigitali za $teward Tz",
+  "lang": "sw",
+  "dir": "ltr",
+  "start_url": "/Huduma-za-mtandao/",
+  "scope": "/Huduma-za-mtandao/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#071a36",
+  "theme_color": "#071a36",
+  "icons": [
+    {
+      "src": "/Huduma-za-mtandao/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
