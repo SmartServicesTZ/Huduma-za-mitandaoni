@@ -26,7 +26,7 @@ self.addEventListener("fetch", event => {
       })
       .catch(() =>
         caches.match(event.request).then(
-          cached => cached || caches.match("/Huduma-za-mtandao/?v=2")
+          cached => cached || caches.match("/Huduma-za-mitandaoni/?v=2")
         )
       )
   );
