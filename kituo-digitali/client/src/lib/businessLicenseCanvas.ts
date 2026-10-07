@@ -151,7 +151,20 @@ export async function renderBusinessLicenseCanvas(
   ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_LAYOUT_WIDTH, BUSINESS_LICENSE_LAYOUT_HEIGHT);
 
-  staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
+  staticText.forEach((item) => {
+    const text = item.text ?? "";
+    // Keep the three section headings visually identical to the reference:
+    // uppercase, bold, and never dependent on the template image's own label styling.
+    if (text === "LICENSE DETAILS" || text === "BUSINESS LOCATION" || text === "PAYMENT DETAILS") {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.97)";
+      ctx.fillRect(38, item.y - 19, 520, 38);
+      ctx.restore();
+      drawText(ctx, { ...item, weight: 700, size: 22, family: FONT_SANS }, text.toUpperCase());
+      return;
+    }
+    drawText(ctx, item, text);
+  });
 
   const owner = form.applicantName.trim().replace(/\s+/g, " ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
@@ -187,44 +200,51 @@ export async function renderBusinessLicenseCanvas(
   drawText(ctx, { x: valueX, y: layout.streetY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, titleCase(form.street));
   drawText(ctx, { x: valueX, y: layout.amountY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, amount);
 
-  const qrReady = Boolean(
-    licenseNumber &&
-    /^BL01699682026-270000\d{3}$/.test(licenseNumber) &&
-    /^\d{3}-\d{3}-\d{3}$/.test(form.tin) &&
-    expiryDate,
-  );
-
-  if (qrReady) {
+  // The QR must be generated from the actual issued B.L. number. Do not block
+  // rendering on a particular number format or on the optional center logo.
+  if (licenseNumber && expiryDate) {
     const qrData = JSON.stringify({
       licenceNumber: licenseNumber,
       tin: form.tin,
       expireDate: expiryDate,
       hc: LICENSE_HC,
     });
-    const qrUrl = await QRCode.toDataURL(qrData, { errorCorrectionLevel: "H", margin: 4, width: 1000 });
-    const [qrImage, logo] = await Promise.all([
-      loadImage(qrUrl),
-      loadImage(assetUrl("tausi-logo.png")),
-    ]);
+    const qrUrl = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      width: 1000,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+    const qrImage = await loadImage(qrUrl);
 
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 94;
+    const logoSize = 82;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(qrX - 7, qrY - 7, qrSize + 14, qrSize + 14);
+    ctx.fillRect(qrX - 9, qrY - 9, qrSize + 18, qrSize + 18);
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(logo, centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
-    ctx.restore();
+    // The peacock logo is optional: a failed logo asset must never make the QR disappear.
+    try {
+      const logo = await loadImage(assetUrl("tausi-logo.png"));
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, logoSize / 2 + 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(logo, centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
+      ctx.restore();
+    } catch {
+      // Keep the fully functional QR even if the optional logo cannot load.
+    }
   }
 
   ctx.restore();
