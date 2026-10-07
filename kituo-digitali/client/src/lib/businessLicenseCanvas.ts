@@ -60,7 +60,7 @@ function formatTemplateDate(date: string) {
 function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   if (!text) return;
   ctx.save();
-  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Times New Roman, Times, serif"}`;
+  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Arial, Helvetica, sans-serif"}`;
   ctx.fillStyle = item.color ?? "#111827";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
@@ -94,8 +94,8 @@ const DEFAULT_LICENSE_LAYOUT = {
   qrSize: 270,
 };
 
-const FONT_SANS = "Times New Roman, Times, serif";
-const FONT_LABEL = "Times New Roman, Times, serif";
+const FONT_SANS = "Arial, Helvetica, sans-serif";
+const FONT_LABEL = "Arial, Helvetica, sans-serif";
 
 const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 23, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
@@ -124,8 +124,8 @@ const staticText: TextItem[] = [
 async function ensureLicenseFonts() {
   if (typeof document === "undefined" || !("fonts" in document)) return;
   await Promise.all([
-    document.fonts.load("700 23px \"Times New Roman\""),
-    document.fonts.load("600 15px \"Times New Roman\""),
+    document.fonts.load("700 23px Arial"),
+    document.fonts.load("600 15px Arial"),
   ]);
 }
 
@@ -154,10 +154,6 @@ export async function renderBusinessLicenseCanvas(
     const text = item.text ?? "";
     // Cover the template labels and redraw the three section headings in the reference typography.
     if (text === "License Details" || text === "Business Location" || text === "Payment Details") {
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.97)";
-      ctx.fillRect(38, item.y - 19, 520, 38);
-      ctx.restore();
       drawText(ctx, { ...item, weight: 700, size: 19, family: FONT_SANS }, text);
       return;
     }
