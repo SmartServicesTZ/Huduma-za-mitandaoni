@@ -31,16 +31,16 @@ type IssuedFiles = {
 
 const REQUEST_ID_KEY = "hmt-business-license-request-id";
 const initialForm: FormState = {
-  applicantName: "STEWART JACKSON NJIWA",
-  businessType: "MOBILE PHONE SHOP",
+  applicantName: "",
+  businessType: "",
   otherBusinessType: "",
   licenseType: "NEW LICENCE",
   principalBranch: "PRINCIPAL",
-  region: "DAR ES SALAAM",
-  district: "DAR ES SALAAM",
-  ward: "Tegeta",
-  street: "Mbuyuni",
-  tin: "123-456-789",
+  region: "",
+  district: "",
+  ward: "",
+  street: "",
+  tin: "",
   licenseFee: 80000,
 };
 
@@ -256,7 +256,7 @@ export default function BusinessLicensePage() {
         <div className="license-form-section">
           <h3>1. Taarifa za Mwombaji</h3>
           <div className="license-form-grid">
-            <Field label="Majina Matatu" english="Full Name" required><input value={form.applicantName} onChange={(event) => set("applicantName", event.target.value.toUpperCase().replace(/\s+/g, " "))} placeholder="Mfano: STEWARD JACKSON NJIWA" required /></Field>
+            <Field label="Majina Matatu" english="Full Name" required><input value={form.applicantName} onChange={(event) => set("applicantName", event.target.value.toUpperCase().replace(/\s+/g, " "))} placeholder="Andika majina yote matatu" required /></Field>
           </div>
         </div>
 
@@ -300,7 +300,7 @@ export default function BusinessLicensePage() {
           <h3>4. TIN na Malipo</h3>
           <div className="license-form-grid">
             <Field label="Namba ya TIN" english="TIN Number" required>
-              <input inputMode="numeric" maxLength={11} value={form.tin} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 9); set("tin", digits.replace(/(\d{3})(?=\d)/g, "$1-")); }} placeholder="123-456-789" aria-describedby="tin-format-help" />
+              <input inputMode="numeric" maxLength={11} value={form.tin} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 9); set("tin", digits.replace(/(\d{3})(?=\d)/g, "$1-")); }} placeholder="Weka TIN namba" aria-describedby="tin-format-help" />
               <small id="tin-format-help">Format: 123-456-789</small>
             </Field>
             <Field label="Malipo ya Leseni" english="License Fee Paid" required><input type="number" min="0" step="0.01" value={form.licenseFee} onChange={(event) => set("licenseFee", Number(event.target.value))} /></Field>
