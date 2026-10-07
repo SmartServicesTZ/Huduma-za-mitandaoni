@@ -34,11 +34,11 @@ export const TIN_TEMPLATE = {
   assigned: { x: 506, y: 690, fontSize: 17, weight: 700 },
   tinValue: { x: 506, y: 688, fontSize: 25, weight: 700, align: "center" },
   effectValue: { x: 470, y: 750, fontSize: 15, weight: 700, align: "center" },
-  locationValue: { x: 370, y: 799.9, fontSize: 15, weight: 700 },
-  officeValue: { x: 700, y: 799.9, fontSize: 15, weight: 700 },
-  physicalValue: { x: 385, y: 823, fontSize: 15, weight: 700 },
-  streetValue: { x: 390, y: 863, fontSize: 15, weight: 700 },
-  commissioner: { x: 765, y: 999.5, fontSize: 16, weight: 600, align: "center" },
+  locationValue: { x: 370, y: 799, fontSize: 15, weight: 700 },
+  officeValue: { x: 700, y: 799, fontSize: 15, weight: 700 },
+  physicalValue: { x: 385, y: 826, fontSize: 15, weight: 700 },
+  streetValue: { x: 380, y: 863, fontSize: 15, weight: 700 },
+  commissioner: { x: 765, y: 999, fontSize: 16, weight: 600, align: "center" },
 } as const;
 
 const assetUrl = (name: string) => import.meta.env.BASE_URL + "tin-assets/" + name;
@@ -146,7 +146,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   if (form.tin) {
     const qr = await QRCode.toDataURL(JSON.stringify({ tin: form.tin, name: form.name, date: form.effectDate }), { width: 240, margin: 1, errorCorrectionLevel: "M" });
     const qrImage = await loadImage(qr);
-    ctx.drawImage(qrImage, 835, 55, 105, 105);
+    ctx.drawImage(qrImage, 815, 62, 105, 105);
   }
 
   text(ctx, pos("commissioner"), form.commissioner);
