@@ -286,12 +286,31 @@ function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
 
 function QuickNidaSearch() {
-  const [nin, setNin] = useState("");
+  const [phone, setPhone] = useState("");
   const [result, setResult] = useState("");
-  const formatNin = (value: string) => value.replace(/[^0-9-]/g, "").slice(0, 20);
-  const run = () => { const clean = nin.trim(); if (!clean) { toast.error("Weka namba ya NIDA kwanza."); return; } setResult(clean); toast.success("Namba ya NIDA iko tayari."); };
-  const copyResult = async () => { if (!result) return; try { await navigator.clipboard.writeText(result); toast.success("Namba ya NIDA imenakiliwa."); } catch { toast.error("Imeshindikana kunakili."); } };
-  return <section className="quick-nida-panel"><div className="quick-nida-panel__head"><div className="quick-nida-search__icon"><Search size={20}/></div><div><span className="overline">NIDA • FAST LOOKUP</span><h3>TAFUTA NIDA</h3><p>Weka Namba ya NIDA ya mteja, kisha unaweza ku-copy namba iliyopatikana.</p></div></div><div className="quick-nida-form"><input inputMode="numeric" value={nin} onChange={(e) => setNin(formatNin(e.target.value))} placeholder="Weka Namba ya NIDA" aria-label="Namba ya NIDA"/><button type="button" className="button button--green" onClick={run}><Search size={16}/> Tafuta</button></div>{result && <div className="quick-nida-result"><div><small>NAMBA YA NIDA</small><strong>{result}</strong></div><button type="button" onClick={() => void copyResult()}><Copy size={17}/> Copy</button></div>}</section>;
+  const formatPhone = (value: string) => value.replace(/[^0-9+]/g, "").slice(0, 13);
+  const run = () => {
+    const clean = phone.trim();
+    if (!clean) { toast.error("Weka namba ya simu ya mteja kwanza."); return; }
+    toast.info("TAFUTA NIDA imefungwa kwa sasa. Subiri API rasmi ya NIDA.");
+  };
+  const copyResult = async () => {
+    if (!result) return;
+    try { await navigator.clipboard.writeText(result); toast.success("Namba ya NIDA imenakiliwa."); }
+    catch { toast.error("Imeshindikana kunakili."); }
+  };
+  return <section className="quick-nida-panel">
+    <div className="quick-nida-panel__head">
+      <div className="quick-nida-search__icon"><Search size={20}/></div>
+      <div><span className="overline">NIDA • TAFTA KWA SIMU</span><h3>TAFUTA NIDA</h3><p>Weka namba ya simu ya mteja. Huduma imefungwa hadi API rasmi ya NIDA ipatikane.</p></div>
+    </div>
+    <div className="quick-nida-form">
+      <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Weka namba ya simu" aria-label="Namba ya simu ya mteja"/>
+      <button type="button" className="button button--green" onClick={run}><Search size={16}/> Tafuta</button>
+    </div>
+    <div className="quick-nida-locked"><LockKeyhole size={16}/><span>IMEFUNGWA — Inasubiri API rasmi ya NIDA</span></div>
+    {result && <div className="quick-nida-result"><div><small>NIN / NIDA</small><strong>{result}</strong></div><button type="button" onClick={() => void copyResult()}><Copy size={17}/> Copy</button></div>}
+  </section>;
 }
 
 function PortalHome({ search, onUse, services }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[] }) {
@@ -322,7 +341,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   const lower = search.toLowerCase();
   const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))].slice(0, 8);
   const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
-  const main = matches.filter((service) => service.category === "HUDUMA ZA WAKALA");
+  const main = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && service.slug !== "utafutaji-nida");
   const other = matches.filter((service) => service.category === "HUDUMA ZINGINE");
   const sections: Record<HomepageSectionId, React.ReactNode> = {
     services: <ServiceGrid title="HUDUMA ZA WAKALA" services={main} onUse={onUse} />,
