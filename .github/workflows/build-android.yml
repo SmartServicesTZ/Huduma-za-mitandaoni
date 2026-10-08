@@ -249,7 +249,8 @@ jobs:
                   root.addView(refreshLayout, new LinearLayout.LayoutParams(-1, 0, 1));
                   setContentView(root);
 
-                  back.setOnClickListener(v -> goBack());\n                  back.setEnabled(true);
+                  back.setOnClickListener(v -> goBack());
+                  back.setEnabled(true);
                   refresh.setOnClickListener(v -> refreshPage());
                   refreshLayout.setOnRefreshListener(() -> { webView.clearCache(true); webView.reload(); });
                   refreshLayout.setColorSchemeColors(Color.rgb(124,58,237), Color.rgb(37,99,235));
