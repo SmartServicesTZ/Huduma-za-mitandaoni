@@ -1,4 +1,4 @@
-name: Build SmartServicesTZ Android APK
+name: Build SmartServicesTZ Android APK + Play Store AAB
 
 on:
   push:
@@ -87,15 +87,50 @@ jobs:
           EOF
           cd android-twa
           bubblewrap update --skipVersionUpgrade --manifest="./twa-manifest.json"
-      - name: Build debug APK
+      - name: Prepare release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "Missing ANDROID_KEYSTORE_BASE64 repository secret."; exit 1; }
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo "Missing ANDROID_KEYSTORE_PASSWORD repository secret."; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo "Missing ANDROID_KEY_ALIAS repository secret."; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo "Missing ANDROID_KEY_PASSWORD repository secret."; exit 1; }
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android-twa/android.keystore
+          test -s android-twa/android.keystore
+          cat > android-twa/release-signing.properties <<EOF
+          storeFile=android.keystore
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+      - name: Configure release signing
+        working-directory: android-twa
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle")
+          s = p.read_text()
+          if "release-signing.properties" not in s:
+              signing = '''\nimport java.util.Properties\n\ndef releaseProps = new Properties()\ndef releasePropsFile = rootProject.file("release-signing.properties")\nif (releasePropsFile.exists()) { releasePropsFile.withInputStream { releaseProps.load(it) } }\n\nandroid {\n    signingConfigs {\n        release {\n            if (releasePropsFile.exists()) {\n                storeFile rootProject.file(releaseProps['storeFile'])\n                storePassword releaseProps['storePassword']\n                keyAlias releaseProps['keyAlias']\n                keyPassword releaseProps['keyPassword']\n            }\n        }\n    }\n}\n'''
+              s = signing + s
+          if 'signingConfig signingConfigs.release' not in s:
+              s = s.replace('buildTypes {', 'buildTypes {\\n        release {\\n            signingConfig signingConfigs.release\\n        }', 1)
+          p.write_text(s)
+          PY
+      - name: Build release APK and Play Store AAB
         working-directory: android-twa
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Upload APK
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+      - name: Upload release APK and AAB
         uses: actions/upload-artifact@v4
         with:
-          name: smartservicestz-debug-apk-v4
-          path: android-twa/app/build/outputs/apk/debug/app-debug.apk
+          name: smartservicestz-playstore-release-v4
+          path: |
+            android-twa/app/build/outputs/apk/release/app-release.apk
+            android-twa/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14
