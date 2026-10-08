@@ -1133,8 +1133,7 @@ type LicenseRequest = {
 };
 
 function cleanText(value: unknown, label: string, max = 180) {
-  if (typeof value !== "string" || value.trim().length === 0 || value.length > max || /[\r
-]/.test(value)) throw new ApiError("invalid-argument", `${label} si sahihi.`);
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > max || /[\\r\\n]/.test(value)) throw new ApiError("invalid-argument", `${label} si sahihi.`);
   return value.trim();
 }
 
