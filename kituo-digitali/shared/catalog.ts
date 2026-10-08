@@ -99,17 +99,20 @@ export const activitySeed: ActivityItem[] = [
 ];
 
 export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], initialized: boolean): ServiceCatalogItem[] {
-  // Firestore remains the source of truth for existing services. The new
-  // Access Lipa Namba entry is kept available while its backend seed is
-  // being rolled out, so the public portal does not depend on an admin
-  // opening the dashboard first.
-  if (initialized) {
-    const access = serviceCatalog.find((service) => service.slug === "access-lipa-number");
-    if (access && !configured.some((service) => service.slug === access.slug)) return [...configured, access];
-    return configured;
-  }
+  const defaults = new Map(serviceCatalog.map((service) => [service.slug, service]));
   const merged = new Map(serviceCatalog.map((service) => [service.slug, service]));
-  configured.forEach((service) => merged.set(service.slug, service));
+  configured.forEach((service) => {
+    const fallback = defaults.get(service.slug);
+    // Preserve admin configuration, but restore newly added external-tool URLs
+    // when an older Firestore seed does not contain actionUrl yet.
+    merged.set(service.slug, fallback?.actionUrl
+      ? { ...fallback, ...service, actionUrl: service.actionUrl || fallback.actionUrl, name: service.name || fallback.name, description: service.description || fallback.description, category: service.category || fallback.category }
+      : service);
+  });
+  if (initialized) {
+    const access = defaults.get("access-lipa-number");
+    if (access && !configured.some((service) => service.slug === access.slug)) merged.set(access.slug, access);
+  }
   return Array.from(merged.values());
 }
 
