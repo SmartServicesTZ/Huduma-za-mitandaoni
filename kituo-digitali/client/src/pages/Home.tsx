@@ -193,37 +193,31 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 
 function TokenCard({ compact = false }: { compact?: boolean }) {
   const { isAuthenticated, profile } = useAuth();
-  const [tokenType, setTokenType] = useState<"nida" | "huduma" | null>(null);
-  const [tokenQty, setTokenQty] = useState(1);
+  const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
 
   const balance = profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
-  const openWhatsApp = () => {
-    if (!tokenType) return;
-    const label = tokenType === "nida" ? "NIDA" : "Huduma nyingine";
+  const openWhatsApp = (tokenType: "nida" | "huduma") => {
+    const label = tokenType === "nida" ? "CHEKI NIDA" : "HUDUMA NYINGINE";
     const price = tokenType === "nida" ? 100 : 500;
-    const total = price * tokenQty;
     const phone = profile?.phone ? "\nNamba ya simu: " + profile.phone : "";
-    const message = "Habari SmartServicesTZ, naomba kuongeza tokeni.\n\nAina: " + label + "\nTokeni: " + tokenQty + "\nBei: TZS " + total.toLocaleString("en-US") + phone;
+    const message = "Habari SmartServicesTZ, naomba kuongeza tokeni.\n\nAina ya tokeni: " + label + "\nBei: TZS " + price.toLocaleString("en-US") + " kwa tokeni" + phone;
     window.open("https://wa.me/255698232313?text=" + encodeURIComponent(message), "_blank", "noopener,noreferrer");
-    setTokenType(null);
-    setTokenQty(1);
+    setTokenChoiceOpen(false);
   };
 
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
     <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">Tokeni zako</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div></div>
     <div className="token-card__meta"><span>Simu: <b>{profile?.phone ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "✓ Imeidhinishwa" : "Inasubiri idhini ya admin"}</span></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
-    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenType("nida")}>+ ONGEZA TOKENI</button>
+    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}>+ ONGEZA TOKENI</button>
     {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
-    {tokenType && <div className="token-choice-modal" role="dialog" aria-modal="true">
+    {tokenChoiceOpen && <div className="token-choice-modal" role="dialog" aria-modal="true">
       <div className="token-choice-card">
-        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Tokeni ni za nini?</h3></div><button type="button" onClick={() => setTokenType(null)} aria-label="Funga">×</button></div>
-        <button type="button" className={`token-choice-option ${tokenType === "nida" ? "selected" : ""}`} onClick={() => setTokenType("nida")}><strong>CHEKI NIDA</strong><span>Tokeni 1 = TZS 100</span></button>
-        <button type="button" className={`token-choice-option ${tokenType === "huduma" ? "selected" : ""}`} onClick={() => setTokenType("huduma")}><strong>HUDUMA NYINGINE</strong><span>Tokeni 1 = TZS 500</span></button>
-        <label className="control-field"><span>Idadi ya tokeni</span><input type="number" min="1" step="1" value={tokenQty} onChange={(event) => setTokenQty(Math.max(1, Number(event.target.value) || 1))} /></label>
-        <div className="token-choice-summary">Jumla: <strong>TZS {(tokenQty * (tokenType === "nida" ? 100 : 500)).toLocaleString("en-US")}</strong></div>
-        <button type="button" className="button button--green" onClick={openWhatsApp}>ENDELEA WHATSAPP</button>
+        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Tokeni ni za nini?</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
+        <button type="button" className="token-choice-option" onClick={() => openWhatsApp("nida")}><strong>CHEKI NIDA</strong><span>Tokeni 1 = TZS 100</span></button>
+        <button type="button" className="token-choice-option" onClick={() => openWhatsApp("huduma")}><strong>HUDUMA NYINGINE</strong><span>Tokeni 1 = TZS 500</span></button>
+        <p className="token-choice-help">Ukichagua, utafunguliwa WhatsApp moja kwa moja kuwasiliana nasi.</p>
       </div>
     </div>}
   </section>;
