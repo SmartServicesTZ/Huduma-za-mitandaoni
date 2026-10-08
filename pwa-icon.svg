@@ -1,25 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#06152d"/>
-    <stop offset=".55" stop-color="#102a5c"/>
-    <stop offset="1" stop-color="#1d174f"/>
+    <stop offset="0" stop-color="#063b9f"/>
+    <stop offset=".5" stop-color="#0878e8"/>
+    <stop offset="1" stop-color="#102b9f"/>
   </linearGradient>
-  <linearGradient id="orb" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#4f8cff"/>
-    <stop offset=".52" stop-color="#6d5dfc"/>
-    <stop offset="1" stop-color="#9b5cff"/>
+  <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="1" stop-color="#dcecff"/>
   </linearGradient>
-  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-    <feGaussianBlur stdDeviation="12" result="blur"/>
-    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#1de1ff"/>
+    <stop offset="1" stop-color="#087cf0"/>
+  </linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#001b62" flood-opacity=".35"/>
   </filter>
 </defs>
-<rect width="512" height="512" rx="128" fill="url(#bg)"/>
-<circle cx="256" cy="256" r="174" fill="url(#orb)" filter="url(#glow)"/>
-<circle cx="256" cy="256" r="151" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="3"/>
-<path d="M174 302c24 28 53 42 88 42 39 0 69-16 69-42 0-24-20-34-64-43-48-10-78-25-78-62 0-39 36-67 91-67 38 0 69 13 94 40l-30 29c-18-20-39-29-66-29-27 0-45 10-45 26 0 15 14 22 49 29 53 11 93 27 93 75 0 45-39 74-99 74-46 0-84-16-111-47z" fill="#fff"/>
-<path d="M256 158v196M174 256h164" stroke="#fff" stroke-opacity=".08" stroke-width="3"/>
-<circle cx="395" cy="112" r="9" fill="#fff" fill-opacity=".8"/>
-<circle cx="117" cy="401" r="7" fill="#fff" fill-opacity=".45"/>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/>
+<circle cx="256" cy="250" r="190" fill="#ffffff" opacity=".055"/>
+<circle cx="256" cy="250" r="164" fill="none" stroke="#ffffff" stroke-opacity=".12" stroke-width="2"/>
+
+<!-- document -->
+<path d="M155 112h145l74 74v205c0 18-14 32-32 32H155c-18 0-32-14-32-32V144c0-18 14-32 32-32z" fill="url(#paper)" filter="url(#shadow)"/>
+<path d="M300 112v57c0 10 8 18 18 18h56" fill="#b8d7ff"/>
+<path d="M300 112l74 75h-56c-10 0-18-8-18-18z" fill="#eaf4ff"/>
+
+<!-- document lines -->
+<rect x="178" y="211" width="126" height="15" rx="7.5" fill="#1764d7"/>
+<rect x="178" y="245" width="157" height="15" rx="7.5" fill="#1764d7"/>
+<rect x="178" y="279" width="116" height="15" rx="7.5" fill="#1764d7"/>
+
+<!-- Tanzania-inspired S ribbon -->
+<path d="M101 184c45-51 108-76 179-72 41 2 77 13 108 33-39-7-76-5-111 7-45 15-79 43-104 80-25 37-25 65 4 84 19 13 46 21 81 25-48 13-91 5-123-20-45-36-47-84-34-137z" fill="url(#cyan)"/>
+<path d="M96 260c35 35 81 57 137 65 30 4 60 4 91-1-27 18-59 29-96 31-57 3-104-14-137-49-12-13-17-28-15-46z" fill="#19a93d"/>
+<path d="M96 276c35 35 81 57 137 65 30 4 60 4 91-1-9 7-19 13-30 18-54 5-104-8-142-37-31-23-50-50-56-78z" fill="#ffd21a"/>
+<path d="M102 291c34 33 79 54 131 61 30 4 60 4 91-1-11 7-23 12-35 16-56 4-104-9-141-37-26-20-43-43-51-69z" fill="#151515"/>
+
+<!-- check badge -->
+<circle cx="376" cy="337" r="57" fill="#18b84b" stroke="#ffffff" stroke-width="10" filter="url(#shadow)"/>
+<path d="M349 337l18 18 38-43" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+
+<!-- small brand mark -->
+<circle cx="113" cy="113" r="8" fill="#ffd21a"/>
+<circle cx="407" cy="408" r="6" fill="#1de1ff"/>
 </svg>
