@@ -1088,9 +1088,7 @@ export const setAccountStatus = callable(async (request) => {
     transaction.update(targetRef, next);
     if (mode !== "active") {
       const messageSubject = mode === "denied" ? "Ufikiaji wa akaunti umezuiwa" : "Taarifa ya ufikiaji wa akaunti";
-      const messageBody = [userMessage, reason ? `Sababu: ${reason}` : "", "Kwa msaada, wasiliana na admin kupitia 0698232313."].filter(Boolean).join("
-
-");
+      const messageBody = [userMessage, reason ? `Sababu: ${reason}` : "", "Kwa msaada, wasiliana na admin kupitia 0698232313."].filter(Boolean).join("\n\n");
       transaction.create(db.collection("messages").doc(), {
         recipientId: userId,
         subject: messageSubject,
