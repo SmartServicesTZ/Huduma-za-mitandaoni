@@ -271,6 +271,18 @@ function SpecialSection() {
   return <div className="special-grid">{specialServices.map((item) => <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : item.action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>)}</div>;
 }
 
+function TopQuickServices({ services, onUse }: { services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {
+  const items = ["access-lipa-number", "pata-lipa-namba"].map((slug) => services.find((service) => service.slug === slug)).filter(Boolean) as ServiceCatalogItem[];
+  if (!items.length) return null;
+  return <section className="top-quick-services" aria-label="Huduma za haraka">
+    {items.map((service) => <button key={service.slug} type="button" className="top-quick-service" onClick={() => onUse(service)}>
+      <span className="top-quick-service__icon"><Icon name={service.icon} size={16} /></span>
+      <span className="top-quick-service__text"><strong>{service.name}</strong><small>{service.slug === "pata-lipa-namba" ? "Haraka • BURE" : "Lipa & Usajili"}</small></span>
+      <ChevronRight size={14} />
+    </button>)}
+  </section>;
+}
+
 function PopularServices({ services, onUse }: { services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {
   const popularSlugs = ["cheti-tin", "verify-tin", "pata-lipa-namba", "stika-mawakala", "nakala-nida"];
   const popular = popularSlugs.map((slug) => services.find((service) => service.slug === slug)).filter(Boolean) as ServiceCatalogItem[];
@@ -376,6 +388,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {layout.showHero && <div className="modern-hero"><div className="modern-hero-copy"><span className="hero-badge"><Sparkles size={13}/> SMARTSERVICESTZ • DIGITAL SERVICE HUB</span><h1>Huduma zako.<br/><em>Kwa urahisi.</em></h1><p>Fomu, maombi, zana na huduma za kidigitali — zimepangwa kwa urahisi, kasi na usalama.</p><div className="hero-actions"><Link href="/services" className="button button--green"><Zap size={16}/> Anza kutumia</Link><Link href="/account" className="hero-link">Akaunti yangu <ChevronRight size={15}/></Link></div><div className="hero-trust-row" aria-label="Vipengele muhimu"><span><ShieldCheck size={13}/> Salama</span><span><Zap size={13}/> 24/7</span><span><Sparkles size={13}/> Rahisi kutumia</span></div></div><div className="hero-visual"><div className="hero-orbit"><div className="hero-orbit-core"><span>SS</span><small>SMART</small></div><i></i><i></i><i></i></div><div className="hero-floating hero-floating--top"><strong>{displayedServices.length}</strong><small>HUDUMA</small></div><div className="hero-floating hero-floating--bottom"><ShieldCheck size={14}/> SALAMA</div></div></div>}
     {announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}
+    <TopQuickServices services={displayedServices} onUse={onUse} />
     <TokenCard />
     <QuickNidaSearch />
     <PopularServices services={displayedServices} onUse={onUse} />
