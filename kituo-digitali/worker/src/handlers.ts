@@ -20,7 +20,7 @@ type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
-type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; phone?: string; mustChangePassword?: boolean };
+type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; phone?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
@@ -229,12 +229,12 @@ export const adminDelete = callable(async (request) => {
   });
 });
 
-export const consumeTokens = callable(async (request) => {
+export const claimDailyTokenBonus = callable(async (request) => {\n  const uid = authUid(request);\n  const userRef = db.collection("users").doc(uid);\n  const settingsRef = db.collection("siteSettings").doc("public");\n  const today = new Date().toISOString().slice(0, 10);\n  return db.runTransaction(async (transaction) => {\n    const userSnap = await transaction.get(userRef);\n    if (!userSnap.exists) throw new ApiError("not-found", "Profile ya akaunti haijapatikana.");\n    const settingsSnap = await transaction.get(settingsRef);\n    const settings = settingsSnap.exists ? settingsSnap.data()! : {};\n    const config = (settings.tokenBonusConfig ?? {}) as Record<string, unknown>;\n    const dailyBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.dailyBonus ?? 6))));\n    const profile = userSnap.data() as Profile;\n    if (profile.lastDailyTokenBonusDate === today || dailyBonus === 0) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0) };\n    const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);\n    const after = before + dailyBonus;\n    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, lastDailyTokenBonusDate: today, updatedAt: FieldValue.serverTimestamp() });\n    const ledgerRef = db.collection("tokenTransactions").doc("daily_" + uid + "_" + today);\n    transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: dailyBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya kila siku", serviceId: "daily-bonus", serviceName: "Daily token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });\n    return { granted: dailyBonus, balanceAfter: after };\n  });\n});\n\nexport const consumeTokens = callable(async (request) => {
   const uid = authUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
   const serviceId = text(data.serviceId, 120);
   const requestId = text(data.requestId, 160);
-  const requestedCost = Number(data.tokenCost);
+  const requestedCost = Number(data.tokenCost);\n  const requestedTokenType = text(data.tokenType, 20) || "huduma";\n  if (requestedTokenType !== "nida" && requestedTokenType !== "huduma") throw new ApiError("invalid-argument", "Aina ya tokeni si sahihi.");
   if (!Number.isInteger(requestedCost) || requestedCost <= 0 || requestedCost > 100000) throw new ApiError("invalid-argument", "Gharama ya tokeni si sahihi.");
 
   const userRef = db.collection("users").doc(uid);
@@ -258,11 +258,15 @@ export const consumeTokens = callable(async (request) => {
     const profile = userSnapshot.data() as Profile | undefined;
     if (!profile || profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii haiwezi kutumia huduma.");
     if (profile.verificationStatus !== "approved") throw new ApiError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
-    const before = Number(profile.tokenBalance ?? 0);
-    if (before < cost) throw new ApiError("failed-precondition", "Tokeni zako hazitoshi kutumia huduma hii.");
+    const legacyOther = profile.tokenBalanceOther === undefined ? Number(profile.tokenBalance ?? 0) : Number(profile.tokenBalanceOther);
+    const tokenField = requestedTokenType === "nida" ? "tokenBalanceNida" : "tokenBalanceOther";
+    const before = Number(requestedTokenType === "nida" ? (profile.tokenBalanceNida ?? 0) : legacyOther);
+    if (before < cost) throw new ApiError("failed-precondition", "Tokeni za aina hii hazitoshi kutumia huduma hii.");
     const after = before - cost;
-    transaction.update(userRef, { tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-    transaction.set(ledgerRef, { transactionId: requestId, userId: uid, actorId: uid, type: "service_usage", amount: -cost, balanceBefore: before, balanceAfter: after, reason: `Matumizi ya ${serviceName}`, serviceId, serviceName, reference: requestId, createdAt: FieldValue.serverTimestamp(), status: "completed" });
+    const update: Record<string, unknown> = { [tokenField]: after, updatedAt: FieldValue.serverTimestamp() };
+    if (requestedTokenType === "huduma") update.tokenBalance = after;
+    transaction.update(userRef, update);
+    transaction.set(ledgerRef, { transactionId: requestId, userId: uid, actorId: uid, tokenType: requestedTokenType, type: "service_usage", amount: -cost, balanceBefore: before, balanceAfter: after, reason: `Matumizi ya ${serviceName}`, serviceId, serviceName, reference: requestId, createdAt: FieldValue.serverTimestamp(), status: "completed" });
     return { reference: requestId, balanceAfter: after, duplicate: false };
   });
 });
@@ -278,6 +282,9 @@ export const adjustTokens = callable(async (request) => {
   if (!/^[A-Za-z0-9_-]{8,160}$/.test(requestId)) throw new ApiError("invalid-argument", "Rejea ya ombi la tokeni si sahihi.");
   const amount = Number(data.amount);
   if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 100000) throw new ApiError("invalid-argument", "Kiasi cha tokeni si sahihi.");
+  const tokenType = text(data.tokenType, 20);
+  if (tokenType !== "nida" && tokenType !== "huduma") throw new ApiError("invalid-argument", "Aina ya tokeni si sahihi.");
+  const tokenField = tokenType === "nida" ? "tokenBalanceNida" : "tokenBalanceOther";
   const userRef = db.collection("users").doc(userId);
   const ledgerRef = db.collection("tokenTransactions").doc(`${uid}_${requestId}`);
   try {
@@ -293,13 +300,14 @@ export const adjustTokens = callable(async (request) => {
       const target = snapshot.data() as Profile;
       const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
       if (targetRole === "super_admin" && uid !== userId) throw new ApiError("permission-denied", "Super Admin inalindwa.");
-      const before = Number(target.tokenBalance ?? 0);
+      const legacyOther = target.tokenBalanceOther === undefined ? Number(target.tokenBalance ?? 0) : Number(target.tokenBalanceOther);
+      const before = Number(tokenType === "nida" ? (target.tokenBalanceNida ?? 0) : legacyOther);
       if (!Number.isSafeInteger(before) || before < 0) throw new ApiError("failed-precondition", "Salio la tokeni kwenye profile si sahihi. Kagua taarifa za mtumiaji kwanza.");
       const after = before + amount;
       if (!Number.isSafeInteger(after)) throw new ApiError("out-of-range", "Salio jipya la tokeni limezidi kikomo kinachoruhusiwa.");
       if (after < 0) throw new ApiError("failed-precondition", "Salio haliwezi kuwa chini ya sifuri.");
-      transaction.update(userRef, { tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId, actorId: uid, type: amount > 0 ? "credit" : "debit", amount, balanceBefore: before, balanceAfter: after, reason: description, serviceId: "admin-adjustment", serviceName: "Admin token adjustment", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" });
+      transaction.update(userRef, { [tokenField]: after, ...(tokenType === "huduma" ? { tokenBalance: after } : {}), updatedAt: FieldValue.serverTimestamp() });
+      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId, actorId: uid, tokenType, type: amount > 0 ? "credit" : "debit", amount, balanceBefore: before, balanceAfter: after, reason: description, serviceId: "admin-adjustment", serviceName: "Admin token adjustment", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" });
       recordAudit(transaction, uid, String(profile.role), amount > 0 ? "ADD_TOKENS" : "REMOVE_TOKENS", "user", userId, { tokenBalance: before }, { tokenBalance: after }, { amount, description });
       return { balanceAfter: after, reference: ledgerRef.id, duplicate: false };
     });
@@ -914,7 +922,7 @@ export const claimRegistrationPhone = callable(async (request) => {
     if (registry.exists && registry.data()?.uid !== uid) {
       throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
     }
-    if (!registry.exists) transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });
+    if (!registry.exists) {\n      transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });\n      const profileRef = db.collection("users").doc(uid);\n      const profileSnap = await transaction.get(profileRef);\n      if (profileSnap.exists) {\n        const settingsSnap = await transaction.get(db.collection("siteSettings").doc("public"));\n        const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};\n        const registrationBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.registrationBonus ?? 15))));\n        if (registrationBonus > 0) {\n          const profile = profileSnap.data() as Profile;\n          const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);\n          const after = before + registrationBonus;\n          transaction.update(profileRef, { tokenBalanceOther: after, tokenBalance: after, tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });\n          const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);\n          transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: registrationBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });\n        }\n      }\n    }
   });
   return { ok: true };
 });
