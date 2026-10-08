@@ -1145,3 +1145,38 @@ input[type="file"] {
 @media (min-width:801px) {
   .bottom-nav { display:none !important; }
 }
+
+
+/* =========================================================
+   SmartServicesTZ — VISIBLE MOBILE APP POLISH V3
+   ========================================================= */
+:root{
+  --ss-blue:#2563eb;
+  --ss-purple:#7c3aed;
+  --ss-cyan:#22d3ee;
+}
+.portal-shell{background:radial-gradient(circle at 82% 8%,rgba(37,99,235,.18),transparent 24%),radial-gradient(circle at 15% 55%,rgba(124,58,237,.10),transparent 25%),#06152d}
+.app-header{background:linear-gradient(180deg,rgba(5,19,43,.98),rgba(7,26,54,.92));box-shadow:0 10px 35px rgba(0,0,0,.20)}
+.portal-logo{color:#fff!important;background:linear-gradient(135deg,#2563eb,#7c3aed 58%,#22d3ee)!important;box-shadow:0 8px 22px rgba(37,99,235,.35);position:relative;overflow:hidden}
+.portal-logo:after{content:"";position:absolute;inset:-40%;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.45),transparent 65%);transform:rotate(25deg);animation:ssLogoShine 4s linear infinite}
+.portal-brand b{background:linear-gradient(90deg,#fff,#8fe7ff 45%,#9e8cff);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+.modern-hero{position:relative;overflow:hidden;border:1px solid rgba(121,164,255,.20)!important;background:radial-gradient(circle at 85% 15%,rgba(34,211,238,.20),transparent 20%),radial-gradient(circle at 60% 90%,rgba(124,58,237,.22),transparent 30%),linear-gradient(135deg,#0c3265 0%,#0a2348 52%,#071a36 100%)!important;box-shadow:0 22px 55px rgba(0,0,0,.28)!important}
+.modern-hero:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(90deg,#000,transparent 85%);pointer-events:none}
+.modern-hero-copy{position:relative;z-index:2}.hero-badge{border:1px solid rgba(126,231,170,.25)!important;background:rgba(255,255,255,.07)!important;box-shadow:0 8px 20px rgba(0,0,0,.10)}
+.modern-hero h1{font-weight:900;text-shadow:0 8px 30px rgba(0,0,0,.20)}.modern-hero h1 em{font-style:normal;background:linear-gradient(90deg,#65e69b,#22d3ee,#9e8cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.quick-metrics>div{position:relative;overflow:hidden;border:1px solid #dce7f1!important;box-shadow:0 12px 28px rgba(8,31,52,.08)!important}.quick-metrics>div:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#18b969,#2563eb,#7c3aed)}
+.portal-service-card{position:relative;overflow:hidden;border:1px solid #d9e4ee!important;box-shadow:0 10px 25px rgba(8,31,52,.10)!important}.portal-service-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#18b969,#2563eb,#7c3aed);opacity:.75}.portal-service-card:hover{transform:translateY(-5px)!important;box-shadow:0 18px 34px rgba(8,31,52,.16)!important}.service-card-icon{background:linear-gradient(135deg,#e9f4ff,#edf0ff)!important;color:#2458a8!important;border:1px solid #d9e7fb;box-shadow:0 7px 15px rgba(37,99,235,.08)!important}
+.token-card{position:relative;overflow:hidden;border:1px solid #e1eaf2;box-shadow:0 18px 42px rgba(0,0,0,.20)!important}.token-card:before{content:"";position:absolute;right:-55px;top:-55px;width:150px;height:150px;border-radius:50%;background:linear-gradient(135deg,rgba(37,99,235,.15),rgba(124,58,237,.08));pointer-events:none}.token-icon{background:linear-gradient(135deg,#d9fbe8,#dbeafe)!important}
+.bottom-nav a[aria-current="page"]{background:linear-gradient(135deg,rgba(101,230,155,.16),rgba(37,99,235,.13));box-shadow:inset 0 0 0 1px rgba(101,230,155,.10)}
+@keyframes ssLogoShine{0%,55%{transform:translateX(-90%) rotate(25deg)}100%{transform:translateX(150%) rotate(25deg)}}
+@media(max-width:800px){
+ .portal-main{padding-top:14px}
+ .modern-hero{min-height:240px!important;padding:23px 19px!important}
+ .modern-hero h1{font-size:32px!important}
+ .quick-metrics>div{min-height:86px;padding:12px!important}
+ .portal-service-card{min-height:158px!important;padding:14px!important}
+ .portal-service-card:active{transform:scale(.975)!important}
+ .portal-logo{width:37px;height:37px}
+ .portal-brand b{font-size:12px!important}
+}
+@media(max-width:380px){.portal-brand > span:last-child{max-width:92px}.portal-brand b{font-size:11px!important}.modern-hero h1{font-size:29px!important}}
