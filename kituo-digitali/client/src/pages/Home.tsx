@@ -355,7 +355,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))].slice(0, 8);
   const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
   const mainBase = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && service.slug !== "utafutaji-nida");
-  const tinCertificate = mainBase.find((service) => service.slug === "cheti-tin") ?? effectiveServices.find((service) => service.slug === "cheti-tin") ?? serviceCatalog.find((service) => service.slug === "cheti-tin");
+  const tinCertificate = mainBase.find((service) => service.slug === "cheti-tin") ?? services.find((service) => service.slug === "cheti-tin") ?? serviceCatalog.find((service) => service.slug === "cheti-tin");
   const main = [
     mainBase.find((service) => service.slug === "leseni-biashara"),
     tinCertificate,
