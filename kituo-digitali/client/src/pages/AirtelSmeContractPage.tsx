@@ -74,15 +74,15 @@ export default function AirtelSmeContractPage() {
     wardX: 75, wardY: 37, wardSize: 2.8,
     districtX: 31, districtY: 41, districtSize: 2.8,
     regionX: 76, regionY: 41, regionSize: 2.8,
-    emailX: 31, emailY: 45, emailSize: 2.6,
-    normalX: 5.8, normalY: 56.2, normalSize: 4.2,
-    deviceX: 29, deviceY: 61, deviceSize: 2.8,
-    customerX: 17, customerY: 74, customerSize: 2.6,
-    sign1X: 70, sign1Y: 74, sign1Size: 2.6,
-    date1X: 89, date1Y: 74, date1Size: 2.2,
-    salesX: 20, salesY: 84, salesSize: 2.6,
-    sign2X: 70, sign2Y: 84, sign2Size: 2.6,
-    date2X: 89, date2Y: 84, date2Size: 2.2
+    emailX: 31, emailY: 43.8, emailSize: 2.6,
+    normalX: 5.8, normalY: 57.2, normalSize: 4.2,
+    deviceX: 29, deviceY: 62.2, deviceSize: 2.8,
+    customerX: 17, customerY: 75.5, customerSize: 2.6,
+    sign1X: 70, sign1Y: 75.5, sign1Size: 2.6,
+    date1X: 89, date1Y: 75.5, date1Size: 2.2,
+    salesX: 20, salesY: 85.5, salesSize: 2.6,
+    sign2X: 70, sign2Y: 85.5, sign2Size: 2.6,
+    date2X: 89, date2Y: 85.5, date2Size: 2.2
   });
 
   useEffect(() => { 
