@@ -81,7 +81,13 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
     paymentInfo: String(row.paymentInfo ?? "Malipo yatafanyika baada ya ombi lako kukamilika."),
     reward: Number(row.reward ?? 0),
     active: row.active !== false,
-    fields: safeFields(row.fields),
+    fields: (() => {
+      const fields = safeFields(row.fields);
+      const imageFields = fields.filter((field) => field.type === "IMAGE_UPLOAD");
+      if (imageFields.length <= 1) return fields;
+      const keep = imageFields.find((field) => field.fieldName === "idDocument") ?? imageFields[0];
+      return fields.filter((field) => field.type !== "IMAGE_UPLOAD" || field.fieldName === keep.fieldName);
+    })(),
   };
 }
 
