@@ -754,12 +754,17 @@ export const createServiceApplication = callable(async (request) => {
     let ledgerRef: DocumentReference | null = null;
     if (tokenCost > 0) {
       if (user.verificationStatus !== "approved") throw new ApiError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
-      const before = Number(user.tokenBalance ?? 0);
-      if (!Number.isSafeInteger(before) || before < tokenCost) throw new ApiError("failed-precondition", "Tokeni hazitoshi kutumia huduma hii.");
+      const effectiveTokenType = service.tokenType === "nida" || serviceSlug === "nakala-nida" || serviceSlug === "utafutaji-nida" ? "nida" : "huduma";
+      const legacyOther = user.tokenBalanceOther === undefined ? Number(user.tokenBalance ?? 0) : Number(user.tokenBalanceOther);
+      const tokenField = effectiveTokenType === "nida" ? "tokenBalanceNida" : "tokenBalanceOther";
+      const before = Number(effectiveTokenType === "nida" ? (user.tokenBalanceNida ?? 0) : legacyOther);
+      if (!Number.isSafeInteger(before) || before < tokenCost) throw new ApiError("failed-precondition", "Tokeni za aina hii hazitoshi kutumia huduma hii.");
       balanceAfter = before - tokenCost;
-      transaction.update(userRef, { tokenBalance: balanceAfter, updatedAt: FieldValue.serverTimestamp() });
+      const tokenUpdate: Record<string, unknown> = { [tokenField]: balanceAfter, updatedAt: FieldValue.serverTimestamp() };
+      if (effectiveTokenType === "huduma") tokenUpdate.tokenBalance = balanceAfter;
+      transaction.update(userRef, tokenUpdate);
       ledgerRef = db.collection("tokenTransactions").doc(applicationId);
-      transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
+      transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
     }
     transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
     transaction.create(openRef, { applicationId, userId: uid, serviceSlug, createdAt: FieldValue.serverTimestamp() });
