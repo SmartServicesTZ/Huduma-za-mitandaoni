@@ -6,7 +6,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, claimDailyTokenBonus } from "@/lib/firebase";
-import { announcementText, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
+import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
@@ -354,7 +354,13 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   const lower = search.toLowerCase();
   const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))].slice(0, 8);
   const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
-  const main = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && service.slug !== "utafutaji-nida");
+  const mainBase = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && service.slug !== "utafutaji-nida");
+  const tinCertificate = mainBase.find((service) => service.slug === "cheti-tin") ?? effectiveServices.find((service) => service.slug === "cheti-tin") ?? serviceCatalog.find((service) => service.slug === "cheti-tin");
+  const main = [
+    mainBase.find((service) => service.slug === "leseni-biashara"),
+    tinCertificate,
+    ...mainBase.filter((service) => service.slug !== "leseni-biashara" && service.slug !== "cheti-tin"),
+  ].filter(Boolean) as ServiceCatalogItem[];
   const other = matches.filter((service) => service.category === "HUDUMA ZINGINE");
   const sections: Record<HomepageSectionId, React.ReactNode> = {
     services: <ServiceGrid title="HUDUMA ZA WAKALA" services={main} onUse={onUse} />,
@@ -371,9 +377,9 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {layout.showHero && <div className="modern-hero"><div className="modern-hero-copy"><span className="hero-badge"><Sparkles size={13}/> SMARTSERVICESTZ • DIGITAL SERVICE HUB</span><h1>Huduma zako.<br/><em>Kwa urahisi.</em></h1><p>Fomu, maombi, zana na huduma za kidigitali — zimepangwa kwa urahisi, kasi na usalama.</p><div className="hero-actions"><Link href="/services" className="button button--green"><Zap size={16}/> Anza kutumia</Link><Link href="/account" className="hero-link">Akaunti yangu <ChevronRight size={15}/></Link></div><div className="hero-trust-row" aria-label="Vipengele muhimu"><span><ShieldCheck size={13}/> Salama</span><span><Zap size={13}/> 24/7</span><span><Sparkles size={13}/> Rahisi kutumia</span></div></div><div className="hero-visual"><div className="hero-orbit"><div className="hero-orbit-core"><span>SS</span><small>SMART</small></div><i></i><i></i><i></i></div><div className="hero-floating hero-floating--top"><strong>{displayedServices.length}</strong><small>HUDUMA</small></div><div className="hero-floating hero-floating--bottom"><ShieldCheck size={14}/> SALAMA</div></div></div>}
     {announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}
+    <TopQuickServices services={displayedServices} onUse={onUse} />
     <TokenCard />
     <QuickNidaSearch />
-    <TopQuickServices services={displayedServices} onUse={onUse} />
     <section className="service-discovery"><div><span className="overline">SMART SERVICES</span><h2>Chagua huduma</h2><p>Anza hapa — huduma zako zote sehemu moja.</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
