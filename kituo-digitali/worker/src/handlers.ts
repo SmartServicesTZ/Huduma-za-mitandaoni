@@ -41,7 +41,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat"
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
-  submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications",
+  submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
   getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", findChatUser: "chat", createTokenPurchaseOrder: "payments",
   syncAuthClaims: "auth",
 };
@@ -600,6 +600,20 @@ export const updateLipaRewardTracking = callable(async (request) => {
     }, { qualificationStatus, rewardStatus, lipaNumber }, { verifiedTransactions, reward, rewardPaymentReference });
     return { applicationId, reward, qualificationStatus, rewardStatus, lipaNumber, verifiedTransactions };
   });
+});
+
+export const listLipaApplications = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageLipaApplications");
+  const snapshot = await db.collection("lipaApplications").limit(1000).get();
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  rows.sort((a, b) => {
+    const left = String(a.submittedAt ?? "");
+    const right = String(b.submittedAt ?? "");
+    return right.localeCompare(left);
+  });
+  return { applications: rows };
 });
 
 export const markLipaApplicationViewed = callable(async (request) => {
