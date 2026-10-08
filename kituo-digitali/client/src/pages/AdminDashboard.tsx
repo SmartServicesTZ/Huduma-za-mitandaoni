@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowDown, ArrowUp, BarChart3, Bell, Boxes, ChevronRight, ClipboardList, FileKey2, LayoutDashboard, LogOut, Menu, MessageSquare, Palette, PlaySquare, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Trash2, UserCog, Users, WalletCards, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminSaveCollectionItem, adminSaveService, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, moveId } from "../../../shared/serviceOrdering";
 import { accountRestrictionActionLabels, accountRestrictionActions, resolveAccountAccessMode, type AccountAccessMode, type AccountRestrictionAction } from "../../../shared/accountAccess";
 import { serviceFieldTypes, type ServiceFormField } from "../../../shared/serviceForms";
@@ -272,7 +272,11 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
       ? (window.prompt("Andika ujumbe wa maboresho ambao mtumiaji ataona:", item.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") ?? item.maintenanceMessage ?? "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.")
       : "";
     onRun(
-      () => adminSaveService(adminId, { ...item, isLocked: locked, maintenanceMessage: message }, item.slug ?? item.id),
+      async () => {
+        const slug = String(item.slug ?? item.id);
+        await adminSetServiceLock(slug, locked);
+        await adminSaveService(adminId, { ...item, isLocked: locked, maintenanceMessage: message }, slug);
+      },
       locked ? "Huduma imefungwa." : "Huduma imefunguliwa na inapatikana kwa watumiaji."
     );
   };
