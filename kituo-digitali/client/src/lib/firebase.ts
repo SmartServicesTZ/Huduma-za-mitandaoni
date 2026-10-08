@@ -119,6 +119,9 @@ export type FirebaseProfile = {
   bio?: string;
   username: string;
   tokenBalance: number;
+  tokenBalanceNida?: number;
+  tokenBalanceOther?: number;
+  lastDailyTokenBonusDate?: string;
   verificationStatus: "pending" | "approved" | "rejected";
   role: "user" | "admin" | "moderator" | "support" | "super_admin";
   permissions?: AdminPermissions;
@@ -161,6 +164,9 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     bio: extra.bio ?? current.bio,
     username: extra.username ?? current.username ?? user.uid.slice(0, 8),
     tokenBalance: typeof current.tokenBalance === "number" ? current.tokenBalance : 0,
+    tokenBalanceNida: typeof current.tokenBalanceNida === "number" ? current.tokenBalanceNida : 0,
+    tokenBalanceOther: typeof current.tokenBalanceOther === "number" ? current.tokenBalanceOther : (typeof current.tokenBalance === "number" ? current.tokenBalance : 0),
+    lastDailyTokenBonusDate: current.lastDailyTokenBonusDate,
     verificationStatus: current.verificationStatus ?? "pending",
     role: current.role ?? "user",
     permissions: current.permissions ?? {},
@@ -272,11 +278,16 @@ export async function saveFirebaseProfile(uid: string, values: Partial<FirebaseP
   await setDoc(doc(firestore, "users", uid), { ...omitUndefinedFields(values as Record<string, unknown>), updatedAt: serverTimestamp() }, { merge: true });
 }
 
-export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string }, requestId?: string) {
+export async function claimDailyTokenBonus() {
+  const callable = createWorkerCall<{ }, { granted: number; balanceAfter: number }>("claimDailyTokenBonus");
+  return (await callable({})).data;
+}
+
+export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string; tokenType?: "nida" | "huduma" }, requestId?: string) {
   if (service.kind === "free" || service.tokenCost <= 0) return { balanceAfter: null, reference: requestId ?? `free-${Date.now()}`, duplicate: false };
   const transactionId = requestId?.trim() || crypto.randomUUID();
-  const callable = createWorkerCall<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>("consumeTokens");
-  return (await callable({ serviceId: service.slug, serviceName: service.name, tokenCost: service.tokenCost, requestId: transactionId })).data;
+  const callable = createWorkerCall<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string; tokenType: "nida" | "huduma" }, { balanceAfter: number; reference: string; duplicate: boolean }>("consumeTokens");
+  return (await callable({ serviceId: service.slug, serviceName: service.name, tokenCost: service.tokenCost, requestId: transactionId, tokenType: service.tokenType ?? "huduma" })).data;
 }
 
 export type TokenPurchaseOrder = { id: string; orderId: string; amount: number; currency: string; tokenAmount: number; status: string; createdAt?: unknown; transid?: string };
@@ -390,9 +401,9 @@ export async function adminListCollection(name: "announcements" | "auditLogs" | 
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
 }
 
-export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string) {
-  const callable = createWorkerCall<{ userId: string; amount: number; description: string; requestId: string }, { balanceAfter: number; reference: string; duplicate: boolean }>("adjustTokens");
-  return (await callable({ userId, amount, description, requestId })).data;
+export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string, tokenType: "nida" | "huduma" = "huduma") {
+  const callable = createWorkerCall<{ userId: string; amount: number; description: string; requestId: string; tokenType: "nida" | "huduma" }, { balanceAfter: number; reference: string; duplicate: boolean }>("adjustTokens");
+  return (await callable({ userId, amount, description, requestId, tokenType })).data;
 }
 
 export async function updatePassword(user: User, newPassword: string) {
