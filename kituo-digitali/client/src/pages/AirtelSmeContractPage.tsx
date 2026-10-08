@@ -39,7 +39,7 @@ const formatTin = (value: string) => {
 };
 
 const initialForm = (): FormState => ({
-  customerName: "STEWARTD JACKSON NJIWA",
+  customerName: "STEWARD JACKSON NJIWA",
   phone: "0712345678",
   tin: "123-456-789",
   idType: "NIDA",
@@ -63,7 +63,7 @@ export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("black");
-  const [layout, setLayout] = useState<Record<string, number>>({nameX:22.5,nameY:25,nameSize:3,phoneX:22.5,phoneY:28.9,phoneSize:3,tinX:76,tinY:28.9,tinSize:2.8,idTypeX:24,idTypeY:32.9,idTypeSize:2.8,idX:69,idY:32.9,idSize:2.4,streetX:28,streetY:37,streetSize:2.8,wardX:75,wardY:37,wardSize:2.8,districtX:31,districtY:41,districtSize:2.8,regionX:76,regionY:41,regionSize:2.8,normalX:5.8,normalY:56.2,normalSize:4.2,deviceX:29,deviceY:56,deviceSize:2.8,customerX:17,customerY:90,customerSize:2.6,sign1X:70,sign1Y:90,sign1Size:2.6,date1X:89,date1Y:90,date1Size:2.2,salesX:20,salesY:93.7,salesSize:2.6,sign2X:70,sign2Y:93.7,sign2Size:2.6,date2X:89,date2Y:93.7,date2Size:2.2});
+  const [layout, setLayout] = useState<Record<string, number>>({nameX:22.5,nameY:25,nameSize:3,phoneX:22.5,phoneY:28.9,phoneSize:3,tinX:76,tinY:28.9,tinSize:2.8,idTypeX:24,idTypeY:32.9,idTypeSize:2.8,idX:69,idY:32.9,idSize:2.4,streetX:28,streetY:37,streetSize:2.8,wardX:75,wardY:37,wardSize:2.8,districtX:31,districtY:41,districtSize:2.8,regionX:76,regionY:41,regionSize:2.8,normalX:5.8,normalY:56.2,normalSize:4.2,deviceX:29,deviceY:61.0,deviceSize:2.8,customerX:17,customerY:74.0,customerSize:2.6,sign1X:70,sign1Y:74.0,sign1Size:2.6,date1X:89,date1Y:74.0,date1Size:2.2,salesX:20,salesY:84.0,salesSize:2.6,sign2X:70,sign2Y:84.0,sign2Size:2.6,date2X:89,date2Y:84.0,date2Size:2.2});
   useEffect(() => { void getPublicSiteSettings().then((settings:any) => { const saved=settings?.templateLayouts?.airtelSme; if(saved) setLayout((cur)=>Object.fromEntries(Object.keys(cur).map(k=>[k,Number(saved[k] ?? cur[k])]))); }).catch(()=>undefined); }, []);
   const ov=(x:string,y:string,size:string,width?:string): React.CSSProperties => ({left:`${layout[x] ?? 0}%`,top:`${layout[y] ?? 0}%`,fontSize:`clamp(8px, ${Math.max(1.15, Number(layout[size] ?? 2.8) * 0.52)}vw, 15px)`,width, maxWidth:width, boxSizing:"border-box", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"});
 
@@ -192,9 +192,9 @@ export default function AirtelSmeContractPage() {
         .sme-district{left:31%;top:41%;width:34%;font-size:14px}.sme-region{left:76%;top:41%;width:20%;font-size:14px}
         .sme-email{left:31%;top:45%;width:64%;font-size:13px}
 .sme-normal{left:5.8%;top:56.2%;font-size:22px}
-        .sme-device{left:29%;top:56%;width:30%;font-size:14px}.sme-customer{left:17%;top:90%;width:38%;font-size:13px}
-        .sme-sign1{left:70%;top:90%;width:12%;font-size:13px}.sme-date1{left:89%;top:90%;width:9%;font-size:11px}
-        .sme-sales{left:20%;top:93.7%;width:36%;font-size:13px}.sme-sign2{left:70%;top:93.7%;width:12%;font-size:13px}.sme-date2{left:89%;top:93.7%;width:9%;font-size:11px}
+        .sme-device{left:29%;top:61%;width:30%;font-size:14px}.sme-customer{left:17%;top:74%;width:38%;font-size:13px}
+        .sme-sign1{left:70%;top:74%;width:12%;font-size:13px}.sme-date1{left:89%;top:74%;width:9%;font-size:11px}
+        .sme-sales{left:20%;top:84%;width:36%;font-size:13px}.sme-sign2{left:70%;top:84%;width:12%;font-size:13px}.sme-date2{left:89%;top:84%;width:9%;font-size:11px}
         @media(max-width:900px){.sme-grid{grid-template-columns:1fr}.sme-top{border-radius:12px}.sme-preview{padding:6px}.sme-overlay{font-size:10px}.sme-id,.sme-date1,.sme-date2{font-size:8px}.sme-normal{font-size:16px}}
         @media print{.sme-page{padding:0;background:#fff}.sme-top,.sme-form,.sme-preview-head,.sme-status{display:none!important}.sme-grid{display:block;margin:0}.sme-card{border:0;box-shadow:none;padding:0}.sme-preview{background:#fff;padding:0}.sme-template{width:100%;max-width:none}}
       `}</style>
@@ -218,7 +218,7 @@ export default function AirtelSmeContractPage() {
             <div className="sme-row">{field("Mtaa", "street")}{field("Kata", "ward")}</div>
             <div className="sme-row">{field("Wilaya", "district")}{field("Mkoa", "region")}</div>
             {field("Barua pepe", "email", "", "email")}
-            <label className="sme-check"><input type="checkbox" checked={form.normalSme} onChange={(e) => update("normalSme", e.target.checked)} /><span><b>Normal SME</b> — imechaguliwa moja kwa moja</span></label>
+            <label className="sme-check"><input type="checkbox" checked={form.normalSme} onChange={(e) => update("normalSme", e.target.checked)} /><span><b>Normal SME</b> — tiki hii inaingia kwenye sehemu ya Normal SME kwenye mkataba</span></label>
             {field("Device/SME mobile number", "devicePhone")}
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName")}
