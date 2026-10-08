@@ -65,24 +65,24 @@ export default function AirtelSmeContractPage() {
 
   // Vipimo vilivyorekebishwa kwa usahihi kabisa kwa sehemu za juu na za chini
   const [layout, setLayout] = useState<Record<string, number>>({
-    nameX: 22.5, nameY: 25, nameSize: 3,
-    phoneX: 22.5, phoneY: 28.9, phoneSize: 3,
-    tinX: 76, tinY: 28.9, tinSize: 2.8,
-    idTypeX: 24, idTypeY: 32.9, idTypeSize: 2.8,
-    idX: 69, idY: 32.9, idSize: 2.4,
-    streetX: 28, streetY: 37, streetSize: 2.8,
-    wardX: 75, wardY: 37, wardSize: 2.8,
-    districtX: 31, districtY: 41, districtSize: 2.8,
-    regionX: 76, regionY: 41, regionSize: 2.8,
-    emailX: 31, emailY: 43.8, emailSize: 2.6,
-    normalX: 5.8, normalY: 57.2, normalSize: 4.2,
-    deviceX: 29, deviceY: 62.2, deviceSize: 2.8,
-    customerX: 17, customerY: 75.5, customerSize: 2.6,
-    sign1X: 70, sign1Y: 75.5, sign1Size: 2.6,
-    date1X: 89, date1Y: 75.5, date1Size: 2.2,
-    salesX: 20, salesY: 85.5, salesSize: 2.6,
-    sign2X: 70, sign2Y: 85.5, sign2Size: 2.6,
-    date2X: 89, date2Y: 85.5, date2Size: 2.2
+    nameX: 22.5, nameY: 25.2, nameSize: 3,
+    phoneX: 22.5, phoneY: 29.1, phoneSize: 3,
+    tinX: 76, tinY: 29.1, tinSize: 2.8,
+    idTypeX: 24, idTypeY: 33.1, idTypeSize: 2.8,
+    idX: 69, idY: 33.1, idSize: 2.4,
+    streetX: 28, streetY: 37.2, streetSize: 2.8,
+    wardX: 75, wardY: 37.2, wardSize: 2.8,
+    districtX: 31, districtY: 41.2, districtSize: 2.8,
+    regionX: 76, regionY: 41.2, regionSize: 2.8,
+    emailX: 31, emailY: 44.0, emailSize: 2.6,
+    normalX: 5.8, normalY: 58.0, normalSize: 4.2,
+    deviceX: 29, deviceY: 63.0, deviceSize: 2.8,
+    customerX: 17, customerY: 94.0, customerSize: 2.6,
+    sign1X: 70, sign1Y: 94.0, sign1Size: 2.6,
+    date1X: 89, date1Y: 94.0, date1Size: 2.2,
+    salesX: 20, salesY: 95.5, salesSize: 2.6,
+    sign2X: 70, sign2Y: 95.5, sign2Size: 2.6,
+    date2X: 89, date2Y: 95.5, date2Size: 2.2
   });
 
   useEffect(() => { 
