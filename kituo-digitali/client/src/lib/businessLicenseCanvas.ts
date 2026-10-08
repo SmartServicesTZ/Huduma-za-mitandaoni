@@ -84,25 +84,25 @@ const DEFAULT_LICENSE_LAYOUT = {
   wardY: 66.75,
   streetY: 70.05,
   amountY: 77.30,
-  valueSize: 15,
-  nameSize: 15,
+  valueSize: 17,
+  nameSize: 17,
   numberX: 50,
   numberY: 23.15,
-  numberSize: 18,
+  numberSize: 20,
   qrX: 65.6,
   qrY: 61.7,
   qrSize: 270,
 };
 
-const FONT_SANS = "Arial, Helvetica, sans-serif";
-const FONT_LABEL = "Arial, Helvetica, sans-serif";
+const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
+const FONT_LABEL = "Roboto, Arial, Helvetica, sans-serif";
 
 const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 23, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 245, size: 25, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 12, weight: 400, family: FONT_SANS, align: "center", maxWidth: 850 },
 
-  { text: "License Details", x: 50, y: 381, size: 19, weight: 700, family: FONT_SANS, color: "#0f172a" },
+  { text: "License Details", x: 50, y: 381, size: 20, weight: 800, family: FONT_SANS, color: "#0f172a" },
   { text: "Issuing Office:", x: 72, y: 428, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Tax Identification No:", x: 72, y: 469, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
@@ -112,20 +112,20 @@ const staticText: TextItem[] = [
   { text: "Expiring Date:", x: 72, y: 682, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Principal / Branch:", x: 72, y: 719, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 
-  { text: "Business Location", x: 50, y: 775, size: 19, weight: 700, family: FONT_SANS, color: "#0f172a" },
+  { text: "Business Location", x: 50, y: 775, size: 20, weight: 800, family: FONT_SANS, color: "#0f172a" },
   { text: "Region:", x: 72, y: 823, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Ward:", x: 72, y: 866, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
   { text: "Street:", x: 72, y: 909, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 
-  { text: "Payment Details", x: 50, y: 957, size: 19, weight: 700, family: FONT_SANS, color: "#0f172a" },
+  { text: "Payment Details", x: 50, y: 957, size: 20, weight: 800, family: FONT_SANS, color: "#0f172a" },
   { text: "Amount of Fee Paid:", x: 72, y: 1005, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
 ];
 
 async function ensureLicenseFonts() {
   if (typeof document === "undefined" || !("fonts" in document)) return;
   await Promise.all([
-    document.fonts.load("700 23px Arial"),
-    document.fonts.load("600 15px Arial"),
+    document.fonts.load("700 23px Roboto"),
+    document.fonts.load("600 15px Roboto"),
   ]);
 }
 
@@ -154,7 +154,7 @@ export async function renderBusinessLicenseCanvas(
     const text = item.text ?? "";
     // Cover the template labels and redraw the three section headings in the reference typography.
     if (text === "License Details" || text === "Business Location" || text === "Payment Details") {
-      drawText(ctx, { ...item, weight: 700, size: 19, family: FONT_SANS }, text);
+      drawText(ctx, { ...item, weight: 800, size: 20, family: FONT_SANS }, text);
       return;
     }
     drawText(ctx, item, text);
@@ -180,9 +180,9 @@ export async function renderBusinessLicenseCanvas(
     `B.L. NO : ${licenseNumber || "—"}`,
   );
 
-  drawText(ctx, { x: valueX, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: 15.5, maxWidth: 560 }, "DAR ES SALAAM CITY COUNCIL");
+  drawText(ctx, { x: valueX, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: 16.5, maxWidth: 560 }, "DAR ES SALAAM CITY COUNCIL");
   drawText(ctx, { x: valueX, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.tin);
-  drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 570 }, owner);
+  drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 560 }, owner);
   drawText(ctx, { x: valueX, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, maxWidth: 560 }, businessType);
   drawText(ctx, { x: valueX, y: layout.typeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.licenseType);
   drawText(ctx, { x: valueX, y: layout.issueY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, formatTemplateDate(issueDate));
