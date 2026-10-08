@@ -585,7 +585,6 @@ export const updateLipaRewardTracking = callable(async (request) => {
     if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
     const application = snapshot.data()!;
     const reward = Number(application.reward ?? 0);
-    if (!Number.isFinite(reward) || reward <= 0) throw new ApiError("failed-precondition", "Ombi hili halina zawadi ya kulipwa.");
     if (String(application.status ?? "") !== "APPROVED") throw new ApiError("failed-precondition", "Ombi lazima liwe APPROVED kabla ya kufuatilia zawadi.");
     if (rewardStatus === "PAID" && qualificationStatus !== "QUALIFIED") throw new ApiError("failed-precondition", "Zawadi haiwezi kuwa PAID bila kuthibitisha qualification.");
     const now = FieldValue.serverTimestamp();
