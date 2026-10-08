@@ -1,4 +1,4 @@
-name: Build SmartServicesTZ Android APK + Play Store AAB
+name: Build SmartServicesTZ Android APK
 
 on:
   push:
@@ -15,20 +15,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+
       - name: Prepare Android SDK
         run: |
           export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
           if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
             SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -40,97 +37,242 @@ jobs:
           fi
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-      - name: Install Bubblewrap
-        run: npm install --global @bubblewrap/cli
-      - name: Generate TWA project without interactive prompts
+
+      - name: Create native Android app wrapper
         run: |
-          rm -rf android-twa
-          mkdir -p android-twa
-          cat > android-twa/twa-manifest.json <<'EOF'
-          {
-            "manifestVersion": "1",
-            "name": "SmartServicesTZ",
-            "launcherName": "SmartServicesTZ",
-            "packageId": "tz.steward.huduma",
-            "host": "smartservicestz.github.io",
-            "startUrl": "/Huduma-za-mitandaoni/?v=4",
-            "webManifestUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/manifest.webmanifest?v=4",
-            "display": "standalone",
-            "orientation": "portrait",
-            "themeColor": "#06152d",
-            "themeColorDark": "#06152d",
-            "navigationColor": "#06152d",
-            "navigationColorDark": "#06152d",
-            "navigationDividerColor": "#06152d",
-            "navigationDividerColorDark": "#06152d",
-            "backgroundColor": "#06152d",
-            "iconUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/pwa-icon.svg?v=4",
-            "maskableIconUrl": "https://smartservicestz.github.io/Huduma-za-mitandaoni/pwa-icon.svg?v=4",
-            "splashScreenFadeOutDuration": 650,
-            "enableNotifications": true,
-            "appVersionCode": 5,
-            "appVersionName": "4.0.0",
-            "minSdkVersion": 23,
-            "signingKey": {
-              "path": "./android.keystore",
-              "alias": "android"
-            },
-            "generatorApp": "@bubblewrap/cli"
+          rm -rf android-app
+          mkdir -p android-app/app/src/main/java/tz/steward/huduma
+          mkdir -p android-app/app/src/main/res/drawable
+          mkdir -p android-app/app/src/main/res/mipmap-hdpi
+          mkdir -p android-app/app/src/main/res/mipmap-mdpi
+          mkdir -p android-app/app/src/main/res/mipmap-xhdpi
+          mkdir -p android-app/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android-app/app/src/main/res/mipmap-xxxhdpi
+
+          cat > android-app/settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          rootProject.name = "SmartServicesTZ"
+          include(":app")
+          EOF
+
+          cat > android-app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.6.1' apply false
           }
           EOF
-          mkdir -p "$HOME/.bubblewrap"
-          cat > "$HOME/.bubblewrap/config.json" <<EOF
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_HOME"
+
+          cat > android-app/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          EOF
+
+          cat > android-app/app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' }
+
+          android {
+              namespace 'tz.steward.huduma'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'tz.steward.huduma'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 6
+                  versionName '4.1.0'
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                  }
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+              implementation 'androidx.activity:activity:1.10.1'
           }
           EOF
-          cd android-twa
-          bubblewrap update --skipVersionUpgrade --manifest="./twa-manifest.json"
-      - name: Prepare release signing
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "Missing ANDROID_KEYSTORE_BASE64 repository secret."; exit 1; }
-          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo "Missing ANDROID_KEYSTORE_PASSWORD repository secret."; exit 1; }
-          test -n "$ANDROID_KEY_ALIAS" || { echo "Missing ANDROID_KEY_ALIAS repository secret."; exit 1; }
-          test -n "$ANDROID_KEY_PASSWORD" || { echo "Missing ANDROID_KEY_PASSWORD repository secret."; exit 1; }
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android-twa/android.keystore
-          test -s android-twa/android.keystore
-          cat > android-twa/release-signing.properties <<EOF
-          storeFile=android.keystore
-          storePassword=$ANDROID_KEYSTORE_PASSWORD
-          keyAlias=$ANDROID_KEY_ALIAS
-          keyPassword=$ANDROID_KEY_PASSWORD
+
+          cat > android-app/app/proguard-rules.pro <<'EOF'
           EOF
-      - name: Configure release signing
-        working-directory: android-twa
+
+          cat > android-app/app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+              <application
+                  android:theme="@style/AppTheme"
+                  android:label="SmartServicesTZ"
+                  android:icon="@drawable/app_icon"
+                  android:roundIcon="@drawable/app_icon"
+                  android:allowBackup="false"
+                  android:supportsRtl="true"
+                  android:usesCleartextTraffic="false">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="portrait"
+                      android:configChanges="orientation|screenSize|keyboardHidden">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          mkdir -p android-app/app/src/main/res/values
+          cat > android-app/app/src/main/res/values/styles.xml <<'EOF'
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:windowActionModeOverlay">true</item>
+                  <item name="android:colorAccent">#7C3AED</item>
+                  <item name="android:statusBarColor">#06152D</item>
+                  <item name="android:navigationBarColor">#06152D</item>
+                  <item name="android:windowLightStatusBar">false</item>
+                  <item name="android:windowLightNavigationBar">false</item>
+              </style>
+          </resources>
+          EOF
+
+          cat > android-app/app/src/main/res/drawable/app_icon.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#06152D" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#7C3AED" android:pathData="M16,20h76v68h-76z"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M67,31c-6,-5 -13,-7 -21,-7c-12,0 -21,7 -21,17c0,10 7,15 22,18c9,2 12,4 12,8c0,4 -4,7 -11,7c-7,0 -13,-3 -18,-8l-9,10c7,7 16,11 27,11c14,0 23,-7 23,-18c0,-11 -7,-16 -22,-19c-9,-2 -12,-4 -12,-7c0,-4 4,-6 10,-6c6,0 11,2 15,6z"/>
+              <path android:fillColor="#FFFFFF" android:alpha="0.45" android:pathData="M72,34h7v40h-7z"/>
+          </vector>
+          EOF
+
+          cat > android-app/app/src/main/java/tz/steward/huduma/MainActivity.java <<'EOF'
+          package tz.steward.huduma;
+
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.graphics.Color;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.view.View;
+          import android.webkit.CookieManager;
+          import android.webkit.DownloadListener;
+          import android.webkit.ValueCallback;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+
+          public class MainActivity extends Activity {
+              private static final int FILE_CHOOSER = 1001;
+              private static final String HOME = "https://smartservicestz.github.io/Huduma-za-mitandaoni/?app=android-v4";
+              private WebView webView;
+              private ValueCallback<Uri[]> fileCallback;
+
+              @Override protected void onCreate(Bundle state) {
+                  super.onCreate(state);
+                  getWindow().setStatusBarColor(Color.rgb(6,21,45));
+                  getWindow().setNavigationBarColor(Color.rgb(6,21,45));
+                  webView = new WebView(this);
+                  setContentView(webView);
+
+                  WebSettings s = webView.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setDatabaseEnabled(true);
+                  s.setAllowFileAccess(true);
+                  s.setAllowContentAccess(true);
+                  s.setBuiltInZoomControls(false);
+                  s.setDisplayZoomControls(false);
+                  s.setMediaPlaybackRequiresUserGesture(false);
+                  s.setSupportMultipleWindows(false);
+                  s.setUserAgentString(s.getUserAgentString() + " SmartServicesTZApp/4.1.0");
+
+                  CookieManager.getInstance().setAcceptCookie(true);
+                  CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+
+                  webView.setWebViewClient(new WebViewClient() {
+                      @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                          Uri u = request.getUrl();
+                          String host = u.getHost();
+                          if (host != null && (host.equals("smartservicestz.github.io") || host.endsWith(".googleapis.com") || host.endsWith(".firebaseapp.com"))) return false;
+                          try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) {}
+                          return true;
+                      }
+                  });
+
+                  webView.setWebChromeClient(new WebChromeClient() {
+                      @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                          if (fileCallback != null) fileCallback.onReceiveValue(null);
+                          fileCallback = callback;
+                          try {
+                              Intent i = params.createIntent();
+                              startActivityForResult(i, FILE_CHOOSER);
+                              return true;
+                          } catch (Exception e) {
+                              fileCallback = null;
+                              return false;
+                          }
+                      }
+                  });
+
+                  webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+                      try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch (Exception ignored) {}
+                  });
+
+                  if (state == null) webView.loadUrl(HOME);
+                  else webView.restoreState(state);
+              }
+
+              @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  super.onActivityResult(requestCode, resultCode, data);
+                  if (requestCode == FILE_CHOOSER && fileCallback != null) {
+                      Uri[] result = (resultCode == RESULT_OK && data != null && data.getData() != null)
+                              ? new Uri[]{data.getData()} : null;
+                      fileCallback.onReceiveValue(result);
+                      fileCallback = null;
+                  }
+              }
+
+              @Override public void onBackPressed() {
+                  if (webView.canGoBack()) webView.goBack();
+                  else super.onBackPressed();
+              }
+
+              @Override protected void onSaveInstanceState(Bundle out) {
+                  webView.saveState(out);
+                  super.onSaveInstanceState(out);
+              }
+
+              @Override protected void onDestroy() {
+                  if (webView != null) webView.destroy();
+                  super.onDestroy();
+              }
+          }
+          EOF
+
+      - name: Build standalone APK
+        working-directory: android-app
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("app/build.gradle")
-          s = p.read_text()
-          if "release-signing.properties" not in s:
-              signing = '''\nimport java.util.Properties\n\ndef releaseProps = new Properties()\ndef releasePropsFile = rootProject.file("release-signing.properties")\nif (releasePropsFile.exists()) { releasePropsFile.withInputStream { releaseProps.load(it) } }\n\nandroid {\n    signingConfigs {\n        release {\n            if (releasePropsFile.exists()) {\n                storeFile rootProject.file(releaseProps['storeFile'])\n                storePassword releaseProps['storePassword']\n                keyAlias releaseProps['keyAlias']\n                keyPassword releaseProps['keyPassword']\n            }\n        }\n    }\n}\n'''
-              s = signing + s
-          if 'signingConfig signingConfigs.release' not in s:
-              s = s.replace('buildTypes {', 'buildTypes {\\n        release {\\n            signingConfig signingConfigs.release\\n        }', 1)
-          p.write_text(s)
-          PY
-      - name: Build release APK and Play Store AAB
-        working-directory: android-twa
-        run: |
+          gradle wrapper --gradle-version 8.10.2 --distribution-type bin
           chmod +x ./gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
-      - name: Upload release APK and AAB
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload standalone APK
         uses: actions/upload-artifact@v4
         with:
-          name: smartservicestz-playstore-release-v4
-          path: |
-            android-twa/app/build/outputs/apk/release/app-release.apk
-            android-twa/app/build/outputs/bundle/release/app-release.aab
+          name: smartservicestz-standalone-apk-v4
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
