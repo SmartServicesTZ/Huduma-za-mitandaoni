@@ -1343,3 +1343,26 @@ input[type="file"] {
  .token-choice-head h3{font-size:21px}
  .token-choice-option{padding:15px}
 }
+
+/* SMARTSERVICESTZ PREMIUM TOKEN WALLET */
+.token-card{position:relative;overflow:hidden;padding:24px!important;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,#0b2344 0%,#101b3a 52%,#24134d 100%)!important;color:#fff!important;box-shadow:0 20px 55px rgba(4,12,30,.28)!important}
+.token-card:before{content:"";position:absolute;inset:-55% auto auto 58%;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,246,.3),transparent 68%);pointer-events:none}
+.token-card__top,.token-card__meta,.token-add-button{position:relative;z-index:1}
+.token-icon{width:54px!important;height:54px!important;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.1)!important;color:#fff!important;box-shadow:0 8px 25px rgba(0,0,0,.16)}
+.token-card__top strong{color:#fff!important;font-size:34px!important;letter-spacing:-.06em}
+.token-label{color:#b9c6da!important}
+.token-live-pill{margin-left:auto;padding:6px 9px;border:1px solid rgba(109,231,166,.25);border-radius:999px;background:rgba(24,185,105,.11);color:#7af0b0;font-size:9px;font-weight:900}
+.token-card__meta{align-items:center;color:#cbd6e7!important}
+.token-phone-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.token-phone-line>b:not(.verified-inline){color:#fff}
+.verified-inline{display:inline-flex;align-items:center;gap:4px;color:#7db9ff!important;font-size:10px!important;font-weight:900}
+.verified-inline svg{color:#4e9cff;fill:#4e9cff;stroke:#fff}
+.token-card .verification--approved{color:#8ff2bd!important;background:rgba(24,185,105,.14)!important;border:1px solid rgba(24,185,105,.24)}
+.token-add-button{width:100%;min-height:62px!important;display:flex!important;align-items:center!important;gap:12px!important;justify-content:flex-start!important;padding:10px 14px!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:15px!important;background:linear-gradient(135deg,#19b96a,#1688d7)!important;color:#fff!important;box-shadow:0 12px 28px rgba(14,121,95,.25)!important}
+.token-add-button .token-add-plus{width:39px;height:39px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.16);font-size:23px;line-height:1}
+.token-add-button span:nth-child(2){display:grid;flex:1;text-align:left;gap:3px}
+.token-add-button b{font-size:12px;letter-spacing:.02em}
+.token-add-button small{font-size:9px;color:rgba(255,255,255,.8)}
+.token-add-button>svg{opacity:.9}
+.token-choice-card{border:1px solid #dbe7ff!important;box-shadow:0 30px 80px rgba(2,14,40,.28)!important}
+@media(max-width:480px){.token-card{padding:18px!important}.token-card__meta{align-items:flex-start;flex-direction:column}.token-live-pill{position:absolute;right:0;top:0}}
