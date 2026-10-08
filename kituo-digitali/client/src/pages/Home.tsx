@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, claimDailyTokenBonus } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -226,7 +226,8 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const { isAuthenticated, profile } = useAuth();
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
 
-  const balance = profile?.tokenBalance ?? 0;
+  const nidaBalance = profile?.tokenBalanceNida ?? 0;
+  const otherBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
   const openWhatsApp = (tokenType: "nida" | "huduma") => {
     const label = tokenType === "nida" ? "CHEKI NIDA" : "HUDUMA NYINGINE";
@@ -238,7 +239,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   };
 
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
-    <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">WALLET YA TOKENI</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div><span className="token-live-pill">● LIVE</span></div>
+    <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">WALLET YA TOKENI</span><strong>{isAuthenticated ? nidaBalance + otherBalance : 0}</strong><span className="token-label">tokeni zote</span></div><span className="token-live-pill">● LIVE</span></div><div className="token-balances"><div><span>Tokeni za NIDA</span><strong>{isAuthenticated ? nidaBalance : 0}</strong></div><div><span>Tokeni zingine</span><strong>{isAuthenticated ? otherBalance : 0}</strong></div></div>
     <div className="token-card__meta"><span className="token-phone-line">{status === "approved" && <b className="verified-inline"><BadgeCheck size={15}/> Verified</b>}<span>Simu: <b>{profile?.phone ?? "—"}</b></span></span><span className={`verification verification--${status}`}>{status === "approved" ? "✓ VERIFIED" : "Inasubiri idhini"}</span></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
     <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Chagua aina ya tokeni unayotaka</small></span><ChevronRight size={18}/></button>
@@ -292,7 +293,7 @@ function QuickNidaSearch() {
   const run = () => {
     const clean = phone.trim();
     if (!clean) { toast.error("Weka namba ya simu ya mteja kwanza."); return; }
-    toast.info("TAFUTA NIDA imefungwa kwa sasa. Subiri API rasmi ya NIDA.");
+    toast.info("IMEFUNGWA — Wasiliana na msimamizi.");
   };
   const copyResult = async () => {
     if (!result) return;
@@ -302,13 +303,13 @@ function QuickNidaSearch() {
   return <section className="quick-nida-panel">
     <div className="quick-nida-panel__head">
       <div className="quick-nida-search__icon"><Search size={20}/></div>
-      <div><span className="overline">NIDA • TAFTA KWA SIMU</span><h3>TAFUTA NIDA</h3><p>Weka namba ya simu ya mteja. Huduma imefungwa hadi API rasmi ya NIDA ipatikane.</p></div>
+      <div><span className="overline">NIDA • TAFTA KWA SIMU</span><h3>TAFUTA NIDA</h3><p>Weka namba ya simu ya mteja. Huduma hii imefungwa kwa sasa.</p></div>
     </div>
     <div className="quick-nida-form">
       <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Weka namba ya simu" aria-label="Namba ya simu ya mteja"/>
       <button type="button" className="button button--green" onClick={run}><Search size={16}/> Tafuta</button>
     </div>
-    <div className="quick-nida-locked"><LockKeyhole size={16}/><span>IMEFUNGWA — Inasubiri API rasmi ya NIDA</span></div>
+    <div className="quick-nida-locked"><LockKeyhole size={16}/><span>IMEFUNGWA — Wasiliana na msimamizi</span></div>
     {result && <div className="quick-nida-result"><div><small>NIN / NIDA</small><strong>{result}</strong></div><button type="button" onClick={() => void copyResult()}><Copy size={17}/> Copy</button></div>}
   </section>;
 }
@@ -398,8 +399,9 @@ export default function Home() {
   const [catalogInitialized, setCatalogInitialized] = useState(false);
   // Closing the mobile drawer on route changes prevents a stuck drawer after navigation/refresh.
   useEffect(() => { setMenuOpen(false); }, [location]);
+  useEffect(() => { if (!isAuthenticated || !firebaseUser) return; void claimDailyTokenBonus().catch(() => undefined); }, [isAuthenticated, firebaseUser?.uid]);
   useEffect(() => subscribeToCollection("services", (rows) => {
-    setServices(rows.map((item) => ({ slug: String(item.slug ?? item.id) === "thibitisha-tin" ? "verify-tin" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "nakala-nida-2" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "nakala-nida-2" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
+    setServices(rows.map((item) => ({ slug: String(item.slug ?? item.id) === "thibitisha-tin" ? "verify-tin" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "nakala-nida-2" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "nakala-nida-2" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), tokenType: item.tokenType === "nida" ? "nida" : "huduma", category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
     setServicesLoading(false);
   }, () => setServicesLoading(false)), []);
   useEffect(() => subscribeToCollection("siteSettings", (rows) => {
