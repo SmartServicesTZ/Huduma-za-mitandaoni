@@ -319,7 +319,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     services: <ServiceGrid title="HUDUMA ZA WAKALA" services={main} onUse={onUse} />,
     locked: <ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} />,
     special: <SpecialSection />,
-    tools: <><ServiceGrid title="HUDUMA ZINGINE" services={other} onUse={onUse} /><SpecialSection /></>,
+    tools: (category === "Zote" || category === "HUDUMA ZINGINE") ? <><ServiceGrid title="HUDUMA ZINGINE" services={other} onUse={onUse} /><SpecialSection /></> : <></>,
     tutorials: <TutorialsSection />,
   };
   const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
