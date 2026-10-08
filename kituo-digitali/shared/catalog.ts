@@ -62,14 +62,10 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("azam-tv", "AZAM TV", "Fungua huduma rasmi za Azam TV.", "tv", "HUDUMA ZINGINE"),
 ];
 export const specialServices = [
-  { slug: "huduma-kwa-wateja", name: "HUDUMA KWA WATEJA — GROUP LA WOTE", tone: "blue", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&mlu=4&iam=2" },
   { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&mlu=4&iam=2" },
   { slug: "kikundi-bure", name: "WAZEE WA BETTING TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ?s=cl&p=a&mlu=4&iam=2" },
-  { slug: "botani-biashara", name: "LIPIA BATANI YA BIASHARA (Programu ya IONEKANE)", tone: "green", action: "contact", url: whatsappUrl },
-  { slug: "kikundi-vip", name: "KIKUNDI VIP 5,000 (Kulipia)", tone: "yellow", action: "contact", url: whatsappUrl },
-  { slug: "vip-usajili", name: "VIP YA USAJILI (Lipia Mda Mrefu)", tone: "yellow", action: "contact", url: whatsappUrl },
   { slug: "tangazo", name: "LIPIA TANGAZO LAKO (Litangazwe)", tone: "red", action: "contact", url: whatsappUrl },
-] as const;
+] as const;;
 
 export const tutorials: TutorialItem[] = [
   { slug: "lipa-vodacom", title: "KUSAJILI LIPA NAMBA VODACOM", description: "Jifunze hatua za kusajili Lipa Namba Vodacom.", tokenCost: 2 },
