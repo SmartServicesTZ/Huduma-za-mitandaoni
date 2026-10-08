@@ -50,6 +50,42 @@ jobs:
           mkdir -p android-app/app/src/main/res/mipmap-xxxhdpi
           mkdir -p android-app/app/src/main/res/values
 
+          cat > android-app/settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name = 'SmartServicesTZ'
+          include ':app'
+          EOF
+
+          cat > android-app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > android-app/app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' }
+          
+          android { namespace 'tz.steward.huduma'; compileSdk 35
+              defaultConfig { applicationId 'tz.steward.huduma'; minSdk 23; targetSdk 35; versionCode 6; versionName '4.2.0' }
+          }
+          dependencies { implementation 'androidx.appcompat:appcompat:1.7.0'; implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0' }
+          EOF
+
+          cat > android-app/app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:theme="@style/AppTheme" android:label="SmartServicesTZ" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:resizeableActivity="true">
+                  <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
           sudo apt-get update -qq
           sudo apt-get install -y -qq librsvg2-bin
           rsvg-convert -w 512 -h 512 pwa-icon.svg -o android-app/app/src/main/res/drawable/app_icon.png
