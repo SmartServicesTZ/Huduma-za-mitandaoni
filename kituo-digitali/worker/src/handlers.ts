@@ -1244,7 +1244,8 @@ export const generateBusinessLicense = callable(async (request) => {
     const profile = userSnapshot.data() as Profile | undefined;
     if (!profile || profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
     if (profile.verificationStatus !== "approved") throw new ApiError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
-    if (Number(profile.tokenBalance ?? 0) < 2) throw new ApiError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
+    const hudumaTokens = profile.tokenBalanceOther === undefined ? Number(profile.tokenBalance ?? 0) : Number(profile.tokenBalanceOther);
+    if (!Number.isSafeInteger(hudumaTokens) || hudumaTokens < 2) throw new ApiError("failed-precondition", "Huna tokeni za huduma za kutosha kupakua hati hii. Unahitaji tokeni 2.");
 
     const reservationSnapshot = await transaction.get(reservationRef);
     let licenseNumber: string;
@@ -1326,11 +1327,11 @@ export const completeBusinessLicense = callable(async (request) => {
       return { reference: ledgerRef.id, duplicate: true };
     }
 
-    const before = Number(profile.tokenBalance ?? 0);
-    if (!Number.isSafeInteger(before) || before < 2) throw new ApiError("failed-precondition", "Huna tokeni za kutosha kupakua hati hii. Unahitaji tokeni 2.");
+    const before = profile.tokenBalanceOther === undefined ? Number(profile.tokenBalance ?? 0) : Number(profile.tokenBalanceOther);
+    if (!Number.isSafeInteger(before) || before < 2) throw new ApiError("failed-precondition", "Huna tokeni za huduma za kutosha kupakua hati hii. Unahitaji tokeni 2.");
     const after = before - 2;
-    transaction.update(userRef, { tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, type: "service_usage", amount: -2, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
+    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
+    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "huduma", type: "service_usage", amount: -2, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
     transaction.create(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId: application.applicationId, tokensUsed: 2, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: FieldValue.serverTimestamp(), reference: ledgerRef.id });
     transaction.update(applicationRef, { status: "COMPLETED", documentGenerated: true, reference: ledgerRef.id, updatedAt: FieldValue.serverTimestamp() });
     recordAudit(transaction, uid, String(profile.role ?? "user"), "GENERATE_BUSINESS_LICENSE_PDF", "licenseApplication", String(application.applicationId), { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: 2, reference: ledgerRef.id });
