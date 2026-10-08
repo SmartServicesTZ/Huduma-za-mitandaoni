@@ -244,7 +244,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   };
 
   const saveRewardTracking = async () => {
-    if (!selected || Number(selected.reward ?? 0) <= 0) return;
+    if (!selected || selected.status !== "APPROVED") return;
     setRewardSaving(true);
     try {
       await updateLipaRewardTracking(selected.applicationId || selected.id, rewardForm);
@@ -287,7 +287,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
        </section>
       <h4 className="lipa-admin-section-title">Status timestamps</h4><dl className="lipa-admin-detail-grid">{(["PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-detail-item" key={status}><dt>{status}</dt><dd>{dateText(applicationStatusTimestamp(selected, status))}</dd></div>)}</dl>
       {selected.status === "APPROVED" && <section className="lipa-admin-card" style={{marginTop:18,padding:16}}>
-        <h4 className="lipa-admin-section-title" style={{marginTop:0}}>Ufuatiliaji wa Lipa & Zawadi</h4>
+        <h4 className="lipa-admin-section-title" style={{marginTop:0}}>Lipa Namba, Zawadi & Ufuatiliaji</h4>
         <p className="lipa-admin-muted">Hapa utaweka Lipa Namba iliyotolewa, idadi ya miamala kutoka report ya kesho, kisha utatenganisha waliohitimu, ambao hawajafuzu na waliolipwa.</p>
         <div className="lipa-admin-form-grid" style={{marginTop:12}}>
           <div className="lipa-admin-field"><label>Lipa Namba iliyotolewa</label><input value={rewardForm.lipaNumber} onChange={(e) => setRewardForm((v) => ({...v,lipaNumber:e.target.value}))} placeholder="Mfano 123456" /></div>
