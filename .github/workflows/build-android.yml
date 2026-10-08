@@ -82,8 +82,8 @@ jobs:
                   applicationId 'tz.steward.huduma'
                   minSdk 23
                   targetSdk 35
-                  versionCode 7
-                  versionName '4.2.0'
+                  versionCode 8
+                  versionName '4.3.0'
               }
 
               buildTypes {
@@ -150,10 +150,13 @@ jobs:
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="108dp" android:height="108dp"
               android:viewportWidth="108" android:viewportHeight="108">
-              <path android:fillColor="#06152D" android:pathData="M0,0h108v108h-108z"/>
-              <path android:fillColor="#7C3AED" android:pathData="M16,20h76v68h-76z"/>
-              <path android:fillColor="#FFFFFF" android:pathData="M67,31c-6,-5 -13,-7 -21,-7c-12,0 -21,7 -21,17c0,10 7,15 22,18c9,2 12,4 12,8c0,4 -4,7 -11,7c-7,0 -13,-3 -18,-8l-9,10c7,7 16,11 27,11c14,0 23,-7 23,-18c0,-11 -7,-16 -22,-19c-9,-2 -12,-4 -12,-7c0,-4 4,-6 10,-6c6,0 11,2 15,6z"/>
-              <path android:fillColor="#FFFFFF" android:alpha="0.45" android:pathData="M72,34h7v40h-7z"/>
+              <path android:fillColor="#071A36" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#173B73" android:pathData="M8,8h92v92h-92z"/>
+              <path android:fillColor="#5B2BBF" android:alpha="0.72" android:pathData="M54,10A44,44 0,1 0,54 98A44,44 0,1 0,54 10"/>
+              <path android:fillColor="#FFFFFF" android:alpha="0.10" android:pathData="M54,17A37,37 0,1 0,54 91A37,37 0,1 0,54 17"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M72,32c-5,-5 -12,-8 -20,-8c-13,0 -22,7 -22,18c0,10 7,15 22,18c8,2 12,4 12,8c0,4 -4,7 -11,7c-8,0 -14,-3 -19,-8l-7,9c7,7 16,11 27,11c14,0 23,-7 23,-18c0,-11 -7,-17 -22,-20c-9,-2 -12,-4 -12,-8c0,-4 4,-7 11,-7c6,0 12,2 16,6z"/>
+              <path android:fillColor="#7DE7FF" android:pathData="M77,25h3v12h-3zM77,71h3v12h-3z"/>
+              <path android:fillColor="#7DE7FF" android:pathData="M26,27h5v5h-5zM77,82h5v5h-5z"/>
           </vector>
           EOF
 
