@@ -11,6 +11,7 @@ type FormState = {
   ward: string;
   district: string;
   region: string;
+  email: string;
   normalSme: boolean;
   devicePhone: string;
   customerName2: string;
@@ -46,6 +47,7 @@ const initialForm = (): FormState => ({
   ward: "MADALE",
   district: "KINONDONI",
   region: "DAR ES SALAAM",
+  email: "Hudumazamtandao999@gmail.com",
   normalSme: true,
   devicePhone: "0712345678",
   customerName2: "STEWART NJIWA",
@@ -153,6 +155,7 @@ export default function AirtelSmeContractPage() {
         .sme-idtype{left:24%;top:32.9%;width:28%;font-size:14px}.sme-id{left:69%;top:32.9%;width:27%;font-size:12px}
         .sme-street{left:28%;top:37%;width:36%;font-size:14px}.sme-ward{left:75%;top:37%;width:20%;font-size:14px}
         .sme-district{left:31%;top:41%;width:34%;font-size:14px}.sme-region{left:76%;top:41%;width:20%;font-size:14px}
+        .sme-email{left:31%;top:45%;width:64%;font-size:13px}
 .sme-normal{left:5.8%;top:56.2%;font-size:22px}
         .sme-device{left:29%;top:56%;width:30%;font-size:14px}.sme-customer{left:17%;top:90%;width:38%;font-size:13px}
         .sme-sign1{left:70%;top:90%;width:12%;font-size:13px}.sme-date1{left:89%;top:90%;width:9%;font-size:11px}
@@ -179,6 +182,7 @@ export default function AirtelSmeContractPage() {
             </div>
             <div className="sme-row">{field("Mtaa", "street")}{field("Kata", "ward")}</div>
             <div className="sme-row">{field("Wilaya", "district")}{field("Mkoa", "region")}</div>
+            {field("Barua pepe", "email", "", "email")}
             <label className="sme-check"><input type="checkbox" checked={form.normalSme} onChange={(e) => update("normalSme", e.target.checked)} /><span><b>Normal SME</b> — imechaguliwa moja kwa moja</span></label>
             {field("Device/SME mobile number", "devicePhone")}
             {field("Customer name", "customerName2")}
@@ -197,7 +201,7 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={ov("nameX","nameY","nameSize","73%")}>{form.customerName}</div><div className="sme-overlay" style={ov("phoneX","phoneY","phoneSize","39%")}>{form.phone}</div><div className="sme-overlay" style={ov("tinX","tinY","tinSize","20%")}>{form.tin}</div>
                 <div className="sme-overlay" style={ov("idTypeX","idTypeY","idTypeSize","28%")}>{form.idType.toUpperCase()}</div><div className="sme-overlay" style={ov("idX","idY","idSize","27%")}>{form.idNumber}</div>
                 <div className="sme-overlay" style={ov("streetX","streetY","streetSize","36%")}>{form.street.toUpperCase()}</div><div className="sme-overlay" style={ov("wardX","wardY","wardSize","20%")}>{form.ward.toUpperCase()}</div>
-                <div className="sme-overlay" style={ov("districtX","districtY","districtSize","34%")}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={ov("regionX","regionY","regionSize","20%")}>{form.region.toUpperCase()}</div>
+                <div className="sme-overlay" style={ov("districtX","districtY","districtSize","34%")}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={ov("regionX","regionY","regionSize","20%")}>{form.region.toUpperCase()}</div><div className="sme-overlay sme-email">{form.email}</div>
 <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "☑" : "☐"}</div>
                 <div className="sme-overlay" style={ov("deviceX","deviceY","deviceSize","30%")}>{form.devicePhone}</div><div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div><div className="sme-overlay" style={ov("date1X","date1Y","date1Size","9%")}>{form.date1}</div>
