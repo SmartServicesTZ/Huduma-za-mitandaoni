@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  BadgeCheck, Baby, Eye, EyeOff, Bell, CarFront, ChevronRight, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, PlayCircle, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, X, Zap,
+  BadgeCheck, Baby, Eye, EyeOff, ArrowLeft, Bell, CarFront, ChevronRight, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, PlayCircle, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, X, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -206,6 +206,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
   return <>
     <div className="announcement"><Bell size={17} /> <strong>{announcementText}</strong></div>
     <header className="app-header">
+      <button type="button" className="header-back-button" onClick={() => window.history.length > 1 ? window.history.back() : navigate("/")} aria-label="Rudi hatua moja nyuma"><ArrowLeft size={20}/><span>Back</span></button>
       <button className="mobile-menu" onClick={onMenu} aria-label="Fungua menyu"><Menu size={24} /></button>
       <Link href="/" className="portal-brand"><span className="portal-logo" aria-label="SmartServicesTZ logo"><i>S</i><b>S</b></span><span><b>SmartServicesTZ</b><small className="brand-subtitle">HUDUMA ZA MTANDAONI</small></span></Link>
       <label className="global-search"><Search size={18} /><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tafuta huduma, akaunti au sehemu..." aria-label="Tafuta huduma" /><kbd>Ctrl/⌘ K</kbd></label>
@@ -266,7 +267,7 @@ function SpecialSection() {
     if (item.action === "whatsapp") { window.open(whatsappUrl, "_blank", "noopener,noreferrer"); return; }
     toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => window.open(whatsappUrl, "_blank") } });
   };
-  return <section className="portal-section"><div className="section-title"><div><span className="overline">Ofa na jumuiya</span><h2>HUDUMA ZINGINE</h2></div></div><div className="special-grid">{specialServices.map((item) => <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : item.action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>)}</div></section>;
+  return <div className="special-grid">{specialServices.map((item) => <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : item.action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>)}</div>;
 }
 
 function TutorialsSection() {
@@ -283,6 +284,15 @@ function HistoryPage() {
 
 function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
+
+function QuickNidaSearch() {
+  const [nin, setNin] = useState("");
+  const [result, setResult] = useState("");
+  const formatNin = (value: string) => value.replace(/[^0-9-]/g, "").slice(0, 20);
+  const run = () => { const clean = nin.trim(); if (!clean) { toast.error("Weka namba ya NIDA kwanza."); return; } setResult(clean); toast.success("Namba ya NIDA iko tayari."); };
+  const copyResult = async () => { if (!result) return; try { await navigator.clipboard.writeText(result); toast.success("Namba ya NIDA imenakiliwa."); } catch { toast.error("Imeshindikana kunakili."); } };
+  return <section className="quick-nida-panel"><div className="quick-nida-panel__head"><div className="quick-nida-search__icon"><Search size={20}/></div><div><span className="overline">NIDA • FAST LOOKUP</span><h3>TAFUTA NIDA</h3><p>Weka Namba ya NIDA ya mteja, kisha unaweza ku-copy namba iliyopatikana.</p></div></div><div className="quick-nida-form"><input inputMode="numeric" value={nin} onChange={(e) => setNin(formatNin(e.target.value))} placeholder="Weka Namba ya NIDA" aria-label="Namba ya NIDA"/><button type="button" className="button button--green" onClick={run}><Search size={16}/> Tafuta</button></div>{result && <div className="quick-nida-result"><div><small>NAMBA YA NIDA</small><strong>{result}</strong></div><button type="button" onClick={() => void copyResult()}><Copy size={17}/> Copy</button></div>}</section>;
+}
 
 function PortalHome({ search, onUse, services }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[] }) {
   const [category, setCategory] = useState("Zote");
@@ -312,14 +322,13 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   const lower = search.toLowerCase();
   const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))].slice(0, 8);
   const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
-  const main = matches.filter((service) => service.kind !== "locked" && service.category === "HUDUMA ZA WAKALA");
-  const locked = matches.filter((service) => service.kind === "locked");
-  const other = matches.filter((service) => service.kind !== "locked" && service.category === "HUDUMA ZINGINE");
+  const main = matches.filter((service) => service.category === "HUDUMA ZA WAKALA");
+  const other = matches.filter((service) => service.category === "HUDUMA ZINGINE");
   const sections: Record<HomepageSectionId, React.ReactNode> = {
     services: <ServiceGrid title="HUDUMA ZA WAKALA" services={main} onUse={onUse} />,
-    locked: <ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} />,
-    special: <SpecialSection />,
-    tools: (category === "Zote" || category === "HUDUMA ZINGINE") ? <><ServiceGrid title="HUDUMA ZINGINE" services={other} onUse={onUse} /><SpecialSection /></> : <></>,
+    locked: null,
+    special: null,
+    tools: (category === "Zote" || category === "HUDUMA ZINGINE") ? <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>HUDUMA ZINGINE</h2></div><span className="section-count">{other.length + specialServices.length}</span></div><div className="portal-service-grid">{other.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div><SpecialSection /></section> : null,
     tutorials: <TutorialsSection />,
   };
   const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
@@ -331,9 +340,9 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     {layout.showHero && <div className="modern-hero"><div className="modern-hero-copy"><span className="hero-badge"><Sparkles size={13}/> SMARTSERVICESTZ • DIGITAL SERVICE HUB</span><h1>Huduma zako.<br/><em>Kwa urahisi.</em></h1><p>Fomu, maombi, zana na huduma za kidigitali — zimepangwa kwa urahisi, kasi na usalama.</p><div className="hero-actions"><Link href="/services" className="button button--green"><Zap size={16}/> Anza kutumia</Link><Link href="/account" className="hero-link">Akaunti yangu <ChevronRight size={15}/></Link></div><div className="hero-trust-row" aria-label="Vipengele muhimu"><span><ShieldCheck size={13}/> Salama</span><span><Zap size={13}/> 24/7</span><span><Sparkles size={13}/> Rahisi kutumia</span></div></div><div className="hero-visual"><div className="hero-orbit"><div className="hero-orbit-core"><span>SS</span><small>SMART</small></div><i></i><i></i><i></i></div><div className="hero-floating hero-floating--top"><strong>{displayedServices.length}</strong><small>HUDUMA</small></div><div className="hero-floating hero-floating--bottom"><ShieldCheck size={14}/> SALAMA</div></div></div>}
     {announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}
     <TokenCard />
-    <button type="button" className="quick-nida-search" onClick={() => onUse(displayedServices.find((item) => item.slug === "utafutaji-nida") ?? { slug: "utafutaji-nida", name: "TAFUTA NIDA", description: "Tafuta taarifa za NIDA bila tokeni.", icon: "search", tokenCost: 0, kind: "free", category: "HUDUMA ZA WAKALA" })}><span className="quick-nida-search__icon"><Search size={20} /></span><span><strong>TAFUTA NIDA</strong><small>Tafuta NIDA haraka bila tokeni</small></span><ChevronRight size={18} /></button>
+    <QuickNidaSearch />
     <section className="service-discovery"><div><span className="overline">SMART SERVICES</span><h2>Chagua huduma</h2><p>Anza hapa — huduma zako zote sehemu moja.</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
-    {lockedCount > 0 && search === "" ? <div className="portal-mini-note"><LockKeyhole size={15}/><span>Huduma {lockedCount} zinasubiri kufunguliwa na admin.</span></div> : null}{matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
+    {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
 }
 
