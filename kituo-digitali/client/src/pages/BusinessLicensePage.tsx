@@ -291,6 +291,17 @@ export default function BusinessLicensePage() {
                 {regions.map((region) => <option key={region} value={region}>{region}</option>)}
               </SelectField>
             </Field>
+            <Field label="Wilaya" english="District" required>
+              <SelectField
+                value={form.district}
+                onChange={(value) => set("district", value)}
+                placeholder={form.region ? "Chagua Wilaya" : "Chagua kwanza Mkoa"}
+              >
+                {form.region && Object.keys((locations.regions as any)[form.region]?.districts ?? {}).map((district) => (
+                  <option key={district} value={district}>{district}</option>
+                ))}
+              </SelectField>
+            </Field>
             <Field label="Kata" english="Ward" required><input value={form.ward} onChange={(event) => set("ward", titleCase(event.target.value))} /></Field>
             <Field label="Mtaa / Kijiji" english="Street / Village" required><input value={form.street} onChange={(event) => set("street", titleCase(event.target.value))} /></Field>
           </div>
