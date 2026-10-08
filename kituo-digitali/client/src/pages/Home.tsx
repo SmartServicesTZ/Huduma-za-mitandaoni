@@ -192,45 +192,42 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 }
 
 function TokenCard({ compact = false }: { compact?: boolean }) {
-  const { isAuthenticated, profile, firebaseUser } = useAuth();
-  const [orders, setOrders] = useState<TokenPurchaseOrder[]>([]);
-  const [busyAmount, setBusyAmount] = useState<number | null>(null);
-  
+  const { isAuthenticated, profile } = useAuth();
+  const [tokenType, setTokenType] = useState<"nida" | "huduma" | null>(null);
+  const [tokenQty, setTokenQty] = useState(1);
+
   const balance = profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
-  const paymentsPaused = String(import.meta.env.VITE_PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() !== "true";
-  useEffect(() => {
-    if (!firebaseUser) { setOrders([]); return; }
-    return subscribeToTokenPurchaseOrders(firebaseUser.uid, setOrders, () => toast.error("Imeshindikana kupakia hali ya malipo."));
-  }, [firebaseUser]);
-  const startPurchase = async (amount: number) => {
-    if (!firebaseUser) { toast.error("Ingia kwenye akaunti yako kabla ya kununua tokeni."); return; }
-    setBusyAmount(amount);
-    try {
-      const result = await createTokenPurchaseOrder(amount);
-      if (result.status === "PAID") toast.success("Malipo tayari yamethibitishwa.");
-      else toast.success("Ombi la malipo limetumwa. Thibitisha ujumbe wa USSD kwenye simu yako.");
-    } catch (error: any) {
-      toast.error(error?.message ?? "Imeshindikana kuanzisha malipo.");
-    } finally { setBusyAmount(null); }
+  const openWhatsApp = () => {
+    if (!tokenType) return;
+    const label = tokenType === "nida" ? "NIDA" : "Huduma nyingine";
+    const price = tokenType === "nida" ? 100 : 500;
+    const total = price * tokenQty;
+    const phone = profile?.phone ? "\nNamba ya simu: " + profile.phone : "";
+    const message = "Habari SmartServicesTZ, naomba kuongeza tokeni.\n\nAina: " + label + "\nTokeni: " + tokenQty + "\nBei: TZS " + total.toLocaleString("en-US") + phone;
+    window.open("https://wa.me/255698232313?text=" + encodeURIComponent(message), "_blank", "noopener,noreferrer");
+    setTokenType(null);
+    setTokenQty(1);
   };
-  const statusLabel = (value: string) => value === "PAID" ? "Imelipwa — tokeni zimeongezwa" : ["PENDING", "CREATING", "CREATE_UNKNOWN", "INPROGRESS"].includes(value) ? "Ombi la awali linasubiri ukaguzi; ununuzi mpya umesitishwa" : value === "NEEDS_REVIEW" ? "Malipo yanasubiri ukaguzi wa msaada" : value === "CREATE_FAILED" ? "Malipo hayakuanzishwa; jaribu tena baadaye" : `Hali ya malipo: ${value}`;
-  const packages = [{ amount: 2000, credits: 40 }, { amount: 5000, credits: 100 }, { amount: 10000, credits: 200 }];
-  const hasOpenOrder = orders.some((order) => ["CREATING", "CREATE_UNKNOWN", "PENDING", "INPROGRESS"].includes(order.status));
+
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
     <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">Tokeni zako</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div></div>
     <div className="token-card__meta"><span>Simu: <b>{profile?.phone ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "✓ Imeidhinishwa" : "Inasubiri idhini ya admin"}</span></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
-    
-    {paymentsPaused ? <div className="account-warning" role="status">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Salio lililopo limehifadhiwa; hakuna tokeni za bure zinazotolewa.</div> : <div className="token-package-grid">{packages.map(({ amount, credits }) => <button key={amount} className="button button--green token-package-button" disabled={!isAuthenticated || !profile?.phone || busyAmount !== null || hasOpenOrder} onClick={() => void startPurchase(amount)}>{busyAmount === amount ? "Inatuma ombi..." : <>TZS {amount.toLocaleString("en-US")}<small>{credits} tokeni</small></>}</button>)}</div>}
-    {!paymentsPaused && isAuthenticated && !profile?.phone && <div className="account-warning">Weka namba yako ya simu kwenye sehemu ya Akaunti kabla ya kununua tokeni.</div>}
-    {hasOpenOrder && <small className="token-note">Ombi la awali la malipo bado linaonekana hapa chini. Ununuzi mpya umesitishwa kwa muda.</small>}
-    {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuona salio la tokeni na huduma zako.</small>}
-    {orders.length > 0 && <div className="token-purchase-status"><strong>Malipo yako ya karibuni</strong>{orders.slice(0, 3).map((order) => <div key={order.id}><span>TZS {Number(order.amount).toLocaleString("en-US")} — {Number(order.tokenAmount)} tokeni</span><small>{statusLabel(order.status)}</small></div>)}</div>}
-    <small className="token-note">Salio na historia ya tokeni za awali havijabadilishwa.</small>
+    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenType("nida")}>+ ONGEZA TOKENI</button>
+    {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
+    {tokenType && <div className="token-choice-modal" role="dialog" aria-modal="true">
+      <div className="token-choice-card">
+        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Tokeni ni za nini?</h3></div><button type="button" onClick={() => setTokenType(null)} aria-label="Funga">×</button></div>
+        <button type="button" className={`token-choice-option ${tokenType === "nida" ? "selected" : ""}`} onClick={() => setTokenType("nida")}><strong>CHEKI NIDA</strong><span>Tokeni 1 = TZS 100</span></button>
+        <button type="button" className={`token-choice-option ${tokenType === "huduma" ? "selected" : ""}`} onClick={() => setTokenType("huduma")}><strong>HUDUMA NYINGINE</strong><span>Tokeni 1 = TZS 500</span></button>
+        <label className="control-field"><span>Idadi ya tokeni</span><input type="number" min="1" step="1" value={tokenQty} onChange={(event) => setTokenQty(Math.max(1, Number(event.target.value) || 1))} /></label>
+        <div className="token-choice-summary">Jumla: <strong>TZS {(tokenQty * (tokenType === "nida" ? 100 : 500)).toLocaleString("en-US")}</strong></div>
+        <button type="button" className="button button--green" onClick={openWhatsApp}>ENDELEA WHATSAPP</button>
+      </div>
+    </div>}
   </section>;
 }
-
 function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (service: ServiceCatalogItem) => void }) {
   const locked = service.kind === "locked";
   return <button className={`portal-service-card service-${service.kind}`} onClick={() => onUse(service)}><div className="service-card-icon"><Icon name={service.icon} /></div><div className="service-card-copy"><strong>{service.name}</strong><span>{service.description}</span></div><div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}<ChevronRight size={17} /></div></button>;
