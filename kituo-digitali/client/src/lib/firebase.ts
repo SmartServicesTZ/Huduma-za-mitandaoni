@@ -619,7 +619,9 @@ export async function getLipaApplicationDocument(applicationId: string, fieldNam
 
 export async function uploadLipaDocument(uid: string, applicationId: string, fieldName: string, file: File, maxSizeMb = 5, accept = ["image/jpeg", "image/png", "image/webp"]) {
   if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new Error("Jina la field si sahihi.");
-  const normalizedType = String(file.type || "").toLowerCase();
+  const extension = String(file.name || "").toLowerCase().split(".").pop() || "";
+  const detectedType = String(file.type || "").toLowerCase() || ({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" } as Record<string, string>)[extension] || "";
+  const normalizedType = detectedType === "image/jpg" ? "image/jpeg" : detectedType;
   if (!accept.includes(normalizedType)) throw new Error("Picha lazima iwe JPG, PNG au WebP.");
   const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 10);
   if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi MB ${sizeLimit}.`);
