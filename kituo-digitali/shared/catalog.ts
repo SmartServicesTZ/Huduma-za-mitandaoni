@@ -55,7 +55,6 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   free("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA USAJILI & LIPA", "Tengeneza kitambulisho cha kisasa cha wakala wa usajili na Lipa.", "badge-check", "HUDUMA ZA WAKALA"),
   paid("sme-airtel-mkataba", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "HUDUMA ZA WAKALA"),
   paid("brela", "BRELA", "Msaada wa huduma za BRELA.", "landmark", "HUDUMA ZA WAKALA"),
-  free("utafutaji-nida", "TAFUTA NIDA", "Tafuta taarifa za NIDA bila tokeni.", "search", "HUDUMA ZA WAKALA"),
   locked("cheti-kuzaliwa", "CHETI CHA KUZALIWA", "Huduma hii inasubiri kufunguliwa.", "baby", "HUDUMA ZA WAKALA"),
   paid("simba-sc", "SIMBA SC", "Fungua taarifa na huduma rasmi za Simba SC.", "trophy", "HUDUMA ZINGINE"),
   paid("yanga-africans", "YANGA SC", "Fungua taarifa na huduma rasmi za Yanga SC.", "star", "HUDUMA ZINGINE"),
@@ -64,7 +63,6 @@ export const serviceCatalog: ServiceCatalogItem[] = [
 export const specialServices = [
   { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&mlu=4&iam=2" },
   { slug: "kikundi-bure", name: "WAZEE WA BETTING TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ?s=cl&p=a&mlu=4&iam=2" },
-  { slug: "tangazo", name: "LIPIA TANGAZO LAKO (Litangazwe)", tone: "red", action: "contact", url: whatsappUrl },
 ] as const;;
 
 export const tutorials: TutorialItem[] = [
