@@ -21,7 +21,7 @@ service firebase.storage {
           || request.auth.token.get('permissions', {}).get('manageMessages', false) == true);
     }
     match /users/{userId}/profile/{fileName} {
-      allow read: if accountMayRead() && request.auth.uid == userId;
+      allow read: if accountMayRead();
       allow write: if accountMay('profile')
         && request.auth.uid == userId
         && request.resource.size <= 2 * 1024 * 1024
