@@ -57,6 +57,11 @@ jobs:
           include ':app'
           EOF
 
+          cat > android-app/gradle.properties <<'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
+
           cat > android-app/build.gradle <<'EOF'
           plugins {
               id 'com.android.application' version '8.7.3' apply false
