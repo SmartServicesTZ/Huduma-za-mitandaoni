@@ -98,8 +98,8 @@ const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
 const FONT_LABEL = "Roboto, Arial, Helvetica, sans-serif";
 
 const staticText: TextItem[] = [
-  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 23, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
-  { text: "BUSINESS LICENSE", x: 506, y: 245, size: 25, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
+  { text: "BUSINESS LICENSE", x: 506, y: 245, size: 22, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 12, weight: 400, family: FONT_SANS, align: "center", maxWidth: 850 },
 
   { text: "License Details", x: 50, y: 381, size: 20, weight: 800, family: FONT_SANS, color: "#0f172a" },
@@ -167,8 +167,8 @@ export async function renderBusinessLicenseCanvas(
 
   const valueStyle = {
     size: layout.valueSize,
-    weight: 750,
-    family: FONT_SANS,
+    weight: 600,
+    family: FONT_VALUE,
     color: "#111827",
   };
 
