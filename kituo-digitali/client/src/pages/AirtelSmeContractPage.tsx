@@ -96,7 +96,7 @@ export default function AirtelSmeContractPage() {
     }).catch(() => undefined);
   }, []);
   const ov = (key: keyof typeof SME_LAYOUT, width?: string): React.CSSProperties => {
-    const item = layout[key] ?? SME_LAYOUT[key];
+    const item = layout[key] ?? SME_LAYOUT[key] ?? { x: 0, y: 0, size: 2.8 };
     return {
       left: `${item.x}%`, top: `${item.y}%`,
       fontSize: `clamp(8px, ${Math.max(1.15, item.size * 0.52)}vw, 15px)`,
@@ -274,7 +274,7 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={{...ov("idType","28%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idType.toUpperCase()}</div><div className="sme-overlay" style={{...ov("idNumber","27%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idNumber}</div>
                 <div className="sme-overlay" style={{...ov("street","36%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.street.toUpperCase()}</div><div className="sme-overlay" style={{...ov("ward","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.ward.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("district","34%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={{...ov("region","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.region.toUpperCase()}</div><div className="sme-overlay sme-email" style={{...ov("email","64%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email}</div>
-<div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "☑" : "☐"}</div>
+<div className="sme-overlay" style={ov("normalSme","8%")}>{form.normalSme ? "☑" : "☐"}</div>
                 <div className="sme-overlay" style={ov("devicePhone","30%")}>{form.devicePhone}</div><div className="sme-overlay" style={ov("customerName2","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={ov("signature1","12%")}>{form.signature1}</div><div className="sme-overlay" style={ov("date1","9%")}>{form.date1}</div>
                 <div className="sme-overlay" style={ov("salesName","36%")}>{form.salesName}</div><div className="sme-overlay" style={ov("signature2","12%")}>{form.signature2}</div><div className="sme-overlay" style={ov("date2","9%")}>{form.date2}</div>
