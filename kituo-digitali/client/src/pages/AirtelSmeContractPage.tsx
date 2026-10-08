@@ -61,6 +61,7 @@ const initialForm = (): FormState => ({
 export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
+  const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("black");
   const [layout, setLayout] = useState<Record<string, number>>({nameX:22.5,nameY:25,nameSize:3,phoneX:22.5,phoneY:28.9,phoneSize:3,tinX:76,tinY:28.9,tinSize:2.8,idTypeX:24,idTypeY:32.9,idTypeSize:2.8,idX:69,idY:32.9,idSize:2.4,streetX:28,streetY:37,streetSize:2.8,wardX:75,wardY:37,wardSize:2.8,districtX:31,districtY:41,districtSize:2.8,regionX:76,regionY:41,regionSize:2.8,normalX:5.8,normalY:56.2,normalSize:4.2,deviceX:29,deviceY:56,deviceSize:2.8,customerX:17,customerY:90,customerSize:2.6,sign1X:70,sign1Y:90,sign1Size:2.6,date1X:89,date1Y:90,date1Size:2.2,salesX:20,salesY:93.7,salesSize:2.6,sign2X:70,sign2Y:93.7,sign2Size:2.6,date2X:89,date2Y:93.7,date2Size:2.2});
   useEffect(() => { void getPublicSiteSettings().then((settings:any) => { const saved=settings?.templateLayouts?.airtelSme; if(saved) setLayout((cur)=>Object.fromEntries(Object.keys(cur).map(k=>[k,Number(saved[k] ?? cur[k])]))); }).catch(()=>undefined); }, []);
   const ov=(x:string,y:string,size:string,width?:string): React.CSSProperties => ({left:`${layout[x] ?? 0}%`,top:`${layout[y] ?? 0}%`,fontSize:`clamp(8px, ${Math.max(1.15, Number(layout[size] ?? 2.8) * 0.52)}vw, 15px)`,width, maxWidth:width, boxSizing:"border-box", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"});
@@ -94,13 +95,44 @@ export default function AirtelSmeContractPage() {
     return result;
   }, [form]);
 
-  const submitPrint = () => {
+  const downloadContract = () => {
     if (Object.keys(errors).length) {
-      setStatus("⚠️ Tafadhali rekebisha taarifa zilizo na makosa kabla ya kuchapisha.");
+      setStatus("⚠️ Tafadhali rekebisha taarifa zilizo na makosa kabla ya kupakua.");
       return;
     }
-    setStatus("✓ Fomu iko tayari kuchapishwa.");
-    window.print();
+    const ink = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
+    const esc = (v: string) => String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    const text = (value: string, x: number, y: number, size: number, width: number) =>
+      `<text x="${x}%" y="${y}%" font-family="Arial,Helvetica,sans-serif" font-size="${Math.max(10,size*4)}" font-weight="700" fill="${ink}" textLength="${Math.max(20,width*4)}" lengthAdjust="spacingAndGlyphs">${esc(value)}</text>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1414">
+      <image href="${imageSrc}" x="0" y="0" width="1000" height="1414" preserveAspectRatio="none"/>
+      ${text(form.customerName,layout.nameX,layout.nameY+4,layout.nameSize,73)}
+      ${text(form.phone,layout.phoneX,layout.phoneY+4,layout.phoneSize,39)}
+      ${text(form.tin,layout.tinX,layout.tinY+4,layout.tinSize,20)}
+      ${text(form.idType.toUpperCase(),layout.idTypeX,layout.idTypeY+4,layout.idTypeSize,28)}
+      ${text(form.idNumber,layout.idX,layout.idY+4,layout.idSize,27)}
+      ${text(form.street.toUpperCase(),layout.streetX,layout.streetY+4,layout.streetSize,36)}
+      ${text(form.ward.toUpperCase(),layout.wardX,layout.wardY+4,layout.wardSize,20)}
+      ${text(form.district.toUpperCase(),layout.districtX,layout.districtY+4,layout.districtSize,34)}
+      ${text(form.region.toUpperCase(),layout.regionX,layout.regionY+4,layout.regionSize,20)}
+      ${text(form.email,31,49,2.6,64)}
+      ${text(form.normalSme ? "☑" : "☐",layout.normalX,layout.normalY+4,layout.normalSize,8)}
+      ${text(form.devicePhone,layout.deviceX,layout.deviceY+4,layout.deviceSize,30)}
+      ${text(form.customerName2,layout.customerX,layout.customerY+4,layout.customerSize,38)}
+      ${text(form.signature1,layout.sign1X,layout.sign1Y+4,layout.sign1Size,12)}
+      ${text(form.date1,layout.date1X,layout.date1Y+4,layout.date1Size,9)}
+      ${text(form.salesName,layout.salesX,layout.salesY+4,layout.salesSize,36)}
+      ${text(form.signature2,layout.sign2X,layout.sign2Y+4,layout.sign2Size,12)}
+      ${text(form.date2,layout.date2X,layout.date2Y+4,layout.date2Size,9)}
+    </svg>`;
+    const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url;
+    a.download=`SME-AIRTEL-MKATABA-${form.customerName.replace(/\\s+/g,"-") || "mteja"}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus("✓ Mkataba umepakuliwa kwa ubora wa juu.");
   };
 
   const reset = () => {
@@ -143,14 +175,14 @@ export default function AirtelSmeContractPage() {
         .sme-check{display:flex;gap:10px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0 14px;font-size:13px}
         .sme-check input{width:20px;height:20px;accent-color:#e60012}
         .sme-error{display:block;color:#e60012;font-size:11px;margin-top:4px}
-        .sme-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+        .sme-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.sme-ink{margin-top:14px;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fafafa}.sme-ink-title{font-size:13px;font-weight:800;margin-bottom:8px}.sme-ink-options{display:flex;gap:8px;flex-wrap:wrap}.sme-ink-option{border:1px solid #ccc;background:#fff;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}.sme-ink-option.active{border-color:#e60012;box-shadow:0 0 0 2px #e6001220}
         .sme-button{border:0;border-radius:9px;padding:12px 15px;font-weight:800;cursor:pointer}.sme-primary{background:#e60012;color:#fff}.sme-dark{background:#202020;color:#fff}
         .sme-status{min-height:18px;margin-top:9px;font-size:12px}
         .sme-preview-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sme-preview-head h2{margin:0}.sme-preview-head span{font-size:12px;color:#666}
         .sme-preview{background:#444;border-radius:14px;padding:12px;overflow:auto}
         .sme-template{position:relative;width:min(100%,900px);margin:auto;line-height:1}
         .sme-template img{width:100%;height:auto;display:block;user-select:none}
-        .sme-overlay{position:absolute;font-family:Arial,Helvetica,sans-serif;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.05;min-width:0}
+        .sme-overlay{position:absolute;font-family:Arial,Helvetica,sans-serif;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.05;min-width:0}
         .sme-name{left:22.5%;top:25%;width:73%;font-size:15px}.sme-phone{left:22.5%;top:28.9%;width:39%;font-size:15px}.sme-tin{left:76%;top:28.9%;width:20%;font-size:14px}
         .sme-idtype{left:24%;top:32.9%;width:28%;font-size:14px}.sme-id{left:69%;top:32.9%;width:27%;font-size:12px}
         .sme-street{left:28%;top:37%;width:36%;font-size:14px}.sme-ward{left:75%;top:37%;width:20%;font-size:14px}
@@ -189,7 +221,7 @@ export default function AirtelSmeContractPage() {
             {field("Sales executive name", "salesName")}
             <div className="sme-row">{field("Signature 1", "signature1")}{field("Signature 2", "signature2")}</div>
             <div className="sme-row">{field("Date 1", "date1")}{field("Date 2", "date2")}</div>
-            <div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={submitPrint}>🖨 Print / Save PDF</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
+            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={downloadContract}>⬇ Download Mkataba</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
           </section>
 
@@ -198,10 +230,10 @@ export default function AirtelSmeContractPage() {
             <div className="sme-preview">
               <div className="sme-template">
                 <img src={imageSrc} alt="Airtel SME Contract Template" onError={() => setStatus("⚠️ contact.png haijapatikana. Iweke ndani ya client/public/contact.png.")} />
-                <div className="sme-overlay" style={ov("nameX","nameY","nameSize","73%")}>{form.customerName}</div><div className="sme-overlay" style={ov("phoneX","phoneY","phoneSize","39%")}>{form.phone}</div><div className="sme-overlay" style={ov("tinX","tinY","tinSize","20%")}>{form.tin}</div>
-                <div className="sme-overlay" style={ov("idTypeX","idTypeY","idTypeSize","28%")}>{form.idType.toUpperCase()}</div><div className="sme-overlay" style={ov("idX","idY","idSize","27%")}>{form.idNumber}</div>
-                <div className="sme-overlay" style={ov("streetX","streetY","streetSize","36%")}>{form.street.toUpperCase()}</div><div className="sme-overlay" style={ov("wardX","wardY","wardSize","20%")}>{form.ward.toUpperCase()}</div>
-                <div className="sme-overlay" style={ov("districtX","districtY","districtSize","34%")}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={ov("regionX","regionY","regionSize","20%")}>{form.region.toUpperCase()}</div><div className="sme-overlay sme-email">{form.email}</div>
+                <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.customerName}</div><div className="sme-overlay" style={{...ov("phoneX","phoneY","phoneSize","39%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div><div className="sme-overlay" style={{...ov("tinX","tinY","tinSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.tin}</div>
+                <div className="sme-overlay" style={{...ov("idTypeX","idTypeY","idTypeSize","28%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idType.toUpperCase()}</div><div className="sme-overlay" style={{...ov("idX","idY","idSize","27%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idNumber}</div>
+                <div className="sme-overlay" style={{...ov("streetX","streetY","streetSize","36%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.street.toUpperCase()}</div><div className="sme-overlay" style={{...ov("wardX","wardY","wardSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.ward.toUpperCase()}</div>
+                <div className="sme-overlay" style={{...ov("districtX","districtY","districtSize","34%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={{...ov("regionX","regionY","regionSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.region.toUpperCase()}</div><div className="sme-overlay sme-email" style={{color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email}</div>
 <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "☑" : "☐"}</div>
                 <div className="sme-overlay" style={ov("deviceX","deviceY","deviceSize","30%")}>{form.devicePhone}</div><div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div><div className="sme-overlay" style={ov("date1X","date1Y","date1Size","9%")}>{form.date1}</div>
