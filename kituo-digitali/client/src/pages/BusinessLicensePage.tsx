@@ -14,7 +14,6 @@ type FormState = {
   licenseType: "" | "NEW LICENCE" | "RENEWED LICENCE";
   principalBranch: "" | "PRINCIPAL" | "BRANCH";
   region: string;
-  district: string;
   ward: string;
   street: string;
   tin: string;
@@ -37,7 +36,6 @@ const initialForm: FormState = {
   licenseType: "NEW LICENCE",
   principalBranch: "PRINCIPAL",
   region: "",
-  district: "",
   ward: "",
   street: "",
   tin: "",
@@ -291,17 +289,6 @@ export default function BusinessLicensePage() {
                 {regions.map((region) => <option key={region} value={region}>{region}</option>)}
               </SelectField>
             </Field>
-            <Field label="Wilaya" english="District" required>
-              <SelectField
-                value={form.district}
-                onChange={(value) => set("district", value)}
-                placeholder={form.region ? "Chagua Wilaya" : "Chagua kwanza Mkoa"}
-              >
-                {form.region && Object.keys((locations.regions as any)[form.region]?.districts ?? {}).map((district) => (
-                  <option key={district} value={district}>{district}</option>
-                ))}
-              </SelectField>
-            </Field>
             <Field label="Kata" english="Ward" required><input value={form.ward} onChange={(event) => set("ward", titleCase(event.target.value))} /></Field>
             <Field label="Mtaa / Kijiji" english="Street / Village" required><input value={form.street} onChange={(event) => set("street", titleCase(event.target.value))} /></Field>
           </div>
@@ -320,7 +307,7 @@ export default function BusinessLicensePage() {
             <span className="license-number-field">B.L. NO. <b>{licenseNumber || (numberError ? "Haikupatikana" : isAuthenticated ? "Inatolewa na mfumo..." : "Itatolewa baada ya kuingia")}</b><button type="button" className="license-number-refresh" disabled={!isAuthenticated || serviceLocked || downloadBusy || submitted || numberPending || (!licenseNumber && !numberError)} onClick={refreshLicenseNumber} title="Badilisha tarakimu tano za mwisho za namba ya leseni"><RefreshCw size={13} /> {numberPending ? "Inatolewa..." : numberError ? "Jaribu tena" : "Badilisha namba"}</button><small>{submitted ? "READ ONLY — namba imefungwa kwenye leseni iliyotengenezwa" : "READ ONLY — badilisha kabla ya kutengeneza hati; hakuna tokeni inayokatwa kwa refresh"}</small></span>
             <span>Tarehe ya Kutolewa <b>{displayDate(issueDate)}</b></span>
             <span>Tarehe ya Kumalizika <b>{displayDate(expiryDate)}</b></span>
-            <span>Ofisi Inayotoa Leseni <b>{issuingOffice(form.district)}</b></span>
+            <span>Ofisi Inayotoa Leseni <b>{issuingOffice("")}</b></span>
           </div>
         </div>
 
