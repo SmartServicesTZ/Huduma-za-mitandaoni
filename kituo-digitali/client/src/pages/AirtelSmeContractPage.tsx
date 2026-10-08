@@ -90,14 +90,18 @@ export default function AirtelSmeContractPage() {
       const saved = settings?.templateLayouts?.airtelSme;
       if (!saved) return;
       setLayout((cur) => Object.fromEntries(Object.keys(cur).map((key) => {
-        const item = cur[key as keyof typeof cur];
+        const item = cur[key as keyof typeof cur] ?? SME_LAYOUT[key as keyof typeof SME_LAYOUT];
         return [key, { x: Number(saved[key + "X"] ?? item.x), y: Number(saved[key + "Y"] ?? item.y), size: Number(saved[key + "Size"] ?? item.size) }];
       })) as typeof SME_LAYOUT);
     }).catch(() => undefined);
   }, []);
   const ov = (key: keyof typeof SME_LAYOUT, width?: string): React.CSSProperties => {
-    const item = layout[key];
-    return { left: `${item.x}%`, top: `${item.y}%`, fontSize: `clamp(8px, ${Math.max(1.15, item.size * 0.52)}vw, 15px)`, width, maxWidth: width, boxSizing:"border-box", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" };
+    const item = layout[key] ?? SME_LAYOUT[key];
+    return {
+      left: `${item.x}%`, top: `${item.y}%`,
+      fontSize: `clamp(8px, ${Math.max(1.15, item.size * 0.52)}vw, 15px)`,
+      width, maxWidth: width, boxSizing:"border-box", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"
+    };
   };
 
   const update = (key: keyof FormState, value: string | boolean) => {
