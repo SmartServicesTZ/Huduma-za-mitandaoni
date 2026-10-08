@@ -48,6 +48,7 @@ jobs:
           mkdir -p android-app/app/src/main/res/mipmap-xhdpi
           mkdir -p android-app/app/src/main/res/mipmap-xxhdpi
           mkdir -p android-app/app/src/main/res/mipmap-xxxhdpi
+          mkdir -p android-app/app/src/main/res/values
 
           sudo apt-get update -qq
           sudo apt-get install -y -qq librsvg2-bin
