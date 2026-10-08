@@ -4,16 +4,16 @@
   "description": "Huduma za kidigitali, maombi na huduma za mtandaoni.",
   "lang": "sw",
   "dir": "ltr",
-  "start_url": "/Huduma-za-mitandaoni/?v=4",
+  "start_url": "/Huduma-za-mitandaoni/?v=5",
   "scope": "/Huduma-za-mitandaoni/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#06152d",
-  "theme_color": "#06152d",
+  "background_color": "#063b9f",
+  "theme_color": "#063b9f",
   "icons": [
     {
-      "src": "/Huduma-za-mitandaoni/pwa-icon.svg?v=4",
-      "sizes": "any",
+      "src": "/Huduma-za-mitandaoni/pwa-icon.svg?v=5",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
