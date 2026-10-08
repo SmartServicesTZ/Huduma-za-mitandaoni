@@ -83,11 +83,12 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
   const merged = new Map(serviceCatalog.map((service) => [service.slug, service]));
   configured.forEach((service) => {
     const fallback = defaults.get(service.slug);
-    // Preserve admin configuration, but restore newly added external-tool URLs
-    // when an older Firestore seed does not contain actionUrl yet.
+    // Ignore legacy Firestore-only services that are no longer in the public catalog.
+    if (!fallback) return;
+    // Preserve admin configuration while restoring defaults missing from older seeds.
     merged.set(service.slug, fallback?.actionUrl
       ? { ...fallback, ...service, kind: service.isLocked === true ? "locked" : fallback.kind, actionUrl: service.actionUrl || fallback.actionUrl, name: service.name || fallback.name, description: service.description || fallback.description, category: service.category || fallback.category }
-      : service);
+      : { ...fallback, ...service });
   });
   if (initialized) {
     const access = defaults.get("access-lipa-number");
