@@ -106,7 +106,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
     // Preserve admin configuration, but restore newly added external-tool URLs
     // when an older Firestore seed does not contain actionUrl yet.
     merged.set(service.slug, fallback?.actionUrl
-      ? { ...fallback, ...service, actionUrl: service.actionUrl || fallback.actionUrl, name: service.name || fallback.name, description: service.description || fallback.description, category: service.category || fallback.category }
+      ? { ...fallback, ...service, kind: service.isLocked === true ? "locked" : fallback.kind, actionUrl: service.actionUrl || fallback.actionUrl, name: service.name || fallback.name, description: service.description || fallback.description, category: service.category || fallback.category }
       : service);
   });
   if (initialized) {
