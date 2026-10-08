@@ -208,9 +208,9 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
 
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
     <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">WALLET YA TOKENI</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div><span className="token-live-pill">● LIVE</span></div>
-    <div className="token-card__meta"><span>Simu: <b>{profile?.phone ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "✓ VERIFIED" : "Inasubiri idhini"}</span></div>
+    <div className="token-card__meta"><span className="token-phone-line">{status === "approved" && <b className="verified-inline"><BadgeCheck size={15}/> Verified</b>}<span>Simu: <b>{profile?.phone ?? "—"}</b></span></span><span className={`verification verification--${status}`}>{status === "approved" ? "✓ VERIFIED" : "Inasubiri idhini"}</span></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
-    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}>+ ONGEZA TOKENI</button>
+    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Chagua aina ya tokeni unayotaka</small></span><ChevronRight size={18}/></button>
     {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
     {tokenChoiceOpen && <div className="token-choice-modal" role="dialog" aria-modal="true">
       <div className="token-choice-card">
