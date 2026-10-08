@@ -751,7 +751,8 @@ export function subscribeUserMessages(uid: string, callback: (rows: Array<Record
 export type ChatUser = { uid: string; name: string; phone: string; profileImageUrl?: string; verificationStatus?: "pending" | "approved" | "rejected" };
 export type ChatMessage = { id: string; senderId: string; senderName?: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; editedAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
 export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; profileImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
-export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; visibility: "private" | "public"; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };\nexport type ChatGroupJoinRequest = { id: string; groupId: string; userId: string; userName: string; userPhone: string; userImage?: string; status: "pending" | "approved" | "rejected"; createdAt?: unknown };
+export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; visibility: "private" | "public"; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };
+export type ChatGroupJoinRequest = { id: string; groupId: string; userId: string; userName: string; userPhone: string; userImage?: string; status: "pending" | "approved" | "rejected"; createdAt?: unknown };
 
 export async function findChatUser(phone: string) {
   return invokeWorker<ChatUser>("findChatUser", { phone });
