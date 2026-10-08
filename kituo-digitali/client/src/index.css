@@ -1445,9 +1445,13 @@ input[type="file"] {
 
 
 .top-quick-services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:7px 0 9px}
-.top-quick-service{min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid rgba(96,165,250,.18);border-radius:11px;background:linear-gradient(135deg,rgba(15,23,42,.9),rgba(30,41,59,.72));color:inherit;text-align:left;cursor:pointer}
-.top-quick-service__icon{width:27px;height:27px;flex:0 0 27px;display:grid;place-items:center;border-radius:8px;background:rgba(59,130,246,.12);color:#93c5fd}
+.top-quick-service{min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid rgba(59,130,246,.45);border-radius:11px;background:linear-gradient(135deg,#172554 0%,#1d4ed8 55%,#4f46e5 100%);color:#fff !important;text-align:left;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,.22)}
+.top-quick-service:first-child{background:linear-gradient(135deg,#4c1d95 0%,#6d28d9 55%,#2563eb 100%);border-color:rgba(167,139,250,.6)}
+.top-quick-service:last-child{background:linear-gradient(135deg,#064e3b 0%,#047857 55%,#0ea5e9 100%);border-color:rgba(52,211,153,.6)}
+.top-quick-service:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.top-quick-service__icon{width:27px;height:27px;flex:0 0 27px;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.18);color:#fff !important}
 .top-quick-service__text{min-width:0;display:flex;flex-direction:column;gap:1px;flex:1}
-.top-quick-service__text strong{font-size:10px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-quick-service__text small{font-size:8px;color:#94a3b8;font-weight:800}
+.top-quick-service__text strong{font-size:10px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff !important}
+.top-quick-service__text small{font-size:8px;color:rgba(255,255,255,.9) !important;font-weight:900}
+.top-quick-service>svg{color:#fff !important;flex:0 0 auto}
 @media(max-width:600px){.top-quick-services{gap:6px;margin:6px 0 8px}.top-quick-service{padding:6px 7px}.top-quick-service__icon{width:25px;height:25px;flex-basis:25px}.top-quick-service__text strong{font-size:9px}}
