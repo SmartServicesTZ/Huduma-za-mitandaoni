@@ -6,6 +6,7 @@ export type ServiceCatalogItem = {
   description: string;
   icon: string;
   tokenCost: number;
+  tokenType?: "nida" | "huduma";
   kind: ServiceKind;
   category: string;
   actionUrl?: string;
@@ -46,7 +47,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "HUDUMA ZA WAKALA"),
   paid("cheti-tin", "TIN CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("verify-tin", "VERIFY TIN", "Jaza na hakiki taarifa za TIN yako.", "badge-check", "HUDUMA ZA WAKALA"),
-  paid("nakala-nida", "NIDA SOFT COPY", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "HUDUMA ZA WAKALA"),
+  { ...paid("nakala-nida", "NIDA SOFT COPY", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "HUDUMA ZA WAKALA"), tokenType: "nida" },
   paid("mpiga-kura", "SOFT COPY YA MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "HUDUMA ZA WAKALA"),
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "HUDUMA ZA WAKALA"),
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "HUDUMA ZA WAKALA"),
