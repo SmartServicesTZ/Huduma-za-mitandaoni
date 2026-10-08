@@ -1242,3 +1242,12 @@ input[type="file"] {
   .hero-visual{display:none!important}
   .modern-hero h1{font-size:26px!important}
 }
+
+/* SMARTSERVICESTZ — WHATSAPP TOKEN TOP-UP */
+.token-add-button{width:100%;margin-top:12px;min-height:48px;font-weight:800;letter-spacing:.02em}
+.token-choice-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,8,23,.72);backdrop-filter:blur(8px)}
+.token-choice-card{width:min(440px,100%);background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(2,8,23,.3)}
+.token-choice-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}.token-choice-head h3{margin:4px 0 0;font-size:22px}.token-choice-head button{border:0;background:#eef2f7;border-radius:10px;width:36px;height:36px;font-size:24px;cursor:pointer}
+.token-choice-option{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:1px solid #dbe3ee;background:#f8fafc;border-radius:14px;padding:15px;margin:8px 0;cursor:pointer}.token-choice-option strong{font-size:14px}.token-choice-option span{font-size:13px;font-weight:700;color:#64748b}.token-choice-option.selected{border-color:#16a34a;background:#f0fdf4;box-shadow:0 0 0 2px rgba(22,163,74,.1)}
+.token-choice-summary{display:flex;justify-content:space-between;padding:13px 2px 15px;font-size:14px}.token-choice-card .button{width:100%;min-height:46px}
+@media(max-width:480px){.token-choice-modal{align-items:flex-end;padding:10px}.token-choice-card{border-radius:22px 22px 14px 14px;padding:17px}.token-choice-head h3{font-size:19px}}
