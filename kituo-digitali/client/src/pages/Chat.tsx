@@ -25,7 +25,10 @@ export default function ChatPage() {
   const [view, setView] = useState<"public" | "private" | "groups" | "moderation">("public");
   const [publicMessages, setPublicMessages] = useState<ChatMessage[]>([]);
   const [conversations, setConversations] = useState<PrivateConversation[]>([]);
-  const [groups, setGroups] = useState<ChatGroup[]>([]);\n  const [publicGroups, setPublicGroups] = useState<ChatGroup[]>([]);\n  const [groupJoinRequests, setGroupJoinRequests] = useState<ChatGroupJoinRequest[]>([]);\n  const [groupVisibility, setGroupVisibility] = useState<"private" | "public">("private");
+  const [groups, setGroups] = useState<ChatGroup[]>([]);
+  const [publicGroups, setPublicGroups] = useState<ChatGroup[]>([]);
+  const [groupJoinRequests, setGroupJoinRequests] = useState<ChatGroupJoinRequest[]>([]);
+  const [groupVisibility, setGroupVisibility] = useState<"private" | "public">("private");
   const [groupId, setGroupId] = useState("");
   const [groupName, setGroupName] = useState("");
   const [groupPhones, setGroupPhones] = useState("");
@@ -202,7 +205,8 @@ export default function ChatPage() {
   const createGroup = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!self) return;
-    const phones = groupPhones.split(/[,\n]+/).map((value) => value.trim()).filter(Boolean);
+    const phones = groupPhones.split(/[,
+]+/).map((value) => value.trim()).filter(Boolean);
     if (!groupName.trim() || !phones.length) { toast.error("Weka jina la group na angalau namba moja."); return; }
     try {
       const targets: ChatUser[] = [];
