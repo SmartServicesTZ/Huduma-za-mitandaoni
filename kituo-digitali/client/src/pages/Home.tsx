@@ -22,6 +22,7 @@ import AccessLipaNumberPage from "./AccessLipaNumberPage";
 import DynamicServicePage from "./DynamicServicePage";
 import ChatPage from "./Chat";
 import AccountSettingsPage from "./AccountPage";
+import { clearDownloadHistory, downloadFromHistory, getDownloadHistory, removeDownload, type DownloadHistoryItem } from "@/lib/downloadHistory";
 
 const appEnglish: Record<string, string> = {
   "Mwanzo":"Home","Huduma zote":"All services","Chat":"Chat","Tokeni":"Tokens","Historia":"History","Settings":"Settings","Paneli ya Admin":"Admin panel",
@@ -291,10 +292,62 @@ function TutorialsSection() {
 function HistoryPage() {
   const { firebaseUser } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
-  useEffect(() => { if (!firebaseUser) { setRows([]); return; } return subscribeToTokenHistory(firebaseUser.uid, setRows); }, [firebaseUser]);
-  return <main className="portal-main"><div className="page-heading"><div><span className="overline">Rekodi zako</span><h1>HISTORIA YA TOKENI</h1><p>Angalia tokeni zilizotumika, zilizoongezwa na salio lako.</p></div></div>{firebaseUser ? <><div className="history-table"><div className="history-head"><span>Tarehe</span><span>Huduma</span><span>Tokeni</span><span>Salio</span><span>Rejea</span></div>{rows.map((row) => <div className="history-row" key={row.reference ?? row.id}><span>{row.createdAt?.toDate ? row.createdAt.toDate().toLocaleString("sw-TZ") : "—"}</span><strong>{row.description ?? row.reason ?? row.serviceName ?? "Miamala ya tokeni"}</strong><span className={row.amount < 0 ? "amount-negative" : "amount-positive"}>{row.amount > 0 ? "+" : ""}{row.amount}</span><span>{row.balanceAfter}</span><code>{row.reference ?? row.id}</code></div>)}</div><Notice tone="info">Historia ya matumizi na ununuzi wa tokeni itaonekana hapa mara tu shughuli zitakapotokea.</Notice></> : <Notice tone="info">Ingia kwenye akaunti yako ili kuona historia yako ya tokeni.</Notice>}</main>;
-}
+  const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
 
+  const refreshDownloads = () => setDownloads(getDownloadHistory());
+
+  useEffect(() => {
+    if (!firebaseUser) { setRows([]); return; }
+    return subscribeToTokenHistory(firebaseUser.uid, setRows);
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    refreshDownloads();
+    const onChange = () => refreshDownloads();
+    window.addEventListener("smartservicestz-download-added", onChange);
+    window.addEventListener("smartservicestz-download-changed", onChange);
+    const timer = window.setInterval(refreshDownloads, 60 * 1000);
+    return () => {
+      window.removeEventListener("smartservicestz-download-added", onChange);
+      window.removeEventListener("smartservicestz-download-changed", onChange);
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const timeLeft = (expiresAt: number) => {
+    const hours = Math.max(0, Math.ceil((expiresAt - Date.now()) / (60 * 60 * 1000)));
+    return hours <= 1 ? "Inaisha ndani ya saa 1" : `Inaisha ndani ya saa ${hours}`;
+  };
+
+  return <main className="portal-main">
+    <div className="page-heading">
+      <div><span className="overline">Rekodi zako</span><h1>HISTORIA</h1><p>Tokeni zako na vitu ulivyopakua vinaonekana hapa.</p></div>
+    </div>
+
+    <section className="account-panel" style={{marginBottom:18}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <div><span className="overline">DOWNLOADS</span><h2 style={{margin:"4px 0"}}>VITU NILIVYOPAKUA</h2><p style={{margin:0,color:"#64748b"}}>Rekodi huhifadhiwa kwa saa 24 tu, kisha huondolewa moja kwa moja.</p></div>
+        {downloads.length > 0 && <button type="button" className="button button--small" onClick={() => { clearDownloadHistory(); refreshDownloads(); }}>Futa zote</button>}
+      </div>
+      <div style={{display:"grid",gap:10,marginTop:16}}>
+        {downloads.length === 0 ? <div className="notice notice--info"><FileBadge size={17}/><span>Hakuna kitu ulichopakua ndani ya saa 24 zilizopita.</span></div> :
+          downloads.map((item) => <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"12px 14px",border:"1px solid #e2e8f0",borderRadius:12,background:"#f8fafc"}}>
+            <div style={{minWidth:0}}><strong style={{display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</strong><small style={{color:"#64748b"}}>{item.type} • {new Date(item.downloadedAt).toLocaleString("sw-TZ")} • {timeLeft(item.expiresAt)}</small></div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {item.dataUrl && <button type="button" className="button button--green button--small" onClick={() => downloadFromHistory(item)}>Download tena</button>}
+              <button type="button" className="button button--small" onClick={() => { removeDownload(item.id); refreshDownloads(); }}>×</button>
+            </div>
+          </div>)
+        }
+      </div>
+    </section>
+
+    <section>
+      <div className="page-heading" style={{marginBottom:10}}><div><span className="overline">Tokeni</span><h2>HISTORIA YA TOKENI</h2></div></div>
+      {firebaseUser ? <><div className="history-table"><div className="history-head"><span>Tarehe</span><span>Huduma</span><span>Tokeni</span><span>Salio</span><span>Rejea</span></div>{rows.map((row) => <div className="history-row" key={row.reference ?? row.id}><span>{row.createdAt?.toDate ? row.createdAt.toDate().toLocaleString("sw-TZ") : "—"}</span><strong>{row.description ?? row.reason ?? row.serviceName ?? "Miamala ya tokeni"}</strong><span className={row.amount < 0 ? "amount-negative" : "amount-positive"}>{row.amount > 0 ? "+" : ""}{row.amount}</span><span>{row.balanceAfter}</span><code>{row.reference ?? row.id}</code></div>)}</div><Notice tone="info">Historia ya matumizi na ununuzi wa tokeni itaonekana hapa mara tu shughuli zitakapotokea.</Notice></> : <Notice tone="info">Ingia kwenye akaunti yako ili kuona historia yako ya tokeni.</Notice>}
+    </section>
+  </main>;
+}
 function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
 
