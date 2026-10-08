@@ -44,7 +44,7 @@ async function signingKey() {
   return pending;
 }
 
-async function signStorageUrl(action: "read" | "write", objectPath: string, expiresAt: number) {
+export async function signStorageUrl(action: "read" | "write", objectPath: string, expiresAt: number) {
   const env = getWorkerEnv();
   const bucket = bucketName();
   const { clientEmail } = getServiceAccountCredentials();
