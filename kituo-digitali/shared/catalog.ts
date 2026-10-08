@@ -14,6 +14,7 @@ export type ServiceCatalogItem = {
   active?: boolean;
   isVisible?: boolean;
   isLocked?: boolean;
+  maintenanceMessage?: string;
 };
 
 export type ActivityItem = {
