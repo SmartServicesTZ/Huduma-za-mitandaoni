@@ -85,6 +85,21 @@ service firebase.storage {
       allow delete: if (accountMay('chat') && isMember() && request.auth.uid == userId) || canModerateChat();
     }
 
+    match /chatGroupFiles/{groupId}/{userId}/{fileName} {
+      function isGroupMember() {
+        return request.auth != null
+          && firestore.exists(/databases/(default)/documents/chatGroups/$(groupId))
+          && request.auth.uid in firestore.get(/databases/(default)/documents/chatGroups/$(groupId)).data.memberIds;
+      }
+      allow read: if accountMayRead() && (isGroupMember() || canModerateChat());
+      allow write: if accountMay('chat')
+        && isGroupMember()
+        && request.auth.uid == userId
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
+      allow delete: if (accountMay('chat') && isGroupMember() && request.auth.uid == userId) || canModerateChat();
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }
