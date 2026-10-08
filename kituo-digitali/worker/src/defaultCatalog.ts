@@ -7,7 +7,7 @@ const free = (slug: string, name: string, description: string, icon: string, cat
 const locked = (slug: string, name: string, description: string, icon: string, order: number): DefaultService => ({ ...paid(slug, name, description, icon, "Huduma zilizofungwa", order), tokenCost: 0, isLocked: true, isFree: false });
 
 export const defaultServices: DefaultService[] = [
-  paid("cheti-tin", "CHETI CHA TIN", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "Huduma kuu", 0),
+  paid("cheti-tin", "TIN NUMBER CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "Huduma kuu", 0),
   paid("thibitisha-tin", "THIBITISHA TIN", "Thibitisha taarifa za TIN yako.", "badge-check", "Huduma kuu", 1),
   paid("nakala-nida", "NAKALA LAINI YA NIDA", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "Huduma kuu", 2),
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "Huduma kuu", 3),
