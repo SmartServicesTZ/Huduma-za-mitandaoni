@@ -1149,7 +1149,6 @@ function normalizeLicenseRequest(data: LicenseRequest) {
     licenseType: data.licenseType === "NEW LICENCE" || data.licenseType === "RENEWED LICENCE" ? data.licenseType : "",
     principalBranch: data.principalBranch === "PRINCIPAL" || data.principalBranch === "BRANCH" ? data.principalBranch : "",
     region: titleCaseLocation(cleanText(data.region, "Mkoa", 80)),
-    district: titleCaseLocation(cleanText(data.district ?? "", "Wilaya", 100)),
     ward: titleCaseLocation(cleanText(data.ward, "Kata", 100)),
     street: titleCaseLocation(cleanText(data.street, "Mtaa / Kijiji", 140)),
     tin: cleanText(data.tin, "TIN", 40).toUpperCase(),
@@ -1158,7 +1157,6 @@ function normalizeLicenseRequest(data: LicenseRequest) {
   if (!form.licenseType) throw new ApiError("invalid-argument", "Chagua aina ya leseni.");
   if (!form.principalBranch) throw new ApiError("invalid-argument", "Chagua Principal au Branch.");
   if (!form.region) throw new ApiError("invalid-argument", "Chagua Mkoa.");
-  if (!form.district) throw new ApiError("invalid-argument", "Chagua Wilaya.");
   if (form.businessType === "OTHER" && !form.otherBusinessType) throw new ApiError("invalid-argument", "Eleza aina ya biashara.");
   if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin)) throw new ApiError("invalid-argument", "Format ya TIN si sahihi. Tumia mfumo 123-123-123.");
   if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0 || form.licenseFee > 100000000) throw new ApiError("invalid-argument", "Malipo ya leseni si sahihi.");
@@ -1278,7 +1276,7 @@ export const generateBusinessLicense = callable(async (request) => {
       applicationId, requestId, userId: uid, templateId: "business-license-v1", serviceId: "leseni-biashara", licenseForm: form,
       applicantData: { applicantName: form.applicantName },
       businessData: { businessType: form.businessType, otherBusinessType: form.otherBusinessType, tin: form.tin },
-      locationData: { region: form.region, district: form.district, ward: form.ward, street: form.street },
+      locationData: { region: form.region, ward: form.ward, street: form.street },
       licenseData: { licenseType: form.licenseType, principalBranch: form.principalBranch, licenseNumber, issuingOffice: "DAR ES SALAAM CITY COUNCIL", dateOfIssue: issueDate, expiryDate, licenseFee: form.licenseFee },
       storagePath: null, documentDelivery: "browser-download", status: "PROCESSING", updatedAt: FieldValue.serverTimestamp(),
       ...(existing?.createdAt ? {} : { createdAt: FieldValue.serverTimestamp() }),
