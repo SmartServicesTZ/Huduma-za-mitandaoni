@@ -31,3 +31,12 @@
  .chat-workspace{min-height:calc(100dvh - 210px)}
  .chat-main{min-height:540px}
 }
+
+/* SMARTSERVICESTZ CHAT PUBLIC GROUPS */
+.chat-group-tools{display:grid!important;gap:6px}
+.chat-group-tools small{color:#81908a;font-size:9px;line-height:1.4}
+.chat-join-pill{padding:5px 7px;border-radius:999px;background:#e9f4ff;color:#1769aa;font-size:8px;font-weight:900;cursor:pointer}
+.chat-group-link{display:inline-flex;align-items:center;gap:4px;color:#16784a;font-size:9px;font-weight:800;cursor:pointer}
+.chat-join-requests{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.chat-join-requests strong{font-size:9px;color:#805b19}
+.chat-join-requests button{border:1px solid #d8e9df;background:#f5fbf7;color:#176a40;border-radius:7px;padding:5px 7px;font-size:8px;font-weight:800;cursor:pointer}
