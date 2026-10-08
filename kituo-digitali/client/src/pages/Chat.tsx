@@ -118,7 +118,7 @@ export default function ChatPage() {
     return () => { stopMessages(); stopTyping(); stopPresence(); };
   }, [firebaseUser, roomId, groupId, otherUid, view]);
   useEffect(() => {
-    if (!firebaseUser || view === "moderation") return;
+    if (!firebaseUser || view === "moderation" || view === "groups") return;
     const stops = conversations.map((conversation) => subscribePrivateChat(conversation.id, (rows) => {
       const count = rows.filter((message) => message.senderId !== firebaseUser.uid && !message.readBy?.includes(firebaseUser.uid)).length;
       setUnread((previous) => ({ ...previous, [conversation.id]: count }));
@@ -284,10 +284,10 @@ export default function ChatPage() {
             const senderName = own ? "Wewe" : (view === "moderation" ? currentConversation?.names?.[message.senderId] : view === "private" ? currentConversation?.names?.[message.senderId] : view === "groups" ? currentGroup?.memberNames?.[message.senderId] : message.senderName) ?? "Mwanachama";
             const isImage = message.fileType?.startsWith("image/");
             const isAudio = message.fileType?.startsWith("audio/");
-            const canEdit = own && Boolean(message.text) && view !== "moderation";
-            const canDelete = own || (view === "moderation" && canModerate) || (view === "public" && canModerate);
+            const canEdit = own && Boolean(message.text) && view !== "moderation" && view !== "groups";
+            const canDelete = view !== "groups" && (own || (view === "moderation" && canModerate) || (view === "public" && canModerate));
             return <article key={message.id} className={`chat-message-row ${own ? "own" : ""}`}>
-              <span className="chat-avatar chat-message-avatar">{initials(senderName)}</span>
+              <span className="chat-avatar chat-message-avatar">{(() => { const imageUrl = view === "groups" ? currentGroup?.memberImages?.[message.senderId] : view === "private" || view === "moderation" ? currentConversation?.profileImages?.[message.senderId] : ""; return imageUrl ? <img src={imageUrl} alt="" /> : initials(senderName); })()}</span>
               <div className="chat-bubble-wrap"><small className="chat-sender">{senderName}</small><div className={`chat-bubble ${own ? "own" : ""}`}>
                 {message.replyTo && <div className="chat-reply-preview">↪ {message.replyTo.text}</div>}
                 {editingId === message.id ? <div className="chat-edit-box"><textarea value={editDraft} onChange={(event) => setEditDraft(event.target.value)} maxLength={5000}/><div><button onClick={() => { setEditingId(""); setEditDraft(""); }}>Ghairi</button><button className="primary" onClick={() => void saveEdit(message)}>Hifadhi</button></div></div> : message.text && <p>{message.text}</p>}
