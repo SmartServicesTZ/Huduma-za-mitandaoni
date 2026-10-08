@@ -4,6 +4,7 @@ import {
   adminDelete,
   adminWrite,
   adjustTokens,
+  claimDailyTokenBonus,
   changeOwnPassword,
   claimRegistrationPhone,
   completeBusinessLicense,
@@ -40,7 +41,7 @@ import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 interface Env extends WorkerEnv {}
 
 const callableRoutes: Record<string, CallableRoute> = {
-  adminDelete, adminWrite, adjustTokens, changeOwnPassword, claimRegistrationPhone, completeBusinessLicense, consumeTokens,
+  adminDelete, adminWrite, adjustTokens, claimDailyTokenBonus, changeOwnPassword, claimRegistrationPhone, completeBusinessLicense, consumeTokens,
   createServiceApplication, createLipaDocumentUploadUrl, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
