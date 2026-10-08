@@ -622,16 +622,19 @@ export async function uploadLipaDocument(uid: string, applicationId: string, fie
   const normalizedType = String(file.type || "").toLowerCase();
   if (!accept.includes(normalizedType)) throw new Error("Picha lazima iwe JPG, PNG au WebP.");
   const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 10);
-  if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi ${sizeLimit} MB.`);
+  if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi MB ${sizeLimit}.`);
   const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
-  const objectRef = storageRef(firebaseStorage, `lipaUploads/${uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`);
+  const callable = createWorkerCall("createLipaDocumentUploadUrl");
   try {
-    await uploadBytes(objectRef, file, { contentType: normalizedType, cacheControl: "private,no-store,max-age=0" });
+    const result = (await callable({ applicationId, fieldName, fileName: safeName, contentType: normalizedType })).data as { url?: string; path?: string };
+    if (!result?.url || !result?.path) throw new Error("Kiungo salama cha kupakia picha hakikupatikana.");
+    const response = await fetch(result.url, { method: "PUT", headers: { "Content-Type": normalizedType }, body: file });
+    if (!response.ok) throw new Error(`Server imekataa picha (HTTP ${response.status}).`);
+    return result.path;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Imeshindikana kupakia picha.";
-    throw new Error(`Imeshindikana kupakia ${file.name}. Hakikisha umeingia vizuri, picha ni JPG/PNG/WebP na haizidi MB ${sizeLimit}. ${message}`);
+    throw new Error(`Imeshindikana kupakia ${file.name}. Hakikisha umeingia, picha ni JPG/PNG/WebP na haizidi MB ${sizeLimit}. ${message}`);
   }
-  return objectRef.fullPath;
 }
 
 export async function removeLipaUpload(storagePath: string) {
