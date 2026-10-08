@@ -266,7 +266,7 @@ function SpecialSection() {
     if (item.action === "whatsapp") { window.open(whatsappUrl, "_blank", "noopener,noreferrer"); return; }
     toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => window.open(whatsappUrl, "_blank") } });
   };
-  return <section className="portal-section"><div className="section-title"><div><span className="overline">Ofa na jumuiya</span><h2>HUDUMA MAALUM</h2></div></div><div className="special-grid">{specialServices.map((item) => <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : item.action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>)}</div></section>;
+  return <section className="portal-section"><div className="section-title"><div><span className="overline">Ofa na jumuiya</span><h2>HUDUMA ZINGINE</h2></div></div><div className="special-grid">{specialServices.map((item) => <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : item.action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>)}</div></section>;
 }
 
 function TutorialsSection() {
@@ -312,14 +312,14 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   const lower = search.toLowerCase();
   const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))].slice(0, 8);
   const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
-  const main = matches.filter((service) => service.kind !== "locked" && (service.category === "Huduma kuu" || service.category === "Huduma za bure"));
+  const main = matches.filter((service) => service.kind !== "locked" && service.category === "HUDUMA ZA WAKALA");
   const locked = matches.filter((service) => service.kind === "locked");
-  const tools = matches.filter((service) => service.kind !== "locked" && service.category === "Zana za ziada");
+  const other = matches.filter((service) => service.kind !== "locked" && service.category === "HUDUMA ZINGINE");
   const sections: Record<HomepageSectionId, React.ReactNode> = {
-    services: <ServiceGrid title="HUDUMA ZOTE" services={main} onUse={onUse} />,
+    services: <ServiceGrid title="HUDUMA ZA WAKALA" services={main} onUse={onUse} />,
     locked: <ServiceGrid title="HUDUMA ZILIZOFUNGWA" services={locked} onUse={onUse} />,
     special: <SpecialSection />,
-    tools: <ServiceGrid title="ZANA ZA ZIADA" services={tools} onUse={onUse} />,
+    tools: <><ServiceGrid title="HUDUMA ZINGINE" services={other} onUse={onUse} /><SpecialSection /></>,
     tutorials: <TutorialsSection />,
   };
   const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
@@ -331,6 +331,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     {layout.showHero && <div className="modern-hero"><div className="modern-hero-copy"><span className="hero-badge"><Sparkles size={13}/> SMARTSERVICESTZ • DIGITAL SERVICE HUB</span><h1>Huduma zako.<br/><em>Kwa urahisi.</em></h1><p>Fomu, maombi, zana na huduma za kidigitali — zimepangwa kwa urahisi, kasi na usalama.</p><div className="hero-actions"><Link href="/services" className="button button--green"><Zap size={16}/> Anza kutumia</Link><Link href="/account" className="hero-link">Akaunti yangu <ChevronRight size={15}/></Link></div><div className="hero-trust-row" aria-label="Vipengele muhimu"><span><ShieldCheck size={13}/> Salama</span><span><Zap size={13}/> 24/7</span><span><Sparkles size={13}/> Rahisi kutumia</span></div></div><div className="hero-visual"><div className="hero-orbit"><div className="hero-orbit-core"><span>SS</span><small>SMART</small></div><i></i><i></i><i></i></div><div className="hero-floating hero-floating--top"><strong>{displayedServices.length}</strong><small>HUDUMA</small></div><div className="hero-floating hero-floating--bottom"><ShieldCheck size={14}/> SALAMA</div></div></div>}
     {announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}
     <TokenCard />
+    <button type="button" className="quick-nida-search" onClick={() => onUse(displayedServices.find((item) => item.slug === "utafutaji-nida") ?? { slug: "utafutaji-nida", name: "TAFUTA NIDA", description: "Tafuta taarifa za NIDA bila tokeni.", icon: "search", tokenCost: 0, kind: "free", category: "HUDUMA ZA WAKALA" })}><span className="quick-nida-search__icon"><Search size={20} /></span><span><strong>TAFUTA NIDA</strong><small>Tafuta NIDA haraka bila tokeni</small></span><ChevronRight size={18} /></button>
     <section className="service-discovery"><div><span className="overline">SMART SERVICES</span><h2>Chagua huduma</h2><p>Anza hapa — huduma zako zote sehemu moja.</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
     {lockedCount > 0 && search === "" ? <div className="portal-mini-note"><LockKeyhole size={15}/><span>Huduma {lockedCount} zinasubiri kufunguliwa na admin.</span></div> : null}{matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
