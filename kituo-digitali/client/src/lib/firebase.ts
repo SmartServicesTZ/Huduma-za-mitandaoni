@@ -132,6 +132,7 @@ export type FirebaseProfile = {
   restrictionUpdatedBy?: string;
   restrictionUpdatedAt?: unknown;
   language?: "sw" | "en";
+  settings?: { theme?: "system" | "light" | "dark"; accent?: "green" | "blue" | "purple"; compactMode?: boolean; showBalance?: boolean; notifications?: boolean; reduceMotion?: boolean };
   createdAt?: unknown;
 };
 
@@ -747,9 +748,10 @@ export function subscribeUserMessages(uid: string, callback: (rows: Array<Record
   return () => { unsubscribePersonal(); unsubscribeBroadcast(); };
 }
 
-export type ChatUser = { uid: string; name: string; phone: string };
+export type ChatUser = { uid: string; name: string; phone: string; profileImageUrl?: string; verificationStatus?: "pending" | "approved" | "rejected" };
 export type ChatMessage = { id: string; senderId: string; senderName?: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; editedAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
-export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
+export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; profileImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
+export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };
 
 export async function findChatUser(phone: string) {
   return invokeWorker<ChatUser>("findChatUser", { phone });
@@ -763,6 +765,7 @@ export async function openPrivateConversation(current: ChatUser, other: ChatUser
     participants,
     names: { [current.uid]: current.name, [other.uid]: other.name },
     phones: { [current.uid]: current.phone, [other.uid]: other.phone },
+    profileImages: { [current.uid]: current.profileImageUrl ?? "", [other.uid]: other.profileImageUrl ?? "" },
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(), lastMessage: "",
   });
   return id;
@@ -787,6 +790,37 @@ export function subscribeAllConversations(callback: (rows: PrivateConversation[]
   return onSnapshot(query(collection(firestore, "conversations"), orderBy("updatedAt", "desc")), (snapshot) => {
     callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as PrivateConversation)));
   }, onError);
+}
+export function subscribeChatGroups(uid: string, callback: (rows: ChatGroup[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(query(collection(firestore, "chatGroups"), where("memberIds", "array-contains", uid)), (snapshot) => {
+    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroup));
+    rows.sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
+    callback(rows);
+  }, onError);
+}
+export async function createChatGroup(current: ChatUser, members: ChatUser[], name: string, description = "") {
+  const cleanName = name.trim().slice(0, 80);
+  const unique = [current, ...members].filter((item, index, all) => all.findIndex((candidate) => candidate.uid === item.uid) === index);
+  if (!cleanName) throw new Error("Weka jina la group.");
+  if (unique.length < 2) throw new Error("Ongeza angalau mtu mmoja kwenye group.");
+  if (unique.length > 50) throw new Error("Group linaweza kuwa na hadi watu 50.");
+  const groupRef = doc(collection(firestore, "chatGroups"));
+  const memberIds = unique.map((item) => item.uid).sort();
+  const memberNames = Object.fromEntries(unique.map((item) => [item.uid, item.name]));
+  const memberPhones = Object.fromEntries(unique.map((item) => [item.uid, item.phone]));
+  const memberImages = Object.fromEntries(unique.map((item) => [item.uid, item.profileImageUrl ?? ""]));
+  await setDoc(groupRef, { name: cleanName, description: description.trim().slice(0, 240), ownerId: current.uid, memberIds, memberNames, memberPhones, memberImages, lastMessage: "", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  return groupRef.id;
+}
+export function subscribeGroupChat(groupId: string, callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
+  return subscribeChatRows(collection(firestore, "chatGroups", groupId, "messages"), callback, onError);
+}
+export async function sendGroupChatMessage(groupId: string, senderId: string, text: string, replyTo?: ChatMessage, attachment?: { filePath: string; fileName: string; fileType: string }, senderName?: string) {
+  const content = text.trim();
+  if (!content && !attachment) throw new Error("Andika ujumbe au chagua faili.");
+  const message = { senderId, ...(senderName ? { senderName: senderName.slice(0, 80) } : {}), ...(content ? { text: content } : {}), ...(attachment ?? {}), ...(replyTo ? { replyTo: { id: replyTo.id, text: String(replyTo.text ?? replyTo.fileName ?? "Kiambatisho"), senderId: replyTo.senderId } } : {}), deliveredTo: [senderId], readBy: [senderId], createdAt: serverTimestamp() };
+  await addDoc(collection(firestore, "chatGroups", groupId, "messages"), message);
+  await updateDoc(doc(firestore, "chatGroups", groupId), { lastMessage: content || attachment?.fileName || "Kiambatisho", updatedAt: serverTimestamp() });
 }
 export function subscribePrivateChat(roomId: string, callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
   return subscribeChatRows(collection(firestore, "conversations", roomId, "messages"), callback, onError);
