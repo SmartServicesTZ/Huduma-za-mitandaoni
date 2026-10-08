@@ -14,7 +14,7 @@ export default function AccountPage() {
   const [newPassword, setNewPassword] = useState("");
   const [imageBusy, setImageBusy] = useState(false);
   const [profileBusy, setProfileBusy] = useState(false);
-  const [notifications, setNotifications] = useState(true); const [compactMode, setCompactMode] = useState(false); const [showBalance, setShowBalance] = useState(true); const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
+  const [notifications, setNotifications] = useState(true); const [compactMode, setCompactMode] = useState(false); const [showBalance, setShowBalance] = useState(true); const [theme, setTheme] = useState<"system" | "light" | "dark">("dark"); const [accent, setAccent] = useState<"green" | "blue" | "purple">("green"); const [reduceMotion, setReduceMotion] = useState(false); const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -22,6 +22,12 @@ export default function AccountPage() {
     setLastName(profile.lastName ?? "");
     setBio(profile.bio ?? "");
     setLanguage(profile.language ?? "sw");
+    setNotifications(profile.settings?.notifications !== false);
+    setCompactMode(profile.settings?.compactMode === true);
+    setShowBalance(profile.settings?.showBalance !== false);
+    setTheme(profile.settings?.theme ?? "dark");
+    setAccent(profile.settings?.accent ?? "green");
+    setReduceMotion(profile.settings?.reduceMotion === true);
   }, [profile?.uid, profile?.firstName, profile?.lastName, profile?.bio, profile?.language]);
   useEffect(() => {
     if (!firebaseUser) { setMessages([]); return; }
@@ -49,6 +55,13 @@ export default function AccountPage() {
     } catch { toast.error("Imeshindikana kuhifadhi wasifu. Jaribu tena."); }
     finally { setProfileBusy(false); }
   };
+  const saveSetting = async (patch: Record<string, unknown>) => {
+    if (!profile) return;
+    try {
+      await saveProfile({ settings: { ...(profile.settings ?? {}), notifications, compactMode, showBalance, theme, accent, reduceMotion, ...patch } } as any);
+      toast.success("Setting imehifadhiwa.");
+    } catch { toast.error("Imeshindikana kuhifadhi setting."); }
+  };
   const saveNewPassword = async () => {
     if (!firebaseUser || newPassword.length < 6) { toast.error("Password iwe na angalau herufi 6."); return; }
     try { await updatePassword(firebaseUser, newPassword); setNewPassword(""); toast.success("Password imebadilishwa kwa usalama."); }
@@ -59,11 +72,11 @@ export default function AccountPage() {
   if (!isAuthenticated || !firebaseUser) return <main className="portal-main"><div className="page-heading"><div><span className="overline">Wasifu na usalama</span><h1>Akaunti yangu</h1><p>Ingia ili kuona taarifa za akaunti yako binafsi.</p></div></div><section className="profile-login-card"><span className="profile-icon"><UserRound size={22}/></span><strong>Akaunti yako iko tayari</strong><p>Tumia kitufe cha Ingia / Jisajili juu ili kufungua wasifu wako.</p><Link className="button button--green" href="/">Rudi mwanzo</Link></section></main>;
 
   return <main className="portal-main profile-page">
-    <header className="page-heading profile-page-heading"><div><span className="overline">WASIFU NA USALAMA</span><h1>Akaunti yangu</h1><p>Simamia taarifa zako, picha ya wasifu na mipangilio ya akaunti.</p></div><span className="profile-secure-tag"><ShieldCheck size={15}/> Firebase Auth salama</span></header>
+    <header className="page-heading profile-page-heading"><div><span className="overline">SETTINGS</span><h1>Settings za App</h1><p>Akaunti yako, wasifu, usalama na mipangilio yote sehemu moja.</p></div><span className="profile-secure-tag"><ShieldCheck size={15}/> Firebase Auth salama</span></header>
     <div className="profile-layout">
       <section className="profile-main-card">
-        <div className="profile-card-heading"><div><span className="profile-icon"><UserRound size={20}/></span><div><h2>Wasifu wangu</h2><p>Simu yako ndiyo utambulisho wa akaunti; haiwezi kubadilishwa hapa.</p></div></div></div>
-        <div className="profile-summary"><div className="profile-avatar">{profile?.profileImageUrl ? <img src={profile.profileImageUrl} alt="Picha ya wasifu"/> : <span>{(user?.name ?? "M").slice(0, 1).toUpperCase()}</span>}</div><div className="profile-summary-copy"><strong>{profile?.name ?? user?.name ?? "Mwanachama"} {profile?.verificationStatus === "approved" && <BadgeCheck size={16}/>}</strong><span>Namba iliyosajiliwa: <b>{profile?.phone ?? "—"}</b></span><label className="profile-image-picker"><Camera size={15}/>{imageBusy ? "Inapakia picha…" : "Badilisha picha"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseProfileImage} disabled={imageBusy || !profile}/></label></div></div>
+        <div className="profile-card-heading"><div><span className="profile-icon"><UserRound size={20}/></span><div><h2>Account / Wasifu wangu</h2><p>Simu yako ndiyo utambulisho wa akaunti; haiwezi kubadilishwa hapa.</p></div></div></div>
+        <div className="profile-summary"><div className="profile-avatar">{profile?.profileImageUrl ? <img src={profile.profileImageUrl} alt="Picha ya wasifu"/> : <span>{(user?.name ?? "M").slice(0, 1).toUpperCase()}</span>}</div><div className="profile-summary-copy"><strong>{profile?.name ?? user?.name ?? "Mwanachama"} {profile?.verificationStatus === "approved" && <BadgeCheck size={16}/>}</strong><span>Namba iliyosajiliwa: <b>{profile?.phone ?? "—"}</b></span>{profile?.verificationStatus === "approved" ? <span className="profile-verified-badge"><BadgeCheck size={15}/> Verified</span> : <span className="profile-unverified-badge">Verification pending</span>}<label className="profile-image-picker"><Camera size={15}/>{imageBusy ? "Inapakia picha…" : "Badilisha picha"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseProfileImage} disabled={imageBusy || !profile}/></label></div></div>
         <form onSubmit={save} className="profile-form">
           <div className="profile-field-grid"><label>Jina la kwanza<input autoComplete="given-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} maxLength={60} disabled={!profile || profileBusy}/></label><label>Jina la mwisho<input autoComplete="family-name" value={lastName} onChange={(event) => setLastName(event.target.value)} maxLength={60} disabled={!profile || profileBusy}/></label></div>
           <label className="profile-field">Namba ya simu<input type="tel" value={profile?.phone ?? ""} readOnly aria-readonly="true" disabled={!profile}/><small>Inatumika kuingia na haiwezi kubadilishwa ili kuzuia kupoteza utambulisho wa akaunti.</small></label>
@@ -79,7 +92,17 @@ export default function AccountPage() {
         <section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Globe2 size={18}/></span><div><h3>Akaunti</h3><p>Hali na salio lako la sasa.</p></div></div><div className="profile-stat-row"><span>Salio la tokeni</span><strong>{showBalance ? (profile?.tokenBalance ?? 0) : "•••"}</strong></div><div className="profile-stat-row"><span>Uthibitisho</span><strong>{profile?.verificationStatus === "approved" ? "Imeidhinishwa" : "Inasubiri"}</strong></div><Link className="profile-side-link" href="/tokens">Angalia maelezo ya tokeni</Link></section>
         <section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><LockKeyhole size={18}/></span><div><h3>Badilisha password</h3><p>Password huenda Firebase Authentication pekee.</p></div></div><label className="profile-field">Password mpya<input type="password" autoComplete="new-password" placeholder="Angalau herufi 6" value={newPassword} onChange={(event) => setNewPassword(event.target.value)}/></label><button className="profile-secondary-button" type="button" onClick={() => void saveNewPassword()}>Hifadhi password mpya</button></section>
         <section className="profile-side-card profile-notifications"><div className="profile-side-title"><span className="profile-icon"><ImagePlus size={18}/></span><div><h3>Ujumbe na taarifa</h3><p>Updates za akaunti na maombi yako.</p></div></div>{messages.length ? messages.slice(0, 4).map((item) => <article className="account-notification" key={item.id}><strong>{String(item.subject ?? "Taarifa")}</strong><p>{String(item.body ?? "")}</p><small>{String(item.createdAt ?? "")}</small></article>) : <p className="profile-muted">Bado hakuna taarifa mpya.</p>}<Link className="profile-side-link" href="/service/pata-lipa-namba">Maombi ya Lipa Namba</Link></section>
-        <section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><SlidersHorizontal size={18}/></span><div><h3>Settings za matumizi</h3><p>Chagua jinsi unavyotaka kutumia SmartServicesTZ.</p></div></div><div className="profile-setting-row"><span><Bell size={16}/> Arifa za akaunti</span><button type="button" className={notifications ? "setting-toggle on" : "setting-toggle"} onClick={() => setNotifications(v => !v)}><i/></button></div><div className="profile-setting-row"><span><WalletCards size={16}/> Onyesha salio la tokeni</span><button type="button" className={showBalance ? "setting-toggle on" : "setting-toggle"} onClick={() => setShowBalance(v => !v)}><i/></button></div><div className="profile-setting-row"><span><Palette size={16}/> Mwonekano compact</span><button type="button" className={compactMode ? "setting-toggle on" : "setting-toggle"} onClick={() => setCompactMode(v => !v)}><i/></button></div><p className="profile-muted">Mipangilio hii ni ya matumizi ya akaunti yako.</p></section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
+        <section className="profile-side-card settings-hub-card"><div className="profile-side-title"><span className="profile-icon"><SlidersHorizontal size={18}/></span><div><h3>SETTINGS ZA APP</h3><p>Badilisha SmartServicesTZ ikae na ifanye kazi unavyotaka.</p></div></div>
+<div className="settings-grid">
+<label className="settings-select"><span><Palette size={15}/> Theme</span><select value={theme} onChange={(event) => { const value = event.target.value as typeof theme; setTheme(value); void saveSetting({theme:value}); }}><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></label>
+<label className="settings-select"><span>Accent color</span><select value={accent} onChange={(event) => { const value = event.target.value as typeof accent; setAccent(value); void saveSetting({accent:value}); }}><option value="green">Green</option><option value="blue">Blue</option><option value="purple">Purple</option></select></label>
+</div>
+<div className="profile-setting-row"><span><Bell size={16}/> Arifa za akaunti</span><button type="button" className={notifications ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!notifications; setNotifications(value); void saveSetting({notifications:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span><WalletCards size={16}/> Onyesha salio la tokeni</span><button type="button" className={showBalance ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showBalance; setShowBalance(value); void saveSetting({showBalance:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span><SlidersHorizontal size={16}/> Compact mode</span><button type="button" className={compactMode ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!compactMode; setCompactMode(value); void saveSetting({compactMode:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span><Eye size={16}/> Reduce motion</span><button type="button" className={reduceMotion ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!reduceMotion; setReduceMotion(value); void saveSetting({reduceMotion:value}); }}><i/></button></div>
+<div className="settings-shortcuts"><Link href="/chat">💬 Chat & Magroup</Link><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
+<p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
         <button className="profile-logout-button" type="button" onClick={() => void logout()}><LogOut size={16}/> Toka kwenye akaunti</button>
       </aside>
     </div>
