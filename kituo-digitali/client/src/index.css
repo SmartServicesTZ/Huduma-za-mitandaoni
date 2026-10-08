@@ -1366,3 +1366,9 @@ input[type="file"] {
 .token-add-button>svg{opacity:.9}
 .token-choice-card{border:1px solid #dbe7ff!important;box-shadow:0 30px 80px rgba(2,14,40,.28)!important}
 @media(max-width:480px){.token-card{padding:18px!important}.token-card__meta{align-items:flex-start;flex-direction:column}.token-live-pill{position:absolute;right:0;top:0}}
+
+.settings-divider{margin:16px 0 7px;padding-top:10px;border-top:1px solid #e7edf2;color:#64748b;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+.settings-action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.settings-action-grid a,.settings-action-grid button{padding:10px;border:1px solid #e5eaf0;border-radius:11px;background:#fff;color:#334155;text-decoration:none;font-size:9px;font-weight:900;text-align:center}
+.settings-action-grid button{cursor:pointer}
+@media(max-width:560px){.settings-grid,.settings-action-grid{grid-template-columns:1fr}.token-add-button{min-height:58px!important}}
