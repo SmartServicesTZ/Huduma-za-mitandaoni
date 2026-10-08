@@ -751,7 +751,7 @@ export function subscribeUserMessages(uid: string, callback: (rows: Array<Record
 export type ChatUser = { uid: string; name: string; phone: string; profileImageUrl?: string; verificationStatus?: "pending" | "approved" | "rejected" };
 export type ChatMessage = { id: string; senderId: string; senderName?: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; editedAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
 export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; profileImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
-export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };
+export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; visibility: "private" | "public"; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };\nexport type ChatGroupJoinRequest = { id: string; groupId: string; userId: string; userName: string; userPhone: string; userImage?: string; status: "pending" | "approved" | "rejected"; createdAt?: unknown };
 
 export async function findChatUser(phone: string) {
   return invokeWorker<ChatUser>("findChatUser", { phone });
@@ -798,7 +798,7 @@ export function subscribeChatGroups(uid: string, callback: (rows: ChatGroup[]) =
     callback(rows);
   }, onError);
 }
-export async function createChatGroup(current: ChatUser, members: ChatUser[], name: string, description = "") {
+export async function createChatGroup(current: ChatUser, members: ChatUser[], name: string, description = "", visibility: "private" | "public" = "private") {
   const cleanName = name.trim().slice(0, 80);
   const unique = [current, ...members].filter((item, index, all) => all.findIndex((candidate) => candidate.uid === item.uid) === index);
   if (!cleanName) throw new Error("Weka jina la group.");
@@ -809,8 +809,43 @@ export async function createChatGroup(current: ChatUser, members: ChatUser[], na
   const memberNames = Object.fromEntries(unique.map((item) => [item.uid, item.name]));
   const memberPhones = Object.fromEntries(unique.map((item) => [item.uid, item.phone]));
   const memberImages = Object.fromEntries(unique.map((item) => [item.uid, item.profileImageUrl ?? ""]));
-  await setDoc(groupRef, { name: cleanName, description: description.trim().slice(0, 240), ownerId: current.uid, memberIds, memberNames, memberPhones, memberImages, lastMessage: "", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  await setDoc(groupRef, { name: cleanName, description: description.trim().slice(0, 240), ownerId: current.uid, visibility, memberIds, memberNames, memberPhones, memberImages, lastMessage: "", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   return groupRef.id;
+}
+export function subscribePublicChatGroups(callback: (rows: ChatGroup[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(query(collection(firestore, "chatGroups"), where("visibility", "==", "public")), (snapshot) => {
+    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroup));
+    rows.sort((a, b) => String(b.updatedAt ?? b.createdAt ?? "").localeCompare(String(a.updatedAt ?? a.createdAt ?? "")));
+    callback(rows);
+  }, onError);
+}
+export async function requestToJoinChatGroup(groupId: string, user: ChatUser) {
+  const group = await getDoc(doc(firestore, "chatGroups", groupId));
+  if (!group.exists()) throw new Error("Group halipatikani.");
+  const data = group.data() as ChatGroup;
+  if (data.visibility !== "public") throw new Error("Group hili ni private.");
+  if (data.memberIds.includes(user.uid)) throw new Error("Tayari uko kwenye group.");
+  const ref = doc(firestore, "chatGroups", groupId, "joinRequests", user.uid);
+  await setDoc(ref, { groupId, userId: user.uid, userName: user.name, userPhone: user.phone, userImage: user.profileImageUrl ?? "", status: "pending", createdAt: serverTimestamp() }, { merge: true });
+}
+export function subscribeGroupJoinRequests(groupId: string, callback: (rows: ChatGroupJoinRequest[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(query(collection(firestore, "chatGroups", groupId, "joinRequests"), where("status", "==", "pending")), (snapshot) => {
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroupJoinRequest)));
+  }, onError);
+}
+export async function approveChatGroupJoinRequest(groupId: string, request: ChatGroupJoinRequest) {
+  const groupRef = doc(firestore, "chatGroups", groupId);
+  const requestRef = doc(firestore, "chatGroups", groupId, "joinRequests", request.id);
+  await runTransaction(firestore, async (tx) => {
+    const groupSnap = await tx.get(groupRef);
+    if (!groupSnap.exists()) throw new Error("Group halipatikani.");
+    const group = groupSnap.data() as ChatGroup;
+    if (group.ownerId !== firebaseAuth.currentUser?.uid) throw Object.assign(new Error("Ni admin wa group pekee anaweza kukubali."), { code: "permission-denied" });
+    if (group.memberIds.includes(request.userId)) return;
+    if (group.memberIds.length >= 50) throw new Error("Group limefikia watu 50.");
+    tx.update(groupRef, { memberIds: arrayUnion(request.userId), memberNames: { ...group.memberNames, [request.userId]: request.userName }, memberPhones: { ...group.memberPhones, [request.userId]: request.userPhone }, memberImages: { ...(group.memberImages ?? {}), [request.userId]: request.userImage ?? "" }, updatedAt: serverTimestamp() });
+    tx.update(requestRef, { status: "approved", updatedAt: serverTimestamp() });
+  });
 }
 export function subscribeGroupChat(groupId: string, callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
   return subscribeChatRows(collection(firestore, "chatGroups", groupId, "messages"), callback, onError);
