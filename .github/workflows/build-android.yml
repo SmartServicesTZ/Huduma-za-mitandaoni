@@ -97,6 +97,7 @@ jobs:
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.7.0'
               implementation 'androidx.activity:activity:1.10.1'
+              implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
           }
           EOF
 
@@ -162,9 +163,13 @@ jobs:
           import android.app.Activity;
           import android.content.Intent;
           import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.graphics.drawable.GradientDrawable;
           import android.net.Uri;
           import android.os.Bundle;
+          import android.view.Gravity;
           import android.view.View;
+          import android.view.ViewGroup;
           import android.webkit.CookieManager;
           import android.webkit.DownloadListener;
           import android.webkit.ValueCallback;
@@ -173,19 +178,81 @@ jobs:
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
+          import android.widget.LinearLayout;
+          import android.widget.TextView;
+          import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
           public class MainActivity extends Activity {
               private static final int FILE_CHOOSER = 1001;
-              private static final String HOME = "https://smartservicestz.github.io/Huduma-za-mitandaoni/?app=android-v4";
+              private static final String HOME = "https://smartservicestz.github.io/Huduma-za-mitandaoni/?app=android-v5";
               private WebView webView;
+              private SwipeRefreshLayout refreshLayout;
               private ValueCallback<Uri[]> fileCallback;
+
+              private int dp(float value) {
+                  return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+              }
+
+              private TextView button(String text, int size) {
+                  TextView v = new TextView(this);
+                  v.setText(text);
+                  v.setTextColor(Color.WHITE);
+                  v.setTextSize(size);
+                  v.setGravity(Gravity.CENTER);
+                  v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                  v.setPadding(dp(14), 0, dp(14), 0);
+                  return v;
+              }
 
               @Override protected void onCreate(Bundle state) {
                   super.onCreate(state);
                   getWindow().setStatusBarColor(Color.rgb(6,21,45));
                   getWindow().setNavigationBarColor(Color.rgb(6,21,45));
+
+                  LinearLayout root = new LinearLayout(this);
+                  root.setOrientation(LinearLayout.VERTICAL);
+                  root.setBackgroundColor(Color.rgb(246,248,252));
+
+                  LinearLayout toolbar = new LinearLayout(this);
+                  toolbar.setOrientation(LinearLayout.HORIZONTAL);
+                  toolbar.setGravity(Gravity.CENTER_VERTICAL);
+                  toolbar.setPadding(dp(6), 0, dp(6), 0);
+                  GradientDrawable toolbarBg = new GradientDrawable();
+                  toolbarBg.setColor(Color.rgb(6,21,45));
+                  toolbar.setBackground(toolbarBg);
+
+                  TextView back = button("‹", 34);
+                  back.setContentDescription("Rudi nyuma");
+                  toolbar.addView(back, new LinearLayout.LayoutParams(dp(52), dp(52)));
+                  
+                  LinearLayout titleBox = new LinearLayout(this);
+                  titleBox.setOrientation(LinearLayout.VERTICAL);
+                  titleBox.setGravity(Gravity.CENTER_VERTICAL);
+                  TextView title = button("SmartServicesTZ", 15);
+                  title.setGravity(Gravity.CENTER_VERTICAL);
+                  TextView subtitle = button("Huduma za Mtandaoni", 10);
+                  subtitle.setTextColor(Color.rgb(190,205,225));
+                  subtitle.setTypeface(Typeface.DEFAULT, Typeface.NORMAL);
+                  titleBox.addView(title, new LinearLayout.LayoutParams(-1, dp(25)));
+                  titleBox.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(18)));
+                  LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, dp(52), 1);
+                  toolbar.addView(titleBox, titleParams);
+
+                  TextView refresh = button("↻", 28);
+                  refresh.setContentDescription("Refresh");
+                  toolbar.addView(refresh, new LinearLayout.LayoutParams(dp(56), dp(52)));
+
+                  refreshLayout = new SwipeRefreshLayout(this);
                   webView = new WebView(this);
-                  setContentView(webView);
+                  refreshLayout.addView(webView, new ViewGroup.LayoutParams(-1, -1));
+                  root.addView(toolbar, new LinearLayout.LayoutParams(-1, dp(52)));
+                  root.addView(refreshLayout, new LinearLayout.LayoutParams(-1, 0, 1));
+                  setContentView(root);
+
+                  back.setOnClickListener(v -> goBack());
+                  refresh.setOnClickListener(v -> refreshPage());
+                  refreshLayout.setOnRefreshListener(() -> webView.reload());
+                  refreshLayout.setColorSchemeColors(Color.rgb(124,58,237), Color.rgb(37,99,235));
 
                   WebSettings s = webView.getSettings();
                   s.setJavaScriptEnabled(true);
@@ -197,7 +264,8 @@ jobs:
                   s.setDisplayZoomControls(false);
                   s.setMediaPlaybackRequiresUserGesture(false);
                   s.setSupportMultipleWindows(false);
-                  s.setUserAgentString(s.getUserAgentString() + " SmartServicesTZApp/4.1.0");
+                  s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                  s.setUserAgentString(s.getUserAgentString() + " SmartServicesTZApp/4.2.0");
 
                   CookieManager.getInstance().setAcceptCookie(true);
                   CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
@@ -206,9 +274,13 @@ jobs:
                       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                           Uri u = request.getUrl();
                           String host = u.getHost();
-                          if (host != null && (host.equals("smartservicestz.github.io") || host.endsWith(".googleapis.com") || host.endsWith(".firebaseapp.com"))) return false;
+                          if (host != null && (host.equals("smartservicestz.github.io") || host.endsWith(".googleapis.com") || host.endsWith(".firebaseapp.com") || host.endsWith(".firebaseio.com") || host.equals("firebasestorage.googleapis.com"))) return false;
                           try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) {}
                           return true;
+                      }
+
+                      @Override public void onPageFinished(WebView view, String url) {
+                          if (refreshLayout != null) refreshLayout.setRefreshing(false);
                       }
                   });
 
@@ -235,6 +307,25 @@ jobs:
                   else webView.restoreState(state);
               }
 
+              private void goBack() {
+                  if (webView != null && webView.canGoBack()) {
+                      webView.goBack();
+                  } else {
+                      finish();
+                  }
+              }
+
+              private void refreshPage() {
+                  if (webView != null) {
+                      refreshLayout.setRefreshing(true);
+                      webView.reload();
+                  }
+              }
+
+              @Override public void onBackPressed() {
+                  goBack();
+              }
+
               @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
                   super.onActivityResult(requestCode, resultCode, data);
                   if (requestCode == FILE_CHOOSER && fileCallback != null) {
@@ -243,11 +334,6 @@ jobs:
                       fileCallback.onReceiveValue(result);
                       fileCallback = null;
                   }
-              }
-
-              @Override public void onBackPressed() {
-                  if (webView.canGoBack()) webView.goBack();
-                  else super.onBackPressed();
               }
 
               @Override protected void onSaveInstanceState(Bundle out) {
