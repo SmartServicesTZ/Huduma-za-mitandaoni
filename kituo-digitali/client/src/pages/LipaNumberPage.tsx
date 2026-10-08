@@ -119,7 +119,7 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
       { fieldName: "middleName", label: "Jina la Pili", type: "TEXT", required: true, order: 1 },
       { fieldName: "lastName", label: "Jina la Mwisho", type: "TEXT", required: true, order: 2 },
       { fieldName: "businessName", label: "Majina ya Biashara", type: "TEXT", required: false, order: 3 },
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 4 },
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Weka namba ya simu ya usajili/mawasiliano, tarakimu 10 (mfano 0712345678).", order: 4 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 5 },
       { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 6 },
       { fieldName: "idDocument", label: "Picha 1 — Kitambulisho au Passport Size", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha 1 tu: Kitambulisho au Passport Size. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 6 },
@@ -135,7 +135,7 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     reward: 0,
     active: true,
     fields: [
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 1 },
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Weka namba ya simu ya usajili/mawasiliano, tarakimu 10 (mfano 0712345678).", order: 1 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
       { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 3 },
       { fieldName: "businessLicense", label: "Leseni ya Biashara", type: "TEXTAREA", required: false, order: 4 },
