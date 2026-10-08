@@ -1198,7 +1198,7 @@ export const reserveBusinessLicenseNumber = callable(async (request) => {
       const current = existing.data()!;
       if (current.userId !== uid) throw new ApiError("already-exists", "Reservation ID si sahihi.");
       const currentNumber = String(current.licenseNumber ?? "");
-      if (/^BL01699682026-270000\d{5}$/.test(currentNumber)) {
+      if (/^BL01699682026-27000\d{5}$/.test(currentNumber)) {
         licenseNumber = currentNumber;
       } else {
         licenseNumber = generateRandomBusinessLicenseNumber();
@@ -1252,12 +1252,12 @@ export const generateBusinessLicense = callable(async (request) => {
     let licenseNumber: string;
     if (form.licenseType === "RENEWED LICENCE") {
       licenseNumber = cleanText(data.licenseNumber, "Namba ya leseni ya zamani", 30);
-      if (!/^BL01699682026-270000\d{5}$/.test(licenseNumber)) throw new ApiError("invalid-argument", "Namba ya leseni lazima iwe kama BL01699682026-27000012345.");
+      if (!/^BL01699682026-27000\d{5}$/.test(licenseNumber)) throw new ApiError("invalid-argument", "Namba ya leseni lazima iwe kama BL01699682026-27000012345.");
     } else if (reservationSnapshot.exists) {
       const reservation = reservationSnapshot.data()!;
       if (reservation.userId !== uid) throw new ApiError("permission-denied", "Reservation ID si sahihi.");
       const reservedNumber = String(reservation.licenseNumber ?? "");
-      if (/^BL01699682026-270000\d{5}$/.test(reservedNumber)) {
+      if (/^BL01699682026-27000\d{5}$/.test(reservedNumber)) {
         licenseNumber = reservedNumber;
       } else {
         licenseNumber = generateRandomBusinessLicenseNumber();
