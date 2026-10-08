@@ -61,7 +61,10 @@ export async function enforceAccountRestriction(uid: string, callableName: strin
 }
 
 function can(profile: Profile, permission: string) {
-  return profile.role === "super_admin" || (profile.permissions?.[permission as keyof Profile["permissions"]] === true);
+  // Admin accounts are trusted to manage the admin dashboard. Keep explicit
+  // permissions working for limited/legacy accounts, while avoiding a
+  // permission mismatch where role=admin but manageLipaApplications is absent.
+  return profile.role === "super_admin" || profile.role === "admin" || (profile.permissions?.[permission as keyof Profile["permissions"]] === true);
 }
 
 function requirePermission(profile: Profile, permission: string) {
