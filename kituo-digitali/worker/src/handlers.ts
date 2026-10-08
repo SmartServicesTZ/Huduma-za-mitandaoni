@@ -638,7 +638,9 @@ export const getLipaApplicationDocument = callable(async (request) => {
   const application = snapshot.data()!;
   if (application.userId !== uid) requirePermission(actor, "manageLipaApplications");
   const storagePath = String((application.applicantData as Record<string, unknown> | undefined)?.[fieldName] ?? "");
-  if (!storagePath.startsWith(`lipaApplications/${applicationId}/documents/`)) throw new ApiError("not-found", "Faili halikupatikana.");
+  const allowedPath = storagePath.startsWith(`lipaUploads/${application.userId}/${applicationId}/`)
+    || storagePath.startsWith(`lipaApplications/${applicationId}/documents/`);
+  if (!allowedPath) throw new ApiError("not-found", "Faili halikupatikana.");
   const [url] = await bucket.file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60 * 1000 });
   return { url, expiresAt: Date.now() + 5 * 60 * 1000 };
 });
