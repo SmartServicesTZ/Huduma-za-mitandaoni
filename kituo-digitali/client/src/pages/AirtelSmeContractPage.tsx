@@ -85,13 +85,6 @@ export default function AirtelSmeContractPage() {
     date2X: 89, date2Y: 95.5, date2Size: 2.2
   });
 
-  useEffect(() => { 
-    void getPublicSiteSettings().then((settings: any) => { 
-      const saved = settings?.templateLayouts?.airtelSme; 
-      if (saved) setLayout((cur) => Object.fromEntries(Object.keys(cur).map(k => [k, Number(saved[k] ?? cur[k])]))); 
-    }).catch(() => undefined); 
-  }, []);
-
   const ov = (x: string, y: string, size: string, width?: string): React.CSSProperties => ({
     left: `${layout[x] ?? 0}%`,
     top: `${layout[y] ?? 0}%`,
