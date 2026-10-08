@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, moveId } from "../../../shared/serviceOrdering";
+import { mergeServiceCatalogDefaults } from "../../../shared/catalog";
 import { accountRestrictionActionLabels, accountRestrictionActions, resolveAccountAccessMode, type AccountAccessMode, type AccountRestrictionAction } from "../../../shared/accountAccess";
 import { serviceFieldTypes, type ServiceFormField } from "../../../shared/serviceForms";
 import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels";
@@ -253,7 +254,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   const toggleLock = (item: any) => { const nextLocked = !item.isLocked; const message = nextLocked ? (window.prompt("Ujumbe ambao mtumiaji ataona wakati huduma imefungwa:", item.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") ?? item.maintenanceMessage ?? "") : ""; onRun(() => adminSaveService(adminId, { ...item, isLocked: nextLocked, maintenanceMessage: message }, item.slug ?? item.id), nextLocked ? "Huduma imefungwa na ujumbe wa maboresho umehifadhiwa." : "Huduma imefunguliwa."); };
   const lockBySlug = new Map<string, boolean>();
   for (const entry of serviceLocks as any[]) lockBySlug.set(String(entry.slug ?? entry.id), entry.isLocked === true);
-  const rows = (services as any[]).map((item) => {
+  // Firestore inaweza kuwa na config chache tu; control panel lazima ionyeshe catalog nzima, pamoja na ZANA ZA ZIADA.\n  const configuredServices = mergeServiceCatalogDefaults(services as any[], true);\n  const rows = configuredServices.map((item) => {
     const slug = String(item.slug ?? item.id);
     const storedLock = lockBySlug.get(slug);
     const isLocked = isServiceLocked(slug, storedLock, item.isLocked === true || item.kind === "locked");
