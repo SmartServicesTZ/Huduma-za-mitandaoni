@@ -132,7 +132,7 @@ export type FirebaseProfile = {
   restrictionUpdatedBy?: string;
   restrictionUpdatedAt?: unknown;
   language?: "sw" | "en";
-  settings?: { theme?: "system" | "light" | "dark"; accent?: "green" | "blue" | "purple"; compactMode?: boolean; showBalance?: boolean; notifications?: boolean; reduceMotion?: boolean };
+  settings?: { theme?: "system" | "light" | "dark"; accent?: "green" | "blue" | "purple"; compactMode?: boolean; showBalance?: boolean; notifications?: boolean; reduceMotion?: boolean; sounds?: boolean; autoRefresh?: boolean; showOnlineStatus?: boolean; confirmActions?: boolean; dataSaver?: boolean };
   createdAt?: unknown;
 };
 
