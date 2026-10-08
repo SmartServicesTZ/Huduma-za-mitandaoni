@@ -202,7 +202,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     const price = tokenType === "nida" ? 100 : 500;
     const phone = profile?.phone ? "\nNamba ya simu: " + profile.phone : "";
     const message = "Habari SmartServicesTZ, naomba kuongeza tokeni.\n\nAina ya tokeni: " + label + "\nBei: TZS " + price.toLocaleString("en-US") + " kwa tokeni" + phone;
-    window.open("https://wa.me/255698232313?text=" + encodeURIComponent(message), "_blank", "noopener,noreferrer");
+    window.location.href = "https://wa.me/255698232313?text=" + encodeURIComponent(message);
     setTokenChoiceOpen(false);
   };
 
