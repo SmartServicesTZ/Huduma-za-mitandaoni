@@ -242,7 +242,7 @@ function TokensPanel({ users, form, setForm, onRun, adminId, busy }: any) {
     }
     const label = direction > 0 ? "Tokeni zimeongezwa." : "Tokeni zimepunguzwa.";
     onRun(async () => {
-      const result = await adminAdjustTokens(adminId, form.userId, amount, description, requestId);
+      const result = await adminAdjustTokens(adminId, form.userId, amount, description, requestId, form.tokenType === "nida" ? "nida" : "huduma");
       requestIds.current.delete(requestKey);
       return result;
     }, label);
