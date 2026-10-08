@@ -1372,3 +1372,35 @@ input[type="file"] {
 .settings-action-grid a,.settings-action-grid button{padding:10px;border:1px solid #e5eaf0;border-radius:11px;background:#fff;color:#334155;text-decoration:none;font-size:9px;font-weight:900;text-align:center}
 .settings-action-grid button{cursor:pointer}
 @media(max-width:560px){.settings-grid,.settings-action-grid{grid-template-columns:1fr}.token-add-button{min-height:58px!important}}
+
+
+/* SMARTSERVICESTZ — EXTRA TOOLS V6 */
+.portal-service-card.service-external {
+  position: relative;
+  overflow: hidden;
+}
+.portal-service-card.service-external::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(59,130,246,.08), transparent 48%, rgba(139,92,246,.08));
+}
+.portal-service-card.service-external:hover {
+  transform: translateY(-3px);
+  border-color: rgba(96,165,250,.45);
+  box-shadow: 0 16px 34px rgba(2,8,23,.22);
+}
+.external-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #dbeafe;
+  background: rgba(37,99,235,.18);
+  border: 1px solid rgba(96,165,250,.22);
+}
