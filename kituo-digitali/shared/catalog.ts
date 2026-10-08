@@ -74,8 +74,9 @@ export const serviceCatalog: ServiceCatalogItem[] = [
 ];
 
 export const specialServices = [
-  { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA TIC TECH (WhatsApp)", tone: "green", action: "whatsapp" },
-  { slug: "kikundi-bure", name: "KIKUNDI LA BURE (Bure)", tone: "green", action: "whatsapp" },
+  { slug: "huduma-kwa-wateja", name: "HUDUMA KWA WATEJA — GROUP LA WOTE", tone: "blue", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&mlu=4&iam=2" },
+  { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&mlu=4&iam=2" },
+  { slug: "kikundi-bure", name: "WAZEE WA BETTING TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ?s=cl&p=a&mlu=4&iam=2" },
   { slug: "botani-biashara", name: "LIPIA BATANI YA BIASHARA (Programu ya IONEKANE)", tone: "green", action: "contact" },
   { slug: "kikundi-vip", name: "KIKUNDI VIP 5,000 (Kulipia)", tone: "yellow", action: "contact" },
   { slug: "vip-usajili", name: "VIP YA USAJILI (Lipia Mda Mrefu)", tone: "yellow", action: "contact" },
