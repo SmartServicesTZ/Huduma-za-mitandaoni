@@ -14,21 +14,21 @@ export default function AccountPage() {
   const [newPassword, setNewPassword] = useState("");
   const [imageBusy, setImageBusy] = useState(false);
   const [profileBusy, setProfileBusy] = useState(false);
-  const [notifications, setNotifications] = useState(true); const [compactMode, setCompactMode] = useState(false); const [showBalance, setShowBalance] = useState(true); const [theme, setTheme] = useState<"system" | "light" | "dark">("dark"); const [accent, setAccent] = useState<"green" | "blue" | "purple">("green"); const [reduceMotion, setReduceMotion] = useState(false); const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
+  const [notifications, setNotifications] = useState(true); const [compactMode, setCompactMode] = useState(false); const [showBalance, setShowBalance] = useState(true); const [theme, setTheme] = useState<"system" | "light" | "dark">("dark"); const [accent, setAccent] = useState<"green" | "blue" | "purple">("green"); const [reduceMotion, setReduceMotion] = useState(false); const [sounds, setSounds] = useState(true); const [autoRefresh, setAutoRefresh] = useState(true); const [showOnlineStatus, setShowOnlineStatus] = useState(true); const [confirmActions, setConfirmActions] = useState(true); const [dataSaver, setDataSaver] = useState(false); const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
 
   useEffect(() => {
     if (!profile) return;
     setFirstName(profile.firstName ?? "");
     setLastName(profile.lastName ?? "");
     setBio(profile.bio ?? "");
-    setLanguage(profile.language ?? "sw");
+    setLanguage(profile.language ?? "sw"); document.documentElement.lang = profile.language ?? "sw";
     setNotifications(profile.settings?.notifications !== false);
     setCompactMode(profile.settings?.compactMode === true);
     setShowBalance(profile.settings?.showBalance !== false);
     setTheme(profile.settings?.theme ?? "dark");
     setAccent(profile.settings?.accent ?? "green");
-    setReduceMotion(profile.settings?.reduceMotion === true);
-  }, [profile?.uid, profile?.firstName, profile?.lastName, profile?.bio, profile?.language]);
+    setReduceMotion(profile.settings?.reduceMotion === true); setSounds(profile.settings?.sounds !== false); setAutoRefresh(profile.settings?.autoRefresh !== false); setShowOnlineStatus(profile.settings?.showOnlineStatus !== false); setConfirmActions(profile.settings?.confirmActions !== false); setDataSaver(profile.settings?.dataSaver === true);
+  }, [profile?.uid, profile?.firstName, profile?.lastName, profile?.bio, profile?.language, profile?.settings]);
   useEffect(() => {
     if (!firebaseUser) { setMessages([]); return; }
     return subscribeUserMessages(firebaseUser.uid, setMessages, () => toast.error("Imeshindikana kupakia ujumbe."));
@@ -81,7 +81,7 @@ export default function AccountPage() {
           <div className="profile-field-grid"><label>Jina la kwanza<input autoComplete="given-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} maxLength={60} disabled={!profile || profileBusy}/></label><label>Jina la mwisho<input autoComplete="family-name" value={lastName} onChange={(event) => setLastName(event.target.value)} maxLength={60} disabled={!profile || profileBusy}/></label></div>
           <label className="profile-field">Namba ya simu<input type="tel" value={profile?.phone ?? ""} readOnly aria-readonly="true" disabled={!profile}/><small>Inatumika kuingia na haiwezi kubadilishwa ili kuzuia kupoteza utambulisho wa akaunti.</small></label>
           <label className="profile-field">Kuhusu mimi <span className="profile-char-count">{bio.length}/160</span><textarea value={bio} onChange={(event) => setBio(event.target.value.slice(0, 160))} maxLength={160} rows={3} placeholder="Andika maelezo mafupi kuhusu wewe…" disabled={!profile || profileBusy}/></label>
-          <label className="profile-field">Lugha ya matumizi<select value={language} onChange={(event) => setLanguage(event.target.value as "sw" | "en")} disabled={!profile || profileBusy}><option value="sw">Kiswahili</option><option value="en">English</option></select><small>Hili huhifadhi upendeleo wako wa lugha kwenye wasifu.</small></label>
+          <label className="profile-field">Lugha ya matumizi<select value={language} onChange={(event) => { const value = event.target.value as "sw" | "en"; setLanguage(value); document.documentElement.lang = value; void saveProfile({ language: value }); }} disabled={!profile || profileBusy}><option value="sw">Kiswahili</option><option value="en">English</option></select><small>Hili huhifadhi upendeleo wako wa lugha kwenye wasifu.</small></label>
           {!profile && <p className="profile-load-note">Inapakia taarifa za wasifu…</p>}
           <button className="button button--green profile-save-button" type="submit" disabled={!profile || profileBusy}>{profileBusy ? "Inahifadhi…" : <><CheckCircle2 size={16}/> Hifadhi wasifu</>}</button>
         </form>
@@ -101,6 +101,14 @@ export default function AccountPage() {
 <div className="profile-setting-row"><span><WalletCards size={16}/> Onyesha salio la tokeni</span><button type="button" className={showBalance ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showBalance; setShowBalance(value); void saveSetting({showBalance:value}); }}><i/></button></div>
 <div className="profile-setting-row"><span><SlidersHorizontal size={16}/> Compact mode</span><button type="button" className={compactMode ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!compactMode; setCompactMode(value); void saveSetting({compactMode:value}); }}><i/></button></div>
 <div className="profile-setting-row"><span><Eye size={16}/> Reduce motion</span><button type="button" className={reduceMotion ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!reduceMotion; setReduceMotion(value); void saveSetting({reduceMotion:value}); }}><i/></button></div>
+<div className="settings-divider">Uzoefu na matumizi</div>
+<div className="profile-setting-row"><span>🔊 Sauti za app</span><button type="button" className={sounds ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!sounds; setSounds(value); void saveSetting({sounds:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span>↻ Refresh ya moja kwa moja</span><button type="button" className={autoRefresh ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!autoRefresh; setAutoRefresh(value); void saveSetting({autoRefresh:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span>🟢 Onyesha hali ya online</span><button type="button" className={showOnlineStatus ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showOnlineStatus; setShowOnlineStatus(value); void saveSetting({showOnlineStatus:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span>✓ Thibitisha vitendo muhimu</span><button type="button" className={confirmActions ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!confirmActions; setConfirmActions(value); void saveSetting({confirmActions:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span>📶 Data saver</span><button type="button" className={dataSaver ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!dataSaver; setDataSaver(value); void saveSetting({dataSaver:value}); }}><i/></button></div>
+<div className="settings-divider">Akaunti na faragha</div>
+<div className="settings-action-grid"><Link href="/history">Historia ya shughuli</Link><Link href="/chat">Chat na Magroup</Link><button type="button" onClick={() => void logout()}>Ondoka kwenye akaunti</button></div>
 <div className="settings-shortcuts"><Link href="/chat">💬 Chat & Magroup</Link><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
 <p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
         <button className="profile-logout-button" type="button" onClick={() => void logout()}><LogOut size={16}/> Toka kwenye akaunti</button>
