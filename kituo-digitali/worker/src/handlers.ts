@@ -444,9 +444,7 @@ export const submitLipaApplication = callable(async (request) => {
   const rawValues = objectValue(data.values, "Fomu");
   const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId);
   const additionalNotes = typeof rawValues.additionalNotes === "string" ? rawValues.additionalNotes.trim().slice(0, 2000) : "";
-  const openRef = db.collection("lipaOpenApplications").doc(`${uid}_${networkId}`);
-  const preexistingOpen = await openRef.get();
-  if (preexistingOpen.exists) throw new ApiError("already-exists", "Una ombi la mtandao huu ambalo bado linasubiri kukamilika.", { applicationId: preexistingOpen.data()?.applicationId });
+  const openRef = db.collection("lipaOpenApplications").doc(`${uid}_${networkId}_${applicationId}`);
   const finalPaths: string[] = [];
   const sourcePaths: string[] = [];
   try {
@@ -469,8 +467,6 @@ export const submitLipaApplication = callable(async (request) => {
   const applicationRef = db.collection("lipaApplications").doc(applicationId);
   const values = objectValue(data.values, "Fomu");
   await db.runTransaction(async (transaction) => {
-    const openSnapshot = await transaction.get(openRef);
-    if (openSnapshot.exists) throw new ApiError("already-exists", "Una ombi la mtandao huu ambalo bado linasubiri kukamilika.", { applicationId: openSnapshot.data()?.applicationId });
     const existingApplication = await transaction.get(applicationRef);
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const application = {
@@ -516,7 +512,7 @@ export const setLipaApplicationStatus = callable(async (request) => {
     if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid });
     if (status === "REJECTED") Object.assign(patch, { rejectionReason, rejectedAt: now, rejectedBy: uid });
     transaction.update(ref, patch);
-    if (status === "APPROVED" || status === "REJECTED") transaction.delete(db.collection("lipaOpenApplications").doc(`${application.userId}_${application.networkId}`));
+    if (status === "APPROVED" || status === "REJECTED") transaction.delete(db.collection("lipaOpenApplications").doc(`${application.userId}_${application.networkId}_${application.applicationId}`));
     const reasonSuffix = status === "REJECTED" ? ` Sababu: ${rejectionReason}` : "";
     transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${application.network}`, body: status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? "Maombi yako yamekubaliwa." : `Maombi yako yamekataliwa.${reasonSuffix}`, type: "lipaApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     const auditRef = db.collection("auditLogs").doc();
