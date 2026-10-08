@@ -229,12 +229,37 @@ export const adminDelete = callable(async (request) => {
   });
 });
 
-export const claimDailyTokenBonus = callable(async (request) => {\n  const uid = authUid(request);\n  const userRef = db.collection("users").doc(uid);\n  const settingsRef = db.collection("siteSettings").doc("public");\n  const today = new Date().toISOString().slice(0, 10);\n  return db.runTransaction(async (transaction) => {\n    const userSnap = await transaction.get(userRef);\n    if (!userSnap.exists) throw new ApiError("not-found", "Profile ya akaunti haijapatikana.");\n    const settingsSnap = await transaction.get(settingsRef);\n    const settings = settingsSnap.exists ? settingsSnap.data()! : {};\n    const config = (settings.tokenBonusConfig ?? {}) as Record<string, unknown>;\n    const dailyBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.dailyBonus ?? 6))));\n    const profile = userSnap.data() as Profile;\n    if (profile.lastDailyTokenBonusDate === today || dailyBonus === 0) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0) };\n    const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);\n    const after = before + dailyBonus;\n    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, lastDailyTokenBonusDate: today, updatedAt: FieldValue.serverTimestamp() });\n    const ledgerRef = db.collection("tokenTransactions").doc("daily_" + uid + "_" + today);\n    transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: dailyBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya kila siku", serviceId: "daily-bonus", serviceName: "Daily token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });\n    return { granted: dailyBonus, balanceAfter: after };\n  });\n});\n\nexport const consumeTokens = callable(async (request) => {
+export const claimDailyTokenBonus = callable(async (request) => {
+  const uid = authUid(request);
+  const userRef = db.collection("users").doc(uid);
+  const settingsRef = db.collection("siteSettings").doc("public");
+  const today = new Date().toISOString().slice(0, 10);
+  return db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) throw new ApiError("not-found", "Profile ya akaunti haijapatikana.");
+    const settingsSnap = await transaction.get(settingsRef);
+    const settings = settingsSnap.exists ? settingsSnap.data()! : {};
+    const config = (settings.tokenBonusConfig ?? {}) as Record<string, unknown>;
+    const dailyBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.dailyBonus ?? 6))));
+    const profile = userSnap.data() as Profile;
+    if (profile.lastDailyTokenBonusDate === today || dailyBonus === 0) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0) };
+    const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
+    const after = before + dailyBonus;
+    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, lastDailyTokenBonusDate: today, updatedAt: FieldValue.serverTimestamp() });
+    const ledgerRef = db.collection("tokenTransactions").doc("daily_" + uid + "_" + today);
+    transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: dailyBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya kila siku", serviceId: "daily-bonus", serviceName: "Daily token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
+    return { granted: dailyBonus, balanceAfter: after };
+  });
+});
+
+export const consumeTokens = callable(async (request) => {
   const uid = authUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
   const serviceId = text(data.serviceId, 120);
   const requestId = text(data.requestId, 160);
-  const requestedCost = Number(data.tokenCost);\n  const requestedTokenType = text(data.tokenType, 20) || "huduma";\n  if (requestedTokenType !== "nida" && requestedTokenType !== "huduma") throw new ApiError("invalid-argument", "Aina ya tokeni si sahihi.");
+  const requestedCost = Number(data.tokenCost);
+  const requestedTokenType = text(data.tokenType, 20) || "huduma";
+  if (requestedTokenType !== "nida" && requestedTokenType !== "huduma") throw new ApiError("invalid-argument", "Aina ya tokeni si sahihi.");
   if (!Number.isInteger(requestedCost) || requestedCost <= 0 || requestedCost > 100000) throw new ApiError("invalid-argument", "Gharama ya tokeni si sahihi.");
 
   const userRef = db.collection("users").doc(uid);
@@ -557,7 +582,9 @@ export const replyToLipaApplication = callable(async (request) => {
     if (infoRequest) Object.assign(patch, { additionalInfoRequest: infoRequest });
     transaction.update(ref, patch);
     const subject = infoRequest ? `Taarifa za ziada kuhusu ombi la ${application.network}` : `Jibu kuhusu ombi la ${application.network}`;
-    const body = infoRequest ? `Admin anaomba taarifa za ziada: ${infoRequest}${reply ? `\n\nJibu la Admin: ${reply}` : ""}` : reply;
+    const body = infoRequest ? `Admin anaomba taarifa za ziada: ${infoRequest}${reply ? `
+
+Jibu la Admin: ${reply}` : ""}` : reply;
     transaction.set(db.collection("messages").doc(), {
       recipientId: application.userId,
       subject,
@@ -922,7 +949,24 @@ export const claimRegistrationPhone = callable(async (request) => {
     if (registry.exists && registry.data()?.uid !== uid) {
       throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
     }
-    if (!registry.exists) {\n      transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });\n      const profileRef = db.collection("users").doc(uid);\n      const profileSnap = await transaction.get(profileRef);\n      if (profileSnap.exists) {\n        const settingsSnap = await transaction.get(db.collection("siteSettings").doc("public"));\n        const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};\n        const registrationBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.registrationBonus ?? 15))));\n        if (registrationBonus > 0) {\n          const profile = profileSnap.data() as Profile;\n          const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);\n          const after = before + registrationBonus;\n          transaction.update(profileRef, { tokenBalanceOther: after, tokenBalance: after, tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });\n          const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);\n          transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: registrationBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });\n        }\n      }\n    }
+    if (!registry.exists) {
+      transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });
+      const profileRef = db.collection("users").doc(uid);
+      const profileSnap = await transaction.get(profileRef);
+      if (profileSnap.exists) {
+        const settingsSnap = await transaction.get(db.collection("siteSettings").doc("public"));
+        const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};
+        const registrationBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.registrationBonus ?? 15))));
+        if (registrationBonus > 0) {
+          const profile = profileSnap.data() as Profile;
+          const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
+          const after = before + registrationBonus;
+          transaction.update(profileRef, { tokenBalanceOther: after, tokenBalance: after, tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });
+          const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);
+          transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: registrationBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
+        }
+      }
+    }
   });
   return { ok: true };
 });
@@ -1043,7 +1087,9 @@ export const setAccountStatus = callable(async (request) => {
     transaction.update(targetRef, next);
     if (mode !== "active") {
       const messageSubject = mode === "denied" ? "Ufikiaji wa akaunti umezuiwa" : "Taarifa ya ufikiaji wa akaunti";
-      const messageBody = [userMessage, reason ? `Sababu: ${reason}` : "", "Kwa msaada, wasiliana na admin kupitia 0698232313."].filter(Boolean).join("\n\n");
+      const messageBody = [userMessage, reason ? `Sababu: ${reason}` : "", "Kwa msaada, wasiliana na admin kupitia 0698232313."].filter(Boolean).join("
+
+");
       transaction.create(db.collection("messages").doc(), {
         recipientId: userId,
         subject: messageSubject,
@@ -1088,7 +1134,8 @@ type LicenseRequest = {
 };
 
 function cleanText(value: unknown, label: string, max = 180) {
-  if (typeof value !== "string" || value.trim().length === 0 || value.length > max || /[\r\n]/.test(value)) throw new ApiError("invalid-argument", `${label} si sahihi.`);
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > max || /[\r
+]/.test(value)) throw new ApiError("invalid-argument", `${label} si sahihi.`);
   return value.trim();
 }
 
