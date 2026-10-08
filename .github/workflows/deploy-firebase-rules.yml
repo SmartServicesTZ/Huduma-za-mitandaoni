@@ -1,0 +1,26 @@
+name: Publish Firebase rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'storage.rules'
+      - 'firebase.json'
+      - '.github/workflows/deploy-firebase-rules.yml'
+  workflow_dispatch:
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      - name: Deploy Firestore and Storage rules
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: firebase deploy --project huduma-za-mtandaoni-b1c0c --only firestore:rules,storage --token "$FIREBASE_TOKEN"
