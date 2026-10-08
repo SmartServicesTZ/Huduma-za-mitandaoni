@@ -1,47 +1,94 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#063b9f"/>
-    <stop offset=".5" stop-color="#0878e8"/>
-    <stop offset="1" stop-color="#102b9f"/>
+    <stop offset="0" stop-color="#06152D"/>
+    <stop offset=".48" stop-color="#0B3B82"/>
+    <stop offset="1" stop-color="#073C58"/>
   </linearGradient>
-  <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#ffffff"/>
-    <stop offset="1" stop-color="#dcecff"/>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#47E7FF"/>
+    <stop offset=".52" stop-color="#1787FF"/>
+    <stop offset="1" stop-color="#5A5CFF"/>
   </linearGradient>
-  <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#1de1ff"/>
-    <stop offset="1" stop-color="#087cf0"/>
+  <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#35E58A"/>
+    <stop offset="1" stop-color="#08A85A"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FFE66B"/>
+    <stop offset="1" stop-color="#F7B900"/>
   </linearGradient>
   <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-    <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#001b62" flood-opacity=".35"/>
+    <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#000" flood-opacity=".32"/>
   </filter>
+  <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="22"/>
+  </filter>
+  <clipPath id="round"><rect width="1024" height="1024" rx="220"/></clipPath>
 </defs>
-<rect width="512" height="512" rx="112" fill="url(#bg)"/>
-<circle cx="256" cy="250" r="190" fill="#ffffff" opacity=".055"/>
-<circle cx="256" cy="250" r="164" fill="none" stroke="#ffffff" stroke-opacity=".12" stroke-width="2"/>
 
-<!-- document -->
-<path d="M155 112h145l74 74v205c0 18-14 32-32 32H155c-18 0-32-14-32-32V144c0-18 14-32 32-32z" fill="url(#paper)" filter="url(#shadow)"/>
-<path d="M300 112v57c0 10 8 18 18 18h56" fill="#b8d7ff"/>
-<path d="M300 112l74 75h-56c-10 0-18-8-18-18z" fill="#eaf4ff"/>
+<g clip-path="url(#round)">
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="820" cy="130" r="270" fill="#2AA8FF" opacity=".10" filter="url(#soft)"/>
+  <circle cx="150" cy="900" r="300" fill="#18D58A" opacity=".08" filter="url(#soft)"/>
+  <circle cx="512" cy="500" r="370" fill="none" stroke="#fff" stroke-opacity=".06" stroke-width="3"/>
+  <circle cx="512" cy="500" r="330" fill="none" stroke="#42D9FF" stroke-opacity=".08" stroke-width="2"/>
 
-<!-- document lines -->
-<rect x="178" y="211" width="126" height="15" rx="7.5" fill="#1764d7"/>
-<rect x="178" y="245" width="157" height="15" rx="7.5" fill="#1764d7"/>
-<rect x="178" y="279" width="116" height="15" rx="7.5" fill="#1764d7"/>
+  <!-- premium document -->
+  <g filter="url(#shadow)">
+    <path d="M295 175h292l142 142v435c0 27-22 49-49 49H295c-27 0-49-22-49-49V224c0-27 22-49 49-49z" fill="#F8FBFF"/>
+    <path d="M587 175v108c0 19 15 34 34 34h108z" fill="#D9E9FF"/>
+    <path d="M587 175l142 142H621c-19 0-34-15-34-34z" fill="#EDF5FF"/>
+    <rect x="315" y="390" width="235" height="22" rx="11" fill="#155CC7"/>
+    <rect x="315" y="438" width="290" height="22" rx="11" fill="#8FB8EE"/>
+    <rect x="315" y="486" width="205" height="22" rx="11" fill="#8FB8EE"/>
+    <rect x="315" y="534" width="255" height="22" rx="11" fill="#D0E0F5"/>
+    <rect x="315" y="582" width="175" height="22" rx="11" fill="#D0E0F5"/>
+  </g>
 
-<!-- Tanzania-inspired S ribbon -->
-<path d="M101 184c45-51 108-76 179-72 41 2 77 13 108 33-39-7-76-5-111 7-45 15-79 43-104 80-25 37-25 65 4 84 19 13 46 21 81 25-48 13-91 5-123-20-45-36-47-84-34-137z" fill="url(#cyan)"/>
-<path d="M96 260c35 35 81 57 137 65 30 4 60 4 91-1-27 18-59 29-96 31-57 3-104-14-137-49-12-13-17-28-15-46z" fill="#19a93d"/>
-<path d="M96 276c35 35 81 57 137 65 30 4 60 4 91-1-9 7-19 13-30 18-54 5-104-8-142-37-31-23-50-50-56-78z" fill="#ffd21a"/>
-<path d="M102 291c34 33 79 54 131 61 30 4 60 4 91-1-11 7-23 12-35 16-56 4-104-9-141-37-26-20-43-43-51-69z" fill="#151515"/>
+  <!-- distinctive SmartServices S ribbon -->
+  <path d="M205 323
+           C270 235 374 187 492 190
+           C566 192 630 213 682 247
+           C608 232 545 239 487 263
+           C416 292 365 340 337 398
+           C315 443 326 474 367 495
+           C404 514 455 524 520 530
+           C454 552 388 548 337 527
+           C262 496 221 445 218 382
+           C216 359 211 340 205 323Z"
+        fill="url(#blue)"/>
 
-<!-- check badge -->
-<circle cx="376" cy="337" r="57" fill="#18b84b" stroke="#ffffff" stroke-width="10" filter="url(#shadow)"/>
-<path d="M349 337l18 18 38-43" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Tanzania-inspired accent ribbons -->
+  <path d="M218 405
+           C252 456 316 493 396 512
+           C447 524 500 529 552 522
+           C521 546 482 558 436 560
+           C348 563 276 532 231 479
+           C213 458 206 433 218 405Z"
+        fill="url(#green)"/>
+  <path d="M221 434
+           C260 479 322 512 399 531
+           C449 543 496 545 536 537
+           C516 553 492 566 464 574
+           C375 571 302 543 253 500
+           C232 481 218 458 221 434Z"
+        fill="url(#gold)"/>
 
-<!-- small brand mark -->
-<circle cx="113" cy="113" r="8" fill="#ffd21a"/>
-<circle cx="407" cy="408" r="6" fill="#1de1ff"/>
+  <!-- clean check badge -->
+  <g filter="url(#shadow)">
+    <circle cx="700" cy="675" r="92" fill="#06152D" opacity=".28"/>
+    <circle cx="700" cy="655" r="82" fill="url(#green)" stroke="#fff" stroke-width="14"/>
+    <path d="M660 655l27 27 58-67" fill="none" stroke="#fff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- subtle network nodes -->
+  <circle cx="145" cy="245" r="10" fill="#47E7FF"/>
+  <circle cx="866" cy="315" r="9" fill="#35E58A"/>
+  <circle cx="155" cy="760" r="7" fill="#FFE66B"/>
+  <circle cx="873" cy="805" r="7" fill="#47E7FF"/>
+  <path d="M145 245h80M866 315h-80M155 760h85M873 805h-80" stroke="#fff" stroke-opacity=".18" stroke-width="4"/>
+</g>
+
+<rect x="14" y="14" width="996" height="996" rx="208" fill="none" stroke="#fff" stroke-opacity=".09" stroke-width="12"/>
 </svg>
