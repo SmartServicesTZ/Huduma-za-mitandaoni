@@ -634,13 +634,34 @@ export async function removeLipaUpload(storagePath: string) {
 }
 
 export async function adminListLipaApplications() {
-  const snapshot = await getDocs(query(collection(firestore, "lipaApplications"), orderBy("submittedAt", "desc")));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt) } as LipaApplication));
+  const callable = createWorkerCall("listLipaApplications");
+  const result = (await callable({})).data as { applications?: Array<Record<string, unknown>> };
+  return (result.applications ?? []).map((item) => ({
+    id: String(item.id ?? item.applicationId ?? ""),
+    ...item,
+    submittedAt: timestampValue(item.submittedAt),
+    updatedAt: timestampValue(item.updatedAt),
+  } as LipaApplication));
 }
 
 export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
-  const applications = query(collection(firestore, "lipaApplications"), orderBy("submittedAt", "desc"));
-  return onSnapshot(applications, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication))), onError);
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const load = async () => {
+    try {
+      const rows = await adminListLipaApplications();
+      if (!stopped) callback(rows);
+    } catch (error) {
+      if (!stopped) onError?.(error);
+    } finally {
+      if (!stopped) timer = setTimeout(load, 5000);
+    }
+  };
+  void load();
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+  };
 }
 
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
