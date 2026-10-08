@@ -52,7 +52,7 @@ export default function AdminDashboard() {
   const [audit, setAudit] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<(AdminUserRecord & { id: string }) | null>(null);
-  const [tokenForm, setTokenForm] = useState({ userId: "", amount: 10, reason: "" });
+  const [tokenForm, setTokenForm] = useState({ userId: "", amount: 1, tokenType: "nida", reason: "" });
   const [service, setService] = useState(emptyService);
   const [serviceOrder, setServiceOrder] = useState<string[]>([]);
   const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
@@ -229,7 +229,10 @@ function TokensPanel({ users, form, setForm, onRun, adminId, busy }: any) {
       toast.error("Chagua mtumiaji na weka kiasi kamili cha tokeni.");
       return;
     }
-    const description = String(form.reason || "Admin adjustment").trim() || "Admin adjustment";
+    const tokenType = form.tokenType === "nida" ? "CHEKI NIDA" : "HUDUMA NYINGINE";
+    const tokenPrice = form.tokenType === "nida" ? 100 : 500;
+    const customReason = String(form.reason || "").trim();
+    const description = (customReason ? customReason + " · " : "") + tokenType + " · TZS " + tokenPrice + " kwa tokeni";
     const requestKey = JSON.stringify([adminId, form.userId, amount, description]);
     let requestId = requestIds.current.get(requestKey);
     if (!requestId) {
@@ -245,7 +248,7 @@ function TokensPanel({ users, form, setForm, onRun, adminId, busy }: any) {
     }, label);
   };
   const invalidAmount = !Number.isInteger(Number(form.amount)) || Number(form.amount) <= 0;
-  return <div className="admin-two-col"><section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">TOKEN LEDGER</span><h2>Usimamizi wa Tokeni</h2></div></div><label className="control-field"><span>Chagua mtumiaji</span><select value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })}><option value="">Chagua user — phone — balance</option>{users.map((item: any) => <option key={item.id} value={item.id}>{item.name ?? "Bila jina"} — {item.phone || "—"} — {item.tokenBalance ?? 0}</option>)}</select></label><Field label="Kiasi" type="number" value={form.amount} onChange={(value) => setForm({ ...form, amount: Number(value) })} /><label className="control-field"><span>Maelezo</span><textarea value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} placeholder="Bonus ya usajili" /></label><div className="form-actions"><button className="admin-primary" disabled={busy || !form.userId || invalidAmount} onClick={() => submitAdjustment(1)}>+ Ongeza tokeni</button><button className="admin-danger" disabled={busy || !form.userId || invalidAmount} onClick={() => submitAdjustment(-1)}>− Punguza tokeni</button></div></section><section className="admin-card"><div className="admin-card-heading"><h2>Maelezo ya ledger</h2></div><p>Kila adjustment huhifadhi salio la awali na jipya, admin, sababu na rejea ya kipekee. Jaribio la kurudia ombi lilelile halitaongeza au kupunguza tokeni mara mbili.</p><div className="ledger-note"><WalletCards size={20} /><span>Operations zote zinathibitishwa na Firebase Function salama.</span></div></section></div>;
+  return <div className="admin-two-col"><section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">TOKEN LEDGER</span><h2>Usimamizi wa Tokeni</h2></div></div><label className="control-field"><span>Chagua mtumiaji</span><select value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })}><option value="">Chagua user — phone — balance</option>{users.map((item: any) => <option key={item.id} value={item.id}>{item.name ?? "Bila jina"} — {item.phone || "—"} — {item.tokenBalance ?? 0}</option>)}</select></label><label className="control-field"><span>Tokeni ya nini?</span><select value={form.tokenType} onChange={(event) => setForm({ ...form, tokenType: event.target.value })}><option value="nida">CHEKI NIDA — TZS 100 / tokeni</option><option value="huduma">HUDUMA NYINGINE — TZS 500 / tokeni</option></select></label><Field label="Kiasi cha tokeni" type="number" value={form.amount} onChange={(value) => setForm({ ...form, amount: Number(value) })} /><label className="control-field"><span>Maelezo ya ziada</span><textarea value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} placeholder="Mfano: Malipo yamethibitishwa WhatsApp" /></label><div className="form-actions"><button className="admin-primary" disabled={busy || !form.userId || invalidAmount} onClick={() => submitAdjustment(1)}>+ Ongeza tokeni</button><button className="admin-danger" disabled={busy || !form.userId || invalidAmount} onClick={() => submitAdjustment(-1)}>− Punguza tokeni</button></div></section><section className="admin-card"><div className="admin-card-heading"><h2>Maelezo ya ledger</h2></div><p>Kila adjustment sasa inaonyesha tokeni ni ya nini: <strong>NIDA = TZS 100</strong> au <strong>huduma nyingine = TZS 500</strong>. Ledger huhifadhi salio la awali na jipya, admin, sababu na rejea ya kipekee.</p><div className="ledger-note"><WalletCards size={20} /><span>Operations zote zinathibitishwa na Firebase Function salama.</span></div></section></div>;
 }
 function TokenPurchaseReviewPanel({ orders, users }: { orders: any[]; users: Array<AdminUserRecord & { id: string }> }) {
   const userNames = new Map(users.map((user) => [user.id, user.name || user.phone || user.id]));
