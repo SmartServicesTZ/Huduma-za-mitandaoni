@@ -40,7 +40,7 @@ service firebase.storage {
         && request.auth.uid == userId
         && applicationId.matches('[A-Za-z0-9_-]{16,80}')
         && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('(image/(jpeg|png|webp)|application/pdf)');
+        && request.resource.contentType.matches('(image/(jpeg|jpg|png|webp)|application/pdf)');
       allow delete: if accountMay('applications') && request.auth.uid == userId;
     }
 
