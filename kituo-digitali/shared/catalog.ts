@@ -67,20 +67,20 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("usuli-wa-ondoa", "USULI WA ONDOA", "Ondoa usuli wa picha.", "scan-face", "Zana za ziada"),
   paid("wasifu-chonga", "WASIFU WA CHONGA", "Tengeneza wasifu wa kuvutia.", "user-round-pen", "Zana za ziada"),
   paid("nembo-chonga", "NEMBO YA CHONGA", "Tengeneza wazo la nembo.", "palette", "Zana za ziada"),
-  paid("radio-maria", "RADIO MARIA", "Fungua Radio Maria kwa urahisi.", "radio", "Zana za ziada"),
-  paid("simba-sc", "SIMBA SC", "Habari na huduma za Simba SC.", "trophy", "Zana za ziada"),
-  paid("yanga-africans", "YANGA AFRICANS", "Habari na huduma za Yanga Africans.", "star", "Zana za ziada"),
-  paid("azam-tv", "AZAM TV", "Fungua huduma ya Azam TV.", "tv", "Zana za ziada"),
+  { ...paid("radio-maria", "RADIO MARIA", "Fungua Radio Maria kwa urahisi.", "radio", "Zana za ziada"), actionUrl: "https://radiomaria.co.tz/" },
+  { ...paid("simba-sc", "SIMBA SC", "Habari na huduma za Simba SC.", "trophy", "Zana za ziada"), actionUrl: "https://simbasc.co.tz/" },
+  { ...paid("yanga-africans", "YANGA AFRICANS", "Habari na huduma za Yanga Africans.", "star", "Zana za ziada"), actionUrl: "https://yangasc.co.tz/" },
+  { ...paid("azam-tv", "AZAM TV", "Fungua huduma ya Azam TV.", "tv", "Zana za ziada"), actionUrl: "https://azamtv.com/" },
 ];
 
 export const specialServices = [
   { slug: "huduma-kwa-wateja", name: "HUDUMA KWA WATEJA — GROUP LA WOTE", tone: "blue", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&mlu=4&iam=2" },
   { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&mlu=4&iam=2" },
   { slug: "kikundi-bure", name: "WAZEE WA BETTING TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ?s=cl&p=a&mlu=4&iam=2" },
-  { slug: "botani-biashara", name: "LIPIA BATANI YA BIASHARA (Programu ya IONEKANE)", tone: "green", action: "contact" },
-  { slug: "kikundi-vip", name: "KIKUNDI VIP 5,000 (Kulipia)", tone: "yellow", action: "contact" },
-  { slug: "vip-usajili", name: "VIP YA USAJILI (Lipia Mda Mrefu)", tone: "yellow", action: "contact" },
-  { slug: "tangazo", name: "LIPIA TANGAZO LAKO (Litangazwe)", tone: "red", action: "contact" },
+  { slug: "botani-biashara", name: "LIPIA BATANI YA BIASHARA (Programu ya IONEKANE)", tone: "green", action: "contact", url: whatsappUrl },
+  { slug: "kikundi-vip", name: "KIKUNDI VIP 5,000 (Kulipia)", tone: "yellow", action: "contact", url: whatsappUrl },
+  { slug: "vip-usajili", name: "VIP YA USAJILI (Lipia Mda Mrefu)", tone: "yellow", action: "contact", url: whatsappUrl },
+  { slug: "tangazo", name: "LIPIA TANGAZO LAKO (Litangazwe)", tone: "red", action: "contact", url: whatsappUrl },
 ] as const;
 
 export const tutorials: TutorialItem[] = [
