@@ -17,7 +17,7 @@ export const defaultServices: DefaultService[] = [
   free("access-lipa-number", "MAOMBI YA ACCESS LIPA NAMBA", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "Huduma kuu", 7),
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "Huduma kuu", 8),
   free("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA", "Tengeneza kitambulisho cha wakala cha pande mbili kwa Airtel, Vodacom, Yas au Halotel.", "badge-check", "Huduma kuu", 9),
-  paid("nakala-nida-2", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "Huduma kuu", 10),
+  paid("sme-airtel-mkataba", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "Huduma kuu", 10),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "Huduma kuu", 11),
   free("utafutaji-nida", "UTAFUTAJI WA NIDA", "Tafuta taarifa za NIDA bila tokeni.", "search", "Huduma za bure", 11),
   free("qr-mitandao", "MSIMBO WA QR MITANDAO YOTE", "Tengeneza msimbo wa QR wa mitandao yako.", "qr-code", "Huduma za bure", 12),
