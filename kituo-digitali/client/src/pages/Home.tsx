@@ -283,23 +283,6 @@ function TopQuickServices({ services, onUse }: { services: ServiceCatalogItem[];
   </section>;
 }
 
-function PopularServices({ services, onUse }: { services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {
-  const popularSlugs = ["cheti-tin", "verify-tin", "pata-lipa-namba", "stika-mawakala", "nakala-nida"];
-  const popular = popularSlugs.map((slug) => services.find((service) => service.slug === slug)).filter(Boolean) as ServiceCatalogItem[];
-  if (!popular.length) return null;
-  return <section className="popular-services">
-    <div className="popular-services__head"><div><span className="overline">HARAKA • KWA AJILI YAKO</span><h2>HUDUMA PENDWA KWA MTUMIAJI</h2></div><span className="popular-services__count">{popular.length}</span></div>
-    <div className="popular-services__row">
-      {popular.map((service) => <button key={service.slug} type="button" className="popular-service-card" onClick={() => onUse(service)}>
-        <span className="popular-service-card__icon"><Icon name={service.icon} size={17} /></span>
-        <span className="popular-service-card__name">{service.name}</span>
-        {service.kind === "free" ? <span className="popular-service-card__price">BURE</span> : service.kind === "locked" ? <span className="popular-service-card__price">IMEFUNGWA</span> : <span className="popular-service-card__price">TOKENI {service.tokenCost}</span>}
-        <ChevronRight size={15} />
-      </button>)}
-    </div>
-  </section>;
-}
-
 function TutorialsSection() {
   const [selected, setSelected] = useState<typeof tutorials[number] | null>(null);
   return <section className="portal-section"><div className="section-title"><div><span className="overline">Jifunze kwa hatua</span><h2>VIDEO ZA MAFUNZO</h2></div></div><div className="tutorial-grid">{tutorials.map((item) => <button className="tutorial-card" key={item.slug} onClick={() => setSelected(item)}><span className="play-circle"><PlayCircle size={25} /></span><strong>{item.title}</strong><small>{item.description}</small><span className="paid-label"><CreditCard size={13} /> Tokeni {item.tokenCost}</span></button>)}</div>{selected && <div className="portal-modal-backdrop" onClick={() => setSelected(null)}><div className="portal-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setSelected(null)}><X size={19} /></button><PlayCircle size={42} className="modal-symbol" /><h3>{selected.title}</h3>{selected.videoUrl ? <video src={selected.videoUrl} controls /> : <Notice tone="info">Video itaongezwa na admin hivi karibuni. Hakuna kiungo bandia kilichowekwa.</Notice>}<button className="button button--green button--wide" onClick={() => setSelected(null)}>Funga</button></div></div>}</section>;
@@ -391,7 +374,6 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     <TopQuickServices services={displayedServices} onUse={onUse} />
     <TokenCard />
     <QuickNidaSearch />
-    <PopularServices services={displayedServices} onUse={onUse} />
     <section className="service-discovery"><div><span className="overline">SMART SERVICES</span><h2>Chagua huduma</h2><p>Anza hapa — huduma zako zote sehemu moja.</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
