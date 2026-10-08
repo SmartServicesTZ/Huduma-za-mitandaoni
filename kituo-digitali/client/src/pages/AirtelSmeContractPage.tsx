@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getPublicSiteSettings } from "@/lib/firebase";
+import { recordDownload } from "@/lib/downloadHistory";
 
 type FormState = {
   customerName: string;
@@ -129,9 +130,11 @@ export default function AirtelSmeContractPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href=url;
-    a.download=`SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g,"-") || "mteja"}.svg`;
+    const fileName = `SME-AIRTEL-MKATABA-${form.customerName.replace(/\\s+/g,"-") || "mteja"}.svg`;
+    a.download=fileName;
     a.click();
-    URL.revokeObjectURL(url);
+    const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    recordDownload({ name: fileName, type: "SME AIRTEL MKATABA", dataUrl });
     setStatus("✓ Mkataba umepakuliwa kwa ubora wa juu.");
   };
 
