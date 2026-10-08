@@ -314,7 +314,7 @@ export type BusinessLicensePayload = {
   applicantName: string;
   businessType: string; otherBusinessType?: string;
   licenseType: "NEW LICENCE" | "RENEWED LICENCE"; principalBranch: "PRINCIPAL" | "BRANCH";
-  region: string; district: string; ward: string; street: string; tin: string; licenseFee: number;
+  region: string; ward: string; street: string; tin: string; licenseFee: number;
 };
 
 export type GeneratedBusinessLicense = {
