@@ -73,7 +73,7 @@ export const tutorials: TutorialItem[] = [
 ];
 
 export const activitySeed: ActivityItem[] = [
-  { service: "CHETI CHA TIN", type: "Matumizi ya huduma", credits: 2, status: "Imekamilika", reference: "HM-81A2", createdAt: "2026-09-09T16:25:00.000Z" },
+  { service: "TIN NUMBER CERTIFICATE", type: "Matumizi ya huduma", credits: 2, status: "Imekamilika", reference: "HM-81A2", createdAt: "2026-09-09T16:25:00.000Z" },
   { service: "NAKALA LAINI YA NIDA", type: "Matumizi ya huduma", credits: 2, status: "Imekamilika", reference: "HM-80F4", createdAt: "2026-09-07T09:10:00.000Z" },
 ];
 
