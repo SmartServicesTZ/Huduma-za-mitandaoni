@@ -9,6 +9,7 @@ import {
   completeBusinessLicense,
   consumeTokens,
   createServiceApplication,
+  createLipaDocumentUploadUrl,
   createTokenPurchaseOrder,
   ensureDefaultServiceCatalog,
   fimipayWebhook,
@@ -40,7 +41,7 @@ interface Env extends WorkerEnv {}
 
 const callableRoutes: Record<string, CallableRoute> = {
   adminDelete, adminWrite, adjustTokens, changeOwnPassword, claimRegistrationPhone, completeBusinessLicense, consumeTokens,
-  createServiceApplication, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
+  createServiceApplication, createLipaDocumentUploadUrl, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
