@@ -187,8 +187,8 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { user } = useAuth();
-  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/chat", label: "Chat", icon: MessageCircle }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Akaunti & Settings", icon: Settings2 }];
-  return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.name?.slice(0, 2).toUpperCase() ?? "HM"}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <Link href="/admin" className={`portal-nav-item admin-link ${location.startsWith("/admin") ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
+  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/chat", label: "Chat", icon: MessageCircle }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }];
+  return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.profileImageUrl ? <img src={user.profileImageUrl} alt="" /> : (user?.name?.slice(0, 2).toUpperCase() ?? "HM")}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <Link href="/admin" className={`portal-nav-item admin-link ${location.startsWith("/admin") ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
 function TokenCard({ compact = false }: { compact?: boolean }) {
@@ -207,8 +207,8 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   };
 
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
-    <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">Tokeni zako</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div></div>
-    <div className="token-card__meta"><span>Simu: <b>{profile?.phone ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "✓ Imeidhinishwa" : "Inasubiri idhini ya admin"}</span></div>
+    <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">WALLET YA TOKENI</span><strong>{isAuthenticated ? balance : 0}</strong><span className="token-label">tokeni</span></div><span className="token-live-pill">● LIVE</span></div>
+    <div className="token-card__meta"><span>Simu: <b>{profile?.phone ?? "—"}</b></span><span className={`verification verification--${status}`}>{status === "approved" ? "✓ VERIFIED" : "Inasubiri idhini"}</span></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
     <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}>+ ONGEZA TOKENI</button>
     {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
@@ -269,7 +269,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
-    if (isServiceLocked(service.slug, override, service.kind === "locked")) return { ...service, kind: "locked" as const };
+    if (isServiceLocked(service.slug, override, service.kind === "locked")) return { ...service, kind: "locked" as const, description: service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye." };
     if (service.kind === "locked" || service.category === "Huduma zilizofungwa") return { ...service, kind: "paid" as const, tokenCost: service.tokenCost || 2, category: "Huduma kuu" };
     return service;
   }), serviceOrder);
@@ -327,7 +327,7 @@ export default function Home() {
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const { isAuthenticated, firebaseUser, user, logout } = useAuth();
+  const { isAuthenticated, firebaseUser, user, profile, logout } = useAuth();
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogInitialized, setCatalogInitialized] = useState(false);
@@ -351,7 +351,9 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [firebaseUser?.uid, canManageServices]);
   const tokenOperationKeys = useRef(new Map<string, string>());
-  const appearance = { data: null as null | { backgroundColor?: string; primaryColor?: string; secondaryColor?: string } };
+  const appTheme = profile?.settings?.theme ?? "dark";
+  const appAccent = profile?.settings?.accent ?? "green";
+  const compactMode = profile?.settings?.compactMode === true;
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.open(service.actionUrl, "_blank", "noopener,noreferrer"); else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
   const handleUse = (service: ServiceCatalogItem) => { if (service.kind === "locked") { toast.error("Huduma hii imefungwa kwa sasa."); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
@@ -366,7 +368,7 @@ export default function Home() {
     : accessMode === "limited"
       ? `Akaunti yako imewekewa ruhusa maalum: ${accountRestrictionActions.filter((action) => user?.allowedActions?.includes(action)).map((action) => accountRestrictionActionLabels[action]).join(", ") || "hakuna kitendo kilichoruhusiwa"}.`
       : null;
-  return <div className="portal-shell" style={{ "--navy": appearance.data?.backgroundColor ?? "#071a36", "--green": appearance.data?.primaryColor ?? "#18b969", "--navy-2": appearance.data?.secondaryColor ?? "#0b2447" } as React.CSSProperties}>
+  return <div className={`portal-shell ${compactMode ? "app-compact-mode" : ""}`} data-theme={appTheme} data-accent={appAccent} style={{ "--navy": "#071a36", "--green": appAccent === "blue" ? "#3b82f6" : appAccent === "purple" ? "#8b5cf6" : "#18b969", "--navy-2": "#0b2447" } as React.CSSProperties}>
     {fullAccessBlocked ? <AccountRestrictionGate reason={user?.restrictionReason} message={user?.restrictionMessage} onLogout={logout} /> : <>
       <div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} />
       <div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div>
