@@ -102,7 +102,7 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     reward: 500,
     active: true,
     fields: [
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Hakikisha namba haijafunguliwa Lipa Namba nyingine.", order: 1 },
+      { fieldName: "phone", label: "Namba ya Simu ya Mwombaji", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Hakikisha namba haijafunguliwa Lipa Namba nyingine.", order: 1 },
     ],
   },
   {
@@ -122,7 +122,7 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
       { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 4 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 5 },
       { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 6 },
-      { fieldName: "idDocument", label: "Picha 1 — Kitambulisho au Passport Size", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha 1 tu: Kitambulisho au Passport Size. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
+      { fieldName: "idDocument", label: "Picha 1 — Kitambulisho au Passport Size", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha 1 tu: Kitambulisho au Passport Size. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 6 },
     ],
   },
   {
