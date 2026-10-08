@@ -30,7 +30,7 @@ if (typeof window !== "undefined") {
 // Reset stale PWA state once after the repository rename, then register the current worker.
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    const resetKey = "smartservices-tz-pwa-reset-v4";
+    const resetKey = "smartservices-tz-pwa-reset-v5";
     if (sessionStorage.getItem(resetKey) !== "1") {
       sessionStorage.setItem(resetKey, "1");
       Promise.all([
