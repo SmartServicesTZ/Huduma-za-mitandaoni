@@ -107,7 +107,7 @@ export const defaultAccessLipaServices = [
 
 export const defaultLipaServices = [
   network("airtel", "Airtel", "AIRTEL — PATA LIPA NAMBA", 500, "Ndugu Agent, utajipatia sh 500 kwa Lipa Namba itakayotengenezwa hapa.", "Ifanye miamala jumla isiyopungua sh 10,000.", [commonPhone]),
-  network("vodacom", "Vodacom", "VODACOM — PATA LIPA NAMBA", 5000, "Ndugu Agent, utajipatia sh 5,000 kwa Lipa Namba itakayotengenezwa hapa.", "Ifanye miamala 3 na jumla isiwe chini ya sh 30,000.", [...names, { fieldName: "businessName", label: "Majina ya Biashara", type: "TEXT", required: false, order: 3 }, { ...commonPhone, order: 4 }, { ...commonNida, order: 5 }, { ...commonTin, order: 6 }, identityType, identityImage]),
+  network("vodacom", "Vodacom", "VODACOM — PATA LIPA NAMBA", 5000, "Ndugu Agent, utajipatia sh 5,000 kwa Lipa Namba itakayotengenezwa hapa.", "Ifanye miamala 3 na jumla isiwe chini ya sh 30,000.", [...names, { fieldName: "businessName", label: "Majina ya Biashara", type: "TEXT", required: false, order: 3 }, { ...commonPhone, order: 4 }, { ...commonNida, order: 5 }, { ...commonTin, order: 6 }, identityImage]),
   network("yas-tigo", "Yas / Tigo", "YAS / TIGO — PATA LIPA NAMBA", 0, "Karibu ujipatie huduma ya Lipa Namba.", "", [commonPhone, commonNida, commonTin, { fieldName: "businessLicense", label: "Leseni ya Biashara", type: "TEXTAREA", required: false, order: 4 }]),
   network("halotel", "Halotel", "HALOTEL — PATA LIPA NAMBA", 0, "Karibu ujipatie huduma ya Lipa Namba.", "", [commonPhone, commonNida, commonTin, identityType, identityImage]),
 ];
