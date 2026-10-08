@@ -63,9 +63,42 @@ export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("black");
-  const [layout, setLayout] = useState<Record<string, number>>({nameX:22.5,nameY:25,nameSize:3,phoneX:22.5,phoneY:28.9,phoneSize:3,tinX:76,tinY:28.9,tinSize:2.8,idTypeX:24,idTypeY:32.9,idTypeSize:2.8,idX:69,idY:32.9,idSize:2.4,streetX:28,streetY:37,streetSize:2.8,wardX:75,wardY:37,wardSize:2.8,districtX:31,districtY:41,districtSize:2.8,regionX:76,regionY:41,regionSize:2.8,normalX:5.8,normalY:56.2,normalSize:4.2,deviceX:29,deviceY:61.0,deviceSize:2.8,customerX:17,customerY:74.0,customerSize:2.6,sign1X:70,sign1Y:74.0,sign1Size:2.6,date1X:89,date1Y:74.0,date1Size:2.2,salesX:20,salesY:84.0,salesSize:2.6,sign2X:70,sign2Y:84.0,sign2Size:2.6,date2X:89,date2Y:84.0,date2Size:2.2});
-  useEffect(() => { void getPublicSiteSettings().then((settings:any) => { const saved=settings?.templateLayouts?.airtelSme; if(saved) setLayout((cur)=>Object.fromEntries(Object.keys(cur).map(k=>[k,Number(saved[k] ?? cur[k])]))); }).catch(()=>undefined); }, []);
-  const ov=(x:string,y:string,size:string,width?:string): React.CSSProperties => ({left:`${layout[x] ?? 0}%`,top:`${layout[y] ?? 0}%`,fontSize:`clamp(8px, ${Math.max(1.15, Number(layout[size] ?? 2.8) * 0.52)}vw, 15px)`,width, maxWidth:width, boxSizing:"border-box", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"});
+  // SME CONTRACT LAYOUT — badili X/Y/size hapa tu. Preview na Download hutumia hizi coordinates.
+  const SME_LAYOUT = {
+    customerName: { x: 22.5, y: 25, size: 3 },
+    phone: { x: 22.5, y: 28.9, size: 3 },
+    tin: { x: 76, y: 28.9, size: 2.8 },
+    idType: { x: 24, y: 32.9, size: 2.8 },
+    idNumber: { x: 69, y: 32.9, size: 2.4 },
+    street: { x: 28, y: 37, size: 2.8 },
+    ward: { x: 75, y: 37, size: 2.8 },
+    district: { x: 31, y: 41, size: 2.8 },
+    region: { x: 76, y: 41, size: 2.8 },
+    email: { x: 31, y: 49, size: 2.6 },
+    normalSme: { x: 5.8, y: 56.2, size: 4.2 },
+    devicePhone: { x: 29, y: 61, size: 2.8 },
+    customerName2: { x: 17, y: 74, size: 2.6 },
+    signature1: { x: 70, y: 74, size: 2.6 },
+    date1: { x: 89, y: 74, size: 2.2 },
+    salesName: { x: 20, y: 84, size: 2.6 },
+    signature2: { x: 70, y: 84, size: 2.6 },
+    date2: { x: 89, y: 84, size: 2.2 },
+  } as const;
+  const [layout, setLayout] = useState(SME_LAYOUT);
+  useEffect(() => {
+    void getPublicSiteSettings().then((settings:any) => {
+      const saved = settings?.templateLayouts?.airtelSme;
+      if (!saved) return;
+      setLayout((cur) => Object.fromEntries(Object.keys(cur).map((key) => {
+        const item = cur[key as keyof typeof cur];
+        return [key, { x: Number(saved[key + "X"] ?? item.x), y: Number(saved[key + "Y"] ?? item.y), size: Number(saved[key + "Size"] ?? item.size) }];
+      })) as typeof SME_LAYOUT);
+    }).catch(() => undefined);
+  }, []);
+  const ov = (key: keyof typeof SME_LAYOUT, width?: string): React.CSSProperties => {
+    const item = layout[key];
+    return { left: `${item.x}%`, top: `${item.y}%`, fontSize: `clamp(8px, ${Math.max(1.15, item.size * 0.52)}vw, 15px)`, width, maxWidth: width, boxSizing:"border-box", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" };
+  };
 
   const update = (key: keyof FormState, value: string | boolean) => {
     setForm((current) => {
@@ -107,24 +140,24 @@ export default function AirtelSmeContractPage() {
       `<text x="${x}%" y="${y}%" font-family="Arial,Helvetica,sans-serif" font-size="${Math.max(10,size*4)}" font-weight="700" fill="${ink}" textLength="${Math.max(20,width*4)}" lengthAdjust="spacingAndGlyphs">${esc(value)}</text>`;
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1414">
       <image href="${imageSrc}" x="0" y="0" width="1000" height="1414" preserveAspectRatio="none"/>
-      ${text(form.customerName,layout.nameX,layout.nameY+4,layout.nameSize,73)}
-      ${text(form.phone,layout.phoneX,layout.phoneY+4,layout.phoneSize,39)}
-      ${text(form.tin,layout.tinX,layout.tinY+4,layout.tinSize,20)}
-      ${text(form.idType.toUpperCase(),layout.idTypeX,layout.idTypeY+4,layout.idTypeSize,28)}
-      ${text(form.idNumber,layout.idX,layout.idY+4,layout.idSize,27)}
-      ${text(form.street.toUpperCase(),layout.streetX,layout.streetY+4,layout.streetSize,36)}
-      ${text(form.ward.toUpperCase(),layout.wardX,layout.wardY+4,layout.wardSize,20)}
-      ${text(form.district.toUpperCase(),layout.districtX,layout.districtY+4,layout.districtSize,34)}
-      ${text(form.region.toUpperCase(),layout.regionX,layout.regionY+4,layout.regionSize,20)}
-      ${text(form.email,31,49,2.6,64)}
-      ${text(form.normalSme ? "☑" : "☐",layout.normalX,layout.normalY+4,layout.normalSize,8)}
-      ${text(form.devicePhone,layout.deviceX,layout.deviceY+4,layout.deviceSize,30)}
-      ${text(form.customerName2,layout.customerX,layout.customerY+4,layout.customerSize,38)}
-      ${text(form.signature1,layout.sign1X,layout.sign1Y+4,layout.sign1Size,12)}
-      ${text(form.date1,layout.date1X,layout.date1Y+4,layout.date1Size,9)}
-      ${text(form.salesName,layout.salesX,layout.salesY+4,layout.salesSize,36)}
-      ${text(form.signature2,layout.sign2X,layout.sign2Y+4,layout.sign2Size,12)}
-      ${text(form.date2,layout.date2X,layout.date2Y+4,layout.date2Size,9)}
+      ${text(form.customerName,SME_LAYOUT.customerName.x,SME_LAYOUT.customerName.y+4,SME_LAYOUT.customerName.size,73)}
+      ${text(form.phone,SME_LAYOUT.phone.x,SME_LAYOUT.phone.y+4,SME_LAYOUT.phone.size,39)}
+      ${text(form.tin,SME_LAYOUT.tin.x,SME_LAYOUT.tin.y+4,SME_LAYOUT.tin.size,20)}
+      ${text(form.idType.toUpperCase(),SME_LAYOUT.idType.x,SME_LAYOUT.idType.y+4,SME_LAYOUT.idType.size,28)}
+      ${text(form.idNumber,SME_LAYOUT.idNumber.x,SME_LAYOUT.idNumber.y+4,SME_LAYOUT.idNumber.size,27)}
+      ${text(form.street.toUpperCase(),SME_LAYOUT.street.x,SME_LAYOUT.street.y+4,SME_LAYOUT.street.size,36)}
+      ${text(form.ward.toUpperCase(),SME_LAYOUT.ward.x,SME_LAYOUT.ward.y+4,SME_LAYOUT.ward.size,20)}
+      ${text(form.district.toUpperCase(),SME_LAYOUT.district.x,SME_LAYOUT.district.y+4,SME_LAYOUT.district.size,34)}
+      ${text(form.region.toUpperCase(),SME_LAYOUT.region.x,SME_LAYOUT.region.y+4,SME_LAYOUT.region.size,20)}
+      ${text(form.email, SME_LAYOUT.email.x, SME_LAYOUT.email.y + 4, SME_LAYOUT.email.size, 64)}
+      ${text(form.normalSme ? "☑" : "☐",SME_LAYOUT.normalSme.x,SME_LAYOUT.normalSme.y+4,SME_LAYOUT.normalSme.size,8)}
+      ${text(form.devicePhone,SME_LAYOUT.devicePhone.x,SME_LAYOUT.devicePhone.y+4,SME_LAYOUT.devicePhone.size,30)}
+      ${text(form.customerName2,SME_LAYOUT.customerName2.x,SME_LAYOUT.customerName2.y+4,SME_LAYOUT.customerName2.size,38)}
+      ${text(form.signature1,SME_LAYOUT.signature1.x,SME_LAYOUT.signature1.y+4,SME_LAYOUT.signature1.size,12)}
+      ${text(form.date1,SME_LAYOUT.date1.x,SME_LAYOUT.date1.y+4,SME_LAYOUT.date1.size,9)}
+      ${text(form.salesName,SME_LAYOUT.salesName.x,SME_LAYOUT.salesName.y+4,SME_LAYOUT.salesName.size,36)}
+      ${text(form.signature2,SME_LAYOUT.signature2.x,SME_LAYOUT.signature2.y+4,SME_LAYOUT.signature2.size,12)}
+      ${text(form.date2,SME_LAYOUT.date2.x,SME_LAYOUT.date2.y+4,SME_LAYOUT.date2.size,9)}
     </svg>`;
     const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
     const url = URL.createObjectURL(blob);
@@ -233,14 +266,14 @@ export default function AirtelSmeContractPage() {
             <div className="sme-preview">
               <div className="sme-template">
                 <img src={imageSrc} alt="Airtel SME Contract Template" onError={() => setStatus("⚠️ contact.png haijapatikana. Iweke ndani ya client/public/contact.png.")} />
-                <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.customerName}</div><div className="sme-overlay" style={{...ov("phoneX","phoneY","phoneSize","39%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div><div className="sme-overlay" style={{...ov("tinX","tinY","tinSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.tin}</div>
-                <div className="sme-overlay" style={{...ov("idTypeX","idTypeY","idTypeSize","28%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idType.toUpperCase()}</div><div className="sme-overlay" style={{...ov("idX","idY","idSize","27%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idNumber}</div>
-                <div className="sme-overlay" style={{...ov("streetX","streetY","streetSize","36%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.street.toUpperCase()}</div><div className="sme-overlay" style={{...ov("wardX","wardY","wardSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.ward.toUpperCase()}</div>
-                <div className="sme-overlay" style={{...ov("districtX","districtY","districtSize","34%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={{...ov("regionX","regionY","regionSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.region.toUpperCase()}</div><div className="sme-overlay sme-email" style={{color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email}</div>
+                <div className="sme-overlay" style={{...ov("customerName","73%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.customerName}</div><div className="sme-overlay" style={{...ov("phone","39%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div><div className="sme-overlay" style={{...ov("tin","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.tin}</div>
+                <div className="sme-overlay" style={{...ov("idType","28%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idType.toUpperCase()}</div><div className="sme-overlay" style={{...ov("idNumber","27%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idNumber}</div>
+                <div className="sme-overlay" style={{...ov("street","36%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.street.toUpperCase()}</div><div className="sme-overlay" style={{...ov("ward","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.ward.toUpperCase()}</div>
+                <div className="sme-overlay" style={{...ov("district","34%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.district.toUpperCase()}</div><div className="sme-overlay" style={{...ov("region","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.region.toUpperCase()}</div><div className="sme-overlay sme-email" style={{...ov("email","64%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email}</div>
 <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "☑" : "☐"}</div>
-                <div className="sme-overlay" style={ov("deviceX","deviceY","deviceSize","30%")}>{form.devicePhone}</div><div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
-                <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div><div className="sme-overlay" style={ov("date1X","date1Y","date1Size","9%")}>{form.date1}</div>
-                <div className="sme-overlay" style={ov("salesX","salesY","salesSize","36%")}>{form.salesName}</div><div className="sme-overlay" style={ov("sign2X","sign2Y","sign2Size","12%")}>{form.signature2}</div><div className="sme-overlay" style={ov("date2X","date2Y","date2Size","9%")}>{form.date2}</div>
+                <div className="sme-overlay" style={ov("devicePhone","30%")}>{form.devicePhone}</div><div className="sme-overlay" style={ov("customerName2","38%")}>{form.customerName2}</div>
+                <div className="sme-overlay" style={ov("signature1","12%")}>{form.signature1}</div><div className="sme-overlay" style={ov("date1","9%")}>{form.date1}</div>
+                <div className="sme-overlay" style={ov("salesName","36%")}>{form.salesName}</div><div className="sme-overlay" style={ov("signature2","12%")}>{form.signature2}</div><div className="sme-overlay" style={ov("date2","9%")}>{form.date2}</div>
               </div>
             </div>
           </section>
