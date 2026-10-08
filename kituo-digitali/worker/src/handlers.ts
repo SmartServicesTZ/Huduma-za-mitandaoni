@@ -629,6 +629,22 @@ export const markLipaApplicationViewed = callable(async (request) => {
   return { ok: true };
 });
 
+export const createLipaDocumentUploadUrl = callable(async (request) => {
+  const uid = authUid(request);
+  await enforceAccountRestriction(uid, "submitLipaApplication");
+  const data = objectValue(request.data, "Taarifa za picha");
+  const applicationId = text(data.applicationId, 80);
+  const fieldName = text(data.fieldName, 64);
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new ApiError("invalid-argument", "Field ya picha si sahihi.");
+  const contentType = text(data.contentType, 100).toLowerCase();
+  if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) throw new ApiError("invalid-argument", "Picha lazima iwe JPG, PNG au WebP.");
+  const fileName = text(data.fileName, 120).replace(/[^A-Za-z0-9._-]/g, "_");
+  const path = `lipaUploads/${uid}/${applicationId}/${fieldName}-${randomUUID()}-${fileName}`;
+  const { signStorageUrl } = await import("./storage-rest.js");
+  const url = await signStorageUrl("write", path, Date.now() + 10 * 60 * 1000);
+  return { url, path };
+});
+
 export const getLipaApplicationDocument = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
