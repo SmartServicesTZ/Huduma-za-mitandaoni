@@ -205,7 +205,7 @@ export default function ChatPage() {
   const createGroup = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!self) return;
-    const phones = groupPhones.split(/[,\s]+/).map((value)> value.trim()).filter(Boolean);
+    const phones = groupPhones.split(/[,\s]+/).map((value) => value.trim()).filter(Boolean);
     if (!groupName.trim() || !phones.length) { toast.error("Weka jina la group na angalau namba moja."); return; }
     try {
       const targets: ChatUser[] = [];
