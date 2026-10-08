@@ -873,12 +873,12 @@ export async function deleteChatMessage(roomId: string | null, message: ChatMess
     try { await deleteObject(storageRef(firebaseStorage, message.filePath)); } catch { /* The message is removed; an orphaned file can be cleaned up later. */ }
   }
 }
-export async function uploadChatFile(roomId: string | null, senderId: string, file: File, isPublic = false) {
+export async function uploadChatFile(roomId: string | null, senderId: string, file: File, isPublic = false, isGroup = false) {
   if (file.size > 10 * 1024 * 1024) throw new Error("Faili isizidi MB 10.");
   const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf", "text/plain", "audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg"];
   if (!allowed.includes(file.type)) throw new Error("Aina hii ya faili hairuhusiwi.");
   const safeName = file.name.replace(/[^\w.-]/g, "_").slice(0, 100) || "attachment";
-  const path = isPublic ? `publicChatFiles/${senderId}/${Date.now()}_${safeName}` : `chatFiles/${roomId}/${senderId}/${Date.now()}_${safeName}`;
+  const path = isPublic ? `publicChatFiles/${senderId}/${Date.now()}_${safeName}` : isGroup ? `chatGroupFiles/${roomId}/${senderId}/${Date.now()}_${safeName}` : `chatFiles/${roomId}/${senderId}/${Date.now()}_${safeName}`;
   const reference = storageRef(firebaseStorage, path);
   await uploadBytes(reference, file, { contentType: file.type });
   return { filePath: path, fileName: safeName, fileType: file.type };
