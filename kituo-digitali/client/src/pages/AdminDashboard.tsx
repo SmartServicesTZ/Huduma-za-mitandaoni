@@ -62,9 +62,10 @@ export default function AdminDashboard() {
   const [cms, setCms] = useState({ systemName: "HUDUMA ZA MTANDAONI", eyebrow: "HUDUMA ZA MTANDAONI", headline: "Huduma zako, sehemu moja.", description: "", searchPlaceholder: "Tafuta huduma...", whatsapp: "255698232313", owner: "", footer: "", primaryColor: "#18b969", accentColor: "#6ea8fe" });
   const permissions = user?.permissions ?? {};
   const isSuper = user?.role === "super_admin";
-  const hasPermission = (permission: string) => isSuper || permissions[permission as keyof typeof permissions] === true;
+  const isAdmin = user?.role === "admin";
+  const hasPermission = (permission: string) => isSuper || isAdmin || permissions[permission as keyof typeof permissions] === true;
   const canManageLipaApplications = hasPermission("manageLipaApplications");
-  const canManage = isAuthenticated && (isSuper || Object.values(permissions).some(Boolean));
+  const canManage = isAuthenticated && (isSuper || isAdmin || Object.values(permissions).some(Boolean));
   const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
   const panel = (nav.some(([key]) => key === rawPanel) ? rawPanel : "overview") as Panel;
   const visibleNav = nav.filter(([key]) => key === "overview" || (key === "ordering" ? isSuper : !panelPermission[key] || hasPermission(panelPermission[key]!)));
