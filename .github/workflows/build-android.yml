@@ -278,8 +278,13 @@ jobs:
                       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                           Uri u = request.getUrl();
                           String host = u.getHost();
-                          if (host != null && (host.equals("smartservicestz.github.io") || host.endsWith(".googleapis.com") || host.endsWith(".firebaseapp.com") || host.endsWith(".firebaseio.com") || host.equals("firebasestorage.googleapis.com"))) return false;
-                          try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) {}
+                          String scheme = u.getScheme();
+                          if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
+                              return false;
+                          }
+                          if ("tel".equalsIgnoreCase(scheme) || "mailto".equalsIgnoreCase(scheme) || "sms".equalsIgnoreCase(scheme)) {
+                              try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) {}
+                          }
                           return true;
                       }
 
