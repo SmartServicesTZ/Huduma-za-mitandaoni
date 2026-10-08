@@ -305,7 +305,8 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
     if (isServiceLocked(service.slug, override, service.kind === "locked")) return { ...service, kind: "locked" as const, description: service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye." };
-    if (service.kind === "locked" || service.category === "Huduma zilizofungwa") return { ...service, kind: "paid" as const, tokenCost: service.tokenCost || 2, category: "Huduma kuu" };
+    // Heshimu lock ya admin. Usigeuze huduma iliyofungwa kuwa paid hapa:
+    // serviceLocks ndiyo chanzo cha mwisho cha hali ya kufungwa/kufunguliwa.
     return service;
   }), serviceOrder);
   const lower = search.toLowerCase();
