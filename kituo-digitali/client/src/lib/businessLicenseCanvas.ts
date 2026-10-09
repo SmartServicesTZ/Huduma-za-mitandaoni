@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 
-export const BUSINESS_LICENSE_CANVAS_WIDTH = 1489;
-export const BUSINESS_LICENSE_CANVAS_HEIGHT = 2105;
+export const BUSINESS_LICENSE_CANVAS_WIDTH = 2024;
+export const BUSINESS_LICENSE_CANVAS_HEIGHT = 2600;
 const BUSINESS_LICENSE_RENDER_SCALE = 2;
 const BUSINESS_LICENSE_LAYOUT_WIDTH = BUSINESS_LICENSE_CANVAS_WIDTH / BUSINESS_LICENSE_RENDER_SCALE;
 const BUSINESS_LICENSE_LAYOUT_HEIGHT = BUSINESS_LICENSE_CANVAS_HEIGHT / BUSINESS_LICENSE_RENDER_SCALE;
@@ -88,9 +88,9 @@ const DEFAULT_LICENSE_LAYOUT = {
   numberX: 50,
   numberY: 20.3,
   numberSize: 12,
-  qrX: 69.0,
-  qrY: 51.8,
-  qrSize: 116,
+  qrX: 67.0,
+  qrY: 50.5,
+  qrSize: 150,
 };
 
 const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
@@ -144,24 +144,40 @@ export async function renderBusinessLicenseCanvas(
 
   const valueX = layout.valueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
 
-  // Cover the sample B.L. number using a background color sampled from the
-  // adjacent template area, rather than clearRect (which exports as a white hole).
-  const numberMaskX = 218;
-  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 11;
-  const numberMaskWidth = 310;
-  const numberMaskHeight = 22;
-  const sampleX = Math.min(BUSINESS_LICENSE_CANVAS_WIDTH - 2, Math.round((numberMaskX + numberMaskWidth + 8) * BUSINESS_LICENSE_RENDER_SCALE));
-  const sampleY = Math.max(0, Math.min(BUSINESS_LICENSE_CANVAS_HEIGHT - 1, Math.round((numberMaskY + numberMaskHeight / 2) * BUSINESS_LICENSE_RENDER_SCALE)));
-  const sampled = ctx.getImageData(sampleX, sampleY, 1, 1).data;
+  // Remove the sample B.L. number by rebuilding the narrow strip from
+  // template pixels above and below it, rather than painting a white box.
+  const numberMaskX = BUSINESS_LICENSE_LAYOUT_WIDTH * 0.293;
+  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 13.64;
+  const numberMaskWidth = BUSINESS_LICENSE_LAYOUT_WIDTH * 0.417;
+  const numberMaskHeight = 27.28;
+  const pixelX = Math.max(0, Math.round(numberMaskX * BUSINESS_LICENSE_RENDER_SCALE));
+  const pixelY = Math.max(2, Math.round(numberMaskY * BUSINESS_LICENSE_RENDER_SCALE));
+  const pixelWidth = Math.min(BUSINESS_LICENSE_CANVAS_WIDTH - pixelX, Math.round(numberMaskWidth * BUSINESS_LICENSE_RENDER_SCALE));
+  const pixelHeight = Math.round(numberMaskHeight * BUSINESS_LICENSE_RENDER_SCALE);
+  const topY = Math.max(0, pixelY - 8);
+  const bottomY = Math.min(BUSINESS_LICENSE_CANVAS_HEIGHT - 1, pixelY + pixelHeight + 8);
+  const topPixels = ctx.getImageData(pixelX, topY, pixelWidth, 1).data;
+  const bottomPixels = ctx.getImageData(pixelX, bottomY, pixelWidth, 1).data;
+  const strip = ctx.createImageData(pixelWidth, pixelHeight);
+  for (let x = 0; x < pixelWidth; x++) {
+    for (let y = 0; y < pixelHeight; y++) {
+      const t = (y + 1) / (pixelHeight + 1);
+      const i = (y * pixelWidth + x) * 4;
+      for (let channel = 0; channel < 3; channel++) {
+        strip.data[i + channel] = Math.round(topPixels[x * 4 + channel] * (1 - t) + bottomPixels[x * 4 + channel] * t);
+      }
+      strip.data[i + 3] = 255;
+    }
+  }
   ctx.save();
-  ctx.fillStyle = `rgb(${sampled[0]}, ${sampled[1]}, ${sampled[2]})`;
-  ctx.fillRect(numberMaskX, numberMaskY, numberMaskWidth, numberMaskHeight);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.putImageData(strip, pixelX, pixelY);
   ctx.restore();
 
   drawText(
     ctx,
     { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 700, family: FONT_SANS, color: "#168da6", align: "center", maxWidth: 600 },
-    `B.L. NO : ${licenseNumber || "—"}`,
+    `B.L. NO : ${licenseNumber || "Namba inatolewa..."}`,
   );
 
   // Keep the template office text "DODOMA CITY COUNCIL" unchanged; continue populating the fields below it.
