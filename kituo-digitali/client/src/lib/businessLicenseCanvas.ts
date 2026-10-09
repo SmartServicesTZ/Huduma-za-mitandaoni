@@ -71,7 +71,7 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
 }
 
 const DEFAULT_LICENSE_LAYOUT = {
-  valueX: 25.4,
+  valueX: 30.5,
   nameY: 34.6,
   tinY: 31.7,
   businessY: 37.7,
