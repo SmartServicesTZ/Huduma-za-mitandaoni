@@ -1,0 +1,43 @@
+name: Convert Business License DOCX Template
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/convert-license-template.yml'
+      - 'kituo-digitali/client/public/license-assets/Licence 3.docx'
+
+permissions:
+  contents: read
+
+jobs:
+  convert-template:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install conversion tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice poppler-utils
+
+      - name: Convert DOCX to PDF and preview PNG
+        run: |
+          mkdir -p /tmp/license-convert
+          libreoffice --headless --convert-to pdf --outdir /tmp/license-convert "kituo-digitali/client/public/license-assets/Licence 3.docx"
+          test -s "/tmp/license-convert/Licence 3.pdf"
+          pdfinfo "/tmp/license-convert/Licence 3.pdf" | head -15
+          pdftoppm -f 1 -l 1 -png -r 180 -singlefile "/tmp/license-convert/Licence 3.pdf" "/tmp/license-convert/business-license-template"
+          cp "/tmp/license-convert/Licence 3.pdf" /tmp/license-convert/
+          ls -lh /tmp/license-convert/
+
+      - name: Upload converted template for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: converted-business-license-template
+          path: |
+            /tmp/license-convert/business-license-template.png
+            /tmp/license-convert/Licence 3.pdf
+          if-no-files-found: error
+          retention-days: 3
