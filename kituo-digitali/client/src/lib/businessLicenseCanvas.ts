@@ -150,7 +150,6 @@ export async function renderBusinessLicenseCanvas(
   ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.94)";
   ctx.fillRect(218, layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 11, 310, 22);
-  ctx.fillRect(242, layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 9, 210, 19);
   ctx.restore();
 
   drawText(
@@ -159,7 +158,7 @@ export async function renderBusinessLicenseCanvas(
     `B.L. NO : ${licenseNumber || "—"}`,
   );
 
-  drawText(ctx, { x: valueX, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: 12.5, maxWidth: 300 }, "DAR ES SALAAM CITY COUNCIL");
+  // Keep the template office text "DODOMA CITY COUNCIL" unchanged; continue populating the fields below it.
   drawText(ctx, { x: valueX, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.tin);
   drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 560 }, owner);
   drawText(ctx, { x: valueX, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, maxWidth: 560 }, businessType);
