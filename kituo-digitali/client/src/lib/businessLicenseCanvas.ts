@@ -151,15 +151,8 @@ export async function renderBusinessLicenseCanvas(
   ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_LAYOUT_WIDTH, BUSINESS_LICENSE_LAYOUT_HEIGHT);
 
-  staticText.forEach((item) => {
-    const text = item.text ?? "";
-    // Cover the template labels and redraw the three section headings in the reference typography.
-    if (text === "License Details" || text === "Business Location" || text === "Payment Details") {
-      drawText(ctx, { ...item, weight: 400, size: 24, family: FONT_BODY }, text);
-      return;
-    }
-    drawText(ctx, item, text);
-  });
+  // Keep all labels, headings, and footer text from the original template untouched.
+  // Only the user-specific values and generated QR are drawn over the template.
 
   const owner = form.applicantName.trim().replace(/\s+/g, " ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
