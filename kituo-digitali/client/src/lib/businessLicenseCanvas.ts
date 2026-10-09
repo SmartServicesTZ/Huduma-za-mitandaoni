@@ -144,9 +144,18 @@ export async function renderBusinessLicenseCanvas(
 
   const valueX = layout.valueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
 
-  // Mask only the sample B.L. number printed in the DOCX; preserve the office text and surrounding design.
+  // Cover the sample B.L. number using a background color sampled from the
+  // adjacent template area, rather than clearRect (which exports as a white hole).
+  const numberMaskX = 218;
+  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 11;
+  const numberMaskWidth = 310;
+  const numberMaskHeight = 22;
+  const sampleX = Math.min(BUSINESS_LICENSE_CANVAS_WIDTH - 2, Math.round((numberMaskX + numberMaskWidth + 8) * BUSINESS_LICENSE_RENDER_SCALE));
+  const sampleY = Math.max(0, Math.min(BUSINESS_LICENSE_CANVAS_HEIGHT - 1, Math.round((numberMaskY + numberMaskHeight / 2) * BUSINESS_LICENSE_RENDER_SCALE)));
+  const sampled = ctx.getImageData(sampleX, sampleY, 1, 1).data;
   ctx.save();
-  ctx.clearRect(218, layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 11, 310, 22);
+  ctx.fillStyle = `rgb(${sampled[0]}, ${sampled[1]}, ${sampled[2]})`;
+  ctx.fillRect(numberMaskX, numberMaskY, numberMaskWidth, numberMaskHeight);
   ctx.restore();
 
   drawText(
