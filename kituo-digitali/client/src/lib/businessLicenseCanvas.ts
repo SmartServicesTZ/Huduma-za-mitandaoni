@@ -1,10 +1,10 @@
 import QRCode from "qrcode";
 
-export const BUSINESS_LICENSE_CANVAS_WIDTH = 2024;
-export const BUSINESS_LICENSE_CANVAS_HEIGHT = 2600;
+export const BUSINESS_LICENSE_CANVAS_WIDTH = 1489;
+export const BUSINESS_LICENSE_CANVAS_HEIGHT = 2105;
 const BUSINESS_LICENSE_RENDER_SCALE = 2;
-const BUSINESS_LICENSE_LAYOUT_WIDTH = 1012;
-const BUSINESS_LICENSE_LAYOUT_HEIGHT = 1300;
+const BUSINESS_LICENSE_LAYOUT_WIDTH = BUSINESS_LICENSE_CANVAS_WIDTH / BUSINESS_LICENSE_RENDER_SCALE;
+const BUSINESS_LICENSE_LAYOUT_HEIGHT = BUSINESS_LICENSE_CANVAS_HEIGHT / BUSINESS_LICENSE_RENDER_SCALE;
 
 export type BusinessLicenseCanvasForm = {
   applicantName: string;
@@ -71,55 +71,33 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
 }
 
 const DEFAULT_LICENSE_LAYOUT = {
-  valueX: 35.8,
-  nameY: 39.30,
-  officeY: 32.95,
-  tinY: 36.05,
-  businessY: 42.55,
-  typeY: 45.85,
-  issueY: 49.15,
-  expiryY: 52.45,
-  branchY: 55.30,
-  regionY: 63.45,
-  wardY: 66.75,
-  streetY: 70.05,
-  amountY: 77.30,
-  valueSize: 18.5,
-  nameSize: 18.5,
+  valueX: 25.4,
+  nameY: 34.6,
+  officeY: 29.5,
+  tinY: 31.7,
+  businessY: 37.7,
+  typeY: 40.6,
+  issueY: 43.5,
+  expiryY: 46.4,
+  branchY: 49.3,
+  regionY: 54.9,
+  wardY: 57.8,
+  streetY: 60.6,
+  amountY: 67.0,
+  valueSize: 12.5,
+  nameSize: 12.5,
   numberX: 50,
-  numberY: 23.15,
-  numberSize: 21,
-  qrX: 61.8,
-  qrY: 57.2,
-  qrSize: 270,
+  numberY: 20.3,
+  numberSize: 12,
+  qrX: 69.0,
+  qrY: 51.8,
+  qrSize: 116,
 };
 
 const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
 const FONT_BODY = "Roboto, Arial, Helvetica, sans-serif";
 
-const staticText: TextItem[] = [
-  { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 27, weight: 400, family: FONT_BODY, align: "center", maxWidth: 900 },
-  { text: "BUSINESS LICENSE", x: 506, y: 245, size: 24, weight: 400, family: FONT_BODY, align: "center", maxWidth: 900 },
-  { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 14, weight: 400, family: FONT_BODY, align: "center", maxWidth: 850 },
 
-  { text: "License Details", x: 50, y: 381, size: 24, weight: 400, family: FONT_BODY, color: "#111827" },
-  { text: "Issuing Office:", x: 72, y: 428, size: 16, weight: 400, family: FONT_BODY, color: "#111827" },
-  { text: "Tax Identification No:", x: 72, y: 469, size: 16, weight: 500, family: FONT_BODY, color: "#111827" },
-  { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-  { text: "For the Business Of:", x: 72, y: 553, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-  { text: "Business Licensing:", x: 72, y: 596, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-  { text: "Date of Issue:", x: 72, y: 639, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-  { text: "Expiring Date:", x: 72, y: 682, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-  { text: "Principal / Branch:", x: 72, y: 719, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-
-  { text: "Business Location", x: 50, y: 775, size: 24, weight: 400, family: FONT_BODY, color: "#111827" },
-  { text: "Region:", x: 72, y: 823, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-  { text: "Ward:", x: 72, y: 866, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-  { text: "Street:", x: 72, y: 909, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-
-  { text: "Payment Details", x: 50, y: 957, size: 24, weight: 400, family: FONT_BODY, color: "#111827" },
-  { text: "Amount of Fee Paid:", x: 72, y: 1005, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
-];
 
 async function ensureLicenseFonts() {
   if (typeof document === "undefined" || !("fonts" in document)) return;
@@ -142,7 +120,7 @@ export async function renderBusinessLicenseCanvas(
   if (!ctx) throw new Error("Kivinjari hakikuweza kuandaa muonekano wa hati.");
 
   await ensureLicenseFonts();
-  const template = await loadImage(assetUrl("business-license-template.png"));
+  const template = await loadImage(assetUrl("business-license-template-new.png"));
   const layout = DEFAULT_LICENSE_LAYOUT;
 
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
@@ -150,11 +128,8 @@ export async function renderBusinessLicenseCanvas(
   ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_LAYOUT_WIDTH, BUSINESS_LICENSE_LAYOUT_HEIGHT);
 
-  // Restore left-side labels/headings and top legal text so none disappear.
-  staticText.forEach((item) => drawText(ctx, item, item.text ?? ""));
-
-  // Keep all labels, headings, and footer text from the original template untouched.
-  // Only the user-specific values and generated QR are drawn over the template.
+  // The converted DOCX is the complete background. Preserve its left labels,
+  // headings, watermark, coat of arms and footer; draw only dynamic values/QR.
 
   const owner = form.applicantName.trim().replace(/\s+/g, " ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
@@ -170,13 +145,21 @@ export async function renderBusinessLicenseCanvas(
 
   const valueX = layout.valueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
 
+  // Mask the sample B.L. number and sample issuing office printed in the DOCX.
+  // Keep these patches narrow so the surrounding watermark and border remain visible.
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
+  ctx.fillRect(218, layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 11, 310, 22);
+  ctx.fillRect(242, layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 9, 210, 19);
+  ctx.restore();
+
   drawText(
     ctx,
-    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 800, family: FONT_SANS, color: "#168da6", align: "center", maxWidth: 920 },
+    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 700, family: FONT_SANS, color: "#168da6", align: "center", maxWidth: 600 },
     `B.L. NO : ${licenseNumber || "—"}`,
   );
 
-  drawText(ctx, { x: valueX, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: 16, maxWidth: 560 }, "DAR ES SALAAM CITY COUNCIL");
+  drawText(ctx, { x: valueX, y: layout.officeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: 12.5, maxWidth: 300 }, "DAR ES SALAAM CITY COUNCIL");
   drawText(ctx, { x: valueX, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.tin);
   drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 560 }, owner);
   drawText(ctx, { x: valueX, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, maxWidth: 560 }, businessType);
@@ -211,7 +194,7 @@ export async function renderBusinessLicenseCanvas(
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 82;
+    const logoSize = 40;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
@@ -223,7 +206,7 @@ export async function renderBusinessLicenseCanvas(
     try {
       const logo = await loadImage(assetUrl("tausi-logo.png"));
       ctx.save();
-      // Match reference B: remove the added white disc behind the peacock.
+      // Keep the peacock centered in the generated QR.
       ctx.beginPath();
       ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
       ctx.closePath();
