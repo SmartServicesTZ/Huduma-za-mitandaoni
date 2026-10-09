@@ -129,7 +129,7 @@ export default function BusinessLicensePage() {
     });
     void Promise.race([reserveBusinessLicenseNumber(requestId, "NEW LICENCE"), timeout])
       .then((result) => { if (!cancelled && result.licenseNumber) setLicenseNumber(result.licenseNumber); })
-      .catch(() => { if (!cancelled) setNumberError(true); })
+      .catch((error: unknown) => { if (!cancelled) { setNumberError(true); toast.error(error instanceof Error ? `Namba ya leseni haikupatikana: ${error.message}` : "Namba ya leseni haikupatikana. Jaribu tena."); } })
       .finally(() => { if (!cancelled) setNumberPending(false); });
     return () => { cancelled = true; };
   }, [isAuthenticated, licenseNumber, requestId, serviceLocked, form.licenseType]);
