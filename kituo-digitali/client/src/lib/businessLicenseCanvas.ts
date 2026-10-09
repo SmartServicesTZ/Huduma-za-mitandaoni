@@ -86,7 +86,7 @@ const DEFAULT_LICENSE_LAYOUT = {
   valueSize: 12.5,
   nameSize: 12.5,
   numberX: 50,
-  numberY: 20.3,
+  numberY: 18.9,
   numberSize: 14,
   qrX: 67.0,
   qrY: 50.5,
@@ -137,9 +137,9 @@ export async function renderBusinessLicenseCanvas(
 
   const valueStyle = {
     size: layout.valueSize,
-    weight: 400,
+    weight: 700,
     family: FONT_BODY,
-    color: "#111827",
+    color: "#000000",
   };
 
   const valueX = layout.valueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
