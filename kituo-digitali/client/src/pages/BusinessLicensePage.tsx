@@ -122,12 +122,15 @@ export default function BusinessLicensePage() {
       return;
     }
     let cancelled = false;
-    void reserveBusinessLicenseNumber(requestId, "NEW LICENCE")
-      .then((result) => { if (!cancelled) setLicenseNumber(result.licenseNumber); })
-      .catch(() => { if (!cancelled) setNumberError(true); })
-      .finally(() => { if (!cancelled) setNumberPending(false); });
     setNumberPending(true);
     setNumberError(false);
+    const timeout = new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error("Muda wa kupata namba umeisha.")), 15000);
+    });
+    void Promise.race([reserveBusinessLicenseNumber(requestId, "NEW LICENCE"), timeout])
+      .then((result) => { if (!cancelled && result.licenseNumber) setLicenseNumber(result.licenseNumber); })
+      .catch(() => { if (!cancelled) setNumberError(true); })
+      .finally(() => { if (!cancelled) setNumberPending(false); });
     return () => { cancelled = true; };
   }, [isAuthenticated, licenseNumber, requestId, serviceLocked, form.licenseType]);
 
@@ -327,7 +330,15 @@ export default function BusinessLicensePage() {
         <p className="license-output-note">PDF na PNG zinatengenezwa pamoja; tokeni 2 hukatwa mara moja kwa hati, si kwa kila format. <strong>Pendekezo: tumia PDF kwa ubora wa juu zaidi (100%).</strong></p>
       </section>
 
-      <LicenseTemplatePreview form={form} issueDate={issueDate} expiryDate={expiryDate} licenseNumber={licenseNumber} />
+      <div className="license-preview-column">
+        <LicenseTemplatePreview form={form} issueDate={issueDate} expiryDate={expiryDate} licenseNumber={licenseNumber} />
+        {isAuthenticated && form.licenseType === "NEW LICENCE" && !licenseNumber && (
+          <div className={numberError ? "notice notice--warning" : "notice notice--info"} role="status">
+            <span>{numberPending ? "BL NO inatolewa, tafadhali subiri..." : numberError ? "Namba haikupatikana. Jaribu tena; namba halisi hutolewa na huduma ya leseni." : "BL NO bado haijatolewa."}</span>
+            {numberError && <button type="button" className="button button--outline" disabled={downloadBusy || serviceLocked} onClick={refreshLicenseNumber}>JARIBU TENA</button>}
+          </div>
+        )}
+      </div>
     </div>
   </main>;
 }
