@@ -86,7 +86,7 @@ const DEFAULT_LICENSE_LAYOUT = {
   valueSize: 12.5,
   nameSize: 12.5,
   numberX: 50,
-  numberY: 18.9,
+  numberY: 20.3,
   numberSize: 14,
   qrX: 67.0,
   qrY: 50.5,
