@@ -73,7 +73,6 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
 const DEFAULT_LICENSE_LAYOUT = {
   valueX: 25.4,
   nameY: 34.6,
-  officeY: 29.5,
   tinY: 31.7,
   businessY: 37.7,
   typeY: 40.6,
@@ -145,8 +144,7 @@ export async function renderBusinessLicenseCanvas(
 
   const valueX = layout.valueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
 
-  // Mask the sample B.L. number and sample issuing office printed in the DOCX.
-  // Keep these patches narrow so the surrounding watermark and border remain visible.
+  // Mask only the sample B.L. number printed in the DOCX; preserve the office text and surrounding design.
   ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.94)";
   ctx.fillRect(218, layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 11, 310, 22);
