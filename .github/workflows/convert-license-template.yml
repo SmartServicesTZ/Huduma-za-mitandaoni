@@ -22,22 +22,45 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libreoffice-writer poppler-utils unzip file
 
-      - name: Validate DOCX and convert
+      - name: Repair DOCX archive and convert
         shell: bash
         run: |
           set -euxo pipefail
           INPUT="$GITHUB_WORKSPACE/kituo-digitali/client/public/license-assets/Licence 3.docx"
           OUT="/tmp/license-convert"
-          PROFILE="file:///tmp/lo-profile-license"
           mkdir -p "$OUT"
-          test -f "$INPUT"
-          ls -lh "$INPUT"
           file "$INPUT"
-          unzip -t "$INPUT"
-          libreoffice -env:UserInstallation="$PROFILE" --headless --convert-to pdf --outdir "$OUT" "$INPUT"
-          test -s "$OUT/Licence 3.pdf"
-          pdfinfo "$OUT/Licence 3.pdf" | head -15
-          pdftoppm -f 1 -l 1 -png -r 180 -singlefile "$OUT/Licence 3.pdf" "$OUT/business-license-template"
+          python3 - "$INPUT" "$OUT/Licence-3-repaired.docx" <<'PY'
+          import sys, zipfile
+          source, target = sys.argv[1:3]
+          with zipfile.ZipFile(source, 'r') as zin, zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as zout:
+              for info in zin.infolist():
+                  try:
+                      with zin.open(info, 'r') as stream:
+                          chunks = []
+                          while True:
+                              try:
+                                  chunk = stream.read(1024 * 1024)
+                              except zipfile.BadZipFile:
+                                  # Some uploaded DOCX files have incorrect CRC metadata;
+                                  # retain the recovered bytes and let the new ZIP recalculate CRC.
+                                  break
+                              if not chunk:
+                                  break
+                              chunks.append(chunk)
+                          data = b''.join(chunks)
+                  except Exception as exc:
+                      raise RuntimeError(f"Cannot recover DOCX entry {info.filename}: {exc}") from exc
+                  if info.file_size and not data:
+                      raise RuntimeError(f"Empty recovered DOCX entry: {info.filename}")
+                  zout.writestr(info.filename, data)
+                  print(f"Recovered {info.filename}: {len(data)} bytes")
+          PY
+          unzip -t "$OUT/Licence-3-repaired.docx"
+          libreoffice -env:UserInstallation=file:///tmp/lo-profile-license --headless --convert-to pdf --outdir "$OUT" "$OUT/Licence-3-repaired.docx"
+          test -s "$OUT/Licence-3-repaired.pdf"
+          pdfinfo "$OUT/Licence-3-repaired.pdf" | head -15
+          pdftoppm -f 1 -l 1 -png -r 180 -singlefile "$OUT/Licence-3-repaired.pdf" "$OUT/business-license-template"
           ls -lh "$OUT/"
 
       - name: Upload converted template for review
@@ -46,6 +69,7 @@ jobs:
           name: converted-business-license-template
           path: |
             /tmp/license-convert/business-license-template.png
-            /tmp/license-convert/Licence 3.pdf
+            /tmp/license-convert/Licence-3-repaired.pdf
+            /tmp/license-convert/Licence-3-repaired.docx
           if-no-files-found: error
           retention-days: 3
