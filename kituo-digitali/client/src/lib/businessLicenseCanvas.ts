@@ -86,7 +86,7 @@ const DEFAULT_LICENSE_LAYOUT = {
   valueSize: 12.5,
   nameSize: 12.5,
   numberX: 50,
-  numberY: 20.3,
+  numberY: 21.0,
   numberSize: 14,
   qrX: 67.0,
   qrY: 50.5,
@@ -126,6 +126,26 @@ export async function renderBusinessLicenseCanvas(
   ctx.save();
   ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
   ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_LAYOUT_WIDTH, BUSINESS_LICENSE_LAYOUT_HEIGHT);
+
+  // Strengthen the pre-printed labels in the left column without darkening
+  // the white paper or changing the right-hand values and logos.
+  const labelX = 0;
+  const labelY = Math.round(BUSINESS_LICENSE_LAYOUT_HEIGHT * 0.22);
+  const labelWidth = Math.round(BUSINESS_LICENSE_LAYOUT_WIDTH * 0.34);
+  const labelHeight = Math.round(BUSINESS_LICENSE_LAYOUT_HEIGHT * 0.49);
+  const labelPixels = ctx.getImageData(labelX, labelY, labelWidth, labelHeight);
+  for (let i = 0; i < labelPixels.data.length; i += 4) {
+    const r = labelPixels.data[i];
+    const g = labelPixels.data[i + 1];
+    const b = labelPixels.data[i + 2];
+    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (luminance < 185) {
+      labelPixels.data[i] = Math.round(r * 0.58);
+      labelPixels.data[i + 1] = Math.round(g * 0.58);
+      labelPixels.data[i + 2] = Math.round(b * 0.58);
+    }
+  }
+  ctx.putImageData(labelPixels, labelX, labelY);
 
   // The converted DOCX is the complete background. Preserve its left labels,
   // headings, watermark, coat of arms and footer; draw only dynamic values/QR.
