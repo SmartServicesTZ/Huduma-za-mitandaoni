@@ -96,29 +96,30 @@ const DEFAULT_LICENSE_LAYOUT = {
 
 const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
 const FONT_LABEL = "Roboto, Arial, Helvetica, sans-serif";
+const FONT_BODY = "Roboto, Arial, Helvetica, sans-serif";
 
 const staticText: TextItem[] = [
   { text: "THE UNITED REPUBLIC OF TANZANIA", x: 506, y: 199, size: 20, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "BUSINESS LICENSE", x: 506, y: 245, size: 22, weight: 700, family: FONT_SANS, align: "center", maxWidth: 900 },
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 12, weight: 400, family: FONT_SANS, align: "center", maxWidth: 850 },
 
-  { text: "License Details", x: 50, y: 381, size: 20, weight: 800, family: FONT_SANS, color: "#0f172a" },
-  { text: "Issuing Office:", x: 72, y: 428, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Tax Identification No:", x: 72, y: 469, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "For the Business Of:", x: 72, y: 553, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Business Licensing:", x: 72, y: 596, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Date of Issue:", x: 72, y: 639, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Expiring Date:", x: 72, y: 682, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Principal / Branch:", x: 72, y: 719, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "License Details", x: 50, y: 381, size: 20, weight: 800, family: FONT_BODY, color: "#0f172a" },
+  { text: "Issuing Office:", x: 72, y: 428, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Tax Identification No:", x: 72, y: 469, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "For the Business Of:", x: 72, y: 553, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Business Licensing:", x: 72, y: 596, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Date of Issue:", x: 72, y: 639, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Expiring Date:", x: 72, y: 682, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Principal / Branch:", x: 72, y: 719, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
 
-  { text: "Business Location", x: 50, y: 775, size: 20, weight: 800, family: FONT_SANS, color: "#0f172a" },
-  { text: "Region:", x: 72, y: 823, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Ward:", x: 72, y: 866, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
-  { text: "Street:", x: 72, y: 909, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Business Location", x: 50, y: 775, size: 20, weight: 800, family: FONT_BODY, color: "#0f172a" },
+  { text: "Region:", x: 72, y: 823, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Ward:", x: 72, y: 866, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Street:", x: 72, y: 909, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
 
-  { text: "Payment Details", x: 50, y: 957, size: 20, weight: 800, family: FONT_SANS, color: "#0f172a" },
-  { text: "Amount of Fee Paid:", x: 72, y: 1005, size: 14.5, weight: 600, family: FONT_LABEL, color: "#334155" },
+  { text: "Payment Details", x: 50, y: 957, size: 20, weight: 800, family: FONT_BODY, color: "#0f172a" },
+  { text: "Amount of Fee Paid:", x: 72, y: 1005, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
 ];
 
 async function ensureLicenseFonts() {
@@ -168,7 +169,7 @@ export async function renderBusinessLicenseCanvas(
   const valueStyle = {
     size: layout.valueSize,
     weight: 600,
-    family: FONT_VALUE,
+    family: FONT_BODY,
     color: "#111827",
   };
 
