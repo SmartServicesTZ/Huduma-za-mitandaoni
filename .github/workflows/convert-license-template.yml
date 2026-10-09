@@ -8,7 +8,7 @@ on:
       - 'kituo-digitali/client/public/license-assets/Licence 3.docx'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   convert-template:
@@ -62,6 +62,18 @@ jobs:
           pdfinfo "$OUT/Licence-3-repaired.pdf" | head -15
           pdftoppm -f 1 -l 1 -png -r 180 -singlefile "$OUT/Licence-3-repaired.pdf" "$OUT/business-license-template"
           ls -lh "$OUT/"
+
+      - name: Commit converted PNG preview for integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/license-convert/business-license-template.png kituo-digitali/client/public/license-assets/business-license-template-new.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kituo-digitali/client/public/license-assets/business-license-template-new.png
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Add converted business license template preview"
+          git push
 
       - name: Upload converted template for review
         uses: actions/upload-artifact@v4
