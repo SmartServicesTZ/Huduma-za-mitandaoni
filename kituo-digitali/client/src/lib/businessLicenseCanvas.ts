@@ -83,14 +83,14 @@ const DEFAULT_LICENSE_LAYOUT = {
   wardY: 57.8,
   streetY: 60.6,
   amountY: 67.0,
-  valueSize: 12.5,
-  nameSize: 12.5,
+  valueSize: 17,
+  nameSize: 17,
   numberX: 50,
   numberY: 21.0,
-  numberSize: 14,
-  qrX: 67.0,
-  qrY: 50.5,
-  qrSize: 180,
+  numberSize: 22,
+  qrX: 61.0,
+  qrY: 51.5,
+  qrSize: 300,
 };
 
 const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
@@ -167,7 +167,7 @@ export async function renderBusinessLicenseCanvas(
   // Remove the sample B.L. number by rebuilding the narrow strip from
   // template pixels above and below it, rather than painting a white box.
   const numberMaskX = BUSINESS_LICENSE_LAYOUT_WIDTH * 0.293;
-  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 13.64;
+  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 20;
   const numberMaskWidth = BUSINESS_LICENSE_LAYOUT_WIDTH * 0.417;
   const numberMaskHeight = 27.28;
   const pixelX = Math.max(0, Math.round(numberMaskX * BUSINESS_LICENSE_RENDER_SCALE));
@@ -196,7 +196,7 @@ export async function renderBusinessLicenseCanvas(
 
   drawText(
     ctx,
-    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 700, family: FONT_SANS, color: "#168da6", align: "center", maxWidth: 600 },
+    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 500, family: FONT_SANS, color: "#69b8c2", align: "center", maxWidth: 600 },
     `B.L. NO : ${licenseNumber || "Namba inatolewa..."}`,
   );
 
@@ -235,7 +235,7 @@ export async function renderBusinessLicenseCanvas(
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 40;
+    const logoSize = 60;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
