@@ -27,10 +27,10 @@ if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", recover);
 }
 
-// Reset stale PWA state once after the repository rename, then register the current worker.
+// Reset stale PWA state once after major asset updates, then register the current worker.
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    const resetKey = "smartservices-tz-pwa-reset-v5";
+    const resetKey = "smartservices-tz-pwa-reset-v6";
     if (sessionStorage.getItem(resetKey) !== "1") {
       sessionStorage.setItem(resetKey, "1");
       Promise.all([

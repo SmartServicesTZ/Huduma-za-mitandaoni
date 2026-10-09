@@ -1,7 +1,7 @@
-const CACHE = "steward-tz-pwa-v2";
+const CACHE = "steward-tz-pwa-v3";
 const isAppShell = (request) => {
   const url = new URL(request.url);
-  return request.mode === "navigate" || /\\.(?:js|css|html)$/.test(url.pathname);
+  return request.mode === "navigate" || /\.(?:js|css|html)$/.test(url.pathname);
 };
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", event => event.waitUntil((async () => {
