@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 
-export const BUSINESS_LICENSE_CANVAS_WIDTH = 2024;
-export const BUSINESS_LICENSE_CANVAS_HEIGHT = 2600;
+export const BUSINESS_LICENSE_CANVAS_WIDTH = 2400;
+export const BUSINESS_LICENSE_CANVAS_HEIGHT = 3083;
 const BUSINESS_LICENSE_RENDER_SCALE = 2;
 const BUSINESS_LICENSE_LAYOUT_WIDTH = BUSINESS_LICENSE_CANVAS_WIDTH / BUSINESS_LICENSE_RENDER_SCALE;
 const BUSINESS_LICENSE_LAYOUT_HEIGHT = BUSINESS_LICENSE_CANVAS_HEIGHT / BUSINESS_LICENSE_RENDER_SCALE;
@@ -87,10 +87,10 @@ const DEFAULT_LICENSE_LAYOUT = {
   nameSize: 12.5,
   numberX: 50,
   numberY: 20.3,
-  numberSize: 12,
+  numberSize: 14,
   qrX: 67.0,
   qrY: 50.5,
-  qrSize: 150,
+  qrSize: 180,
 };
 
 const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
