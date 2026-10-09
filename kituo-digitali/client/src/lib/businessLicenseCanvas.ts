@@ -84,11 +84,11 @@ const DEFAULT_LICENSE_LAYOUT = {
   wardY: 66.75,
   streetY: 70.05,
   amountY: 77.30,
-  valueSize: 17.5,
-  nameSize: 17.5,
+  valueSize: 18.5,
+  nameSize: 18.5,
   numberX: 50,
   numberY: 23.15,
-  numberSize: 20,
+  numberSize: 21,
   qrX: 61.8,
   qrY: 57.2,
   qrSize: 270,
@@ -105,7 +105,7 @@ const staticText: TextItem[] = [
 
   { text: "License Details", x: 50, y: 381, size: 24, weight: 400, family: FONT_BODY, color: "#111827" },
   { text: "Issuing Office:", x: 72, y: 428, size: 16, weight: 400, family: FONT_BODY, color: "#111827" },
-  { text: "Tax Identification No:", x: 72, y: 469, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
+  { text: "Tax Identification No:", x: 72, y: 469, size: 16, weight: 500, family: FONT_BODY, color: "#111827" },
   { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
   { text: "For the Business Of:", x: 72, y: 553, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
   { text: "Business Licensing:", x: 72, y: 596, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
@@ -125,8 +125,8 @@ const staticText: TextItem[] = [
 async function ensureLicenseFonts() {
   if (typeof document === "undefined" || !("fonts" in document)) return;
   await Promise.all([
-    document.fonts.load("700 23px Roboto"),
-    document.fonts.load("600 15px Roboto"),
+    document.fonts.load("500 19px Roboto"),
+    document.fonts.load("400 16px Roboto"),
   ]);
 }
 
@@ -228,10 +228,7 @@ export async function renderBusinessLicenseCanvas(
     try {
       const logo = await loadImage(assetUrl("tausi-logo.png"));
       ctx.save();
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, logoSize / 2 + 7, 0, Math.PI * 2);
-      ctx.fill();
+      // Match reference B: remove the added white disc behind the peacock.
       ctx.beginPath();
       ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
       ctx.closePath();
