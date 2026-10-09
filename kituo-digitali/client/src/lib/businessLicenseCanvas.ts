@@ -84,13 +84,13 @@ const DEFAULT_LICENSE_LAYOUT = {
   wardY: 66.75,
   streetY: 70.05,
   amountY: 77.30,
-  valueSize: 16.5,
-  nameSize: 16.5,
+  valueSize: 17.5,
+  nameSize: 17.5,
   numberX: 50,
   numberY: 23.15,
   numberSize: 20,
-  qrX: 65.6,
-  qrY: 61.7,
+  qrX: 61.8,
+  qrY: 57.2,
   qrSize: 270,
 };
 
@@ -104,7 +104,7 @@ const staticText: TextItem[] = [
   { text: "The Business Licensing Act (Act No. 25 of 1972)", x: 506, y: 323, size: 14, weight: 400, family: FONT_BODY, align: "center", maxWidth: 850 },
 
   { text: "License Details", x: 50, y: 381, size: 24, weight: 400, family: FONT_BODY, color: "#111827" },
-  { text: "Issuing Office:", x: 72, y: 428, size: 15, weight: 400, family: FONT_BODY, color: "#111827" },
+  { text: "Issuing Office:", x: 72, y: 428, size: 16, weight: 400, family: FONT_BODY, color: "#111827" },
   { text: "Tax Identification No:", x: 72, y: 469, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
   { text: "License Issued To:", x: 72, y: 511, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
   { text: "For the Business Of:", x: 72, y: 553, size: 14.5, weight: 600, family: FONT_BODY, color: "#334155" },
@@ -215,7 +215,7 @@ export async function renderBusinessLicenseCanvas(
 
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
-    const qrSize = 280;
+    const qrSize = layout.qrSize;
     const logoSize = 82;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
