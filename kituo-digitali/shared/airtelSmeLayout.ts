@@ -13,10 +13,10 @@ export const AIRTEL_SME_LAYOUT_DEFAULTS: Record<string, number> = {
   deviceX: 29, deviceY: 58.3, deviceSize: 3,
   customerX: 17, customerY: 92.6, customerSize: 2.8,
   sign1X: 70, sign1Y: 92.6, sign1Size: 2.6,
-  date1X: 89, date1Y: 92.6, date1Size: 2.2,
-  salesX: 20, salesY: 95.5, salesSize: 2.8,
-  sign2X: 70, sign2Y: 94.1, sign2Size: 2.6,
-  date2X: 89, date2Y: 94.1, date2Size: 2.2,
+  date1X: 85, date1Y: 92.6, date1Size: 2.2,
+  salesX: 22, salesY: 96.1, salesSize: 2.8,
+  sign2X: 70, sign2Y: 96.1, sign2Size: 2.6,
+  date2X: 85, date2Y: 96.1, date2Size: 2.2,
 };
 
 // These values were shipped in the old editor defaults. They were not aligned
