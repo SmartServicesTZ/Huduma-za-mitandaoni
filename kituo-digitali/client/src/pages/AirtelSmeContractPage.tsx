@@ -104,7 +104,7 @@ export default function AirtelSmeContractPage() {
 
   const update = (key: keyof FormState, value: string | boolean) => {
     setForm((current) => {
-      const next = { ...current, [key]: typeof value === "string" && key !== "date1" && key !== "date2" ? value.toUpperCase() : value } as FormState;
+      const next = { ...current, [key]: typeof value === "string" && key !== "date1" && key !== "date2" && key !== "email" ? value.toUpperCase() : value } as FormState;
       if (key === "customerName") {
         const name = String(value).replace(/[^a-zA-ZÀ-ÿ\s]/g, "").toUpperCase().replace(/\s+/g, " ").trimStart();
         next.customerName = name;
@@ -179,9 +179,9 @@ export default function AirtelSmeContractPage() {
       ${text(form.ward.toUpperCase(),layout.wardX,layout.wardY,layout.wardSize,20)}
       ${text(form.district.toUpperCase(),layout.districtX,layout.districtY,layout.districtSize,34)}
       ${text(form.region.toUpperCase(),layout.regionX,layout.regionY,layout.regionSize,20)}
-      ${text(form.email,layout.emailX,layout.emailY,layout.emailSize||2.6,64)}
+      ${text(form.email.toLowerCase(),layout.emailX,layout.emailY,layout.emailSize||2.6,64)}
       ${text(form.normalSme ? "✓" : "",layout.normalX,layout.normalY,layout.normalSize,8)}
-      ${text(form.devicePhone,layout.deviceX,layout.deviceY + 1,layout.deviceSize,30)}
+      ${text(form.devicePhone,layout.deviceX,layout.deviceY + 0.5,layout.deviceSize,30)}
       ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
       ${text(form.signature1,layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
       ${text(form.date1,layout.date1X,layout.date1Y,layout.date1Size,14)}
@@ -295,15 +295,15 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={{...ov("wardX","wardY","wardSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.ward.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("districtX","districtY","districtSize","34%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.district.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("regionX","regionY","regionSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.region.toUpperCase()}</div>
-                <div className="sme-overlay" style={{...ov("emailX","emailY","emailSize","64%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email}</div>
+                <div className="sme-overlay" style={{...ov("emailX","emailY","emailSize","64%"),textTransform:"none",color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email.toLowerCase()}</div>
                 <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "✓" : ""}</div>
-                <div className="sme-overlay" style={{...ov("deviceX","deviceY","deviceSize","30%"),top:`${(layout.deviceY ?? 58.3)+1}%`}}>{form.devicePhone}</div>
+                <div className="sme-overlay" style={{...ov("deviceX","deviceY","deviceSize","30%"),top:`${(layout.deviceY ?? 58.3)+0.5}%`}}>{form.devicePhone}</div>
                 <div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div>
-                <div className="sme-overlay" style={ov("date1X","date1Y","date1Size","9%")}>{form.date1}</div>
+                <div className="sme-overlay" style={ov("date1X","date1Y","date1Size","14%")}>{form.date1}</div>
                 <div className="sme-overlay" style={ov("salesX","salesY","salesSize","36%")}>{form.salesName}</div>
                 <div className="sme-overlay" style={ov("sign2X","sign2Y","sign2Size","12%")}>{form.signature2}</div>
-                <div className="sme-overlay" style={ov("date2X","date2Y","date2Size","9%")}>{form.date2}</div>
+                <div className="sme-overlay" style={ov("date2X","date2Y","date2Size","14%")}>{form.date2}</div>
               </div>
             </div>
           </section>
