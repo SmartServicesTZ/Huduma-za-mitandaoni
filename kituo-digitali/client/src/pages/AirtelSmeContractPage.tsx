@@ -97,6 +97,7 @@ export default function AirtelSmeContractPage() {
       textOverflow: "ellipsis",
       whiteSpace: "nowrap",
       letterSpacing: "-0.01em",
+      textAlign: "center",
     };
   };
 
@@ -163,7 +164,7 @@ export default function AirtelSmeContractPage() {
           fitText = ` textLength="${maxWidth.toFixed(2)}" lengthAdjust="spacingAndGlyphs"`;
         }
       }
-      return `<text x="${x}%" y="${y}%" dominant-baseline="hanging" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="500" dominant-baseline="hanging" fill="${ink}"${fitText}>${esc(value)}</text>`;
+      return `<text x="${x + width / 2}%" y="${y}%" text-anchor="middle" dominant-baseline="hanging" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="500" fill="${ink}"${fitText}>${esc(value)}</text>`;
     };
     
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1536" viewBox="0 0 1024 1536">
