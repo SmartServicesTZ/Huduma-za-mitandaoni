@@ -48,7 +48,7 @@ const initialForm = (): FormState => ({
   ward: "MADALE",
   district: "KINONDONI",
   region: "DAR ES SALAAM",
-  email: "Hudumazamtandao999@gmail.com",
+  email: "HUDUMAZAMTANDAO999@GMAIL.COM",
   normalSme: true,
   devicePhone: "0712345678",
   customerName2: "STEWART NJIWA",
@@ -96,6 +96,7 @@ export default function AirtelSmeContractPage() {
       overflow: "hidden",
       textOverflow: "ellipsis",
       whiteSpace: "nowrap",
+      textTransform: "uppercase",
       letterSpacing: "-0.01em",
       textAlign: "center",
     };
@@ -103,7 +104,7 @@ export default function AirtelSmeContractPage() {
 
   const update = (key: keyof FormState, value: string | boolean) => {
     setForm((current) => {
-      const next = { ...current, [key]: value } as FormState;
+      const next = { ...current, [key]: typeof value === "string" && key !== "date1" && key !== "date2" ? value.toUpperCase() : value } as FormState;
       if (key === "customerName") {
         const name = String(value).replace(/[^a-zA-ZÀ-ÿ\s]/g, "").toUpperCase().replace(/\s+/g, " ").trimStart();
         next.customerName = name;
@@ -180,13 +181,13 @@ export default function AirtelSmeContractPage() {
       ${text(form.region.toUpperCase(),layout.regionX,layout.regionY,layout.regionSize,20)}
       ${text(form.email,layout.emailX,layout.emailY,layout.emailSize||2.6,64)}
       ${text(form.normalSme ? "✓" : "",layout.normalX,layout.normalY,layout.normalSize,8)}
-      ${text(form.devicePhone,layout.deviceX,layout.deviceY,layout.deviceSize,30)}
+      ${text(form.devicePhone,layout.deviceX,layout.deviceY + 1,layout.deviceSize,30)}
       ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
       ${text(form.signature1,layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
-      ${text(form.date1,layout.date1X,layout.date1Y,layout.date1Size,9)}
+      ${text(form.date1,layout.date1X,layout.date1Y,layout.date1Size,14)}
       ${text(form.salesName,layout.salesX,layout.salesY,layout.salesSize,36)}
       ${text(form.signature2,layout.sign2X,layout.sign2Y,layout.sign2Size,12)}
-      ${text(form.date2,layout.date2X,layout.date2Y,layout.date2Size,9)}
+      ${text(form.date2,layout.date2X,layout.date2Y,layout.date2Size,14)}
     </svg>`;
     
     const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
@@ -233,7 +234,7 @@ export default function AirtelSmeContractPage() {
         .sme-card{background:#fff;border:1px solid #e3e3e3;border-radius:18px;padding:20px;box-shadow:0 10px 30px #0000000d}
         .sme-card h2{margin:0 0 16px;font-size:18px;color:#e60012}
         .sme-field{display:block;margin-bottom:12px}.sme-field>span{display:block;font-size:13px;font-weight:800;margin-bottom:6px}
-        .sme-field input{width:100%;height:42px;border:1px solid #c9c9c9;border-radius:9px;padding:0 11px;font-size:14px;outline:none}
+        .sme-field input{text-transform:uppercase;width:100%;height:42px;border:1px solid #c9c9c9;border-radius:9px;padding:0 11px;font-size:14px;outline:none}
         .sme-field input:focus{border-color:#e60012;box-shadow:0 0 0 3px #e6001218}
         .sme-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
         .sme-check{display:flex;gap:10px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0 14px;font-size:13px}
@@ -296,7 +297,7 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={{...ov("regionX","regionY","regionSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.region.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("emailX","emailY","emailSize","64%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email}</div>
                 <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "✓" : ""}</div>
-                <div className="sme-overlay" style={ov("deviceX","deviceY","deviceSize","30%")}>{form.devicePhone}</div>
+                <div className="sme-overlay" style={{...ov("deviceX","deviceY","deviceSize","30%"),top:`${(layout.deviceY ?? 58.3)+1}%`}}>{form.devicePhone}</div>
                 <div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div>
                 <div className="sme-overlay" style={ov("date1X","date1Y","date1Size","9%")}>{form.date1}</div>
