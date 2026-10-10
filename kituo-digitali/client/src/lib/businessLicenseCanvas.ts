@@ -94,11 +94,13 @@ export async function renderBusinessLicenseCanvas(
   // Every heading and static label is drawn as crisp vector text to match the
   // regular-weight Arial-like typography and hierarchy in Reference B.
   const center = pxX(50);
-  const labelX = pxX(7.55);
+  const sectionX = pxX(7.6);
+  const labelX = pxX(10.25);
   const valueX = pxX(35.25);
+  const notesX = pxX(12.0);
   const bodyLabel = (text: string, y: number) => drawText(ctx, { x: labelX, y: pxY(y), size: 42 }, text);
   const bodyValue = (text: string, y: number, maxWidth = pxX(55)) => drawText(ctx, { x: valueX, y: pxY(y), size: 40, maxWidth }, text);
-  const sectionHeading = (text: string, y: number) => drawText(ctx, { x: labelX - 26, y: pxY(y), size: 62 }, text);
+  const sectionHeading = (text: string, y: number) => drawText(ctx, { x: sectionX, y: pxY(y), size: 62 }, text);
 
   drawText(ctx, { x: center, y: pxY(15.95), size: 66, align: "center", maxWidth: pxX(78) }, "THE UNITED REPUBLIC OF TANZANIA");
   drawText(ctx, { x: center, y: pxY(19.45), size: 58, align: "center" }, "BUSINESS LICENSE");
@@ -137,10 +139,10 @@ export async function renderBusinessLicenseCanvas(
   bodyValue(amount, 75.6);
 
   drawText(ctx, { x: center, y: pxY(81.0), size: 38, align: "center", maxWidth: pxX(88) }, "This digital copy does not require a signature of authority");
-  drawText(ctx, { x: labelX + 110, y: pxY(84.55), size: 32 }, "CONDITIONS & NOTES:");
-  drawText(ctx, { x: labelX + 110, y: pxY(86.65), size: 29, maxWidth: pxX(85) }, "1. This license shall be conspicuously displayed at the place of business");
-  drawText(ctx, { x: labelX + 110, y: pxY(88.8), size: 29, maxWidth: pxX(85) }, "2. Renewal applications must be submitted within 21 days of the license expiry; Otherwise, penalties begin");
-  drawText(ctx, { x: labelX + 172, y: pxY(90.95), size: 29, maxWidth: pxX(82) }, "at 25 % of the license fee and rise by 2 % for each additional month, up to 47 %.");
+  drawText(ctx, { x: notesX, y: pxY(84.55), size: 32 }, "CONDITIONS & NOTES:");
+  drawText(ctx, { x: notesX, y: pxY(86.65), size: 29, maxWidth: pxX(85) }, "1. This license shall be conspicuously displayed at the place of business");
+  drawText(ctx, { x: notesX, y: pxY(88.8), size: 29, maxWidth: pxX(85) }, "2. Renewal applications must be submitted within 21 days of the license expiry; Otherwise, penalties begin");
+  drawText(ctx, { x: notesX + 62, y: pxY(90.95), size: 29, maxWidth: pxX(82) }, "at 25 % of the license fee and rise by 2 % for each additional month, up to 47 %.");
 
   // Replace the sample QR printed on the blank template with one bound to the
   // actual issued license. Its placement and scale match Reference B.
@@ -171,7 +173,7 @@ export async function renderBusinessLicenseCanvas(
     // Center logo is optional and kept conservative to preserve QR readability.
     try {
       const logo = await loadImage(assetUrl("tausi-logo.png"));
-      const logoSize = qrSize * 0.22;
+      const logoSize = qrSize * 0.30;
       const centerX = qrX + qrSize / 2;
       const centerY = qrY + qrSize / 2;
       ctx.save();
