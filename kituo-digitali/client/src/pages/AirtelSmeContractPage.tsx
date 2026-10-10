@@ -245,7 +245,7 @@ export default function AirtelSmeContractPage() {
         .sme-preview{background:#444;border-radius:14px;padding:12px;overflow:auto}
         .sme-template{position:relative;width:min(100%,900px);margin:auto;line-height:1;container-type:inline-size}
         .sme-template img{width:100%;height:auto;display:block;user-select:none}
-        .sme-overlay{position:absolute;font-family:Arial,Helvetica,sans-serif;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;min-width:0;display:block}
+        .sme-overlay{position:absolute;font-family:Arial,Helvetica,sans-serif;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;min-width:0;display:block;color:var(--ink-color)}
         @media(max-width:900px){.sme-grid{grid-template-columns:1fr}.sme-top{border-radius:12px}.sme-preview{padding:6px}}
         @media print{.sme-page{padding:0;background:#fff}.sme-top,.sme-form,.sme-preview-head,.sme-status{display:none!important}.sme-grid{display:block;margin:0}.sme-card{border:0;box-shadow:none;padding:0}.sme-preview{background:#fff;padding:0}.sme-template{width:100%;max-width:none}}
       `}</style>
