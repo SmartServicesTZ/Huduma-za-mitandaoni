@@ -13,10 +13,10 @@ export const AIRTEL_SME_LAYOUT_DEFAULTS: Record<string, number> = {
   deviceX: 29, deviceY: 58.3, deviceSize: 3,
   customerX: 17, customerY: 92.6, customerSize: 2.8,
   sign1X: 70, sign1Y: 92.6, sign1Size: 2.6,
-  date1X: 83, date1Y: 92.6, date1Size: 2.2,
+  date1X: 86, date1Y: 92.6, date1Size: 2.2,
   salesX: 22, salesY: 96.1, salesSize: 2.8,
   sign2X: 70, sign2Y: 96.1, sign2Size: 2.6,
-  date2X: 83, date2Y: 96.1, date2Size: 2.2,
+  date2X: 86, date2Y: 96.1, date2Size: 2.2,
 };
 
 // These values were shipped in the old editor defaults. They were not aligned
@@ -62,8 +62,8 @@ export function normalizeAirtelSmeLayout(value: unknown): Record<string, number>
   }
 
   // Older saved layouts placed each date directly over its signature; move those legacy coordinates to the right.
-  if (result.date1X <= 75) result.date1X = 83;
-  if (result.date2X <= 75) result.date2X = 83;
+  if (result.date1X < 86) result.date1X = 86;
+  if (result.date2X < 86) result.date2X = 86;
 
   return result;
 }
