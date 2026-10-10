@@ -14,7 +14,7 @@ export const AIRTEL_SME_LAYOUT_DEFAULTS: Record<string, number> = {
   customerX: 17, customerY: 92.6, customerSize: 2.8,
   sign1X: 70, sign1Y: 92.6, sign1Size: 2.6,
   date1X: 89, date1Y: 92.6, date1Size: 2.2,
-  salesX: 20, salesY: 94.7, salesSize: 2.8,
+  salesX: 20, salesY: 95.5, salesSize: 2.8,
   sign2X: 70, sign2Y: 94.1, sign2Size: 2.6,
   date2X: 89, date2Y: 94.1, date2Size: 2.2,
 };
