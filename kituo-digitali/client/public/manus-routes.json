@@ -1,0 +1,1 @@
+{"routes":[{"path":"/","title":"Portal ya Huduma"},{"path":"/service/:serviceSlug","title":"Huduma"},{"path":"/admin","title":"Admin"},{"path":"/admin/:panel","title":"Admin panel"},{"path":"/chat","title":"Chat"},{"path":"/history","title":"Historia"},{"path":"/account","title":"Akaunti"},{"path":"/tokens","title":"Tokeni"}]}

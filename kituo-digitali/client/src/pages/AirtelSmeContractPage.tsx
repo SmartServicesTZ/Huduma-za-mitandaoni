@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getPublicSiteSettings } from "@/lib/firebase";
+import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 
 type FormState = {
   customerName: string;
@@ -63,27 +64,20 @@ export default function AirtelSmeContractPage() {
   const [status, setStatus] = useState("");
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("black");
 
-  // Vipimo vilivyorekebishwa kwa usahihi kabisa kwa sehemu za juu na za chini
-  const [layout, setLayout] = useState<Record<string, number>>({
-    nameX: 22.5, nameY: 25.2, nameSize: 3,
-    phoneX: 22.5, phoneY: 29.1, phoneSize: 3,
-    tinX: 76, tinY: 29.1, tinSize: 2.8,
-    idTypeX: 24, idTypeY: 33.1, idTypeSize: 2.8,
-    idX: 69, idY: 33.1, idSize: 2.4,
-    streetX: 28, streetY: 37.2, streetSize: 2.8,
-    wardX: 75, wardY: 37.2, wardSize: 2.8,
-    districtX: 31, districtY: 41.2, districtSize: 2.8,
-    regionX: 76, regionY: 41.2, regionSize: 2.8,
-    emailX: 31, emailY: 44.0, emailSize: 2.6,
-    normalX: 5.8, normalY: 58.0, normalSize: 4.2,
-    deviceX: 29, deviceY: 63.0, deviceSize: 2.8,
-    customerX: 17, customerY: 94.0, customerSize: 2.6,
-    sign1X: 70, sign1Y: 94.0, sign1Size: 2.6,
-    date1X: 89, date1Y: 94.0, date1Size: 2.2,
-    salesX: 20, salesY: 95.5, salesSize: 2.6,
-    sign2X: 70, sign2Y: 95.5, sign2Size: 2.6,
-    date2X: 89, date2Y: 95.5, date2Size: 2.2
-  });
+  const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...AIRTEL_SME_LAYOUT_DEFAULTS }));
+
+  useEffect(() => {
+    let active = true;
+    void getPublicSiteSettings()
+      .then((settings) => {
+        if (!active) return;
+        setLayout(normalizeAirtelSmeLayout((settings as any)?.templateLayouts?.airtelSme));
+      })
+      .catch(() => {
+        // The aligned in-code defaults remain usable when public settings are unavailable.
+      });
+    return () => { active = false; };
+  }, []);
 
   const ov = (x: string, y: string, size: string, width?: string): React.CSSProperties => ({
     left: `${layout[x] ?? 0}%`,
@@ -126,36 +120,63 @@ export default function AirtelSmeContractPage() {
     return result;
   }, [form]);
 
-  const downloadContract = () => {
+  const downloadContract = async () => {
     if (Object.keys(errors).length) {
       setStatus("⚠️ Tafadhali rekebisha taarifa zilizo na makosa kabla ya kupakua.");
       return;
     }
     const ink = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
     const esc = (v: string) => String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-    const text = (value: string, x: number, y: number, size: number, width: number) =>
-      `<text x="${x}%" y="${y}%" font-family="Arial,Helvetica,sans-serif" font-size="${Math.max(10,size*4)}" font-weight="700" fill="${ink}" textLength="${Math.max(20,width*4)}" lengthAdjust="spacingAndGlyphs">${esc(value)}</text>`;
+    let templateHref: string;
+    try {
+      const response = await fetch(imageSrc);
+      if (!response.ok) throw new Error("Template haikupatikana.");
+      const templateBlob = await response.blob();
+      templateHref = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Template haikuweza kusomwa."));
+        reader.onerror = () => reject(reader.error ?? new Error("Template haikuweza kusomwa."));
+        reader.readAsDataURL(templateBlob);
+      });
+    } catch {
+      setStatus("⚠️ Template ya mkataba haijapakiwa. Refresh ukurasa kisha jaribu tena.");
+      return;
+    }
+    const measureCanvas = document.createElement("canvas");
+    const measureContext = measureCanvas.getContext("2d");
+    const text = (value: string, x: number, y: number, size: number, width: number) => {
+      const fontSize = Math.max(10, size * 5);
+      const maxWidth = 1024 * width / 100;
+      let fitText = "";
+      if (measureContext) {
+        measureContext.font = `700 ${fontSize}px Arial, Helvetica, sans-serif`;
+        if (measureContext.measureText(value).width > maxWidth) {
+          fitText = ` textLength="${maxWidth.toFixed(2)}" lengthAdjust="spacingAndGlyphs"`;
+        }
+      }
+      return `<text x="${x}%" y="${y}%" dominant-baseline="hanging" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="700" fill="${ink}"${fitText}>${esc(value)}</text>`;
+    };
     
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1414">
-      <image href="${imageSrc}" x="0" y="0" width="1000" height="1414" preserveAspectRatio="none"/>
-      ${text(form.customerName,layout.nameX,layout.nameY+4,layout.nameSize,73)}
-      ${text(form.phone,layout.phoneX,layout.phoneY+4,layout.phoneSize,39)}
-      ${text(form.tin,layout.tinX,layout.tinY+4,layout.tinSize,20)}
-      ${text(form.idType.toUpperCase(),layout.idTypeX,layout.idTypeY+4,layout.idTypeSize,28)}
-      ${text(form.idNumber,layout.idX,layout.idY+4,layout.idSize,27)}
-      ${text(form.street.toUpperCase(),layout.streetX,layout.streetY+4,layout.streetSize,36)}
-      ${text(form.ward.toUpperCase(),layout.wardX,layout.wardY+4,layout.wardSize,20)}
-      ${text(form.district.toUpperCase(),layout.districtX,layout.districtY+4,layout.districtSize,34)}
-      ${text(form.region.toUpperCase(),layout.regionX,layout.regionY+4,layout.regionSize,20)}
-      ${text(form.email,layout.emailX,layout.emailY+4,layout.emailSize||2.6,64)}
-      ${text(form.normalSme ? "☑" : "☐",layout.normalX,layout.normalY+4,layout.normalSize,8)}
-      ${text(form.devicePhone,layout.deviceX,layout.deviceY+4,layout.deviceSize,30)}
-      ${text(form.customerName2,layout.customerX,layout.customerY+4,layout.customerSize,38)}
-      ${text(form.signature1,layout.sign1X,layout.sign1Y+4,layout.sign1Size,12)}
-      ${text(form.date1,layout.date1X,layout.date1Y+4,layout.date1Size,9)}
-      ${text(form.salesName,layout.salesX,layout.salesY+4,layout.salesSize,36)}
-      ${text(form.signature2,layout.sign2X,layout.sign2Y+4,layout.sign2Size,12)}
-      ${text(form.date2,layout.date2X,layout.date2Y+4,layout.date2Size,9)}
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1536" viewBox="0 0 1024 1536">
+      <image href="${templateHref}" x="0" y="0" width="1024" height="1536" preserveAspectRatio="none"/>
+      ${text(form.customerName,layout.nameX,layout.nameY,layout.nameSize,73)}
+      ${text(form.phone,layout.phoneX,layout.phoneY,layout.phoneSize,39)}
+      ${text(form.tin,layout.tinX,layout.tinY,layout.tinSize,20)}
+      ${text(form.idType.toUpperCase(),layout.idTypeX,layout.idTypeY,layout.idTypeSize,28)}
+      ${text(form.idNumber,layout.idX,layout.idY,layout.idSize,27)}
+      ${text(form.street.toUpperCase(),layout.streetX,layout.streetY,layout.streetSize,36)}
+      ${text(form.ward.toUpperCase(),layout.wardX,layout.wardY,layout.wardSize,20)}
+      ${text(form.district.toUpperCase(),layout.districtX,layout.districtY,layout.districtSize,34)}
+      ${text(form.region.toUpperCase(),layout.regionX,layout.regionY,layout.regionSize,20)}
+      ${text(form.email,layout.emailX,layout.emailY,layout.emailSize||2.6,64)}
+      ${text(form.normalSme ? "☑" : "☐",layout.normalX,layout.normalY,layout.normalSize,8)}
+      ${text(form.devicePhone,layout.deviceX,layout.deviceY,layout.deviceSize,30)}
+      ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
+      ${text(form.signature1,layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
+      ${text(form.date1,layout.date1X,layout.date1Y,layout.date1Size,9)}
+      ${text(form.salesName,layout.salesX,layout.salesY,layout.salesSize,36)}
+      ${text(form.signature2,layout.sign2X,layout.sign2Y,layout.sign2Size,12)}
+      ${text(form.date2,layout.date2X,layout.date2Y,layout.date2Size,9)}
     </svg>`;
     
     const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
@@ -164,7 +185,7 @@ export default function AirtelSmeContractPage() {
     a.href = url;
     a.download = `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g,"-") || "mteja"}.svg`;
     a.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     setStatus("✓ Mkataba umepakuliwa kwa ubora wa juu.");
   };
 
