@@ -62,7 +62,8 @@ const initialForm = (): FormState => ({
 export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
-  const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("black");
+  const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
+  const inkHex = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
 
   const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...AIRTEL_SME_LAYOUT_DEFAULTS }));
 
@@ -133,7 +134,7 @@ export default function AirtelSmeContractPage() {
       setStatus("⚠️ Tafadhali rekebisha taarifa zilizo na makosa kabla ya kupakua.");
       return;
     }
-    const ink = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
+    const ink = inkHex;
     const esc = (v: string) => String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     let templateHref: string;
     try {
@@ -177,7 +178,7 @@ export default function AirtelSmeContractPage() {
       ${text(form.district.toUpperCase(),layout.districtX,layout.districtY,layout.districtSize,34)}
       ${text(form.region.toUpperCase(),layout.regionX,layout.regionY,layout.regionSize,20)}
       ${text(form.email,layout.emailX,layout.emailY,layout.emailSize||2.6,64)}
-      ${text(form.normalSme ? "☑" : "☐",layout.normalX,layout.normalY,layout.normalSize,8)}
+      ${text(form.normalSme ? "✓" : "",layout.normalX,layout.normalY,layout.normalSize,8)}
       ${text(form.devicePhone,layout.deviceX,layout.deviceY,layout.deviceSize,30)}
       ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
       ${text(form.signature1,layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
@@ -237,7 +238,7 @@ export default function AirtelSmeContractPage() {
         .sme-check{display:flex;gap:10px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0 14px;font-size:13px}
         .sme-check input{width:20px;height:20px;accent-color:#e60012}
         .sme-error{display:block;color:#e60012;font-size:11px;margin-top:4px}
-        .sme-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.sme-ink{margin-top:14px;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fafafa}.sme-ink-title{font-size:13px;font-weight:800;margin-bottom:8px}.sme-ink-options{display:flex;gap:8px;flex-wrap:wrap}.sme-ink-option{border:1px solid #ccc;background:#fff;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}.sme-ink-option.active{border-color:#e60012;box-shadow:0 0 0 2px #e6001220}
+        .sme-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.sme-ink{margin-top:14px;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fafafa}.sme-ink-title{font-size:13px;font-weight:800;margin-bottom:8px}.sme-ink-options{display:flex;gap:8px;flex-wrap:wrap}.sme-ink-option{border:1px solid #ccc;background:#fff;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}.sme-ink-option.active{border-color:#003cff;box-shadow:0 0 0 2px #003cff20}
         .sme-button{border:0;border-radius:9px;padding:12px 15px;font-weight:800;cursor:pointer}.sme-primary{background:#e60012;color:#fff}.sme-dark{background:#202020;color:#fff}
         .sme-status{min-height:18px;margin-top:9px;font-size:12px}
         .sme-preview-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sme-preview-head h2{margin:0}.sme-preview-head span{font-size:12px;color:#666}
@@ -281,9 +282,9 @@ export default function AirtelSmeContractPage() {
           <section className="sme-card">
             <div className="sme-preview-head"><h2>LIVE PREVIEW</h2><span>Template: <b>contact.png</b></span></div>
             <div className="sme-preview">
-              <div className="sme-template">
+              <div className="sme-template" style={{"--ink-color": inkHex} as React.CSSProperties}>
                 <img src={imageSrc} alt="Airtel SME Contract Template" onError={() => setStatus("⚠️ contact.png haijapatikana. Iweke ndani ya client/public/contact.png.")} />
-                <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.customerName}</div>
+                <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),color:inkHex}}>{form.customerName}</div>
                 <div className="sme-overlay" style={{...ov("phoneX","phoneY","phoneSize","39%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div>
                 <div className="sme-overlay" style={{...ov("tinX","tinY","tinSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.tin}</div>
                 <div className="sme-overlay" style={{...ov("idTypeX","idTypeY","idTypeSize","28%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idType.toUpperCase()}</div>
@@ -293,7 +294,7 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={{...ov("districtX","districtY","districtSize","34%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.district.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("regionX","regionY","regionSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.region.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("emailX","emailY","emailSize","64%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.email}</div>
-                <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "☑" : "☐"}</div>
+                <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "✓" : ""}</div>
                 <div className="sme-overlay" style={ov("deviceX","deviceY","deviceSize","30%")}>{form.devicePhone}</div>
                 <div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div>
