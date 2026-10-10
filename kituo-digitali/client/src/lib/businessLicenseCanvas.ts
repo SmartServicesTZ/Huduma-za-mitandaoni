@@ -115,7 +115,7 @@ export async function renderBusinessLicenseCanvas(
   bodyLabel("Expiring Date:", 51.65);
   bodyLabel("Principal/Branch:", 54.65);
 
-  bodyValue("DAR ES SALAAM CITY COUNCIL", 32.3);
+  bodyValue("DODOMA CITY COUNCIL", 32.3);
   bodyValue(form.tin, 35.3);
   bodyValue(owner, 38.5, pxX(57));
   bodyValue(businessType, 41.65, pxX(57));
