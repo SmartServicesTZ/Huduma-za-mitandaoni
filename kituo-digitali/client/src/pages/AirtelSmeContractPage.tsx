@@ -83,13 +83,13 @@ export default function AirtelSmeContractPage() {
   // All coordinates are percentages of the contract image, not of the phone viewport.
   // Using container query units keeps text anchored to the template on desktop and mobile.
   const ov = (x: string, y: string, size: string, width?: string): React.CSSProperties => {
-    const scale = Math.max(1.15, Number(layout[size] ?? 2.8) * 0.58);
+    const scale = Math.max(1.15, Number(layout[size] ?? 2.8) * 0.58) * 1.5;
     return {
       left: `${layout[x] ?? 0}%`,
       top: `${layout[y] ?? 0}%`,
       width,
       maxWidth: width,
-      fontSize: `clamp(8px, ${scale}cqw, 15px)`,
+      fontSize: `clamp(8px, ${scale}cqw, 22.5px)`,
       lineHeight: 1,
       paddingInline: "0.25%",
       boxSizing: "border-box",
@@ -156,7 +156,7 @@ export default function AirtelSmeContractPage() {
     const measureCanvas = document.createElement("canvas");
     const measureContext = measureCanvas.getContext("2d");
     const text = (value: string, x: number, y: number, size: number, width: number) => {
-      const fontSize = Math.max(10, size * 5.8);
+      const fontSize = Math.max(10, size * 5.8) * 1.5;
       const maxWidth = 1024 * width / 100;
       let fitText = "";
       if (measureContext) {
