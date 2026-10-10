@@ -79,17 +79,25 @@ export default function AirtelSmeContractPage() {
     return () => { active = false; };
   }, []);
 
-  const ov = (x: string, y: string, size: string, width?: string): React.CSSProperties => ({
-    left: `${layout[x] ?? 0}%`,
-    top: `${layout[y] ?? 0}%`,
-    fontSize: `clamp(8px, ${Math.max(1.15, Number(layout[size] ?? 2.8) * 0.52)}vw, 15px)`,
-    width, 
-    maxWidth: width, 
-    boxSizing: "border-box", 
-    overflow: "hidden", 
-    textOverflow: "ellipsis", 
-    whiteSpace: "nowrap"
-  });
+  // All coordinates are percentages of the contract image, not of the phone viewport.
+  // Using container query units keeps text anchored to the template on desktop and mobile.
+  const ov = (x: string, y: string, size: string, width?: string): React.CSSProperties => {
+    const scale = Math.max(1.15, Number(layout[size] ?? 2.8) * 0.58);
+    return {
+      left: `${layout[x] ?? 0}%`,
+      top: `${layout[y] ?? 0}%`,
+      width,
+      maxWidth: width,
+      fontSize: `clamp(8px, ${scale}cqw, 15px)`,
+      lineHeight: 1,
+      paddingInline: "0.25%",
+      boxSizing: "border-box",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      letterSpacing: "-0.01em",
+    };
+  };
 
   const update = (key: keyof FormState, value: string | boolean) => {
     setForm((current) => {
@@ -145,7 +153,7 @@ export default function AirtelSmeContractPage() {
     const measureCanvas = document.createElement("canvas");
     const measureContext = measureCanvas.getContext("2d");
     const text = (value: string, x: number, y: number, size: number, width: number) => {
-      const fontSize = Math.max(10, size * 5);
+      const fontSize = Math.max(10, size * 5.8);
       const maxWidth = 1024 * width / 100;
       let fitText = "";
       if (measureContext) {
@@ -154,7 +162,7 @@ export default function AirtelSmeContractPage() {
           fitText = ` textLength="${maxWidth.toFixed(2)}" lengthAdjust="spacingAndGlyphs"`;
         }
       }
-      return `<text x="${x}%" y="${y}%" dominant-baseline="hanging" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="700" fill="${ink}"${fitText}>${esc(value)}</text>`;
+      return `<text x="${x}%" y="${y}%" dominant-baseline="hanging" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="700" dominant-baseline="hanging" fill="${ink}"${fitText}>${esc(value)}</text>`;
     };
     
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1536" viewBox="0 0 1024 1536">
@@ -234,9 +242,9 @@ export default function AirtelSmeContractPage() {
         .sme-status{min-height:18px;margin-top:9px;font-size:12px}
         .sme-preview-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sme-preview-head h2{margin:0}.sme-preview-head span{font-size:12px;color:#666}
         .sme-preview{background:#444;border-radius:14px;padding:12px;overflow:auto}
-        .sme-template{position:relative;width:min(100%,900px);margin:auto;line-height:1}
+        .sme-template{position:relative;width:min(100%,900px);margin:auto;line-height:1;container-type:inline-size}
         .sme-template img{width:100%;height:auto;display:block;user-select:none}
-        .sme-overlay{position:absolute;font-family:Arial,Helvetica,sans-serif;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.05;min-width:0}
+        .sme-overlay{position:absolute;font-family:Arial,Helvetica,sans-serif;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;min-width:0;display:block}
         @media(max-width:900px){.sme-grid{grid-template-columns:1fr}.sme-top{border-radius:12px}.sme-preview{padding:6px}}
         @media print{.sme-page{padding:0;background:#fff}.sme-top,.sme-form,.sme-preview-head,.sme-status{display:none!important}.sme-grid{display:block;margin:0}.sme-card{border:0;box-shadow:none;padding:0}.sme-preview{background:#fff;padding:0}.sme-template{width:100%;max-width:none}}
       `}</style>
