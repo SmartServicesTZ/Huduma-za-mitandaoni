@@ -8,7 +8,7 @@ export type GeneratedLicenseDocuments = {
   pngBlob: Blob;
 };
 
-const PNG_EXPORT_SCALE = 0.85;
+const PNG_EXPORT_SCALE = 1;
 
 function canvasToPngBlob(canvas: HTMLCanvasElement, scale = 1): Promise<Blob> {
   if (scale === 1) {
@@ -45,13 +45,12 @@ export async function renderBusinessLicenseDocuments(
   expiryDate: string,
 ): Promise<GeneratedLicenseDocuments> {
   const canvas = await renderBusinessLicenseCanvas(form, licenseNumber, issueDate, expiryDate);
-  // PDF keeps the full 2024×2600 render (Quality 100%).
+  // Keep the PDF at the full native template resolution.
   const pdfPngBlob = await canvasToPngBlob(canvas);
   const pdfPngBytes = new Uint8Array(await pdfPngBlob.arrayBuffer());
 
-  // PNG download is intentionally 85% resolution to reduce file size and download time.
+  // PNG download keeps the same full resolution so the text remains crisp when zoomed or printed.
   const pngBlob = await canvasToPngBlob(canvas, PNG_EXPORT_SCALE);
-  const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
 
   const pdf = await PDFDocument.create();
   const pageWidth = 612;

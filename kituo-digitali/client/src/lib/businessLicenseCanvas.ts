@@ -1,13 +1,9 @@
 import QRCode from "qrcode";
 
-export const BUSINESS_LICENSE_CANVAS_WIDTH = 2400;
-export const BUSINESS_LICENSE_CANVAS_HEIGHT = 3083;
-const BUSINESS_LICENSE_RENDER_SCALE = 2;
-const BUSINESS_LICENSE_LAYOUT_WIDTH = BUSINESS_LICENSE_CANVAS_WIDTH / BUSINESS_LICENSE_RENDER_SCALE;
-const BUSINESS_LICENSE_LAYOUT_HEIGHT = BUSINESS_LICENSE_CANVAS_HEIGHT / BUSINESS_LICENSE_RENDER_SCALE;
-// The source PNG includes a broad white margin below the actual certificate.
-// Crop only the outer blank area; the border and every printed template pixel remain intact.
-const BUSINESS_LICENSE_TEMPLATE_CROP = { x: 38, y: 37, width: 1412, height: 1823 };
+// Match the supplied high-resolution blank template's native size so the
+// certificate artwork is never enlarged from a small raster source.
+export const BUSINESS_LICENSE_CANVAS_WIDTH = 2565;
+export const BUSINESS_LICENSE_CANVAS_HEIGHT = 3264;
 
 export type BusinessLicenseCanvasForm = {
   applicantName: string;
@@ -23,14 +19,11 @@ export type BusinessLicenseCanvasForm = {
 };
 
 type TextItem = {
-  text?: string;
   x: number;
   y: number;
   size: number;
   weight?: number;
   color?: string;
-  family?: string;
-  italic?: boolean;
   align?: CanvasTextAlign;
   maxWidth?: number;
 };
@@ -38,6 +31,7 @@ type TextItem = {
 const assetUrl = (name: string) => `${import.meta.env.BASE_URL}license-assets/${name}`;
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
 const LICENSE_HC = "6B87892F9074A360C1D081BF05E76FC3F26D40E48BE363FBD52645A437141E31";
+const FONT = "Arial, Helvetica, sans-serif";
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   const cached = imageCache.get(src);
@@ -53,18 +47,11 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   return promise;
 }
 
-function formatTemplateDate(date: string) {
-  if (!date) return "";
-  const parts = date.split("-");
-  if (parts.length !== 3) return "";
-  return `${parts[2]}-${parts[1]}-${parts[0]}`;
-}
-
 function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   if (!text) return;
   ctx.save();
-  ctx.font = `${item.italic ? "italic " : ""}${item.weight ?? 400} ${item.size}px ${item.family ?? "Arial, Helvetica, sans-serif"}`;
-  ctx.fillStyle = item.color ?? "#111827";
+  ctx.font = `${item.weight ?? 400} ${item.size}px ${FONT}`;
+  ctx.fillStyle = item.color ?? "#111111";
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
   ctx.imageSmoothingEnabled = true;
@@ -73,45 +60,15 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   ctx.restore();
 }
 
-const DEFAULT_LICENSE_LAYOUT = {
-  valueX: 34.5,
-  nameY: 34.6,
-  tinY: 31.7,
-  businessY: 37.7,
-  typeY: 40.6,
-  issueY: 43.5,
-  expiryY: 46.4,
-  branchY: 49.3,
-  regionY: 54.9,
-  wardY: 57.8,
-  streetY: 60.6,
-  amountY: 67.0,
-  valueSize: 17,
-  nameSize: 17,
-  numberX: 50,
-  numberY: 21.0,
-  numberSize: 22,
-  qrX: 61.0,
-  qrY: 51.5,
-  qrSize: 300,
-};
-
-function remapTemplatePercent(value: number, sourceLength: number, cropStart: number, cropLength: number) {
-  return ((value / 100 * sourceLength - cropStart) / cropLength) * 100;
+function formatTemplateDate(date: string) {
+  if (!date) return "";
+  const parts = date.split("-");
+  if (parts.length !== 3) return "";
+  return `${parts[2]}-${parts[1]}-${parts[0]}`;
 }
 
-const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
-const FONT_BODY = "Roboto, Arial, Helvetica, sans-serif";
-
-
-
-async function ensureLicenseFonts() {
-  if (typeof document === "undefined" || !("fonts" in document)) return;
-  await Promise.all([
-    document.fonts.load("500 19px Roboto"),
-    document.fonts.load("400 16px Roboto"),
-  ]);
-}
+const pxX = (percent: number) => BUSINESS_LICENSE_CANVAS_WIDTH * percent / 100;
+const pxY = (percent: number) => BUSINESS_LICENSE_CANVAS_HEIGHT * percent / 100;
 
 export async function renderBusinessLicenseCanvas(
   form: BusinessLicenseCanvasForm,
@@ -125,122 +82,68 @@ export async function renderBusinessLicenseCanvas(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Kivinjari hakikuweza kuandaa muonekano wa hati.");
 
-  await ensureLicenseFonts();
-  const template = await loadImage(assetUrl("business-license-template-new.png"));
-  const cropScaleX = template.width / BUSINESS_LICENSE_TEMPLATE_CROP.width;
-  const cropScaleY = template.height / BUSINESS_LICENSE_TEMPLATE_CROP.height;
-  const valueScale = Math.sqrt(cropScaleX * cropScaleY);
-  const remapX = (value: number) => remapTemplatePercent(value, template.width, BUSINESS_LICENSE_TEMPLATE_CROP.x, BUSINESS_LICENSE_TEMPLATE_CROP.width);
-  const remapY = (value: number) => remapTemplatePercent(value, template.height, BUSINESS_LICENSE_TEMPLATE_CROP.y, BUSINESS_LICENSE_TEMPLATE_CROP.height);
-  const layout = {
-    ...DEFAULT_LICENSE_LAYOUT,
-    valueX: remapX(DEFAULT_LICENSE_LAYOUT.valueX),
-    nameY: remapY(DEFAULT_LICENSE_LAYOUT.nameY),
-    tinY: remapY(DEFAULT_LICENSE_LAYOUT.tinY),
-    businessY: remapY(DEFAULT_LICENSE_LAYOUT.businessY),
-    typeY: remapY(DEFAULT_LICENSE_LAYOUT.typeY),
-    issueY: remapY(DEFAULT_LICENSE_LAYOUT.issueY),
-    expiryY: remapY(DEFAULT_LICENSE_LAYOUT.expiryY),
-    branchY: remapY(DEFAULT_LICENSE_LAYOUT.branchY),
-    regionY: remapY(DEFAULT_LICENSE_LAYOUT.regionY),
-    wardY: remapY(DEFAULT_LICENSE_LAYOUT.wardY),
-    streetY: remapY(DEFAULT_LICENSE_LAYOUT.streetY),
-    amountY: remapY(DEFAULT_LICENSE_LAYOUT.amountY),
-    valueSize: DEFAULT_LICENSE_LAYOUT.valueSize * valueScale,
-    nameSize: DEFAULT_LICENSE_LAYOUT.nameSize * valueScale,
-    numberX: remapX(DEFAULT_LICENSE_LAYOUT.numberX),
-    numberY: remapY(DEFAULT_LICENSE_LAYOUT.numberY),
-    numberSize: DEFAULT_LICENSE_LAYOUT.numberSize * valueScale,
-    qrX: remapX(DEFAULT_LICENSE_LAYOUT.qrX),
-    qrY: remapY(DEFAULT_LICENSE_LAYOUT.qrY),
-    qrSize: DEFAULT_LICENSE_LAYOUT.qrSize * valueScale,
-  };
-
+  const template = await loadImage(assetUrl("uploaded-license-template.jpg"));
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
-  ctx.save();
-  ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
-  ctx.drawImage(
-    template,
-    BUSINESS_LICENSE_TEMPLATE_CROP.x,
-    BUSINESS_LICENSE_TEMPLATE_CROP.y,
-    BUSINESS_LICENSE_TEMPLATE_CROP.width,
-    BUSINESS_LICENSE_TEMPLATE_CROP.height,
-    0,
-    0,
-    BUSINESS_LICENSE_LAYOUT_WIDTH,
-    BUSINESS_LICENSE_LAYOUT_HEIGHT,
-  );
-  // Preserve the template, including the blue border, preprinted text,
-  // watermark, coat of arms and footer; draw only dynamic values and the QR.
+  ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
 
   const owner = form.applicantName.trim().replace(/\s+/g, " ").toUpperCase();
   const businessType = (form.businessType === "OTHER" ? form.otherBusinessType ?? "" : form.businessType).trim().toUpperCase();
   const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(form.licenseFee) || 0);
   const titleCase = (value: string) => value.trim().toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-  const valueStyle = {
-    size: layout.valueSize,
-    weight: 400,
-    family: FONT_BODY,
-    color: "#000000",
-  };
+  // Every heading and static label is drawn as crisp vector text to match the
+  // regular-weight Arial-like typography and hierarchy in Reference B.
+  const center = pxX(50);
+  const labelX = pxX(7.55);
+  const valueX = pxX(35.25);
+  const bodyLabel = (text: string, y: number) => drawText(ctx, { x: labelX, y: pxY(y), size: 42 }, text);
+  const bodyValue = (text: string, y: number, maxWidth = pxX(55)) => drawText(ctx, { x: valueX, y: pxY(y), size: 40, maxWidth }, text);
+  const sectionHeading = (text: string, y: number) => drawText(ctx, { x: labelX - 26, y: pxY(y), size: 62 }, text);
 
-  const valueX = layout.valueX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
+  drawText(ctx, { x: center, y: pxY(15.95), size: 66, align: "center", maxWidth: pxX(78) }, "THE UNITED REPUBLIC OF TANZANIA");
+  drawText(ctx, { x: center, y: pxY(19.45), size: 58, align: "center" }, "BUSINESS LICENSE");
+  drawText(ctx, { x: center, y: pxY(22.85), size: 48, color: "#69b8c2", align: "center", maxWidth: pxX(72) }, `B.L. NO: ${licenseNumber || "Namba inatolewa..."}`);
+  drawText(ctx, { x: center, y: pxY(25.85), size: 42, align: "center", maxWidth: pxX(80) }, "The Business Licensing Act (Act No. 25 of 1972)");
 
-  // Remove the sample B.L. number by rebuilding the narrow strip from
-  // template pixels above and below it, rather than painting a white box.
-  const numberMaskLeft = remapX(29.3) / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
-  const numberMaskRight = remapX(71.0) / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
-  const numberMaskX = numberMaskLeft;
-  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 20 * cropScaleY;
-  const numberMaskWidth = numberMaskRight - numberMaskLeft;
-  const numberMaskHeight = 27.28 * cropScaleY;
-  const pixelX = Math.max(0, Math.round(numberMaskX * BUSINESS_LICENSE_RENDER_SCALE));
-  const pixelY = Math.max(2, Math.round(numberMaskY * BUSINESS_LICENSE_RENDER_SCALE));
-  const pixelWidth = Math.min(BUSINESS_LICENSE_CANVAS_WIDTH - pixelX, Math.round(numberMaskWidth * BUSINESS_LICENSE_RENDER_SCALE));
-  const pixelHeight = Math.round(numberMaskHeight * BUSINESS_LICENSE_RENDER_SCALE);
-  const topY = Math.max(0, pixelY - 8);
-  const bottomY = Math.min(BUSINESS_LICENSE_CANVAS_HEIGHT - 1, pixelY + pixelHeight + 8);
-  const topPixels = ctx.getImageData(pixelX, topY, pixelWidth, 1).data;
-  const bottomPixels = ctx.getImageData(pixelX, bottomY, pixelWidth, 1).data;
-  const strip = ctx.createImageData(pixelWidth, pixelHeight);
-  for (let x = 0; x < pixelWidth; x++) {
-    for (let y = 0; y < pixelHeight; y++) {
-      const t = (y + 1) / (pixelHeight + 1);
-      const i = (y * pixelWidth + x) * 4;
-      for (let channel = 0; channel < 3; channel++) {
-        strip.data[i + channel] = Math.round(topPixels[x * 4 + channel] * (1 - t) + bottomPixels[x * 4 + channel] * t);
-      }
-      strip.data[i + 3] = 255;
-    }
-  }
-  ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.putImageData(strip, pixelX, pixelY);
-  ctx.restore();
+  sectionHeading("License Details", 28.55);
+  bodyLabel("Issuing Office:", 32.3);
+  bodyLabel("Tax Identification No:", 35.3);
+  bodyLabel("License Issued To:", 38.5);
+  bodyLabel("For the Business of:", 41.65);
+  bodyLabel("Business Licensing:", 45.0);
+  bodyLabel("Date of Issue:", 48.4);
+  bodyLabel("Expiring Date:", 51.65);
+  bodyLabel("Principal/Branch:", 54.65);
 
-  drawText(
-    ctx,
-    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 500, family: FONT_SANS, color: "#69b8c2", align: "center", maxWidth: 600 * cropScaleX },
-    `B.L. NO : ${licenseNumber || "Namba inatolewa..."}`,
-  );
+  bodyValue("DAR ES SALAAM CITY COUNCIL", 32.3);
+  bodyValue(form.tin, 35.3);
+  bodyValue(owner, 38.5, pxX(57));
+  bodyValue(businessType, 41.65, pxX(57));
+  bodyValue(form.licenseType, 45.0);
+  bodyValue(formatTemplateDate(issueDate), 48.4);
+  bodyValue(formatTemplateDate(expiryDate), 51.65);
+  bodyValue(form.principalBranch, 54.65);
 
-  // Keep the template office text "DODOMA CITY COUNCIL" unchanged; continue populating the fields below it.
-  drawText(ctx, { x: valueX, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.tin);
-  drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 560 * cropScaleX }, owner);
-  drawText(ctx, { x: valueX, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, maxWidth: 560 * cropScaleX }, businessType);
-  drawText(ctx, { x: valueX, y: layout.typeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.licenseType);
-  drawText(ctx, { x: valueX, y: layout.issueY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, formatTemplateDate(issueDate));
-  drawText(ctx, { x: valueX, y: layout.expiryY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, formatTemplateDate(expiryDate));
-  drawText(ctx, { x: valueX, y: layout.branchY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.principalBranch);
+  sectionHeading("Business Location", 58.65);
+  bodyLabel("Region:", 62.0);
+  bodyLabel("Ward:", 65.25);
+  bodyLabel("Street:", 68.35);
+  bodyValue(titleCase(form.region), 62.0);
+  bodyValue(titleCase(form.ward), 65.25);
+  bodyValue(titleCase(form.street), 68.35);
 
-  drawText(ctx, { x: valueX, y: layout.regionY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, titleCase(form.region));
-  drawText(ctx, { x: valueX, y: layout.wardY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, titleCase(form.ward));
-  drawText(ctx, { x: valueX, y: layout.streetY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, titleCase(form.street));
-  drawText(ctx, { x: valueX, y: layout.amountY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, amount);
+  sectionHeading("Payment Details", 72.2);
+  bodyLabel("Amount of Fee Paid:", 75.6);
+  bodyValue(amount, 75.6);
 
-  // The QR must be generated from the actual issued B.L. number. Do not block
-  // rendering on a particular number format or on the optional center logo.
+  drawText(ctx, { x: center, y: pxY(81.0), size: 38, align: "center", maxWidth: pxX(88) }, "This digital copy does not require a signature of authority");
+  drawText(ctx, { x: labelX + 110, y: pxY(84.55), size: 32 }, "CONDITIONS & NOTES:");
+  drawText(ctx, { x: labelX + 110, y: pxY(86.65), size: 29, maxWidth: pxX(85) }, "1. This license shall be conspicuously displayed at the place of business");
+  drawText(ctx, { x: labelX + 110, y: pxY(88.8), size: 29, maxWidth: pxX(85) }, "2. Renewal applications must be submitted within 21 days of the license expiry; Otherwise, penalties begin");
+  drawText(ctx, { x: labelX + 172, y: pxY(90.95), size: 29, maxWidth: pxX(82) }, "at 25 % of the license fee and rise by 2 % for each additional month, up to 47 %.");
+
+  // Replace the sample QR printed on the blank template with one bound to the
+  // actual issued license. Its placement and scale match Reference B.
   if (expiryDate) {
     const qrLicenseNumber = licenseNumber || "BL01699682026-27000000001";
     const qrData = JSON.stringify({
@@ -253,26 +156,25 @@ export async function renderBusinessLicenseCanvas(
     await QRCode.toCanvas(qrCanvas, qrData, {
       errorCorrectionLevel: "H",
       margin: 2,
-      width: 1000,
+      width: 1200,
       color: { dark: "#000000", light: "#ffffff" },
     });
 
-    const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
-    const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
-    const qrSize = layout.qrSize;
-    const logoSize = 60 * valueScale;
-    const centerX = qrX + qrSize / 2;
-    const centerY = qrY + qrSize / 2;
-
+    const qrX = pxX(61.4);
+    const qrY = pxY(58.75);
+    const qrSize = pxX(24.2);
+    const padding = 16;
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(qrX - 9, qrY - 9, qrSize + 18, qrSize + 18);
+    ctx.fillRect(qrX - padding, qrY - padding, qrSize + padding * 2, qrSize + padding * 2);
     ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
 
-    // The peacock logo is optional: a failed logo asset must never make the QR disappear.
+    // Center logo is optional and kept conservative to preserve QR readability.
     try {
       const logo = await loadImage(assetUrl("tausi-logo.png"));
+      const logoSize = qrSize * 0.22;
+      const centerX = qrX + qrSize / 2;
+      const centerY = qrY + qrSize / 2;
       ctx.save();
-      // Keep the peacock centered in the generated QR.
       ctx.beginPath();
       ctx.arc(centerX, centerY, logoSize / 2, 0, Math.PI * 2);
       ctx.closePath();
@@ -280,10 +182,9 @@ export async function renderBusinessLicenseCanvas(
       ctx.drawImage(logo, centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
       ctx.restore();
     } catch {
-      // Keep the fully functional QR even if the optional logo cannot load.
+      // Leave the generated, scannable QR without a center logo if it is unavailable.
     }
   }
 
-  ctx.restore();
   return canvas;
 }
