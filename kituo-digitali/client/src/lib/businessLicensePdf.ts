@@ -5,36 +5,26 @@ export type BrowserLicenseForm = BusinessLicenseCanvasForm;
 
 export type GeneratedLicenseDocuments = {
   pdfBytes: Uint8Array;
-  pngBlob: Blob;
+  jpgBlob: Blob;
 };
 
-const PNG_EXPORT_SCALE = 1;
+const JPG_QUALITY = 0.94;
 
-function canvasToPngBlob(canvas: HTMLCanvasElement, scale = 1): Promise<Blob> {
-  if (scale === 1) {
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("Imeshindikana kutengeneza PNG ya leseni."));
-      }, "image/png");
-    });
-  }
-
-  const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = Math.round(canvas.width * scale);
-  exportCanvas.height = Math.round(canvas.height * scale);
-  const exportContext = exportCanvas.getContext("2d");
-  if (!exportContext) throw new Error("Imeshindikana kuandaa PNG ya leseni.");
-
-  exportContext.imageSmoothingEnabled = true;
-  exportContext.imageSmoothingQuality = "high";
-  exportContext.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height);
-
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    exportCanvas.toBlob((blob) => {
+    canvas.toBlob((blob) => {
       if (blob) resolve(blob);
-      else reject(new Error("Imeshindikana kutengeneza PNG ya leseni."));
+      else reject(new Error("Imeshindikana kutengeneza picha ya PDF ya leseni."));
     }, "image/png");
+  });
+}
+
+function canvasToJpgBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob?.type === "image/jpeg") resolve(blob);
+      else reject(new Error("Kivinjari hakikuweza kutengeneza picha ya JPG. Pakua PDF badala yake."));
+    }, "image/jpeg", JPG_QUALITY);
   });
 }
 
@@ -45,12 +35,13 @@ export async function renderBusinessLicenseDocuments(
   expiryDate: string,
 ): Promise<GeneratedLicenseDocuments> {
   const canvas = await renderBusinessLicenseCanvas(form, licenseNumber, issueDate, expiryDate);
-  // Keep the PDF at the full native template resolution.
+
+  // Keep the PDF at full native resolution and lossless image quality.
   const pdfPngBlob = await canvasToPngBlob(canvas);
   const pdfPngBytes = new Uint8Array(await pdfPngBlob.arrayBuffer());
 
-  // PNG download keeps the same full resolution so the text remains crisp when zoomed or printed.
-  const pngBlob = await canvasToPngBlob(canvas, PNG_EXPORT_SCALE);
+  // A high-quality JPEG is much smaller and faster to download than an 8–9 MB PNG.
+  const jpgBlob = await canvasToJpgBlob(canvas);
 
   const pdf = await PDFDocument.create();
   const pageWidth = 612;
@@ -59,5 +50,5 @@ export async function renderBusinessLicenseDocuments(
   const pageImage = await pdf.embedPng(pdfPngBytes);
   page.drawImage(pageImage, { x: 0, y: 0, width: pageWidth, height: pageHeight });
 
-  return { pdfBytes: await pdf.save(), pngBlob };
+  return { pdfBytes: await pdf.save(), jpgBlob };
 }

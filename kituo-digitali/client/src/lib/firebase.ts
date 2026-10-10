@@ -327,10 +327,10 @@ export type GeneratedBusinessLicense = {
   reference: string;
   duplicate: boolean;
   pdfBlob: Blob;
-  pngBlob: Blob;
+  jpgBlob: Blob;
 };
 
-type PreparedBusinessLicense = Omit<GeneratedBusinessLicense, "pdfBlob" | "pngBlob"> & { form?: BrowserLicenseForm };
+type PreparedBusinessLicense = Omit<GeneratedBusinessLicense, "pdfBlob" | "jpgBlob"> & { form?: BrowserLicenseForm };
 
 function licensePdfBlob(bytes: Uint8Array) {
   const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
@@ -344,11 +344,11 @@ export async function generateBusinessLicense(payload: BusinessLicensePayload): 
   const issueDate = preparation.issueDate ?? "";
   const expiryDate = preparation.expiryDate ?? "";
   const documents = await renderBusinessLicenseDocuments(form, preparation.licenseNumber, issueDate, expiryDate);
-  let completed: Omit<GeneratedBusinessLicense, "pdfBlob" | "pngBlob"> = preparation;
+  let completed: Omit<GeneratedBusinessLicense, "pdfBlob" | "jpgBlob"> = preparation;
   if (preparation.status !== "COMPLETED") {
-    completed = await invokeWorker<Omit<GeneratedBusinessLicense, "pdfBlob" | "pngBlob">>("completeBusinessLicense", { requestId: preparation.requestId });
+    completed = await invokeWorker<Omit<GeneratedBusinessLicense, "pdfBlob" | "jpgBlob">>("completeBusinessLicense", { requestId: preparation.requestId });
   }
-  return { ...completed, pdfBlob: licensePdfBlob(documents.pdfBytes), pngBlob: documents.pngBlob };
+  return { ...completed, pdfBlob: licensePdfBlob(documents.pdfBytes), jpgBlob: documents.jpgBlob };
 }
 export async function createServiceRequest(uid: string, service: { slug: string; name: string }, details: string) {
   const requestRef = await addDoc(collection(firestore, "serviceRequests"), {

@@ -22,7 +22,7 @@ type FormState = {
 
 type IssuedFiles = {
   pdfBlob: Blob;
-  pngBlob: Blob;
+  jpgBlob: Blob;
   licenseNumber: string;
   reference: string;
   duplicate: boolean;
@@ -176,7 +176,7 @@ export default function BusinessLicensePage() {
     return true;
   };
 
-  const download = async (format: "pdf" | "png") => {
+  const download = async (format: "pdf" | "jpg") => {
     if (!validate(true) || downloadBusy) return;
     setDownloadBusy(true);
     try {
@@ -192,7 +192,7 @@ export default function BusinessLicensePage() {
         const result = await generateBusinessLicense(payload);
         files = {
           pdfBlob: result.pdfBlob,
-          pngBlob: result.pngBlob,
+          jpgBlob: result.jpgBlob,
           licenseNumber: result.licenseNumber,
           reference: result.reference,
           duplicate: result.duplicate,
@@ -203,7 +203,7 @@ export default function BusinessLicensePage() {
         try { sessionStorage.removeItem(REQUEST_ID_KEY); } catch { /* storage may be unavailable */ }
       }
 
-      const blob = format === "pdf" ? files.pdfBlob : files.pngBlob;
+      const blob = format === "pdf" ? files.pdfBlob : files.jpgBlob;
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = objectUrl;
@@ -318,8 +318,8 @@ export default function BusinessLicensePage() {
           <Link href="/" className="button button--outline"><ArrowLeft size={17} /> BACK</Link>
           <button type="button" className="button button--dark" onClick={() => { if (validate(false)) toast.success("Muonekano wa template uko tayari; hakiki taarifa kabla ya kuomba hati."); }}><FileCheck2 size={17} /> ANGALIA HATI</button>
           <div className="license-download-option">
-            <button type="button" className="button button--dark" disabled={downloadBusy || serviceLocked} onClick={() => void download("png")}><Download size={17} /> {downloadBusy ? "INATENGENEZA..." : submitted ? "PAKUA PNG TENA" : "PAKUA PNG"}</button>
-            <small className="license-download-note">Quality 85%</small>
+            <button type="button" className="button button--dark" disabled={downloadBusy || serviceLocked} onClick={() => void download("jpg")}><Download size={17} /> {downloadBusy ? "INATENGENEZA..." : submitted ? "PAKUA JPG TENA" : "PAKUA JPG"}</button>
+            <small className="license-download-note">Ubora wa juu · faili dogo</small>
           </div>
           <div className="license-download-option license-download-option--recommended">
             <button type="button" className="button button--green" disabled={downloadBusy || serviceLocked} onClick={() => void download("pdf")}><Download size={17} /> {downloadBusy ? "INATENGENEZA..." : submitted ? "PAKUA PDF TENA" : "PAKUA PDF"}</button>
@@ -327,7 +327,7 @@ export default function BusinessLicensePage() {
           </div>
           <button type="button" className="button button--outline" disabled={downloadBusy} onClick={resetForm}><RotateCcw size={16} /> FUTA FOMU</button>
         </div>
-        <p className="license-output-note">PDF na PNG zinatengenezwa pamoja; tokeni 2 hukatwa mara moja kwa hati, si kwa kila format. <strong>Pendekezo: tumia PDF kwa ubora wa juu zaidi (100%).</strong></p>
+        <p className="license-output-note">PDF ya resolution kamili na JPG yenye faili dogo zinatengenezwa pamoja; tokeni 2 hukatwa mara moja kwa hati, si kwa kila format. <strong>Pendekezo: tumia PDF kwa uchapishaji wa ubora wa juu zaidi.</strong></p>
       </section>
 
       <div className="license-preview-column">
