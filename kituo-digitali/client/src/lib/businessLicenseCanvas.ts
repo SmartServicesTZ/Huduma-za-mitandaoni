@@ -5,6 +5,9 @@ export const BUSINESS_LICENSE_CANVAS_HEIGHT = 3083;
 const BUSINESS_LICENSE_RENDER_SCALE = 2;
 const BUSINESS_LICENSE_LAYOUT_WIDTH = BUSINESS_LICENSE_CANVAS_WIDTH / BUSINESS_LICENSE_RENDER_SCALE;
 const BUSINESS_LICENSE_LAYOUT_HEIGHT = BUSINESS_LICENSE_CANVAS_HEIGHT / BUSINESS_LICENSE_RENDER_SCALE;
+// The source PNG includes a broad white margin below the actual certificate.
+// Crop only the outer blank area; the border and every printed template pixel remain intact.
+const BUSINESS_LICENSE_TEMPLATE_CROP = { x: 38, y: 37, width: 1412, height: 1823 };
 
 export type BusinessLicenseCanvasForm = {
   applicantName: string;
@@ -93,6 +96,10 @@ const DEFAULT_LICENSE_LAYOUT = {
   qrSize: 300,
 };
 
+function remapTemplatePercent(value: number, sourceLength: number, cropStart: number, cropLength: number) {
+  return ((value / 100 * sourceLength - cropStart) / cropLength) * 100;
+}
+
 const FONT_SANS = "Roboto, Arial, Helvetica, sans-serif";
 const FONT_BODY = "Roboto, Arial, Helvetica, sans-serif";
 
@@ -120,12 +127,49 @@ export async function renderBusinessLicenseCanvas(
 
   await ensureLicenseFonts();
   const template = await loadImage(assetUrl("business-license-template-new.png"));
-  const layout = DEFAULT_LICENSE_LAYOUT;
+  const cropScaleX = template.width / BUSINESS_LICENSE_TEMPLATE_CROP.width;
+  const cropScaleY = template.height / BUSINESS_LICENSE_TEMPLATE_CROP.height;
+  const valueScale = Math.sqrt(cropScaleX * cropScaleY);
+  const remapX = (value: number) => remapTemplatePercent(value, template.width, BUSINESS_LICENSE_TEMPLATE_CROP.x, BUSINESS_LICENSE_TEMPLATE_CROP.width);
+  const remapY = (value: number) => remapTemplatePercent(value, template.height, BUSINESS_LICENSE_TEMPLATE_CROP.y, BUSINESS_LICENSE_TEMPLATE_CROP.height);
+  const layout = {
+    ...DEFAULT_LICENSE_LAYOUT,
+    valueX: remapX(DEFAULT_LICENSE_LAYOUT.valueX),
+    nameY: remapY(DEFAULT_LICENSE_LAYOUT.nameY),
+    tinY: remapY(DEFAULT_LICENSE_LAYOUT.tinY),
+    businessY: remapY(DEFAULT_LICENSE_LAYOUT.businessY),
+    typeY: remapY(DEFAULT_LICENSE_LAYOUT.typeY),
+    issueY: remapY(DEFAULT_LICENSE_LAYOUT.issueY),
+    expiryY: remapY(DEFAULT_LICENSE_LAYOUT.expiryY),
+    branchY: remapY(DEFAULT_LICENSE_LAYOUT.branchY),
+    regionY: remapY(DEFAULT_LICENSE_LAYOUT.regionY),
+    wardY: remapY(DEFAULT_LICENSE_LAYOUT.wardY),
+    streetY: remapY(DEFAULT_LICENSE_LAYOUT.streetY),
+    amountY: remapY(DEFAULT_LICENSE_LAYOUT.amountY),
+    valueSize: DEFAULT_LICENSE_LAYOUT.valueSize * valueScale,
+    nameSize: DEFAULT_LICENSE_LAYOUT.nameSize * valueScale,
+    numberX: remapX(DEFAULT_LICENSE_LAYOUT.numberX),
+    numberY: remapY(DEFAULT_LICENSE_LAYOUT.numberY),
+    numberSize: DEFAULT_LICENSE_LAYOUT.numberSize * valueScale,
+    qrX: remapX(DEFAULT_LICENSE_LAYOUT.qrX),
+    qrY: remapY(DEFAULT_LICENSE_LAYOUT.qrY),
+    qrSize: DEFAULT_LICENSE_LAYOUT.qrSize * valueScale,
+  };
 
   ctx.clearRect(0, 0, BUSINESS_LICENSE_CANVAS_WIDTH, BUSINESS_LICENSE_CANVAS_HEIGHT);
   ctx.save();
   ctx.scale(BUSINESS_LICENSE_RENDER_SCALE, BUSINESS_LICENSE_RENDER_SCALE);
-  ctx.drawImage(template, 0, 0, BUSINESS_LICENSE_LAYOUT_WIDTH, BUSINESS_LICENSE_LAYOUT_HEIGHT);
+  ctx.drawImage(
+    template,
+    BUSINESS_LICENSE_TEMPLATE_CROP.x,
+    BUSINESS_LICENSE_TEMPLATE_CROP.y,
+    BUSINESS_LICENSE_TEMPLATE_CROP.width,
+    BUSINESS_LICENSE_TEMPLATE_CROP.height,
+    0,
+    0,
+    BUSINESS_LICENSE_LAYOUT_WIDTH,
+    BUSINESS_LICENSE_LAYOUT_HEIGHT,
+  );
   // Preserve the template, including the blue border, preprinted text,
   // watermark, coat of arms and footer; draw only dynamic values and the QR.
 
@@ -145,10 +189,12 @@ export async function renderBusinessLicenseCanvas(
 
   // Remove the sample B.L. number by rebuilding the narrow strip from
   // template pixels above and below it, rather than painting a white box.
-  const numberMaskX = BUSINESS_LICENSE_LAYOUT_WIDTH * 0.293;
-  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 20;
-  const numberMaskWidth = BUSINESS_LICENSE_LAYOUT_WIDTH * 0.417;
-  const numberMaskHeight = 27.28;
+  const numberMaskLeft = remapX(29.3) / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
+  const numberMaskRight = remapX(71.0) / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
+  const numberMaskX = numberMaskLeft;
+  const numberMaskY = layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT - 20 * cropScaleY;
+  const numberMaskWidth = numberMaskRight - numberMaskLeft;
+  const numberMaskHeight = 27.28 * cropScaleY;
   const pixelX = Math.max(0, Math.round(numberMaskX * BUSINESS_LICENSE_RENDER_SCALE));
   const pixelY = Math.max(2, Math.round(numberMaskY * BUSINESS_LICENSE_RENDER_SCALE));
   const pixelWidth = Math.min(BUSINESS_LICENSE_CANVAS_WIDTH - pixelX, Math.round(numberMaskWidth * BUSINESS_LICENSE_RENDER_SCALE));
@@ -175,14 +221,14 @@ export async function renderBusinessLicenseCanvas(
 
   drawText(
     ctx,
-    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 500, family: FONT_SANS, color: "#69b8c2", align: "center", maxWidth: 600 },
+    { x: layout.numberX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH, y: layout.numberY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, size: layout.numberSize, weight: 500, family: FONT_SANS, color: "#69b8c2", align: "center", maxWidth: 600 * cropScaleX },
     `B.L. NO : ${licenseNumber || "Namba inatolewa..."}`,
   );
 
   // Keep the template office text "DODOMA CITY COUNCIL" unchanged; continue populating the fields below it.
   drawText(ctx, { x: valueX, y: layout.tinY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.tin);
-  drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 560 }, owner);
-  drawText(ctx, { x: valueX, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, maxWidth: 560 }, businessType);
+  drawText(ctx, { x: valueX, y: layout.nameY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, size: layout.nameSize, maxWidth: 560 * cropScaleX }, owner);
+  drawText(ctx, { x: valueX, y: layout.businessY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle, maxWidth: 560 * cropScaleX }, businessType);
   drawText(ctx, { x: valueX, y: layout.typeY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, form.licenseType);
   drawText(ctx, { x: valueX, y: layout.issueY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, formatTemplateDate(issueDate));
   drawText(ctx, { x: valueX, y: layout.expiryY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT, ...valueStyle }, formatTemplateDate(expiryDate));
@@ -214,7 +260,7 @@ export async function renderBusinessLicenseCanvas(
     const qrX = layout.qrX / 100 * BUSINESS_LICENSE_LAYOUT_WIDTH;
     const qrY = layout.qrY / 100 * BUSINESS_LICENSE_LAYOUT_HEIGHT;
     const qrSize = layout.qrSize;
-    const logoSize = 60;
+    const logoSize = 60 * valueScale;
     const centerX = qrX + qrSize / 2;
     const centerY = qrY + qrSize / 2;
 
