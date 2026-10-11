@@ -379,7 +379,7 @@ function QuickNidaSearch() {
   </section>;
 }
 
-function PortalHome({ search, onUse, services }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[] }) {
+function PortalHome({ search, onUse, services, userName, isAuthenticated, allServicesPage }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[]; userName?: string; isAuthenticated: boolean; allServicesPage: boolean }) {
   const [category, setCategory] = useState("Zote");
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [serviceOrder, setServiceOrder] = useState<string[]>([]);
@@ -405,7 +405,7 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
     return service;
   }), serviceOrder);
   const lower = search.toLowerCase();
-  const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))].slice(0, 8);
+  const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))];
   const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
   const mainBase = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && service.slug !== "utafutaji-nida");
   const tinCertificate = mainBase.find((service) => service.slug === "cheti-tin") ?? services.find((service) => service.slug === "cheti-tin") ?? serviceCatalog.find((service) => service.slug === "cheti-tin");
@@ -430,10 +430,24 @@ function PortalHome({ search, onUse, services }: { search: string; onUse: (servi
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {layout.showHero && <div className="modern-hero"><div className="modern-hero-copy"><span className="hero-badge"><Sparkles size={13}/> SMARTSERVICESTZ • DIGITAL SERVICE HUB</span><h1>Huduma zako.<br/><em>Kwa urahisi.</em></h1><p>Fomu, maombi, zana na huduma za kidigitali — zimepangwa kwa urahisi, kasi na usalama.</p><div className="hero-actions"><Link href="/services" className="button button--green"><Zap size={16}/> Anza kutumia</Link><Link href="/account" className="hero-link">Akaunti yangu <ChevronRight size={15}/></Link></div><div className="hero-trust-row" aria-label="Vipengele muhimu"><span><ShieldCheck size={13}/> Salama</span><span><Zap size={13}/> 24/7</span><span><Sparkles size={13}/> Rahisi kutumia</span></div></div><div className="hero-visual"><div className="hero-orbit"><div className="hero-orbit-core"><span>SS</span><small>SMART</small></div><i></i><i></i><i></i></div><div className="hero-floating hero-floating--top"><strong>{displayedServices.length}</strong><small>HUDUMA</small></div><div className="hero-floating hero-floating--bottom"><ShieldCheck size={14}/> SALAMA</div></div></div>}
     {announcements.map((item) => <Notice key={item.id} tone="info"><strong>{item.title}</strong>{item.body ? ` — ${item.body}` : ""}</Notice>)}
-    <TopQuickServices services={displayedServices} onUse={onUse} />
+    {!allServicesPage && <section className="personal-dashboard" aria-label="Dashibodi yako">
+      <div className="personal-dashboard__welcome">
+        <span className="personal-dashboard__spark"><Sparkles size={16} /></span>
+        <div><span className="overline">{isAuthenticated ? "KARIBU TENA" : "KARIBU SMARTSERVICESTZ"}</span>
+          <h2>{isAuthenticated ? <>Habari, {userName?.trim().split(/\\s+/)[0] || "Mwanachama"} 👋</> : "Huduma za kidigitali, sehemu moja"}</h2>
+          <p>{isAuthenticated ? "Endelea na huduma zako kwa haraka na kwa usalama." : "Ingia kwenye akaunti yako kutumia huduma, kuhifadhi historia na kufuatilia tokeni."}</p>
+        </div>
+      </div>
+      <div className="personal-dashboard__actions">
+        <Link href="/services" className="personal-dashboard__action"><span><Zap size={17}/></span><b>Huduma zote</b><ChevronRight size={15}/></Link>
+        <Link href="/history" className="personal-dashboard__action"><span><History size={17}/></span><b>Historia yangu</b><ChevronRight size={15}/></Link>
+        <Link href="/account" className="personal-dashboard__action"><span><UserRound size={17}/></span><b>Akaunti yangu</b><ChevronRight size={15}/></Link>
+      </div>
+    </section>}
+        <TopQuickServices services={displayedServices} onUse={onUse} />
     <TokenCard />
     <QuickNidaSearch />
-    <section className="service-discovery"><div><span className="overline">SMART SERVICES</span><h2>Chagua huduma</h2><p>Anza hapa — huduma zako zote sehemu moja.</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
+    <section className="service-discovery"><div><span className="overline">{allServicesPage ? "TAFUTA NA CHUJA" : "SMART SERVICES"}</span><h2>{allServicesPage ? "HUDUMA ZOTE" : "Chagua huduma"}</h2><p>{allServicesPage ? `${matches.length} kati ya ${displayedServices.length} huduma zinaonekana. Tumia utafutaji au makundi kuchuja.` : "Anza hapa — huduma zako zote sehemu moja."}</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
 }
@@ -518,7 +532,7 @@ export default function Home() {
   const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized);
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
   const serviceFields = Array.isArray(selectedService?.fields) ? selectedService.fields : [];
-  const page = location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <VerifyTinPage /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/chat" ? <ChatPage /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa taarifa kuhusu salio lililopo, wasiliana na support kupitia WhatsApp +255 698 232 313.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} />;
+  const page = location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <VerifyTinPage /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/chat" ? <ChatPage /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa taarifa kuhusu salio lililopo, wasiliana na support kupitia WhatsApp +255 698 232 313.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} userName={user?.name} isAuthenticated={isAuthenticated} allServicesPage={location === "/services"} />;
   const accessMode = resolveAccountAccessMode(user);
   const fullAccessBlocked = isAuthenticated && accessMode === "denied";
   const restrictionNotice = accessMode === "read_only"
