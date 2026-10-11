@@ -31,6 +31,12 @@ const today = () => {
 const initials = (name: string) =>
   name.trim().split(/\s+/).filter(Boolean).map((x) => x[0]).join(".").toUpperCase();
 
+const firstAndLastName = (name: string) => {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= 2) return words.join(" ").toUpperCase();
+  return `${words[0]} ${words[words.length - 1]}`.toUpperCase();
+};
+
 const digits = (value: string) => value.replace(/\D/g, "");
 
 const formatTin = (value: string) => {
@@ -51,10 +57,10 @@ const initialForm = (): FormState => ({
   email: "HUDUMAZAMTANDAO999@GMAIL.COM",
   normalSme: true,
   devicePhone: "0712345678",
-  customerName2: "STEWART NJIWA",
+  customerName2: firstAndLastName("STEWARD JACKSON NJIWA"),
   salesName: "STEWARD NJIWA",
-  signature1: "S.N",
-  signature2: "",
+  signature1: initials("STEWARD JACKSON NJIWA"),
+  signature2: initials("STEWARD NJIWA"),
   date1: today(),
   date2: today(),
 });
@@ -108,7 +114,7 @@ export default function AirtelSmeContractPage() {
       if (key === "customerName") {
         const name = String(value).replace(/[^a-zA-ZÀ-ÿ\s]/g, "").toUpperCase().replace(/\s+/g, " ").trimStart();
         next.customerName = name;
-        next.customerName2 = name;
+        next.customerName2 = firstAndLastName(name);
         next.signature1 = initials(name);
         next.devicePhone = current.phone;
       }
