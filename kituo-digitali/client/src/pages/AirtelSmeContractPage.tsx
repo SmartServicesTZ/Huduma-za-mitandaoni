@@ -214,7 +214,7 @@ export default function AirtelSmeContractPage() {
       ${text(form.district.toUpperCase(),layout.districtX,layout.districtY,layout.districtSize,34)}
       ${text(form.region.toUpperCase(),layout.regionX,layout.regionY,layout.regionSize,20)}
       ${text(form.email.toLowerCase(),layout.emailX,layout.emailY,layout.emailSize||2.6,64)}
-      ${text(form.normalSme ? "✓" : "",layout.normalX,layout.normalY,layout.normalSize,8)}
+      ${form.normalSme ? `<text x="${layout.normalX}%" y="${layout.normalY}%" text-anchor="start" dominant-baseline="hanging" font-family="Arial,Helvetica,sans-serif" font-size="${Math.max(10, layout.normalSize * 5.8) * 1.5}" font-weight="500" fill="${ink}">✓</text>` : ""}
       ${text(form.devicePhone,layout.deviceX,layout.deviceY + 0.5,layout.deviceSize,30)}
       ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
       ${text(form.signature1 || initials(form.customerName2),layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
