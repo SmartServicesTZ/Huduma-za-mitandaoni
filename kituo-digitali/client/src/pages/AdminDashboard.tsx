@@ -135,7 +135,7 @@ export default function AdminDashboard() {
       {panel === "lipa" && <div className="lipa-admin-layout"><div className="admin-card" style={{marginBottom:16}}><div className="admin-card-heading"><div><span className="admin-kicker">LIPA NAMBA · ADMIN CONTROL</span><h2>Usimamizi wa Lipa Namba</h2><p>Hapa admin anaona maombi yote, anafungua VIEW DETAILS, anaweka PROCESSING / APPROVED / REJECTED, anaingiza Lipa Namba, anafuatilia zawadi na kumjibu mtumiaji.</p></div><WalletCards size={22}/></div><div className="quick-actions"><Link href="/admin/lipa">↻ Refresh inbox</Link><span className="pill">{lipaApplications.length} MAOMBI</span><span className="pill">{lipaApplications.filter((a)=>a.status==="PENDING").length} PENDING</span><span className="pill">{lipaApplications.filter((a)=>a.status==="APPROVED").length} APPROVED</span></div></div><LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} />{hasPermission("manageServices") && <LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} />}</div>}
       {panel === "ordering" && isSuper && <ServiceOrderingPanel services={services} serviceOrder={serviceOrder} setServiceOrder={setServiceOrder} sectionOrder={homepageSectionOrder} setSectionOrder={setHomepageSectionOrder} onSave={() => run(() => setHomepageServiceOrder(serviceOrder, homepageSectionOrder), "Mpangilio wa huduma umehifadhiwa.")} busy={busy} />}
       {panel === "videos" && <CollectionPanel title="Video za Mafunzo" collectionName="tutorialVideos" rows={videos} form={video} setForm={setVideo} fields={[["title", "Title"], ["videoUrl", "Video URL"], ["category", "Category"], ["order", "Order"]]} onRun={run} adminId={firebaseUser!.uid} />}
-      {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2></div></div><TransactionTable rows={transactions} /></section>}
+      {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2><p style={{margin:"6px 0 0",color:"var(--muted,#64748b)"}}>Rekodi {transactions.length.toLocaleString()} za miamala zilizopakiwa.</p></div><button type="button" className="button button--green button--small" onClick={() => exportTransactionsCsv(transactions)} disabled={!transactions.length}>Pakua ripoti CSV</button></div><TransactionTable rows={transactions} /></section>}
       {panel === "announcements" && <CollectionPanel title="Matangazo" collectionName="announcements" rows={announcements} form={announcement} setForm={setAnnouncement} fields={[["title", "Kichwa"], ["body", "Ujumbe"]]} onRun={run} adminId={firebaseUser!.uid} />}
       {panel === "cms" && <><CmsPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} /><TemplateEditorPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} /></>}
       {panel === "security" && <SecurityPanel isSuper={isSuper} users={users} audit={audit} />}
@@ -370,6 +370,31 @@ function MessagesPanel({ users, form, setForm, onRun, adminId }: any) {
   return <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">MESSAGING</span><h2>Tuma ujumbe / arifa</h2><p>Ujumbe wa jumla utaonekana kwenye sehemu ya “Ujumbe na taarifa” kwa watumiaji walioingia kwenye mfumo.</p></div></div><div className="form-grid"><Field label="Kichwa cha ujumbe" value={form.subject} onChange={(value) => setForm({ ...form, subject: value })} /><label className="control-field"><span>Wapokeaji</span><select value={form.recipientId} onChange={(event) => setForm({ ...form, recipientId: event.target.value })}><option value="">Watumiaji wote</option>{users.map((item: any) => <option key={item.id} value={item.id}>{item.name ?? "Bila jina"} — {item.phone || "—"}</option>)}</select></label></div><label className="control-field"><span>Ujumbe</span><textarea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} /></label><button className="admin-primary" disabled={!String(form.subject ?? "").trim() || !String(form.body ?? "").trim()} onClick={() => onRun(() => adminSaveCollectionItem(adminId, "messages", { ...form, broadcast, sentAt: new Date().toISOString() }), broadcast ? "Arifa imechapishwa kwa watumiaji wote." : "Ujumbe umetumwa kwa mtumiaji.")}>{broadcast ? "Tuma kwa watumiaji wote" : "Tuma ujumbe"}</button></section>;
 }
 function SecurityPanel({ isSuper, users, audit }: any) { return <div className="admin-two-col"><section className="admin-security-card"><ShieldCheck size={25} /><h2>{isSuper ? "Eneo la siri" : "Usalama wa admin"}</h2><p>{isSuper ? "Una access ya super_admin. Admin management, settings na audit logs zinapatikana." : "Admin wa kawaida hawezi kubadilisha super_admin au system security settings."}</p><div className="security-checks"><span>✓ Firebase Auth</span><span>✓ Role-based access</span><span>✓ Firestore Rules</span><span>✓ No passwords in Firestore</span></div></section><section className="admin-card"><h2>Audit summary</h2><p>Users: {users.length} · Admins: {users.filter((item: any) => ["admin", "super_admin"].includes(item.role)).length}</p><p>Audit actions: {audit.length}</p><small>Kwa custom claims, tumia Firebase Admin SDK katika mazingira ya privileged; frontend haiwezi kujipa role.</small></section></div>; }
+function exportTransactionsCsv(rows: any[]) {
+  if (!rows.length) { toast.error("Hakuna miamala ya kuripoti."); return; }
+  const columns: Array<[string, (item: any) => unknown]> = [
+    ["Reference", (item) => item.reference ?? item.id],
+    ["User ID", (item) => item.userId],
+    ["Maelezo", (item) => item.serviceName ?? item.description ?? ""],
+    ["Aina", (item) => item.type ?? (Number(item.amount) < 0 ? "DEBIT" : "CREDIT")],
+    ["Kiasi", (item) => item.amount],
+    ["Balance kabla", (item) => item.previousBalance],
+    ["Balance baada", (item) => item.newBalance ?? item.balanceAfter],
+    ["Tarehe", (item) => dateText(item.createdAt)],
+  ];
+  const escapeCell = (value: unknown) => {
+    const raw = String(value ?? "");
+    return '"' + raw.replace(/"/g, '""').replace(/\r?\n/g, " ") + '"';
+  };
+  const csv = "\uFEFF" + [columns.map(([label]) => escapeCell(label)).join(","), ...rows.map((item) => columns.map(([, read]) => escapeCell(read(item))).join(","))].join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `steward-tz-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+  toast.success("Ripoti ya CSV imeandaliwa.");
+}
+
 function TransactionTable({ rows }: { rows: any[] }) { return <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>REFERENCE</th><th>MTUMIAJI</th><th>MAELEZO</th><th>AINA</th><th>KIASI</th><th>BALANCE</th><th>TAREHE</th></tr></thead><tbody>{rows.map((item) => <tr key={item.id}><td><code>{item.reference ?? item.id}</code></td><td>{item.userId}</td><td>{item.serviceName ?? item.description ?? "—"}</td><td><span className="pill">{item.type ?? (Number(item.amount) < 0 ? "DEBIT" : "CREDIT")}</span></td><td className={Number(item.amount) < 0 ? "amount-negative" : "amount-positive"}>{item.amount}</td><td>{item.previousBalance ?? "—"} → {item.newBalance ?? item.balanceAfter ?? "—"}</td><td>{dateText(item.createdAt)}</td></tr>)}</tbody></table>{!rows.length && <Empty />}</div>; }
 function UserModal({ person, onClose }: { person: any; onClose: () => void }) {
   const mode = resolveAccountAccessMode(person);
