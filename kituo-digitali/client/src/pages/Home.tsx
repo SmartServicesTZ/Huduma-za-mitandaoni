@@ -459,7 +459,26 @@ function ServiceWorkspace({ service }: { service: ServiceCatalogItem }) {
   return <main className="portal-main"><div className="page-heading"><div><span className="overline">WORKSPACE YA HUDUMA</span><h1>{service.name}</h1><p>{service.description}</p></div><Icon name={service.icon} size={42} /></div><section className="account-panel service-workspace">{isLocked ? <Notice>Huduma hii imefungwa kwa sasa na admin.</Notice> : <><Notice tone="success">Weka taarifa zako hapa ili ombi liende kwa admin.</Notice><label className="control-field"><span>Maelezo ya ombi / taarifa muhimu</span><textarea value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Andika jina, namba ya simu, TIN, au maelezo yanayohitajika..." rows={8} /></label><button className="button button--green" disabled={busy} onClick={submit}>{busy ? "INATUMA..." : "TUMA OMBI LA HUDUMA"}</button></>}</section></main>;
 }
 
-function BottomNav() { return <nav className="bottom-nav">{[{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma", icon: Zap }, { href: "/chat", label: "Chat", icon: MessageCircle }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Akaunti", icon: Settings2 }].map(({ href, label, icon: ItemIcon }) => <Link href={href} key={href}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>; }
+function BottomNav() {
+  const [location] = useLocation();
+  const items = [
+    { href: "/", label: "Mwanzo", icon: LayoutGrid },
+    { href: "/services", label: "Huduma", icon: Zap },
+    { href: "/chat", label: "Chat", icon: MessageCircle },
+    { href: "/history", label: "Historia", icon: History },
+    { href: "/account", label: "Akaunti", icon: UserRound },
+  ];
+  return <nav className="bottom-nav" aria-label="Menyu kuu ya simu">
+    {items.map(({ href, label, icon: ItemIcon }) => {
+      const active = href === "/" ? location === "/" : location === href || location.startsWith(href + "/");
+      return <Link href={href} key={href} className={active ? "active" : ""} aria-current={active ? "page" : undefined}>
+        <span className="bottom-nav-icon"><ItemIcon size={20} strokeWidth={active ? 2.35 : 1.8} /></span>
+        <span className="bottom-nav-label">{label}</span>
+        {active && <span className="bottom-nav-dot" aria-hidden="true" />}
+      </Link>;
+    })}
+  </nav>;
+}
 
 export default function Home() {
   const [location, navigate] = useLocation();
