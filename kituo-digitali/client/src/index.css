@@ -1598,3 +1598,66 @@ button.send-motion-active [class*="animate-spin"] {
   .bottom-nav a, .bottom-nav .bottom-nav-icon { transition: none !important; }
   .bottom-nav a:active { transform: none; }
 }
+
+
+/* $teward Tz — personalized dashboard and modern service discovery */
+.personal-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  margin: 16px 0 20px;
+  padding: 19px;
+  border: 1px solid rgba(129, 165, 220, .22);
+  border-radius: 20px;
+  color: var(--text, #eaf2ff);
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(59,130,246,.19), transparent 52%),
+    linear-gradient(135deg, rgba(13,37,72,.96), rgba(8,22,46,.97));
+  box-shadow: 0 12px 30px rgba(0,0,0,.13), inset 0 1px 0 rgba(255,255,255,.045);
+}
+.personal-dashboard__welcome { display:flex; align-items:flex-start; gap:12px; min-width:0; }
+.personal-dashboard__spark { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center; border:1px solid rgba(131,246,177,.24); border-radius:12px; color:#83f6b1; background:rgba(24,185,105,.12); }
+.personal-dashboard__welcome .overline { color:#86a9d9; font-size:10px; letter-spacing:.12em; font-weight:850; }
+.personal-dashboard__welcome h2 { margin:4px 0 6px; font-size:clamp(17px,2vw,23px); line-height:1.2; letter-spacing:-.025em; color:#f7fbff; }
+.personal-dashboard__welcome p { margin:0; max-width:460px; color:#b7c8df; font-size:12px; line-height:1.6; }
+.personal-dashboard__actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; align-content:center; }
+.personal-dashboard__action { min-width:0; min-height:75px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:8px; padding:10px; border:1px solid rgba(175,199,231,.16); border-radius:13px; color:#e9f2ff !important; background:rgba(255,255,255,.045); transition:background .18s ease,border-color .18s ease,transform .18s ease; }
+.personal-dashboard__action:hover { transform:translateY(-2px); border-color:rgba(131,246,177,.4); background:rgba(255,255,255,.08); }
+.personal-dashboard__action>span { display:grid; place-items:center; width:28px; height:28px; border-radius:9px; color:#83f6b1; background:rgba(24,185,105,.13); }
+.personal-dashboard__action b { font-size:10px; line-height:1.25; }
+.personal-dashboard__action>svg { display:none; }
+.service-discovery { align-items:flex-end; }
+.service-discovery>div:first-child { min-width:0; }
+.service-discovery p { max-width:620px; }
+.service-chips { max-width:100%; overflow-x:auto; scrollbar-width:thin; scrollbar-color:rgba(129,165,220,.35) transparent; padding-bottom:4px; }
+.service-chips button { white-space:nowrap; flex:0 0 auto; }
+.portal-service-card { transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+.portal-service-card:focus-visible,.personal-dashboard__action:focus-visible,.service-chips button:focus-visible { outline:2px solid #83f6b1; outline-offset:3px; }
+.portal-service-card:hover { transform:translateY(-2px); }
+.page-loading-state { min-height:42vh; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px; text-align:center; color:var(--text,#eaf2ff); }
+.page-loading-state strong { font-size:14px; }
+.page-loading-state small { font-size:12px; opacity:.65; }
+.loading-orbit { width:32px; height:32px; border:3px solid rgba(129,165,220,.22); border-top-color:#83f6b1; border-radius:50%; animation:steward-page-spin .8s linear infinite; }
+@keyframes steward-page-spin { to { transform:rotate(360deg); } }
+@media(max-width:900px) {
+  .personal-dashboard { grid-template-columns:1fr; gap:15px; }
+  .personal-dashboard__actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media(max-width:520px) {
+  .personal-dashboard { margin:10px 0 14px; padding:14px; border-radius:16px; }
+  .personal-dashboard__welcome { gap:9px; }
+  .personal-dashboard__spark { width:33px; height:33px; flex-basis:33px; }
+  .personal-dashboard__welcome h2 { font-size:17px; }
+  .personal-dashboard__welcome p { font-size:11px; }
+  .personal-dashboard__actions { gap:6px; }
+  .personal-dashboard__action { min-height:67px; padding:8px 7px; gap:7px; border-radius:11px; }
+  .personal-dashboard__action b { font-size:9px; }
+  .service-discovery { align-items:flex-start; flex-direction:column; gap:10px; }
+  .service-chips { width:100%; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .personal-dashboard__action,.portal-service-card { transition:none!important; }
+  .personal-dashboard__action:hover,.portal-service-card:hover { transform:none; }
+  .loading-orbit { animation:none; }
+}
