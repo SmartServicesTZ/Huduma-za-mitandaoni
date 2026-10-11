@@ -37,7 +37,18 @@ const firstAndLastName = (name: string) => {
   return `${words[0]} ${words[words.length - 1]}`.toUpperCase();
 };
 
-const digits = (value: string) => value.replace(/\D/g, "");
+const sampleSignature = (name: string) => {
+  const letters = (name || "Signature").replace(/\\s+/g, "").slice(0, 12);
+  let path = "M 8 48 C 14 18, 22 18, 24 42 S 36 57, 42 32";
+  letters.split("").forEach((letter, i) => {
+    const x = 44 + i * 17;
+    const lift = 12 + (letter.charCodeAt(0) % 22);
+    path += " C " + (x + 2) + " " + lift + ", " + (x + 8) + " " + (60 - lift / 3) + ", " + (x + 15) + " " + (28 + (i % 4) * 7);
+  });
+  return path + " C 245 10, 265 58, 308 20";
+};
+
+const digits = (value: string) => value.replace(/\\D/g, "");
 
 const formatTin = (value: string) => {
   const d = digits(value).slice(0, 9);
@@ -69,6 +80,10 @@ export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
+  const [customerSignaturePath, setCustomerSignaturePath] = useState("");
+  const [salesSignaturePath, setSalesSignaturePath] = useState("");
+  const [drawingSignature, setDrawingSignature] = useState<"customer" | "sales" | null>(null);
+  const [signatureDraft, setSignatureDraft] = useState("");
   const inkHex = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
 
   const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...AIRTEL_SME_LAYOUT_DEFAULTS }));
@@ -115,13 +130,11 @@ export default function AirtelSmeContractPage() {
         const name = String(value).replace(/[^a-zA-ZÀ-ÿ\s]/g, "").toUpperCase().replace(/\s+/g, " ").trimStart();
         next.customerName = name;
         next.customerName2 = firstAndLastName(name);
-        next.signature1 = initials(name);
         next.devicePhone = current.phone;
       }
       if (key === "phone") next.devicePhone = digits(String(value)).slice(0, 10);
       if (key === "tin") next.tin = formatTin(String(value));
       if (key === "idNumber") next.idNumber = digits(String(value)).slice(0, 20);
-      if (key === "salesName") next.signature2 = initials(String(value));
       return next;
     });
     setStatus("");
@@ -189,11 +202,11 @@ export default function AirtelSmeContractPage() {
       ${text(form.normalSme ? "✓" : "",layout.normalX,layout.normalY,layout.normalSize,8)}
       ${text(form.devicePhone,layout.deviceX,layout.deviceY + 0.5,layout.deviceSize,30)}
       ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
-      ${text(form.signature1,layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
-      ${text(form.date1,layout.date1X,layout.date1Y,layout.date1Size,16)}
+      ${customerSignaturePath ? '<path d="' + customerSignaturePath + '" transform="translate(' + (layout.sign1X * 10.24) + ',' + (layout.sign1Y * 15.36) + ') scale(0.8)" fill="none" stroke="' + ink + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' : ""}
+      ${text(form.date1,layout.date1X,layout.date1Y,Math.max(1,layout.date1Size - 0.5),16)}
       ${text(form.salesName,layout.salesX,layout.salesY,layout.salesSize,36)}
-      ${text(form.signature2,layout.sign2X,layout.sign2Y,layout.sign2Size,12)}
-      ${text(form.date2,layout.date2X,layout.date2Y,layout.date2Size,16)}
+      ${salesSignaturePath ? '<path d="' + salesSignaturePath + '" transform="translate(' + (layout.sign2X * 10.24) + ',' + (layout.sign2Y * 15.36) + ') scale(0.8)" fill="none" stroke="' + ink + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' : ""}
+      ${text(form.date2,layout.date2X,layout.date2Y,Math.max(1,layout.date2Size - 0.5),16)}
     </svg>`;
     
     const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
@@ -207,6 +220,7 @@ export default function AirtelSmeContractPage() {
   };
 
   const reset = () => {
+    setCustomerSignaturePath(""); setSalesSignaturePath(""); setSignatureDraft("");
     setForm(initialForm());
     setStatus("✓ Fomu imerudishwa kwenye default.");
   };
@@ -243,7 +257,7 @@ export default function AirtelSmeContractPage() {
         .sme-field input{text-transform:uppercase;width:100%;height:42px;border:1px solid #c9c9c9;border-radius:9px;padding:0 11px;font-size:14px;outline:none}
         .sme-field input:focus{border-color:#e60012;box-shadow:0 0 0 3px #e6001218}
         .sme-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .sme-check{display:flex;gap:10px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0 14px;font-size:13px}
+        .sme-signature-box{border:1px solid #ddd;border-radius:10px;padding:10px;margin:12px 0;background:#fff}.sme-signature-box b{display:block;font-size:13px;margin-bottom:4px}.sme-signature-box small{display:block;color:#666;font-size:11px;margin-bottom:7px}.sme-sign-pad{display:block;width:100%;height:82px;border:1px dashed #aaa;border-radius:8px;background:#fff;touch-action:none;cursor:crosshair}.sme-check{display:flex;gap:10px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0 14px;font-size:13px}
         .sme-check input{width:20px;height:20px;accent-color:#e60012}
         .sme-error{display:block;color:#e60012;font-size:11px;margin-top:4px}
         .sme-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.sme-ink{margin-top:14px;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fafafa}.sme-ink-title{font-size:13px;font-weight:800;margin-bottom:8px}.sme-ink-options{display:flex;gap:8px;flex-wrap:wrap}.sme-ink-option{border:1px solid #ccc;background:#fff;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}.sme-ink-option.active{border-color:#003cff;box-shadow:0 0 0 2px #003cff20}
@@ -281,7 +295,8 @@ export default function AirtelSmeContractPage() {
             {field("Device/SME mobile number", "devicePhone")}
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName")}
-            <div className="sme-row">{field("Signature 1", "signature1")}{field("Signature 2", "signature2")}</div>
+            <div className="sme-signature-box"><b>Customer saini</b><small>Saini ya mfano inabadilika kulingana na jina. Chora yako kwa kidole ukitaka.</small><svg viewBox="0 0 320 72" className="sme-sign-pad" onPointerDown={(e)=>{e.currentTarget.setPointerCapture(e.pointerId);setDrawingSignature("customer");const r=e.currentTarget.getBoundingClientRect();setSignatureDraft("M "+((e.clientX-r.left)/r.width*320).toFixed(1)+" "+((e.clientY-r.top)/r.height*72).toFixed(1))}} onPointerMove={(e)=>{if(drawingSignature!=="customer")return;const r=e.currentTarget.getBoundingClientRect();setSignatureDraft(p=>p+" L "+((e.clientX-r.left)/r.width*320).toFixed(1)+" "+((e.clientY-r.top)/r.height*72).toFixed(1))}} onPointerUp={()=>{if(drawingSignature==="customer")setCustomerSignaturePath(signatureDraft);setDrawingSignature(null)}}><path d={customerSignaturePath || sampleSignature(form.customerName2)} fill="none" stroke={inkHex} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg><button type="button" className="sme-ink-option" onClick={()=>setCustomerSignaturePath("")}>Tumia saini ya mfano</button></div>
+            <div className="sme-signature-box"><b>Sales Sain</b><small>Saini ya mfano ya Sales Executive. Chora saini yake mwenyewe hapa.</small><svg viewBox="0 0 320 72" className="sme-sign-pad" onPointerDown={(e)=>{e.currentTarget.setPointerCapture(e.pointerId);setDrawingSignature("sales");const r=e.currentTarget.getBoundingClientRect();setSignatureDraft("M "+((e.clientX-r.left)/r.width*320).toFixed(1)+" "+((e.clientY-r.top)/r.height*72).toFixed(1))}} onPointerMove={(e)=>{if(drawingSignature!=="sales")return;const r=e.currentTarget.getBoundingClientRect();setSignatureDraft(p=>p+" L "+((e.clientX-r.left)/r.width*320).toFixed(1)+" "+((e.clientY-r.top)/r.height*72).toFixed(1))}} onPointerUp={()=>{if(drawingSignature==="sales")setSalesSignaturePath(signatureDraft);setDrawingSignature(null)}}><path d={salesSignaturePath || sampleSignature(form.salesName)} fill="none" stroke={inkHex} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg><button type="button" className="sme-ink-option" onClick={()=>setSalesSignaturePath("")}>Tumia saini ya mfano</button></div>
             <div className="sme-row">{field("Date 1", "date1")}{field("Date 2", "date2")}</div>
             <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={downloadContract}>⬇ Download Mkataba</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
@@ -305,10 +320,10 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={ov("normalX","normalY","normalSize")}>{form.normalSme ? "✓" : ""}</div>
                 <div className="sme-overlay" style={{...ov("deviceX","deviceY","deviceSize","30%"),top:`${(layout.deviceY ?? 58.3)+0.5}%`}}>{form.devicePhone}</div>
                 <div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
-                <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div>
+                <svg className="sme-overlay" style={{...ov("sign1X","sign1Y","sign1Size","12%"),height:"2.4%"}} viewBox="0 0 320 72" preserveAspectRatio="none"><path d={customerSignaturePath || sampleSignature(form.customerName2)} fill="none" stroke={inkHex} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 <div className="sme-overlay" style={ov("date1X","date1Y","date1Size","16%")}>{form.date1}</div>
                 <div className="sme-overlay" style={ov("salesX","salesY","salesSize","36%")}>{form.salesName}</div>
-                <div className="sme-overlay" style={ov("sign2X","sign2Y","sign2Size","12%")}>{form.signature2}</div>
+                <svg className="sme-overlay" style={{...ov("sign2X","sign2Y","sign2Size","12%"),height:"2.4%"}} viewBox="0 0 320 72" preserveAspectRatio="none"><path d={salesSignaturePath || sampleSignature(form.salesName)} fill="none" stroke={inkHex} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 <div className="sme-overlay" style={ov("date2X","date2Y","date2Size","16%")}>{form.date2}</div>
               </div>
             </div>
