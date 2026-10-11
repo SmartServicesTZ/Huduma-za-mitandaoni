@@ -40,9 +40,9 @@ export default function VerifyTinPage() {
         .verify-tin-document { position: relative; display: block; width: min(900px, 100%); margin: 0 auto; line-height: 0; }
         .verify-tin-document img { display: block; width: 100%; max-width: 100%; height: auto; }
         .verify-tin-overlay { position: absolute; font-size: clamp(10px, 2.45vw, 22px); font-weight: bold; color: #000; line-height: normal; white-space: nowrap; }
-        .verify-tin-top { top: 11.11%; left: 22.22%; }
-        .verify-tin-name { top: 16.67%; left: 22.22%; }
-        .verify-tin-bottom { top: 22.22%; left: 22.22%; }
+        .verify-tin-top { top: 8.98%; left: 22.22%; }
+        .verify-tin-name { top: 13.48%; left: 22.22%; }
+        .verify-tin-bottom { top: 17.97%; left: 22.22%; }
         @media (max-width: 700px) {
           .verify-tin-page { padding: 12px 12px 50px; }
           .verify-tin-row { grid-template-columns: 1fr; gap: 0; }
