@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { PDFDocument } from "pdf-lib";
 import { getPublicSiteSettings } from "@/lib/firebase";
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 
@@ -45,22 +46,22 @@ const formatTin = (value: string) => {
 };
 
 const initialForm = (): FormState => ({
-  customerName: "STEWARD JACKSON NJIWA",
-  phone: "0712345678",
-  tin: "123-456-789",
+  customerName: "",
+  phone: "",
+  tin: "",
   idType: "NIDA",
-  idNumber: "19900101000000000001",
+  idNumber: "",
   street: "TEGETA",
   ward: "MADALE",
   district: "KINONDONI",
   region: "DAR ES SALAAM",
   email: "HUDUMAZAMTANDAO999@GMAIL.COM",
   normalSme: true,
-  devicePhone: "0712345678",
-  customerName2: firstAndLastName("STEWARD JACKSON NJIWA"),
-  salesName: "STEWARD NJIWA",
-  signature1: initials(firstAndLastName("STEWARD JACKSON NJIWA")),
-  signature2: initials("STEWARD NJIWA"),
+  devicePhone: "",
+  customerName2: "",
+  salesName: "",
+  signature1: "",
+  signature2: "",
   date1: today(),
   date2: today(),
 });
@@ -139,7 +140,7 @@ export default function AirtelSmeContractPage() {
     return result;
   }, [form]);
 
-  const downloadContract = async () => {
+  const downloadContract = async (format: "png" | "pdf") => {
     if (Object.keys(errors).length) {
       setStatus("⚠️ Tafadhali rekebisha taarifa zilizo na makosa kabla ya kupakua.");
       return;
@@ -192,20 +193,60 @@ export default function AirtelSmeContractPage() {
       ${text(form.devicePhone,layout.deviceX,layout.deviceY + 0.5,layout.deviceSize,30)}
       ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
       ${text(form.signature1 || initials(form.customerName2),layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
-      ${text(form.date1,layout.date1X,layout.date1Y,Math.max(1,layout.date1Size - 0.5),16)}
+      ${text(form.date1,layout.date1X + 0.2,layout.date1Y,Math.max(1,layout.date1Size - 0.5),16)}
       ${text(form.salesName,layout.salesX,layout.salesY,layout.salesSize,36)}
       ${text(form.signature2 || initials(form.salesName),layout.sign2X,layout.sign2Y,layout.sign2Size,12)}
-      ${text(form.date2,layout.date2X,layout.date2Y,Math.max(1,layout.date2Size - 0.5),16)}
+      ${text(form.date2,layout.date2X + 0.2,layout.date2Y,Math.max(1,layout.date2Size - 0.5),16)}
     </svg>`;
     
-    const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g,"-") || "mteja"}.svg`;
-    a.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    setStatus("✓ Mkataba umepakuliwa kwa ubora wa juu.");
+    try {
+      const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      try {
+        const image = new Image();
+        image.decoding = "sync";
+        await new Promise<void>((resolve, reject) => {
+          image.onload = () => resolve();
+          image.onerror = () => reject(new Error("Mkataba haukuweza kubadilishwa kuwa picha."));
+          image.src = svgUrl;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = 2048;
+        canvas.height = 3072;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Canvas haipatikani kwenye kifaa hiki.");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const pngBlob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((result) => result ? resolve(result) : reject(new Error("PNG haikuweza kutengenezwa.")), "image/png");
+        });
+        let outputBlob = pngBlob;
+        let extension = "png";
+        if (format === "pdf") {
+          const pdf = await PDFDocument.create();
+          const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
+          const embedded = await pdf.embedPng(pngBytes);
+          const page = pdf.addPage([612, 918]);
+          page.drawImage(embedded, { x: 0, y: 0, width: 612, height: 918 });
+          outputBlob = new Blob([await pdf.save()], { type: "application/pdf" });
+          extension = "pdf";
+        }
+        const outputUrl = URL.createObjectURL(outputBlob);
+        const a = document.createElement("a");
+        a.href = outputUrl;
+        a.download = `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.setTimeout(() => URL.revokeObjectURL(outputUrl), 60_000);
+        setStatus(`✓ Mkataba umepakuliwa kama ${extension.toUpperCase()} kwa ubora wa juu.`);
+      } finally {
+        URL.revokeObjectURL(svgUrl);
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? `⚠️ ${error.message}` : "⚠️ Download imeshindikana. Jaribu tena.");
+    }
   };
 
   const reset = () => {
@@ -269,22 +310,22 @@ export default function AirtelSmeContractPage() {
         <div className="sme-grid">
           <section className="sme-card sme-form">
             <h2>Jaza Taarifa za Mteja</h2>
-            {field("Jina la mteja (Majina 3, herufi kubwa tu)", "customerName", "MFANO: DIANA ROBERTI SITARABU")}
-            {field("Simu ya mawasiliano (tarakimu 9 au 10)", "phone", "0712345678", "tel", 10)}
-            {field("TIN namba (9 digits)", "tin", "123-123-123", "text", 11)}
+            {field("Jina la mteja (Majina 3, herufi kubwa tu)", "customerName", "")}
+            {field("Simu ya mawasiliano (tarakimu 9 au 10)", "phone", "", "tel", 10)}
+            {field("TIN namba (9 digits)", "tin", "", "text", 11)}
             <div className="sme-row">
               {field("Aina ya kitambulisho", "idType")}
-              {field("Namba ya kitambulisho (20 digits)", "idNumber", "20 digits", "text", 20)}
+              {field("Namba ya kitambulisho (20 digits)", "idNumber", "", "text", 20)}
             </div>
             <div className="sme-row">{field("Mtaa", "street")}{field("Kata", "ward")}</div>
             <div className="sme-row">{field("Wilaya", "district")}{field("Mkoa", "region")}</div>
             {field("Barua pepe", "email", "", "email")}
             <label className="sme-check"><input type="checkbox" checked={form.normalSme} onChange={(e) => update("normalSme", e.target.checked)} /><span><b>Normal SME</b> — imechaguliwa moja kwa moja</span></label>
-            {field("Device/SME mobile number", "devicePhone")}
+            {field("Device/SME mobile number", "devicePhone", "")}
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName")}
             <div className="sme-row">{field("Date 1", "date1")}{field("Date 2", "date2")}</div>
-            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={downloadContract}>⬇ Download Mkataba</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
+            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("png")}>⬇ Download PNG</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ Download PDF</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
           </section>
 
@@ -307,10 +348,10 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={{...ov("deviceX","deviceY","deviceSize","30%"),top:`${(layout.deviceY ?? 58.3)+0.5}%`}}>{form.devicePhone}</div>
                 <div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={{...ov("sign1X","sign1Y","sign1Size","12%"),fontStyle:"italic",fontWeight:800}}>{form.signature1 || initials(form.customerName2)}</div>
-                <div className="sme-overlay" style={ov("date1X","date1Y","date1Size","16%")}>{form.date1}</div>
+                <div className="sme-overlay" style={{...ov("date1X","date1Y","date1Size","16%"),left:`${(layout.date1X ?? 0)+0.2}%`}}>{form.date1}</div>
                 <div className="sme-overlay" style={ov("salesX","salesY","salesSize","36%")}>{form.salesName}</div>
                 <div className="sme-overlay" style={{...ov("sign2X","sign2Y","sign2Size","12%"),fontStyle:"italic",fontWeight:800}}>{form.signature2 || initials(form.salesName)}</div>
-                <div className="sme-overlay" style={ov("date2X","date2Y","date2Size","16%")}>{form.date2}</div>
+                <div className="sme-overlay" style={{...ov("date2X","date2Y","date2Size","16%"),left:`${(layout.date2X ?? 0)+0.2}%`}}>{form.date2}</div>
               </div>
             </div>
           </section>
