@@ -1726,3 +1726,42 @@ button.send-motion-active [class*="animate-spin"] {
 .service-chips button { flex-shrink: 0; }
 @media (max-width: 520px) { .service-favorite-toggle { top: 8px; right: 8px; width: 31px; height: 31px; border-radius: 10px; } }
 @media (prefers-reduced-motion: reduce) { .service-favorite-toggle { transition: none; } }
+
+/* Accessibility and low-motion polish */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid #65e69b;
+  outline-offset: 3px;
+}
+img, video, canvas, svg {
+  max-width: 100%;
+}
+input, textarea, select {
+  scroll-margin-top: 96px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (max-width: 480px) {
+  button, input, select, textarea {
+    max-width: 100%;
+  }
+  img, video, canvas {
+    height: auto;
+  }
+}
+
