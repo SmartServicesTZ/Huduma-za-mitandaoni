@@ -184,10 +184,10 @@ export default function AirtelSmeContractPage() {
       ${text(form.devicePhone,layout.deviceX,layout.deviceY + 0.5,layout.deviceSize,30)}
       ${text(form.customerName2,layout.customerX,layout.customerY,layout.customerSize,38)}
       ${text(form.signature1,layout.sign1X,layout.sign1Y,layout.sign1Size,12)}
-      ${text(form.date1,layout.date1X,layout.date1Y,layout.date1Size,14)}
+      ${text(form.date1,layout.date1X,layout.date1Y,layout.date1Size,16)}
       ${text(form.salesName,layout.salesX,layout.salesY,layout.salesSize,36)}
       ${text(form.signature2,layout.sign2X,layout.sign2Y,layout.sign2Size,12)}
-      ${text(form.date2,layout.date2X,layout.date2Y,layout.date2Size,14)}
+      ${text(form.date2,layout.date2X,layout.date2Y,layout.date2Size,16)}
     </svg>`;
     
     const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
@@ -300,10 +300,10 @@ export default function AirtelSmeContractPage() {
                 <div className="sme-overlay" style={{...ov("deviceX","deviceY","deviceSize","30%"),top:`${(layout.deviceY ?? 58.3)+0.5}%`}}>{form.devicePhone}</div>
                 <div className="sme-overlay" style={ov("customerX","customerY","customerSize","38%")}>{form.customerName2}</div>
                 <div className="sme-overlay" style={ov("sign1X","sign1Y","sign1Size","12%")}>{form.signature1}</div>
-                <div className="sme-overlay" style={ov("date1X","date1Y","date1Size","14%")}>{form.date1}</div>
+                <div className="sme-overlay" style={ov("date1X","date1Y","date1Size","16%")}>{form.date1}</div>
                 <div className="sme-overlay" style={ov("salesX","salesY","salesSize","36%")}>{form.salesName}</div>
                 <div className="sme-overlay" style={ov("sign2X","sign2Y","sign2Size","12%")}>{form.signature2}</div>
-                <div className="sme-overlay" style={ov("date2X","date2Y","date2Size","14%")}>{form.date2}</div>
+                <div className="sme-overlay" style={ov("date2X","date2Y","date2Size","16%")}>{form.date2}</div>
               </div>
             </div>
           </section>
