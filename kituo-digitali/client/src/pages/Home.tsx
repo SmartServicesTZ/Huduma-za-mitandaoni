@@ -434,7 +434,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
       <div className="personal-dashboard__welcome">
         <span className="personal-dashboard__spark"><Sparkles size={16} /></span>
         <div><span className="overline">{isAuthenticated ? "KARIBU TENA" : "KARIBU SMARTSERVICESTZ"}</span>
-          <h2>{isAuthenticated ? <>Habari, {userName?.trim().split(/\\s+/)[0] || "Mwanachama"} 👋</> : "Huduma za kidigitali, sehemu moja"}</h2>
+          <h2>{isAuthenticated ? <>Habari, {userName?.trim().split(/\s+/)[0] || "Mwanachama"} 👋</> : "Huduma za kidigitali, sehemu moja"}</h2>
           <p>{isAuthenticated ? "Endelea na huduma zako kwa haraka na kwa usalama." : "Ingia kwenye akaunti yako kutumia huduma, kuhifadhi historia na kufuatilia tokeni."}</p>
         </div>
       </div>
