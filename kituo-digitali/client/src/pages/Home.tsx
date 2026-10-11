@@ -282,7 +282,7 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
   </div>;
 }
 
-function ServiceGrid({ title, services, onUse }: { title: string; services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) { return <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>{title}</h2></div><span className="section-count">{services.length}</span></div><div className="portal-service-grid">{services.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div></section>; }
+function ServiceGrid({ title, services, onUse }: { title: string; services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) { const arrangedServices = [...services].sort((a, b) => Number(a.kind === "locked") - Number(b.kind === "locked") || a.name.localeCompare(b.name, "sw")); const openCount = arrangedServices.filter((service) => service.kind !== "locked").length; return <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>{title}</h2><p className="service-order-hint">{openCount} wazi · {arrangedServices.length - openCount} zimefungwa</p></div><span className="section-count">{services.length}</span></div><div className="portal-service-grid">{arrangedServices.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div></section>; }
 
 function SpecialSection() {
   const open = (item: typeof specialServices[number]) => {
