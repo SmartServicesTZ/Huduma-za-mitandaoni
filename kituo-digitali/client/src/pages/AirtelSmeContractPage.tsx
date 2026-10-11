@@ -48,9 +48,9 @@ const formatTin = (value: string) => {
 const initialForm = (): FormState => ({
   customerName: "",
   phone: "",
-  tin: "",
+  tin: "215-153-210",
   idType: "NIDA",
-  idNumber: "",
+  idNumber: "20060505175200000312",
   street: "TEGETA",
   ward: "MADALE",
   district: "KINONDONI",
@@ -133,16 +133,14 @@ export default function AirtelSmeContractPage() {
   const errors = useMemo(() => {
     const result: Record<string, string> = {};
     const words = form.customerName.trim() ? form.customerName.trim().split(/\s+/) : [];
-    if (words.length !== 3) result.customerName = "Andika majina 3 kamili.";
-    if (form.phone.length < 9 || form.phone.length > 10) result.phone = "Namba iwe na tarakimu 9 au 10.";
-    if (digits(form.tin).length !== 9) result.tin = "TIN lazima iwe na tarakimu 9.";
-    if (digits(form.idNumber).length !== 20) result.idNumber = "Namba ya NIDA lazima iwe na tarakimu 20.";
+    if (words.length < 2) result.customerName = "Andika angalau majina mawili.";
+    if (digits(form.phone).length < 9 || digits(form.phone).length > 10) result.phone = "Namba ya simu iwe na tarakimu 9 au 10.";
     return result;
   }, [form]);
 
   const downloadContract = async (format: "png" | "pdf") => {
     if (Object.keys(errors).length) {
-      setStatus("⚠️ Tafadhali rekebisha taarifa zilizo na makosa kabla ya kupakua.");
+      setStatus("⚠️ Jaza majina ya mteja na namba sahihi ya simu kabla ya kupakua.");
       return;
     }
     const ink = inkHex;
@@ -311,7 +309,7 @@ export default function AirtelSmeContractPage() {
           <section className="sme-card sme-form">
             <h2>Jaza Taarifa za Mteja</h2>
             {field("Jina la mteja (Majina 3, herufi kubwa tu)", "customerName", "")}
-            {field("Simu ya mawasiliano (tarakimu 9 au 10)", "phone", "", "tel", 10)}
+            {field("Namba ya simu", "phone", "", "tel", 10)}
             {field("TIN namba (9 digits)", "tin", "", "text", 11)}
             <div className="sme-row">
               {field("Aina ya kitambulisho", "idType")}
@@ -324,7 +322,7 @@ export default function AirtelSmeContractPage() {
             {field("Device/SME mobile number", "devicePhone", "")}
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName")}
-            <div className="sme-row">{field("Date 1", "date1")}{field("Date 2", "date2")}</div>
+            <div className="sme-row">{field("Date", "date1")}{field("Date", "date2")}</div>
             <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("png")}>⬇ Download PNG</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ Download PDF</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
           </section>
