@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PDFDocument } from "pdf-lib";
-import { getPublicSiteSettings } from "@/lib/firebase";
+import { firebaseAuth, getPublicSiteSettings, onAuthStateChanged, subscribeToProfile } from "@/lib/firebase";
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 
 type FormState = {
@@ -70,6 +70,33 @@ export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
+
+  // Jaza Sales Executive Name kutoka kwenye akaunti ya mtumiaji aliyeingia.
+  useEffect(() => {
+    let unsubscribeProfile: (() => void) | undefined;
+    const unsubscribeAuth = onAuthStateChanged(firebaseAuth, (user) => {
+      unsubscribeProfile?.();
+      unsubscribeProfile = undefined;
+      if (!user) {
+        setForm((current) => ({ ...current, salesName: "", signature2: "" }));
+        return;
+      }
+      const fallbackName = user.displayName?.trim() || "";
+      if (fallbackName) {
+        setForm((current) => ({ ...current, salesName: fallbackName.toUpperCase(), signature2: initials(fallbackName) }));
+      }
+      unsubscribeProfile = subscribeToProfile(user.uid, (profile) => {
+        if (!profile) return;
+        const accountName = String(profile.name || [profile.firstName, profile.lastName].filter(Boolean).join(" ") || fallbackName).trim();
+        if (!accountName) return;
+        setForm((current) => ({ ...current, salesName: accountName.toUpperCase(), signature2: initials(accountName) }));
+      });
+    });
+    return () => {
+      unsubscribeProfile?.();
+      unsubscribeAuth();
+    };
+  }, []);
   const inkHex = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
 
   const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...AIRTEL_SME_LAYOUT_DEFAULTS }));
@@ -255,7 +282,7 @@ export default function AirtelSmeContractPage() {
   const base = import.meta.env.BASE_URL || "/";
   const imageSrc = `${base.replace(/\/$/, "")}/contact.png`;
 
-  const field = (label: string, key: keyof FormState, placeholder = "", type = "text", maxLength?: number) => (
+  const field = (label: string, key: keyof FormState, placeholder = "", type = "text", maxLength?: number, readOnly = false) => (
     <label className="sme-field">
       <span>{label}</span>
       <input
@@ -263,6 +290,7 @@ export default function AirtelSmeContractPage() {
         value={String(form[key] ?? "")}
         placeholder={placeholder}
         maxLength={maxLength}
+        readOnly={readOnly}
         inputMode={type === "tel" ? "numeric" : undefined}
         onChange={(e) => update(key, e.target.value)}
       />
@@ -321,7 +349,7 @@ export default function AirtelSmeContractPage() {
             <label className="sme-check"><input type="checkbox" checked={form.normalSme} onChange={(e) => update("normalSme", e.target.checked)} /><span><b>Normal SME</b> — imechaguliwa moja kwa moja</span></label>
             {field("Device/SME mobile number", "devicePhone", "")}
             {field("Customer name", "customerName2")}
-            {field("Sales executive name", "salesName")}
+            {field("Sales executive name", "salesName", "Hujazwa kutoka jina la akaunti yako", "text", undefined, true)}
             <div className="sme-row">{field("Date", "date1")}{field("Date", "date2")}</div>
             <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("png")}>⬇ Download PNG</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ Download PDF</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
