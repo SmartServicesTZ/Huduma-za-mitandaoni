@@ -47,4 +47,56 @@ if (typeof window !== "undefined" && "serviceWorker" in navigator) {
 // Firebase Storage for legacy file uploads, and the Cloudflare Worker API. GitHub Pages is a static host, so do not create
 // the old tRPC client here: it would incorrectly request /api/trpc from the
 // Pages origin and show an "API haipatikani" error.
+
+/**
+ * Shared send-button motion for the whole portal.
+ * This is visual-only: it never reports a request as successful.
+ * Existing React/Firebase handlers remain responsible for real submission state.
+ */
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  const sendActionPattern = /\b(tuma|send|submit|maombi|ujumbe|message)\b/i;
+  const activeSendButtons = new WeakSet<HTMLButtonElement>();
+
+  const isSendAction = (button: HTMLButtonElement) => {
+    if (button.dataset.noSendAnimation === "true") return false;
+    const label = [
+      button.innerText,
+      button.getAttribute("aria-label"),
+      button.getAttribute("title"),
+      button.dataset.sendAction,
+      button.form?.getAttribute("aria-label"),
+    ].filter(Boolean).join(" ");
+    return sendActionPattern.test(label);
+  };
+
+  const animateSendButton = (button: HTMLButtonElement | null) => {
+    if (!button || !isSendAction(button) || button.disabled || activeSendButtons.has(button)) return;
+    activeSendButtons.add(button);
+    button.classList.remove("send-motion-active");
+    // Force a style recalculation so the same animation can replay on later sends.
+    void button.offsetWidth;
+    button.classList.add("send-motion-active");
+    window.setTimeout(() => {
+      button.classList.remove("send-motion-active");
+      activeSendButtons.delete(button);
+    }, 1050);
+  };
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    animateSendButton(target.closest("button"));
+  }, true);
+
+  document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    const submitter = (event as SubmitEvent).submitter;
+    if (submitter instanceof HTMLButtonElement) animateSendButton(submitter);
+    else animateSendButton(form.querySelector<HTMLButtonElement>(
+      'button[type="submit"], button:not([type]), input[type="submit"]'
+    ));
+  }, true);
+}
+
 createRoot(document.getElementById("root")!).render(<App />);
