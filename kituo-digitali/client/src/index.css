@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-:root { font-family: "Manrope", sans-serif; color: #111827; background: #071a36; font-synthesis: none; text-rendering: optimizeLegibility; --navy: #071a36; --navy-2: #0b2447; --navy-3: #103463; --white: #ffffff; --ink: #0f172a; --muted: #64748b; --green: #18b969; --green-dark: #0b8b4e; --red: #e52d3d; --yellow: #f6c742; --line: #e5e7eb; }
+:root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; background: #071a36; font-synthesis: none; text-rendering: optimizeLegibility; --navy: #071a36; --navy-2: #0b2447; --navy-3: #103463; --white: #ffffff; --ink: #0f172a; --muted: #64748b; --green: #18b969; --green-dark: #0b8b4e; --red: #e52d3d; --yellow: #f6c742; --line: #e5e7eb; }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--navy); }
@@ -1660,4 +1659,58 @@ button.send-motion-active [class*="animate-spin"] {
   .personal-dashboard__action,.portal-service-card { transition:none!important; }
   .personal-dashboard__action:hover,.portal-service-card:hover { transform:none; }
   .loading-orbit { animation:none; }
+}
+
+
+/* $teward Tz experience polish — lightweight, responsive, and data-conscious. */
+:root { color-scheme: dark; }
+.portal-main { width: min(100%, var(--content-max, 1420px)); margin-inline: auto; }
+.portal-main :is(input, textarea, select) { max-width: 100%; transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
+.portal-main :is(input, textarea, select):focus { border-color: rgba(131,246,177,.78); box-shadow: 0 0 0 3px rgba(24,185,105,.12); outline: none; }
+.portal-main :is(input, textarea, select):disabled { opacity: .68; cursor: not-allowed; }
+.portal-main :is(button, a).button { min-height: 42px; }
+.personal-dashboard { position: relative; overflow: hidden; border: 1px solid rgba(131,246,177,.18); box-shadow: 0 14px 38px rgba(0,0,0,.12); }
+.personal-dashboard::after { content: ""; position: absolute; width: 190px; height: 190px; right: -95px; top: -120px; border-radius: 50%; border: 1px solid rgba(131,246,177,.12); pointer-events: none; }
+.personal-dashboard__action { min-width: 0; }
+.personal-dashboard__action:hover { border-color: rgba(131,246,177,.5); box-shadow: 0 8px 22px rgba(0,0,0,.12); }
+.modern-hero { isolation: isolate; }
+.hero-actions .button, .hero-link { min-height: 42px; }
+.service-discovery { gap: 16px; }
+.service-chips button { min-height: 36px; }
+.portal-service-grid { align-items: stretch; }
+.portal-service-card { min-height: 150px; }
+.portal-service-card:active { transform: scale(.99); }
+.service-card-copy strong { overflow-wrap: anywhere; }
+.empty-service-state { border: 1px dashed rgba(129,165,220,.3); border-radius: 18px; padding: clamp(18px,4vw,30px); }
+.account-panel, .profile-main-card, .profile-side-card { box-shadow: 0 12px 34px rgba(0,0,0,.08); }
+.account-panel :is(input, textarea, select), .profile-page :is(input, textarea, select) { width: 100%; min-width: 0; }
+.account-panel :is(label, .control-field) { min-width: 0; }
+.notice { overflow-wrap: anywhere; }
+.page-heading { gap: 18px; }
+.page-heading h1 { text-wrap: balance; }
+.portal-footer { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.bottom-nav { padding-bottom: max(7px, env(safe-area-inset-bottom)); }
+.portal-sidebar-wrap { overscroll-behavior: contain; }
+.portal-overlay { touch-action: manipulation; }
+.profile-image-picker, .profile-save-button, .token-add-button { touch-action: manipulation; }
+@media (min-width: 1200px) {
+  .portal-main { padding-inline: clamp(24px, 3vw, 44px); }
+  .personal-dashboard { gap: clamp(20px, 2vw, 34px); }
+}
+@media (max-width: 760px) {
+  .page-heading { align-items: flex-start; }
+  .page-heading h1 { font-size: clamp(22px, 6vw, 30px); }
+  .account-panel { border-radius: 16px; }
+  .portal-service-card { min-height: 136px; }
+  .portal-main :is(input, textarea, select) { font-size: 16px; }
+}
+@media (max-width: 420px) {
+  .portal-main { padding-inline: 13px; }
+  .hero-actions { flex-wrap: wrap; }
+  .hero-actions > * { flex: 1 1 auto; justify-content: center; }
+  .personal-dashboard__actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .personal-dashboard__action { overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
