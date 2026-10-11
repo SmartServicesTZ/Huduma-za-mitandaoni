@@ -59,7 +59,7 @@ const initialForm = (): FormState => ({
   devicePhone: "0712345678",
   customerName2: firstAndLastName("STEWARD JACKSON NJIWA"),
   salesName: "STEWARD NJIWA",
-  signature1: initials("STEWARD JACKSON NJIWA"),
+  signature1: initials(firstAndLastName("STEWARD JACKSON NJIWA")),
   signature2: initials("STEWARD NJIWA"),
   date1: today(),
   date2: today(),
@@ -119,6 +119,7 @@ export default function AirtelSmeContractPage() {
         next.devicePhone = current.phone;
       }
       if (key === "customerName") next.signature1 = initials(firstAndLastName(String(value)));
+      if (key === "customerName2") next.signature1 = initials(String(value));
       if (key === "salesName") next.signature2 = initials(String(value));
       if (key === "phone") next.devicePhone = digits(String(value)).slice(0, 10);
       if (key === "tin") next.tin = formatTin(String(value));
