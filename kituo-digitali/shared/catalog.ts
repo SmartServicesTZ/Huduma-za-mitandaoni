@@ -55,6 +55,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   free("access-lipa-number", "PATA ACCESS YA LIPA&USAJILI", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "HUDUMA ZA WAKALA"),
   free("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA USAJILI & LIPA", "Tengeneza kitambulisho cha kisasa cha wakala wa usajili na Lipa.", "badge-check", "HUDUMA ZA WAKALA"),
   paid("sme-airtel-mkataba", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "HUDUMA ZA WAKALA"),
+  free("tengeneza-mkataba", "TENGENEZA MKATABA", "Tengeneza mkataba unaoweza kuhariri, kuona na kuhifadhi kama PDF.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("brela", "BRELA", "Msaada wa huduma za BRELA.", "landmark", "HUDUMA ZA WAKALA"),
   locked("cheti-kuzaliwa", "CHETI CHA KUZALIWA", "Huduma hii inasubiri kufunguliwa.", "baby", "HUDUMA ZA WAKALA"),
   paid("simba-sc", "SIMBA SC", "Fungua taarifa na huduma rasmi za Simba SC.", "trophy", "HUDUMA ZINGINE"),
