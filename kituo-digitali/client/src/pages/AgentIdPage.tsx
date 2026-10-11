@@ -32,7 +32,7 @@ export default function AgentIdPage() {
   const [qr, setQr] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const selectedNetworkCfg = NETWORKS[network];
-  const cfg = { ...NETWORKS["Huduma za Mtandaoni"], logo: selectedNetworkCfg.logo, slogan: `HUDUMA ZA MTANDAONI • ${selectedNetworkCfg.slogan}`, footer: `HUDUMA ZA MTANDAONI • AUTHORIZED ${network.toUpperCase()}` };
+  const cfg = { ...selectedNetworkCfg, slogan: `HUDUMA ZA MTANDAONI • ${selectedNetworkCfg.slogan}`, footer: `HUDUMA ZA MTANDAONI • AUTHORIZED ${network.toUpperCase()}` };
 
   const qrText = useMemo(() => JSON.stringify({ network, name, agentId, phone, type, region, district, area, issueDate, expiryDate: expiry(issueDate) }), [network, name, agentId, phone, type, region, district, area, issueDate]);
 
