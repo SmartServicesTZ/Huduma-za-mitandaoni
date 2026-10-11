@@ -36,13 +36,13 @@ export default function VerifyTinPage() {
         .verify-tin-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .verify-tin-preview { padding: 20px; }
         .verify-tin-preview-title { font-size: 19px; font-weight: 700; margin-bottom: 15px; }
-        .verify-tin-wrapper { width: 100%; overflow-x: auto; text-align: center; background: #f3f4f6; padding: 15px; border-radius: 10px; box-sizing: border-box; }
-        .verify-tin-document { position: relative; display: inline-block; line-height: 0; }
-        .verify-tin-document img { display: block; width: 900px; max-width: none; height: auto; }
-        .verify-tin-overlay { position: absolute; font-size: 22px; font-weight: bold; color: #000; line-height: normal; white-space: nowrap; }
-        .verify-tin-top { top: 100px; left: 200px; }
-        .verify-tin-name { top: 150px; left: 200px; }
-        .verify-tin-bottom { top: 200px; left: 200px; }
+        .verify-tin-wrapper { width: 100%; overflow: hidden; text-align: center; background: #f3f4f6; padding: 15px; border-radius: 10px; box-sizing: border-box; }
+        .verify-tin-document { position: relative; display: block; width: min(900px, 100%); margin: 0 auto; line-height: 0; }
+        .verify-tin-document img { display: block; width: 100%; max-width: 100%; height: auto; }
+        .verify-tin-overlay { position: absolute; font-size: clamp(10px, 2.45vw, 22px); font-weight: bold; color: #000; line-height: normal; white-space: nowrap; }
+        .verify-tin-top { top: 11.11%; left: 22.22%; }
+        .verify-tin-name { top: 16.67%; left: 22.22%; }
+        .verify-tin-bottom { top: 22.22%; left: 22.22%; }
         @media (max-width: 700px) {
           .verify-tin-page { padding: 12px 12px 50px; }
           .verify-tin-row { grid-template-columns: 1fr; gap: 0; }
