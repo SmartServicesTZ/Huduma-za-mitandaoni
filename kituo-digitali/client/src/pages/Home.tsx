@@ -258,7 +258,28 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
 function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (service: ServiceCatalogItem) => void }) {
   const locked = service.kind === "locked";
   const external = Boolean(service.actionUrl);
-  return <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)}><div className="service-card-icon"><Icon name={service.icon} /></div><div className="service-card-copy"><strong>{service.name}</strong><span>{locked ? (service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") : service.description}</span></div><div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}{external ? <span className="external-label"><ExternalLink size={13} /> FUNGUA</span> : <ChevronRight size={17} />}</div></button>;
+  const [favorite, setFavorite] = useState(() => {
+    try { return (JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]") as string[]).includes(service.slug); }
+    catch { return false; }
+  });
+  const toggleFavorite = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    let favorites: string[] = [];
+    try { favorites = JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]"); } catch { favorites = []; }
+    favorites = favorite ? favorites.filter((slug) => slug !== service.slug) : [...new Set([...favorites, service.slug])];
+    try { localStorage.setItem("steward-tz-favorite-services-v1", JSON.stringify(favorites)); } catch { toast.error("Imeshindikana kuhifadhi huduma uipendayo kwenye simu hii."); return; }
+    setFavorite(!favorite);
+    window.dispatchEvent(new CustomEvent("smartservicestz-favorites-changed", { detail: favorites }));
+    toast.success(favorite ? "Huduma imeondolewa kwenye unazopenda." : "Huduma imehifadhiwa kwenye unazopenda.");
+  };
+  return <div className="portal-service-card-wrap">
+    <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)}>
+      <div className="service-card-icon"><Icon name={service.icon} /></div>
+      <div className="service-card-copy"><strong>{service.name}</strong><span>{locked ? (service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") : service.description}</span></div>
+      <div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}{external ? <span className="external-label"><ExternalLink size={13} /> FUNGUA</span> : <ChevronRight size={17} />}</div>
+    </button>
+    <button type="button" className={`service-favorite-toggle ${favorite ? "is-favorite" : ""}`} onClick={toggleFavorite} aria-label={favorite ? `Ondoa ${service.name} kwenye huduma unazopenda` : `Hifadhi ${service.name} kwenye huduma unazopenda`} aria-pressed={favorite}><Star size={16} fill={favorite ? "currentColor" : "none"} /></button>
+  </div>;
 }
 
 function ServiceGrid({ title, services, onUse }: { title: string; services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) { return <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>{title}</h2></div><span className="section-count">{services.length}</span></div><div className="portal-service-grid">{services.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div></section>; }
@@ -381,7 +402,18 @@ function QuickNidaSearch() {
 
 function PortalHome({ search, onUse, services, userName, isAuthenticated, allServicesPage }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[]; userName?: string; isAuthenticated: boolean; allServicesPage: boolean }) {
   const [category, setCategory] = useState("Zote");
+  const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]"); } catch { return []; }
+  });
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  useEffect(() => {
+    const onFavoritesChanged = (event: Event) => {
+      const detail = (event as CustomEvent<string[]>).detail;
+      if (Array.isArray(detail)) setFavoriteSlugs(detail);
+    };
+    window.addEventListener("smartservicestz-favorites-changed", onFavoritesChanged);
+    return () => window.removeEventListener("smartservicestz-favorites-changed", onFavoritesChanged);
+  }, []);
   const [serviceOrder, setServiceOrder] = useState<string[]>([]);
   const [serviceLockOverrides, setServiceLockOverrides] = useState<Record<string, boolean>>({});
   const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
@@ -405,8 +437,8 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     return service;
   }), serviceOrder);
   const lower = search.toLowerCase();
-  const categories = ["Zote", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))];
-  const matches = displayedServices.filter((service) => (category === "Zote" || service.category === category) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
+  const categories = ["Zote", "Zilizohifadhiwa", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))];
+  const matches = displayedServices.filter((service) => (category === "Zote" || (category === "Zilizohifadhiwa" ? favoriteSlugs.includes(service.slug) : service.category === category)) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
   const mainBase = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && service.slug !== "utafutaji-nida");
   const tinCertificate = mainBase.find((service) => service.slug === "cheti-tin") ?? services.find((service) => service.slug === "cheti-tin") ?? serviceCatalog.find((service) => service.slug === "cheti-tin");
   const main = [
