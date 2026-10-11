@@ -165,7 +165,7 @@ export default function AirtelSmeContractPage() {
     return result;
   }, [form]);
 
-  const downloadContract = async (format: "png" | "pdf") => {
+  const downloadContract = async (format: "jpg" | "pdf") => {
     if (Object.keys(errors).length) {
       setStatus("⚠️ Jaza majina ya mteja na namba sahihi ya simu kabla ya kupakua.");
       return;
@@ -236,22 +236,24 @@ export default function AirtelSmeContractPage() {
           image.src = svgUrl;
         });
         const canvas = document.createElement("canvas");
-        canvas.width = 2048;
-        canvas.height = 3072;
+        // Template ni 1024×1536; ukubwa huu unapunguza faili bila kuongeza pixels zisizo na faida.
+        canvas.width = 1024;
+        canvas.height = 1536;
         const context = canvas.getContext("2d");
         if (!context) throw new Error("Canvas haipatikani kwenye kifaa hiki.");
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        const pngBlob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob((result) => result ? resolve(result) : reject(new Error("PNG haikuweza kutengenezwa.")), "image/png");
+        // JPEG quality 0.82 hupunguza sana ukubwa kwa template yenye picha.
+        const imageBlob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Picha ya mkataba haikuweza kutengenezwa.")), "image/jpeg", 0.82);
         });
-        let outputBlob = pngBlob;
-        let extension = "png";
+        let outputBlob = imageBlob;
+        let extension = "jpg";
         if (format === "pdf") {
           const pdf = await PDFDocument.create();
-          const pngBytes = new Uint8Array(await pngBlob.arrayBuffer());
-          const embedded = await pdf.embedPng(pngBytes);
+          const imageBytes = new Uint8Array(await imageBlob.arrayBuffer());
+          const embedded = await pdf.embedJpg(imageBytes);
           const page = pdf.addPage([612, 918]);
           page.drawImage(embedded, { x: 0, y: 0, width: 612, height: 918 });
           outputBlob = new Blob([await pdf.save()], { type: "application/pdf" });
@@ -265,7 +267,8 @@ export default function AirtelSmeContractPage() {
         a.click();
         a.remove();
         window.setTimeout(() => URL.revokeObjectURL(outputUrl), 60_000);
-        setStatus(`✓ Mkataba umepakuliwa kama ${extension.toUpperCase()} kwa ubora wa juu.`);
+        const sizeKB = Math.round(outputBlob.size / 1024);
+        setStatus(`✓ Mkataba umepakuliwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
       } finally {
         URL.revokeObjectURL(svgUrl);
       }
@@ -351,7 +354,7 @@ export default function AirtelSmeContractPage() {
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName", "Hujazwa kutoka jina la akaunti yako", "text", undefined, true)}
             <div className="sme-row">{field("Date", "date1")}{field("Date", "date2")}</div>
-            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("png")}>⬇ Download PNG</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ Download PDF</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
+            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("jpg")}>⬇ Download JPG</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ Download PDF</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
           </section>
 
