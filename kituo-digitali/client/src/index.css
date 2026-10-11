@@ -1443,3 +1443,74 @@ input[type="file"] {
 .top-quick-service__text small{font-size:9.5px;color:rgba(255,255,255,.92) !important;font-weight:900}
 .top-quick-service>svg{color:#fff !important;flex:0 0 auto}
 @media(max-width:600px){.top-quick-services{gap:7px;margin:7px 0 9px}.top-quick-service{padding:9px 10px}.top-quick-service__icon{width:31px;height:31px;flex-basis:31px}.top-quick-service__text strong{font-size:11px}.top-quick-service__text small{font-size:8px}}
+
+
+/* =========================================================
+   STEWARD TZ — shared send / submit button animation
+   Applied to all matching send actions across the website.
+   Does not fake success or replace application submit logic.
+   ========================================================= */
+button.send-motion-active {
+  position: relative;
+  isolation: isolate;
+  animation: steward-send-press 360ms cubic-bezier(.2,.8,.2,1) both,
+             steward-send-glow 820ms ease-out both;
+}
+button.send-motion-active::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: -2px;
+  border: 1px solid rgba(167, 139, 250, .78);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: steward-send-ring 850ms ease-out both;
+}
+button.send-motion-active > svg,
+button.send-motion-active svg.lucide,
+button.send-motion-active [data-lucide] {
+  transform-origin: center;
+  animation: steward-send-icon 760ms cubic-bezier(.4,0,.2,1) both;
+}
+button.send-motion-active .lucide-loader-circle,
+button.send-motion-active .lucide-loader,
+button.send-motion-active [class*="animate-spin"] {
+  animation: steward-send-spinner 760ms linear infinite;
+}
+@keyframes steward-send-press {
+  0% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(2px) scale(.985); }
+  55% { transform: translateY(-1px) scale(1.012); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes steward-send-glow {
+  0% { filter: brightness(1); }
+  35% { filter: brightness(1.12); }
+  100% { filter: brightness(1); }
+}
+@keyframes steward-send-ring {
+  0% { opacity: 0; transform: scale(.97); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+@keyframes steward-send-icon {
+  0% { transform: rotate(0) translate(0,0) scale(1); opacity: 1; }
+  28% { transform: rotate(-18deg) translate(-1px,2px) scale(.92); opacity: 1; }
+  68% { transform: rotate(18deg) translate(4px,-5px) scale(.82); opacity: .35; }
+  100% { transform: rotate(28deg) translate(7px,-8px) scale(.7); opacity: 0; }
+}
+@keyframes steward-send-spinner {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  button.send-motion-active,
+  button.send-motion-active::after,
+  button.send-motion-active > svg,
+  button.send-motion-active svg.lucide,
+  button.send-motion-active [data-lucide] {
+    animation: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
+}
+
