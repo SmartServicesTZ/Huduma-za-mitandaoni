@@ -34,7 +34,7 @@ export default function AgentIdPage() {
   const selectedNetworkCfg = NETWORKS[network];
   const cfg = { ...NETWORKS["Huduma za Mtandaoni"], logo: selectedNetworkCfg.logo, slogan: `HUDUMA ZA MTANDAONI • ${selectedNetworkCfg.slogan}`, footer: `HUDUMA ZA MTANDAONI • AUTHORIZED ${network.toUpperCase()}` };
 
-  const qrText = useMemo(() => JSON.stringify({ network, name, agentId, phone, type, region, district, area, issueDate, expiryDate: expiry(issueDate) }), [template, network, name, agentId, phone, type, region, district, area, issueDate]);
+  const qrText = useMemo(() => JSON.stringify({ network, name, agentId, phone, type, region, district, area, issueDate, expiryDate: expiry(issueDate) }), [network, name, agentId, phone, type, region, district, area, issueDate]);
 
   useEffect(() => {
     QRCode.toDataURL(qrText, { width: 420, margin: 4, errorCorrectionLevel: "H", color: { dark: "#111111", light: "#ffffff" } }).then(setQr).catch(() => setQr(""));
@@ -61,7 +61,7 @@ export default function AgentIdPage() {
     <div className="agent-id-layout">
       <section className="agent-id-form">
         <h3>Taarifa za Kitambulisho</h3>
-        <div className="agent-template-choice" role="group" aria-label="Aina ya kitambulisho"><span className="agent-template-chip">KITAMBULISHO CHA MTANDAO</span><span className="agent-template-chip agent-template-chip--portrait">KITAMBULISHO CHA HUDUMA</span></div><p className="agent-choice-note">Chagua aina ya kitambulisho kisha endelea kujaza taarifa.</p><div className="agent-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n)=><button type="button" key={n} className={network===n?"active":""} onClick={()=>setNetwork(n)}>{n==="Mbeya One Company Limited"?"MBEYA ONE":n}</button>)}</div>
+        <div className="agent-template-choice" role="group" aria-label="Aina ya kitambulisho"><span className="agent-template-chip">KITAMBULISHO CHA MTANDAO</span><span className="agent-template-chip agent-template-chip--portrait">KITAMBULISHO CHA HUDUMA</span></div><p className="agent-choice-note">Jaza taarifa mara moja; miundo yote miwili inasasishwa pamoja.</p><div className="agent-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n)=><button type="button" key={n} className={network===n?"active":""} onClick={()=>setNetwork(n)}>{n==="Mbeya One Company Limited"?"MBEYA ONE":n}</button>)}</div>
         <label className="agent-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>setPhoto(String(r.result));r.readAsDataURL(f)}}/></label>
         <label className="agent-field"><span>Jina Kamili</span><input value={name} onChange={e=>setName(e.target.value)} /></label>
         <label className="agent-field"><span>Agent ID / Code</span><input value={agentId} onChange={e=>setAgentId(e.target.value)} /></label>
