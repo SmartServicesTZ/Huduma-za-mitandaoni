@@ -10,6 +10,7 @@ import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialS
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
+import { clearDownloadHistory, downloadFromHistory, getDownloadHistory, removeDownload, type DownloadHistoryItem } from "@/lib/downloadHistory";
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
 const BusinessLicensePage = lazy(() => import("./BusinessLicensePage"));
 const LipaNumberPage = lazy(() => import("./LipaNumberPage"));
@@ -22,7 +23,6 @@ const AccessLipaNumberPage = lazy(() => import("./AccessLipaNumberPage"));
 const DynamicServicePage = lazy(() => import("./DynamicServicePage"));
 const ChatPage = lazy(() => import("./Chat"));
 const AccountSettingsPage = lazy(() => import("./AccountPage"));
-import { clearDownloadHistory, downloadFromHistory, getDownloadHistory, removeDownload, type DownloadHistoryItem } from "@/lib/downloadHistory";
 
 const appEnglish: Record<string, string> = {
   "Mwanzo":"Home","Huduma zote":"All services","Chat":"Chat","Tokeni":"Tokens","Historia":"History","Settings":"Settings","Paneli ya Admin":"Admin panel",
