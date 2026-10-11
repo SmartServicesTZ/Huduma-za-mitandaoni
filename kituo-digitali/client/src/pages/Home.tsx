@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BadgeCheck, Baby, Eye, EyeOff, ArrowLeft, Bell, CarFront, ChevronRight, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, PlayCircle, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, X, Zap,
@@ -10,18 +10,18 @@ import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialS
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
-import AdminDashboard from "./AdminDashboard";
-import BusinessLicensePage from "./BusinessLicensePage";
-import LipaNumberPage from "./LipaNumberPage";
-import TINCertificatePage from "./TINCertificatePage";
-import VerifyTinPage from "./VerifyTinPage";
-import AirtelSmeContractPage from "./AirtelSmeContractPage";
-import AgentStickerPage from "./AgentStickerPage";
-import AgentIdPage from "./AgentIdPage";
-import AccessLipaNumberPage from "./AccessLipaNumberPage";
-import DynamicServicePage from "./DynamicServicePage";
-import ChatPage from "./Chat";
-import AccountSettingsPage from "./AccountPage";
+const AdminDashboard = lazy(() => import("./AdminDashboard"));
+const BusinessLicensePage = lazy(() => import("./BusinessLicensePage"));
+const LipaNumberPage = lazy(() => import("./LipaNumberPage"));
+const TINCertificatePage = lazy(() => import("./TINCertificatePage"));
+const VerifyTinPage = lazy(() => import("./VerifyTinPage"));
+const AirtelSmeContractPage = lazy(() => import("./AirtelSmeContractPage"));
+const AgentStickerPage = lazy(() => import("./AgentStickerPage"));
+const AgentIdPage = lazy(() => import("./AgentIdPage"));
+const AccessLipaNumberPage = lazy(() => import("./AccessLipaNumberPage"));
+const DynamicServicePage = lazy(() => import("./DynamicServicePage"));
+const ChatPage = lazy(() => import("./Chat"));
+const AccountSettingsPage = lazy(() => import("./AccountPage"));
 import { clearDownloadHistory, downloadFromHistory, getDownloadHistory, removeDownload, type DownloadHistoryItem } from "@/lib/downloadHistory";
 
 const appEnglish: Record<string, string> = {
@@ -547,7 +547,7 @@ export default function Home() {
       <div className="portal-content">
         <AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />
         {restrictionNotice && <div className="portal-main"><Notice tone="info">{restrictionNotice}{user?.restrictionMessage?.trim() && <><br /><strong>{user.restrictionMessage}</strong></>}</Notice></div>}
-        {page}
+        <Suspense fallback={<main className="portal-main page-loading-state"><span className="loading-orbit" aria-hidden="true"></span><strong>Inapakia sehemu hii...</strong><small>Subiri kidogo, tafadhali.</small></main>}>{page}</Suspense>
         <footer className="portal-footer">SmartServicesTZ — Huduma za Mtandaoni <span>© Haki zote zimehifadhiwa 2026</span></footer>
       </div>
       <BottomNav />
