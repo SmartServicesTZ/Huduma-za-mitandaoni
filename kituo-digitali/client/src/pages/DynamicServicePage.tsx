@@ -63,6 +63,43 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
   const [successReference, setSuccessReference] = useState("");
   const [applications, setApplications] = useState<ServiceApplication[]>([]);
   const uploadsRef = useRef(uploads);
+  const draftReady = useRef(false);
+  const draftKey = `steward-tz-service-draft-v1:${firebaseUser?.uid ?? "guest"}:${service.slug}`;
+  const [draftSavedAt, setDraftSavedAt] = useState("");
+
+  useEffect(() => {
+    draftReady.current = false;
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { values?: ServiceFormValues; savedAt?: string };
+        const uploadFields = new Set(fields.filter((field) => field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD").map((field) => field.fieldName));
+        const safeValues = Object.fromEntries(Object.entries(parsed.values ?? {}).filter(([key, value]) => !uploadFields.has(key) && (typeof value === "string" || typeof value === "number" || value === null))) as ServiceFormValues;
+        setValues(safeValues);
+        setDraftSavedAt(parsed.savedAt ?? "");
+      } else {
+        setValues({});
+        setDraftSavedAt("");
+      }
+    } catch {
+      setDraftSavedAt("");
+    }
+    draftReady.current = true;
+  }, [draftKey, fields]);
+
+  useEffect(() => {
+    if (!draftReady.current || !firebaseUser?.uid) return;
+    const uploadFields = new Set(fields.filter((field) => field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD").map((field) => field.fieldName));
+    const safeValues = Object.fromEntries(Object.entries(values).filter(([key, value]) => !uploadFields.has(key) && (typeof value === "string" || typeof value === "number" || value === null))) as ServiceFormValues;
+    if (!Object.values(safeValues).some((value) => value !== "" && value !== null)) return;
+    const savedAt = new Date().toISOString();
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ values: safeValues, savedAt }));
+      setDraftSavedAt(savedAt);
+    } catch {
+      // Draft saving is best-effort when device storage is full or unavailable.
+    }
+  }, [values, draftKey, fields, firebaseUser?.uid]);
 
   useEffect(() => {
     uploadsRef.current = uploads;
@@ -311,6 +348,10 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
         .dynamic-service-alert { margin: 0 0 18px; padding: 13px 15px; border-radius: 9px; line-height: 1.5; }
         .dynamic-service-alert-error { border: 1px solid #ebbbbb; background: #fff1f1; color: #9f3535; }
         .dynamic-service-alert-success { border: 1px solid #a9d8ca; background: #effaf6; color: #176b59; }
+        .dynamic-service-draft-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 4px; }
+        .dynamic-service-draft-tools span { flex: 1 1 100%; color: #637b8a; font-size: .85rem; }
+        .dynamic-service-draft-tools button { border: 1px solid #c8d6e0; border-radius: 8px; padding: 9px 12px; background: #f8fbfd; color: #24465b; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; }
+        .dynamic-service-draft-tools button:hover { background: #eaf2f6; }
         .dynamic-service-submit-row { display: flex; justify-content: flex-end; margin-top: 4px; }
         .dynamic-service-submit { min-width: 170px; background: #19736c; color: #fff; }
         .dynamic-service-submit:hover:not(:disabled) { background: #125c57; }
@@ -338,6 +379,32 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
           {fields.length ? (
             <form className="dynamic-service-form" onSubmit={(event) => { event.preventDefault(); void submit(); }} noValidate>
               {fields.map(renderField)}
+              <div className="dynamic-service-draft-tools">
+                <span>{draftSavedAt ? `Rasimu imehifadhiwa: ${new Date(draftSavedAt).toLocaleString("sw-TZ")}` : "Rasimu huhifadhiwa kwenye kifaa hiki"}</span>
+                <button type="button" onClick={() => {
+                  try {
+                    const uploadFields = new Set(fields.filter((field) => field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD").map((field) => field.fieldName));
+                    const safeValues = Object.fromEntries(Object.entries(values).filter(([key, value]) => !uploadFields.has(key) && (typeof value === "string" || typeof value === "number" || value === null))) as ServiceFormValues;
+                    const savedAt = new Date().toISOString();
+                    localStorage.setItem(draftKey, JSON.stringify({ values: safeValues, savedAt }));
+                    setDraftSavedAt(savedAt);
+                    setFormError("");
+                  } catch {
+                    setFormError("Rasimu haijahifadhiwa. Hakikisha nafasi ya kifaa inapatikana.");
+                  }
+                }}>Hifadhi rasimu sasa</button>
+                <button type="button" onClick={() => {
+                  try {
+                    localStorage.removeItem(draftKey);
+                    setValues({});
+                    setErrors({});
+                    setDraftSavedAt("");
+                    setFormError("");
+                  } catch {
+                    setFormError("Imeshindikana kufuta rasimu kwenye kifaa hiki.");
+                  }
+                }}>Futa rasimu</button>
+              </div>
               <div className="dynamic-service-submit-row">
                 <button className="dynamic-service-submit" type="submit" disabled={submitting || uploading !== null || authLoading}>
                   {submitting ? "Inatuma…" : service.buttonText || "Tuma ombi"}
