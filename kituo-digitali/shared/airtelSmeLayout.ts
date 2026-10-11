@@ -13,10 +13,10 @@ export const AIRTEL_SME_LAYOUT_DEFAULTS: Record<string, number> = {
   deviceX: 29, deviceY: 58.3, deviceSize: 3,
   customerX: 17, customerY: 92.6, customerSize: 2.8,
   sign1X: 70, sign1Y: 92.6, sign1Size: 2.6,
-  date1X: 82.7, date1Y: 92.6, date1Size: 2.2,
+  date1X: 82.7, date1Y: 92.6, date1Size: 3,
   salesX: 22, salesY: 96.1, salesSize: 2.8,
   sign2X: 70, sign2Y: 96.1, sign2Size: 2.6,
-  date2X: 82.7, date2Y: 96.1, date2Size: 2.2,
+  date2X: 82.7, date2Y: 96.1, date2Size: 3,
 };
 
 // These values were shipped in the old editor defaults. They were not aligned
@@ -66,6 +66,9 @@ export function normalizeAirtelSmeLayout(value: unknown): Record<string, number>
   if (result.date2X === 82) result.date2X = 82.7;
   if (result.date1X > 82.7) result.date1X = 82.7;
   if (result.date2X > 82.7) result.date2X = 82.7;
+  // Keep both dates zoomed to the same visual scale as the other contract text.
+  result.date1Size = Math.max(3, result.date1Size);
+  result.date2Size = Math.max(3, result.date2Size);
 
   return result;
 }
