@@ -27,14 +27,8 @@ if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", recover);
 }
 
-// Register the service worker without clearing all browser caches or forcing a
-// full page reload. The worker fetches the app shell from the network, so new
-// deployments remain current while cached media can stay available offline.
-if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
-  }, { once: true });
-}
+// Service-worker registration is intentionally disabled while recovering from
+// stale PWA caches. The current app shell should load directly from GitHub Pages.
 
 // Production bootstrap v2: the portal uses Firebase Authentication, Firestore,
 // Firebase Storage for legacy file uploads, and the Cloudflare Worker API. GitHub Pages is a static host, so do not create
