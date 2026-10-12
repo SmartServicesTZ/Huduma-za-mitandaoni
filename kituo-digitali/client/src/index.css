@@ -1962,3 +1962,37 @@ input, textarea, select { border-radius: 11px; }
     font-size: 11px;
   }
 }
+
+
+/* Hard override: each service wrapper must occupy one grid column, never a full row */
+html body .portal-shell .portal-content .portal-main .portal-service-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  gap: 14px !important;
+}
+html body .portal-shell .portal-content .portal-main .portal-service-grid > .portal-service-card-wrap {
+  display: block !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  grid-column: auto !important;
+  justify-self: stretch !important;
+}
+html body .portal-shell .portal-content .portal-main .portal-service-grid > .portal-service-card-wrap > .portal-service-card {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+@media screen and (max-width: 800px) {
+  html body .portal-shell .portal-content .portal-main .portal-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+@media screen and (max-width: 360px) {
+  html body .portal-shell .portal-content .portal-main .portal-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+}
