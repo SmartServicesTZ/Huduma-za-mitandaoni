@@ -12,7 +12,31 @@
     <title>SmartServicesTZ — Huduma za Mtandaoni</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main id="startup-fallback" style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#071a36;color:#fff;font-family:system-ui,sans-serif;text-align:center">
+        <section style="max-width:420px">
+          <div style="font-size:22px;font-weight:800;margin-bottom:12px">SmartServicesTZ</div>
+          <p id="startup-message" style="color:#c7d5e8;line-height:1.6">Tunafungua huduma zako…</p>
+          <p style="font-size:13px;color:#9fb3ce">Ikiwa ukurasa hautafunguka, gusa kitufe hapa chini.</p>
+          <button onclick="window.location.reload()" style="border:0;border-radius:10px;padding:12px 18px;background:#65e69b;color:#071a36;font-weight:800">Jaribu tena</button>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.addEventListener("error", function (event) {
+        var target = event.target;
+        if (target && target.tagName === "SCRIPT") {
+          var message = document.getElementById("startup-message");
+          if (message) message.textContent = "Faili za mfumo hazijapakia. Hakikisha intaneti inafanya kazi, kisha gusa Jaribu tena.";
+        }
+      }, true);
+      window.addEventListener("unhandledrejection", function () {
+        var message = document.getElementById("startup-message");
+        if (message && document.getElementById("startup-fallback")) {
+          message.textContent = "Mfumo umepata hitilafu wakati wa kufunguka. Tafadhali gusa Jaribu tena.";
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
