@@ -27,20 +27,13 @@ if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", recover);
 }
 
-// Reset stale PWA state once after major asset updates, then register the current worker.
+// Register the service worker without clearing all browser caches or forcing a
+// full page reload. The worker fetches the app shell from the network, so new
+// deployments remain current while cached media can stay available offline.
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    const resetKey = "smartservices-tz-pwa-reset-v6";
-    if (sessionStorage.getItem(resetKey) !== "1") {
-      sessionStorage.setItem(resetKey, "1");
-      Promise.all([
-        navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((r) => r.unregister()))),
-        "caches" in window ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))) : Promise.resolve(),
-      ]).finally(() => window.location.reload());
-      return;
-    }
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
-  });
+  }, { once: true });
 }
 
 // Production bootstrap v2: the portal uses Firebase Authentication, Firestore,
