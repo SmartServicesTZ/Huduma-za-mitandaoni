@@ -113,3 +113,52 @@ body{background:var(--brand-cream);font-family:"Manrope",system-ui,-apple-system
  .section-title{margin-bottom:8px!important}
  .portal-service-grid{gap:8px!important}
 }
+
+
+/* Premium wallet refresh: balance hierarchy, cleaner spacing and prominent add-token action */
+.token-card{
+ position:relative!important;isolation:isolate!important;overflow:hidden!important;
+ margin:10px 0 14px!important;padding:20px!important;border:1px solid rgba(104,220,190,.22)!important;
+ border-radius:26px!important;
+ background:radial-gradient(ellipse at 100% 0%,rgba(53,211,171,.2),transparent 42%),linear-gradient(135deg,#071a2f 0%,#103b52 54%,#0b665b 100%)!important;
+ box-shadow:0 18px 42px rgba(4,29,47,.2),inset 0 1px 0 rgba(255,255,255,.08)!important;color:#f7fffd!important;
+}
+.token-card:before{content:"";position:absolute;z-index:-1;width:220px;height:220px;right:-100px;top:-120px;border:1px solid rgba(177,255,230,.16);border-radius:50%;box-shadow:0 0 0 24px rgba(177,255,230,.035),0 0 0 48px rgba(177,255,230,.025)}
+.token-card__top{display:grid!important;grid-template-columns:54px minmax(0,1fr) auto!important;gap:13px!important;align-items:center!important;padding-bottom:17px!important;border-bottom:1px solid rgba(255,255,255,.13)!important}
+.token-card .token-icon{width:52px!important;height:52px!important;display:grid!important;place-items:center!important;border-radius:17px!important;background:linear-gradient(145deg,#b7ffe8,#6ce4c4)!important;color:#064c49!important;box-shadow:0 8px 20px rgba(0,0,0,.12)!important}
+.token-card .overline{color:#9beed8!important;font-size:10px!important;letter-spacing:1.4px!important;font-weight:800!important}
+.token-card__top strong{display:block!important;color:#fff!important;font-size:clamp(32px,7vw,43px)!important;line-height:1.04!important;letter-spacing:-1.5px!important;margin-top:4px!important}
+.token-card .token-label{display:block!important;color:#c5e7e1!important;font-size:11px!important;margin-top:3px!important}
+.token-live-pill{align-self:start!important;padding:6px 9px!important;border-radius:999px!important;border:1px solid rgba(126,255,208,.24)!important;background:rgba(126,255,208,.1)!important;color:#a4ffdc!important;font-size:9px!important;font-weight:800!important;letter-spacing:.6px!important}
+.token-balances{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin:15px 0!important}
+.token-balances>div{min-width:0!important;padding:13px!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:16px!important;background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.045))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important}
+.token-balances>div span{display:block!important;color:#c6e7e0!important;font-size:11px!important;line-height:1.35!important}
+.token-balances>div strong{display:block!important;color:#fff!important;font-size:25px!important;line-height:1.15!important;margin-top:7px!important}
+.token-card__meta{display:flex!important;flex-wrap:wrap!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;padding:2px 1px 14px!important;color:#c7e6e0!important;font-size:11px!important}
+.token-card__meta b{color:#fff!important}
+.token-card .verification{border-radius:999px!important;padding:6px 9px!important;background:rgba(255,255,255,.1)!important;color:#d9fff2!important;font-size:9px!important;font-weight:800!important}
+.token-card .account-warning{margin:0 0 12px!important;padding:10px 12px!important;border:1px solid rgba(255,215,130,.26)!important;border-radius:12px!important;background:rgba(125,78,11,.2)!important;color:#ffe6af!important;font-size:11px!important;line-height:1.45!important}
+.token-card .token-add-button{width:100%!important;min-height:62px!important;display:flex!important;align-items:center!important;gap:12px!important;padding:12px 15px!important;border:1px solid rgba(255,255,255,.28)!important;border-radius:17px!important;background:linear-gradient(110deg,#aaffdf,#6ee7c0)!important;color:#063c3b!important;box-shadow:0 9px 24px rgba(0,0,0,.14)!important;text-align:left!important;transition:transform .18s ease,box-shadow .18s ease!important}
+.token-card .token-add-button:active{transform:scale(.985)!important}
+.token-card .token-add-button .token-add-plus{width:36px!important;height:36px!important;display:grid!important;place-items:center!important;flex:0 0 36px!important;border-radius:12px!important;background:rgba(3,67,64,.1)!important;font-size:26px!important;line-height:1!important}
+.token-card .token-add-button>span:nth-child(2){display:flex!important;flex:1!important;flex-direction:column!important;gap:3px!important}
+.token-card .token-add-button b{font-size:12px!important;letter-spacing:.6px!important;color:#063c3b!important}
+.token-card .token-add-button small{font-size:10px!important;font-weight:500!important;color:#28655c!important}
+.token-card .token-add-button>svg{color:#07574e!important}
+.token-card .token-note{display:block!important;margin-top:10px!important;color:#c6e7e0!important;font-size:11px!important}
+.token-choice-modal{backdrop-filter:blur(8px)!important;background:rgba(1,12,24,.72)!important}
+.token-choice-card{border:1px solid #dcece7!important;border-radius:23px!important;box-shadow:0 28px 80px rgba(0,0,0,.3)!important}
+.token-choice-option{border-radius:15px!important;border:1px solid #dcece7!important;background:linear-gradient(120deg,#f4fffb,#fff)!important;padding:15px!important}
+.token-choice-option strong{color:#103c49!important}
+.token-choice-option span{color:#51756d!important}
+@media(max-width:480px){
+ .token-card{padding:16px!important;border-radius:22px!important;margin:7px 0 12px!important}
+ .token-card__top{grid-template-columns:46px minmax(0,1fr) auto!important;gap:10px!important;padding-bottom:14px!important}
+ .token-card .token-icon{width:44px!important;height:44px!important;border-radius:14px!important}
+ .token-card__top strong{font-size:34px!important}
+ .token-balances{gap:8px!important;margin:12px 0!important}
+ .token-balances>div{padding:11px!important;border-radius:14px!important}
+ .token-balances>div span{font-size:10px!important}
+ .token-balances>div strong{font-size:22px!important}
+ .token-card .token-add-button{min-height:58px!important;padding:10px 12px!important}
+}
