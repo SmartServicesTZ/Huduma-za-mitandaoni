@@ -90,3 +90,26 @@ body{background:var(--brand-cream);font-family:"Manrope",system-ui,-apple-system
 @media(max-width:1000px){.portal-service-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.modern-hero{min-height:330px!important}}
 @media(max-width:620px){.portal-main{padding:20px 14px 92px!important}.app-header{min-height:68px!important}.global-search{display:none!important}.modern-hero{border-radius:22px!important;padding:28px 22px!important;min-height:470px!important}.modern-hero h1{font-size:47px!important}.hero-visual{transform:scale(.82);transform-origin:center top;margin-top:-8px}.personal-dashboard{border-radius:18px!important}.personal-dashboard__actions{grid-template-columns:1fr!important}.portal-service-grid{grid-template-columns:1fr!important}.service-card{border-radius:18px!important}.section-title{align-items:start!important}.section-title h2{font-size:26px!important}.top-quick-services{grid-template-columns:1fr!important}.token-card{border-radius:20px!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+
+/* Layout correction: keep quick links in compact rows and bring first service closer. */
+.top-quick-services{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important}
+.top-quick-service{min-width:0!important;padding:10px 12px!important}
+.service-discovery{margin-top:18px!important;padding:12px 0 6px!important}
+.portal-section{margin-top:18px!important}
+@media(max-width:620px){
+ .top-quick-services{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+ .top-quick-service{padding:9px!important}
+ .portal-main{padding-top:18px!important}
+ .modern-hero{min-height:0!important;padding:20px 18px!important;margin-bottom:14px!important}
+ .modern-hero h1{font-size:34px!important;margin:10px 0 8px!important}
+ .modern-hero-copy>p{font-size:12px!important;line-height:1.45!important}
+ .hero-trust-row{gap:5px!important;margin-top:10px!important}
+ .hero-trust-row span{font-size:9px!important;padding:5px 7px!important}
+ .hero-visual{transform:scale(.65)!important;transform-origin:top center!important;height:95px!important;margin-top:0!important}
+ .service-discovery{margin-top:10px!important;padding:8px 0 4px!important;gap:8px!important;align-items:flex-start!important;flex-direction:column!important}
+ .service-discovery h2{font-size:23px!important}
+ .portal-section{margin-top:12px!important}
+ .section-title{margin-bottom:8px!important}
+ .portal-service-grid{gap:8px!important}
+}
