@@ -9,6 +9,7 @@ import LicenseTemplatePreview from "./LicenseTemplatePreview";
 
 type FormState = {
   applicantName: string;
+  issuingOffice: string;
   businessType: string;
   otherBusinessType: string;
   licenseType: "" | "NEW LICENCE" | "RENEWED LICENCE";
@@ -31,6 +32,7 @@ type IssuedFiles = {
 const REQUEST_ID_KEY = "hmt-business-license-request-id";
 const initialForm: FormState = {
   applicantName: "",
+  issuingOffice: "DAR ES SALAAM CITY COUNCIL",
   businessType: "",
   otherBusinessType: "",
   licenseType: "NEW LICENCE",
@@ -276,6 +278,7 @@ export default function BusinessLicensePage() {
         <div className="license-form-section">
           <h3>3. Aina ya Leseni na Eneo</h3>
           <div className="license-form-grid">
+            <Field label="Ofisi Inayotoa Leseni" english="Issuing Office" required><input value={form.issuingOffice} onChange={(event) => set("issuingOffice", event.target.value.toUpperCase())} placeholder="DAR ES SALAAM CITY COUNCIL" /></Field>
             <Field label="Aina ya Leseni" english="License Type" required>
               <SelectField value={form.licenseType} onChange={(value) => set("licenseType", value as FormState["licenseType"])} placeholder="Chagua aina ya leseni">
                 <option value="NEW LICENCE">NEW LICENCE</option><option value="RENEWED LICENCE">RENEWED LICENCE</option>
@@ -310,7 +313,7 @@ export default function BusinessLicensePage() {
             <span className="license-number-field">B.L. NO. <b>{licenseNumber || (numberError ? "Haikupatikana" : isAuthenticated ? "Inatolewa na mfumo..." : "Itatolewa baada ya kuingia")}</b><button type="button" className="license-number-refresh" disabled={!isAuthenticated || serviceLocked || downloadBusy || submitted || numberPending || (!licenseNumber && !numberError)} onClick={refreshLicenseNumber} title="Badilisha tarakimu tano za mwisho za namba ya leseni"><RefreshCw size={13} /> {numberPending ? "Inatolewa..." : numberError ? "Jaribu tena" : "Badilisha namba"}</button><small>{submitted ? "READ ONLY — namba imefungwa kwenye leseni iliyotengenezwa" : "READ ONLY — badilisha kabla ya kutengeneza hati; hakuna tokeni inayokatwa kwa refresh"}</small></span>
             <span>Tarehe ya Kutolewa <b>{displayDate(issueDate)}</b></span>
             <span>Tarehe ya Kumalizika <b>{displayDate(expiryDate)}</b></span>
-            <span>Ofisi Inayotoa Leseni <b>{issuingOffice("")}</b></span>
+            <span>Ofisi Inayotoa Leseni <b>{form.issuingOffice || "—"}</b></span>
           </div>
         </div>
 
