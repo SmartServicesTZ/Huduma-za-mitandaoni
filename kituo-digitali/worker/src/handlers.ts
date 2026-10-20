@@ -999,7 +999,7 @@ export const claimRegistrationPhone = callable(async (request) => {
     console.error("claimRegistrationPhone committed but profile verification failed", { uid, projectId: getWorkerEnv().FIREBASE_PROJECT_ID });
     throw new ApiError("internal", "Profile haikuonekana baada ya kuhifadhiwa. Jaribu tena.");
   }
-  return { ok: true, profileCreated: true };
+  return { ok: true, profileCreated: true, uid };
 });
 
 export const changeOwnPassword = callable(async (request) => {
