@@ -138,6 +138,7 @@ function PasswordField({ value, visible, autoComplete, placeholder, onChange, on
 }
 
 function LocalAuthModal({ onClose }: { onClose: () => void }) {
+  const [, navigate] = useLocation();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -158,6 +159,7 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
       else await registerFirebaseUser({ password: form.password, firstName: form.firstName.trim(), lastName: form.lastName.trim(), phone: form.phone.trim() });
       toast.success(mode === "login" ? "Umeingia kwa mafanikio." : "Akaunti imeundwa kwa mafanikio.");
       onClose();
+      navigate("/");
     } catch (error: any) {
       const code = String(error?.code ?? "").replace(/^auth\//, "");
       const messages: Record<string, { title: string; detail: string }> = {
