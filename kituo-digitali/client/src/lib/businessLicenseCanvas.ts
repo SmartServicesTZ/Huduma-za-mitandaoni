@@ -96,10 +96,10 @@ export async function renderBusinessLicenseCanvas(
   // Every heading and static label is drawn as crisp vector text to match the
   // regular-weight Arial-like typography and hierarchy in Reference B.
   const center = pxX(50);
-  const sectionX = pxX(7.6);
-  const labelX = pxX(10.25);
-  const valueX = pxX(35.25);
-  const notesX = pxX(12.0);
+  const sectionX = pxX(6.7);
+  const labelX = pxX(9.35);
+  const valueX = pxX(35.0);
+  const notesX = pxX(10.8);
   const bodyLabel = (text: string, y: number) => drawText(ctx, { x: labelX, y: pxY(y), size: 38, weight: 400 }, text);
   const bodyValue = (text: string, y: number, maxWidth = pxX(55)) => drawText(ctx, { x: valueX, y: pxY(y), size: 37, weight: 400, maxWidth }, text);
   const sectionHeading = (text: string, y: number) => drawText(ctx, { x: sectionX, y: pxY(y), size: 60, weight: 400 }, text);
@@ -109,42 +109,42 @@ export async function renderBusinessLicenseCanvas(
   drawText(ctx, { x: center, y: pxY(22.0), size: 46, weight: 400, color: "#69b8c2", align: "center", maxWidth: pxX(72) }, `B.L. NO: ${licenseNumber || "Namba inatolewa..."}`);
   drawText(ctx, { x: center, y: pxY(25.0), size: 38, align: "center", maxWidth: pxX(80) }, "The Business Licensing Act (Act No. 25 of 1972)");
 
-  sectionHeading("License Details", 28.55);
-  bodyLabel("Issuing Office:", 32.3);
-  bodyLabel("Tax Identification No:", 35.3);
-  bodyLabel("License Issued To:", 38.5);
-  bodyLabel("For the Business of:", 41.65);
-  bodyLabel("Business Licensing:", 45.0);
-  bodyLabel("Date of Issue:", 48.4);
-  bodyLabel("Expiring Date:", 51.65);
-  bodyLabel("Principal/Branch:", 54.65);
+  sectionHeading("License Details", 27.7);
+  bodyLabel("Issuing Office:", 31.4);
+  bodyLabel("Tax Identification No:", 34.6);
+  bodyLabel("License Issued To:", 37.8);
+  bodyLabel("For the Business of:", 41.05);
+  bodyLabel("Business Licensing:", 44.25);
+  bodyLabel("Date of Issue:", 47.5);
+  bodyLabel("Expiring Date:", 50.8);
+  bodyLabel("Principal/Branch:", 53.9);
 
-  bodyValue(office, 32.3, pxX(57));
-  bodyValue(form.tin, 35.3);
-  bodyValue(owner, 38.5, pxX(57));
-  bodyValue(businessType, 41.65, pxX(57));
-  bodyValue(form.licenseType, 45.0);
-  bodyValue(formatTemplateDate(issueDate), 48.4);
-  bodyValue(formatTemplateDate(expiryDate), 51.65);
-  bodyValue(form.principalBranch, 54.65);
+  bodyValue(office, 31.4, pxX(57));
+  bodyValue(form.tin, 34.6);
+  bodyValue(owner, 37.8, pxX(57));
+  bodyValue(businessType, 41.05, pxX(57));
+  bodyValue(form.licenseType, 44.25);
+  bodyValue(formatTemplateDate(issueDate), 47.5);
+  bodyValue(formatTemplateDate(expiryDate), 50.8);
+  bodyValue(form.principalBranch, 53.9);
 
-  sectionHeading("Business Location", 58.65);
-  bodyLabel("Region:", 62.0);
-  bodyLabel("Ward:", 65.25);
-  bodyLabel("Street:", 68.35);
-  bodyValue(titleCase(form.region), 62.0);
-  bodyValue(titleCase(form.ward), 65.25);
-  bodyValue(titleCase(form.street), 68.35);
+  sectionHeading("Business Location", 58.3);
+  bodyLabel("Region:", 61.7);
+  bodyLabel("Ward:", 64.8);
+  bodyLabel("Street:", 68.0);
+  bodyValue(titleCase(form.region), 61.7);
+  bodyValue(titleCase(form.ward), 64.8);
+  bodyValue(titleCase(form.street), 68.0);
 
-  sectionHeading("Payment Details", 72.2);
-  bodyLabel("Amount of Fee Paid:", 75.6);
-  bodyValue(amount, 75.6);
+  sectionHeading("Payment Details", 71.7);
+  bodyLabel("Amount of Fee Paid:", 75.3);
+  bodyValue(amount, 75.3);
 
-  drawText(ctx, { x: center, y: pxY(81.0), size: 40, weight: 400, align: "center", maxWidth: pxX(88) }, "This digital copy does not require a signature of authority");
-  drawText(ctx, { x: notesX, y: pxY(84.55), size: 36, weight: 600 }, "CONDITIONS & NOTES:");
+  drawText(ctx, { x: center, y: pxY(80.9), size: 40, weight: 400, align: "center", maxWidth: pxX(88) }, "This digital copy does not require a signature of authority");
+  drawText(ctx, { x: notesX, y: pxY(84.3), size: 36, weight: 600 }, "CONDITIONS & NOTES:");
   drawText(ctx, { x: notesX, y: pxY(86.65), size: 31, weight: 400, maxWidth: pxX(85) }, "1. This license shall be conspicuously displayed at the place of business");
-  drawText(ctx, { x: notesX, y: pxY(88.8), size: 31, weight: 400, maxWidth: pxX(85) }, "2. Renewal applications must be submitted within 21 days of the license expiry; Otherwise, penalties begin");
-  drawText(ctx, { x: notesX + 62, y: pxY(90.95), size: 31, weight: 400, maxWidth: pxX(82) }, "at 25 % of the license fee and rise by 2 % for each additional month, up to 47 %.");
+  drawText(ctx, { x: notesX, y: pxY(88.95), size: 31, weight: 400, maxWidth: pxX(85) }, "2. Renewal applications must be submitted within 21 days of the license expiry; Otherwise, penalties begin");
+  drawText(ctx, { x: notesX + 62, y: pxY(91.0), size: 31, weight: 400, maxWidth: pxX(82) }, "at 25 % of the license fee and rise by 2 % for each additional month, up to 47 %.");
 
   // Replace the sample QR printed on the blank template with one bound to the
   // actual issued license. Its placement and scale match Reference B.
@@ -165,8 +165,8 @@ export async function renderBusinessLicenseCanvas(
     });
 
     const qrX = pxX(61.4);
-    const qrY = pxY(58.75);
-    const qrSize = pxX(24.2);
+    const qrY = pxY(57.95);
+    const qrSize = pxX(25.0);
     const padding = 16;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(qrX - padding, qrY - padding, qrSize + padding * 2, qrSize + padding * 2);
