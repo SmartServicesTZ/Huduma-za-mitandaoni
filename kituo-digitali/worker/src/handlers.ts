@@ -324,7 +324,7 @@ export const adjustTokens = callable(async (request) => {
       const snapshot = await transaction.get(userRef);
       if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
       const target = snapshot.data() as Profile;
-      const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+      const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
       if (targetRole === "super_admin" && uid !== userId) throw new ApiError("permission-denied", "Super Admin inalindwa.");
       const legacyOther = target.tokenBalanceOther === undefined ? Number(target.tokenBalance ?? 0) : Number(target.tokenBalanceOther);
       const before = Number(tokenType === "nida" ? (target.tokenBalanceNida ?? 0) : legacyOther);
@@ -864,7 +864,7 @@ export const updateUserAccess = callable(async (request) => {
     const snapshot = await transaction.get(targetRef);
     if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
     const target = snapshot.data() as Profile;
-    const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+    const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
     if (targetRole === "super_admin" || data.role === "super_admin") throw new ApiError("permission-denied", "Mabadiliko ya Super Admin yanahitaji workflow maalum.");
     const patch: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
     if (data.role !== undefined) {
@@ -953,7 +953,7 @@ export const claimRegistrationPhone = callable(async (request) => {
     const profiles = await transaction.get(db.collection("users").where("phone", "==", phone).limit(2));
     const profileSnap = await transaction.get(profileRef);
     const ledgerSnap = await transaction.get(ledgerRef);
-    const settingsSnap = profileSnap.exists && profileSnap.data()?.tokenBonusRegistrationGranted !== true
+    const settingsSnap = profileSnap.exists && profileSnap.data()?.tokenBonusRegistrationGranted !== true && !ledgerSnap.exists
       ? await transaction.get(db.collection("siteSettings").doc("public"))
       : null;
     if (profiles.docs.some((profile) => profile.id !== uid)) {
@@ -1030,7 +1030,7 @@ export const resetUserPassword = callable(async (request) => {
   const targetSnapshot = await targetRef.get();
   if (!targetSnapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
   const target = targetSnapshot.data() as Profile;
-  const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+  const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
   if (targetRole === "super_admin" || userId === uid) throw new ApiError("permission-denied", "Akaunti hii haiwezi resetiwa na admin kupitia workflow hii.");
   const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
   const accessToken = await getGoogleAccessToken();
@@ -1083,7 +1083,7 @@ export const setAccountStatus = callable(async (request) => {
     const snapshot = await transaction.get(targetRef);
     if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
     const target = snapshot.data() as Profile;
-    const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+    const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
     if (targetRole === "super_admin") throw new ApiError("permission-denied", "Super Admin inalindwa.");
     const next = {
       accountStatus: mode === "denied" ? "blocked" : "active",
