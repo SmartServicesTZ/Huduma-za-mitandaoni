@@ -37,7 +37,7 @@ async function profileFor(uid: string) {
 
 const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat" | "applications" | "services" | "payments" | "auth"> = {
   adminDelete: "admin", adminWrite: "admin", adjustTokens: "admin", resetUserPassword: "admin", seedServiceCatalog: "admin",
-  setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin",
+  setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", listNidaRequests: "admin", setNidaRequestStatus: "admin", completeNidaRequest: "admin", submitNidaRequest: "applications", listMyNidaRequests: "read",
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
@@ -697,6 +697,93 @@ export const getLipaApplicationDocument = callable(async (request) => {
   if (!allowedPath) throw new ApiError("not-found", "Faili halikupatikana.");
   const [url] = await bucket.file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60 * 1000 });
   return { url, expiresAt: Date.now() + 5 * 60 * 1000 };
+});
+
+
+export const submitNidaRequest = callable(async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
+  const data = objectValue(request.data, "Ombi la NIDA");
+  const phone = text(data.phone, 20).replace(/\D/g, "");
+  if (!/^\d{9,10}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya simu lazima iwe na tarakimu 9 au 10.");
+  const openRef = db.collection("nidaOpenRequests").doc(uid);
+  const requestRef = db.collection("nidaRequests").doc(randomUUID());
+  return db.runTransaction(async (transaction) => {
+    const open = await transaction.get(openRef);
+    if (open.exists && typeof open.data()?.requestId === "string") {
+      const priorRef = db.collection("nidaRequests").doc(String(open.data()!.requestId));
+      const prior = await transaction.get(priorRef);
+      if (prior.exists && ["PENDING", "PROCESSING"].includes(String(prior.data()?.status))) throw new ApiError("already-exists", "Tayari una ombi la NIDA linalosubiri au linalofanyiwa kazi.");
+    }
+    const now = FieldValue.serverTimestamp();
+    transaction.create(requestRef, { requestId: requestRef.id, userId: uid, userName: String(profile.name ?? ""), phone, status: "PENDING", submittedAt: now, updatedAt: now });
+    transaction.set(openRef, { requestId: requestRef.id, userId: uid, createdAt: now, updatedAt: now });
+    transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: "Ombi la kutafuta namba ya NIDA limepokelewa", body: "Ombi lako limepokelewa na linasubiri kushughulikiwa na Admin.", type: "nidaRequest", requestId: requestRef.id, createdAt: now });
+    return { requestId: requestRef.id, status: "PENDING" };
+  });
+});
+
+export const listMyNidaRequests = callable(async (request) => {
+  const uid = authUid(request);
+  const snapshot = await db.collection("nidaRequests").where("userId", "==", uid).limit(50).get();
+  return { requests: snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))) };
+});
+
+export const listNidaRequests = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const snapshot = await db.collection("nidaRequests").orderBy("submittedAt", "desc").limit(200).get();
+  return { requests: snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) };
+});
+
+export const setNidaRequestStatus = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const data = objectValue(request.data, "Hali ya ombi la NIDA");
+  const requestId = text(data.requestId, 80);
+  const status = text(data.status, 40);
+  if (!["PROCESSING", "REJECTED"].includes(status)) throw new ApiError("invalid-argument", "Hali ya ombi si sahihi.");
+  const rejectionReason = typeof data.rejectionReason === "string" ? data.rejectionReason.trim().slice(0, 500) : "";
+  if (status === "REJECTED" && rejectionReason.length < 3) throw new ApiError("invalid-argument", "Andika sababu ya kukataa ombi.");
+  const ref = db.collection("nidaRequests").doc(requestId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ApiError("not-found", "Ombi la NIDA halikupatikana.");
+    const item = snapshot.data()!;
+    if (["APPROVED", "REJECTED"].includes(String(item.status))) throw new ApiError("failed-precondition", "Ombi hili tayari limefungwa.");
+    const now = FieldValue.serverTimestamp();
+    transaction.update(ref, { status, updatedAt: now, assignedAdmin: uid, ...(status === "PROCESSING" ? { processedAt: now, processedBy: uid } : { rejectedAt: now, rejectedBy: uid, rejectionReason }) });
+    if (status === "REJECTED") transaction.delete(db.collection("nidaOpenRequests").doc(String(item.userId)));
+    transaction.set(db.collection("messages").doc(), { recipientId: String(item.userId), subject: status === "PROCESSING" ? "Ombi la NIDA linafanyiwa kazi" : "Ombi la NIDA halijakamilika", body: status === "PROCESSING" ? "Admin ameanza kushughulikia ombi lako la NIDA." : `Ombi lako la NIDA halijaweza kukamilika. Sababu: ${rejectionReason}`, type: "nidaRequestStatus", requestId, status, createdAt: now });
+    recordAudit(transaction, uid, String(actor.role), `NIDA_REQUEST_${status}`, "nidaRequest", requestId, { status: item.status }, { status }, { targetUserId: String(item.userId) });
+    return { requestId, status };
+  });
+});
+
+export const completeNidaRequest = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const data = objectValue(request.data, "Matokeo ya NIDA");
+  const requestId = text(data.requestId, 80);
+  const nidaNumber = text(data.nidaNumber, 40);
+  if (!/^(?:\d{20}|\d{8}-\d{5}-\d{5}-\d{2})$/.test(nidaNumber)) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20, ikiwa na vistari vya muundo unaotumika au bila vistari.");
+  const ref = db.collection("nidaRequests").doc(requestId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ApiError("not-found", "Ombi la NIDA halikupatikana.");
+    const item = snapshot.data()!;
+    if (["APPROVED", "REJECTED"].includes(String(item.status))) throw new ApiError("failed-precondition", "Ombi hili tayari limefungwa.");
+    const now = FieldValue.serverTimestamp();
+    transaction.update(ref, { status: "APPROVED", nidaNumber, completedAt: now, completedBy: uid, updatedAt: now });
+    transaction.delete(db.collection("nidaOpenRequests").doc(String(item.userId)));
+    transaction.set(db.collection("messages").doc(), { recipientId: String(item.userId), subject: "Namba yako ya NIDA imetumwa", body: "Admin amekamilisha ombi lako. Ingia kwenye SmartServicesTZ kuona na kunakili namba yako ya NIDA.", type: "nidaRequestStatus", requestId, status: "APPROVED", createdAt: now });
+    recordAudit(transaction, uid, String(actor.role), "NIDA_REQUEST_APPROVED", "nidaRequest", requestId, { status: item.status }, { status: "APPROVED" }, { targetUserId: String(item.userId) });
+    return { requestId, status: "APPROVED" };
+  });
 });
 
 export const createServiceApplication = callable(async (request) => {
