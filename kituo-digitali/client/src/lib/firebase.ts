@@ -175,7 +175,7 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     profileImageUrl: extra.profileImageUrl ?? current.profileImageUrl,
     updatedAt: serverTimestamp(),
   });
-  if (!existing.exists()) await invokeWorker("claimRegistrationPhone", { phone });
+  if (!existing.exists()) await invokeWorker("claimRegistrationPhone", { phone, firstName, lastName, name: `${firstName} ${lastName}`.trim(), username: extra.username ?? current.username ?? user.uid.slice(0, 8) });
   await setDoc(ref, { ...profile, email: deleteField(), emailVerified: deleteField() }, { merge: true });
   return ref;
 }
