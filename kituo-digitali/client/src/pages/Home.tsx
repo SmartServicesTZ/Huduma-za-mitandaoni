@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, claimDailyTokenBonus } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, type NidaRequest } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -378,31 +378,68 @@ function HistoryPage() {
 function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
 
-function QuickNidaSearch() {
+function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [phone, setPhone] = useState("");
-  const [result, setResult] = useState("");
-  const formatPhone = (value: string) => value.replace(/[^0-9+]/g, "").slice(0, 13);
-  const run = () => {
-    const clean = phone.trim();
-    if (!clean) { toast.error("Weka namba ya simu ya mteja kwanza."); return; }
-    toast.info("IMEFUNGWA — Wasiliana na msimamizi.");
+  const [requests, setRequests] = useState<NidaRequest[]>([]);
+  const [busy, setBusy] = useState(false);
+  const formatPhone = (value: string) => value.replace(/\D/g, "").slice(0, 10);
+
+  useEffect(() => {
+    if (!isAuthenticated) { setRequests([]); return; }
+    let stopped = false;
+    const load = async () => {
+      try {
+        const rows = await listMyNidaRequests();
+        if (!stopped) setRequests(rows);
+      } catch {
+        if (!stopped) setRequests([]);
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 5000);
+    return () => { stopped = true; window.clearInterval(timer); };
+  }, [isAuthenticated]);
+
+  const run = async () => {
+    if (!isAuthenticated) { toast.error("Ingia kwenye akaunti yako kabla ya kutuma ombi la NIDA."); return; }
+    if (!/^\d{9,10}$/.test(phone)) { toast.error("Weka namba ya simu yenye tarakimu 9 au 10."); return; }
+    setBusy(true);
+    try {
+      await submitNidaRequest(phone);
+      toast.success("Ombi limepokelewa. Linasubiri kushughulikiwa.");
+      setPhone("");
+      setRequests(await listMyNidaRequests());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena.");
+    } finally { setBusy(false); }
   };
-  const copyResult = async () => {
-    if (!result) return;
+  const copyResult = async (result: string) => {
     try { await navigator.clipboard.writeText(result); toast.success("Namba ya NIDA imenakiliwa."); }
-    catch { toast.error("Imeshindikana kunakili."); }
+    catch { toast.error("Imeshindikana kunakili namba ya NIDA."); }
   };
+  const statusText: Record<string, string> = { PENDING: "IMEPOKELEWA — INASUBIRI", PROCESSING: "INAFANYIWA KAZI", APPROVED: "IMEKAMILIKA", REJECTED: "HAIJAWEZA KUKAMILIKA" };
+
   return <section className="quick-nida-panel">
     <div className="quick-nida-panel__head">
       <div className="quick-nida-search__icon"><Search size={20}/></div>
-      <div><span className="overline">NIDA • TAFTA KWA SIMU</span><h3>TAFUTA NIDA</h3><p>Weka namba ya simu ya mteja. Huduma hii imefungwa kwa sasa.</p></div>
+      <div><span className="overline">NIDA • TAFUTA KWA SIMU</span><h3>TAFUTA NAMBA YA NIDA</h3><p>Weka namba ya simu yenye tarakimu 9 au 10. Admin atashughulikia ombi lako na kutuma namba ya NIDA ikipatikana.</p></div>
     </div>
     <div className="quick-nida-form">
-      <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Weka namba ya simu" aria-label="Namba ya simu ya mteja"/>
-      <button type="button" className="button button--green" onClick={run}><Search size={16}/> Tafuta</button>
+      <input inputMode="numeric" autoComplete="tel" maxLength={10} value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Namba ya simu (tarakimu 9 au 10)" aria-label="Namba ya simu ya mteja"/>
+      <button type="button" className="button button--green" onClick={() => void run()} disabled={busy}><Search size={16}/> {busy ? "Inatuma..." : "Tafuta NIDA"}</button>
     </div>
-    <div className="quick-nida-locked"><LockKeyhole size={16}/><span>IMEFUNGWA — Wasiliana na msimamizi</span></div>
-    {result && <div className="quick-nida-result"><div><small>NIN / NIDA</small><strong>{result}</strong></div><button type="button" onClick={() => void copyResult()}><Copy size={17}/> Copy</button></div>}
+    {!isAuthenticated && <div className="notice notice--info"><LogIn size={16}/><span>Ingia kwenye akaunti yako ili kutuma ombi na kuona matokeo.</span></div>}
+    {isAuthenticated && requests.length > 0 && <div className="quick-nida-request-list">
+      {requests.map((item) => <article key={item.id} className="quick-nida-request">
+        <div><small>Simu: {item.phone}</small><strong>{statusText[item.status] ?? item.status}</strong>
+          {item.status === "PENDING" && <span>Ombi limepokelewa; linasubiri admin.</span>}
+          {item.status === "PROCESSING" && <span>Admin analifanyia kazi ombi lako.</span>}
+          {item.status === "REJECTED" && item.rejectionReason && <span>{item.rejectionReason}</span>}
+          {item.status === "APPROVED" && item.nidaNumber && <code>{item.nidaNumber}</code>}
+        </div>
+        {item.status === "APPROVED" && item.nidaNumber && <button type="button" className="button button--green button--small" onClick={() => void copyResult(item.nidaNumber!)}><Copy size={15}/> Nakili NIDA</button>}
+      </article>)}
+    </div>}
   </section>;
 }
 
@@ -468,7 +505,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
-    <QuickNidaSearch />
+    <QuickNidaSearch isAuthenticated={isAuthenticated} />
     <section className="service-discovery"><div><span className="overline">{allServicesPage ? "TAFUTA NA CHUJA" : "SMART SERVICES"}</span><h2>{allServicesPage ? "HUDUMA ZOTE" : "Chagua huduma"}</h2><p>{allServicesPage ? `${matches.length} kati ya ${displayedServices.length} huduma zinaonekana. Tumia utafutaji au makundi kuchuja.` : "Anza hapa — huduma zako zote sehemu moja."}</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
