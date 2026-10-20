@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 export const TIN_CANVAS_WIDTH = 1012;
 const TIN_CONTENT_HEIGHT = 3189;
 export const TIN_CANVAS_HEIGHT = Math.round(TIN_CANVAS_WIDTH * TIN_CONTENT_HEIGHT / 2481);
-const TIN_Y_SCALE = TIN_CANVAS_HEIGHT / 1300;
+const TIN_Y_SCALE = (TIN_CANVAS_HEIGHT / 1300) * (3509 / TIN_CONTENT_HEIGHT);
 export const BACKGROUND_ASSET = "tin-template.png";
 
 export type TinCertificateForm = {
