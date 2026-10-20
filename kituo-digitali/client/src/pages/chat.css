@@ -82,3 +82,26 @@
  .chat-room-tools>button{width:32px;height:32px}
  .chat-message-search{margin:8px 10px 0}
 }
+
+/* Final mobile override: Chat V3 desktop rules above must not win on phones. */
+@media (max-width: 700px) {
+  .chat-page { width: 100%; max-width: 100% !important; }
+  .chat-workspace {
+    height: auto;
+    min-height: calc(100dvh - 205px);
+    grid-template-columns: minmax(0, 1fr) !important;
+    overflow: visible;
+  }
+  .chat-sidebar {
+    min-height: 0;
+    max-height: 300px;
+    border-right: 0;
+    border-bottom: 1px solid #e2e9f2;
+  }
+  .chat-main { min-height: 430px; }
+  .chat-room-title { min-width: 0; }
+  .chat-room-tools { flex-shrink: 0; }
+  .chat-message-list { min-height: 260px; }
+  .chat-composer { flex-wrap: nowrap; }
+  .chat-composer input:not([type="file"]) { min-width: 0; }
+}
