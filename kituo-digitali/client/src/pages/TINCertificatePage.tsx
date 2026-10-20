@@ -46,19 +46,9 @@ export default function TINCertificatePage() {
     const output = document.createElement("canvas");
     await renderTinCertificateCanvas(form, output);
 
-    const cropX = 34;
-    const cropY = 30;
-    const cropWidth = output.width - 68;
-    const cropBottom = 1190;
-    const cropHeight = cropBottom - cropY;
-
-    const cropped = document.createElement("canvas");
-    cropped.width = cropWidth;
-    cropped.height = cropHeight;
-    const ctx = cropped.getContext("2d");
-    if (!ctx) throw new Error("Imeshindikana kuandaa cheti.");
-    ctx.drawImage(output, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-    return cropped;
+    // Usikate template ya TRA: border ya juu/chini na watermark ni sehemu ya cheti.
+    // Toleo la zamani lilitumia cropY/cropBottom, jambo lililokata sehemu ya juu.
+    return output;
   };
 
   const downloadPng = async () => {
