@@ -638,6 +638,7 @@ export type LipaApplication = {
   updatedAt?: unknown;
 };
 export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
+export type NidaRequest = { id: string; requestId: string; userId: string; userName?: string; phone: string; status: "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED"; nidaNumber?: string; rejectionReason?: string; submittedAt?: unknown; updatedAt?: unknown };
 
 export async function seedServiceCatalog() {
   const callable = createWorkerCall("seedServiceCatalog");
@@ -747,6 +748,31 @@ export function subscribeToAdminLipaApplications(callback: (rows: LipaApplicatio
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
   const userQuery = query(collection(firestore, "lipaApplications"), where("userId", "==", uid));
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
+}
+
+export async function submitNidaRequest(phone: string) {
+  const callable = createWorkerCall<{ phone: string }, { requestId: string; status: string }>("submitNidaRequest");
+  return (await callable({ phone })).data;
+}
+
+export async function listMyNidaRequests() {
+  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listMyNidaRequests");
+  return (await callable({})).data.requests ?? [];
+}
+
+export async function listNidaRequests() {
+  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listNidaRequests");
+  return (await callable({})).data.requests ?? [];
+}
+
+export async function setNidaRequestStatus(requestId: string, status: "PROCESSING" | "REJECTED", rejectionReason = "") {
+  const callable = createWorkerCall<{ requestId: string; status: string; rejectionReason: string }, { requestId: string; status: string }>("setNidaRequestStatus");
+  return (await callable({ requestId, status, rejectionReason })).data;
+}
+
+export async function completeNidaRequest(requestId: string, nidaNumber: string) {
+  const callable = createWorkerCall<{ requestId: string; nidaNumber: string }, { requestId: string; status: string }>("completeNidaRequest");
+  return (await callable({ requestId, nidaNumber })).data;
 }
 
 export async function createServiceApplication(applicationId: string, serviceSlug: string, values: ServiceFormValues) {
