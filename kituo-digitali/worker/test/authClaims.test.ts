@@ -2,27 +2,22 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { resolveAuthRole } from "../src/authClaims.js";
 
-test("the configured Super Admin phone is promoted regardless of input formatting", () => {
-  for (const phone of ["0698232313", "0698 232 313", "+255698232313", "255698232313"]) {
-    assert.deepEqual(resolveAuthRole("user", phone, "255698232313"), {
-      role: "super_admin",
-      isConfiguredSuperAdmin: true,
-      shouldPromote: true,
-      shouldDemote: false,
-    });
-  }
-});
-
-test("a Super Admin profile with a different phone is downgraded", () => {
-  assert.deepEqual(resolveAuthRole("super_admin", "255712345678", "255698232313"), {
-    role: "user",
-    isConfiguredSuperAdmin: false,
-    shouldPromote: false,
-    shouldDemote: true,
+test("only the configured authenticated UID is promoted to Super Admin", () => {
+  assert.deepEqual(resolveAuthRole("user", "firebase-uid-owner", "firebase-uid-owner"), {
+    role: "super_admin",
+    isConfiguredSuperAdmin: true,
+    shouldPromote: true,
+    shouldDemote: false,
   });
 });
 
-test("ordinary privileged roles remain unchanged for other phone numbers", () => {
-  assert.equal(resolveAuthRole("admin", "255712345678", "255698232313").role, "admin");
-  assert.equal(resolveAuthRole(undefined, "0698232313", "").role, "user");
+test("an unconfigured or different UID cannot obtain Super Admin from a phone number", () => {
+  assert.equal(resolveAuthRole("user", "firebase-uid-attacker", "firebase-uid-owner").role, "user");
+  assert.equal(resolveAuthRole("super_admin", "firebase-uid-attacker", "firebase-uid-owner").role, "user");
+  assert.equal(resolveAuthRole("user", "firebase-uid-owner", "").role, "user");
+});
+
+test("ordinary roles remain unchanged for other authenticated UIDs", () => {
+  assert.equal(resolveAuthRole("admin", "firebase-uid-other", "firebase-uid-owner").role, "admin");
+  assert.equal(resolveAuthRole(undefined, "firebase-uid-other", "").role, "user");
 });

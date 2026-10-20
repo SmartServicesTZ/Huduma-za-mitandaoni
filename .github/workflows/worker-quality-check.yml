@@ -1,0 +1,59 @@
+name: Worker Quality Checks
+
+on:
+  pull_request:
+    paths:
+      - "kituo-digitali/worker/**"
+      - "kituo-digitali/package.json"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - ".github/workflows/worker-quality-check.yml"
+  push:
+    branches:
+      - "fix/public-launch-audit"
+    paths:
+      - "kituo-digitali/worker/**"
+      - "kituo-digitali/package.json"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - ".github/workflows/worker-quality-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worker-checks:
+    name: Typecheck, tests, and dry-run build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kituo-digitali
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: kituo-digitali/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck Worker
+        run: pnpm worker:check
+
+      - name: Run Worker tests
+        run: pnpm worker:test
+
+      - name: Dry-run Worker build
+        run: pnpm worker:build

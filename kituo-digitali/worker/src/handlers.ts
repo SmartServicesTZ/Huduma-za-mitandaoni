@@ -31,7 +31,7 @@ async function profileFor(uid: string) {
   const snapshot = await db.collection("users").doc(uid).get();
   if (!snapshot.exists) throw new ApiError("permission-denied", "Profile ya akaunti haijapatikana.");
   const profile = snapshot.data() as Profile;
-  const role = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+  const role = resolveAuthRole(profile.role, uid, getWorkerEnv().SUPER_ADMIN_UID).role;
   return { ...profile, role };
 }
 
@@ -324,7 +324,7 @@ export const adjustTokens = callable(async (request) => {
       const snapshot = await transaction.get(userRef);
       if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
       const target = snapshot.data() as Profile;
-      const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+      const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
       if (targetRole === "super_admin" && uid !== userId) throw new ApiError("permission-denied", "Super Admin inalindwa.");
       const legacyOther = target.tokenBalanceOther === undefined ? Number(target.tokenBalance ?? 0) : Number(target.tokenBalanceOther);
       const before = Number(tokenType === "nida" ? (target.tokenBalanceNida ?? 0) : legacyOther);
@@ -641,7 +641,7 @@ export const listLipaApplications = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
   const snapshot = await db.collection("lipaApplications").limit(1000).get();
-  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const rows: Array<Record<string, unknown>> = snapshot.docs.map((item) => ({ ...item.data(), id: item.id }));
   rows.sort((a, b) => {
     const left = String(a.submittedAt ?? "");
     const right = String(b.submittedAt ?? "");
@@ -754,7 +754,7 @@ export const createServiceApplication = callable(async (request) => {
     let ledgerRef: DocumentReference | null = null;
     if (tokenCost > 0) {
       if (user.verificationStatus !== "approved") throw new ApiError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
-      const effectiveTokenType = service.tokenType === "nida" || serviceSlug === "nakala-nida" || serviceSlug === "utafutaji-nida" ? "nida" : "huduma";
+      const effectiveTokenType = (service as Record<string, unknown>).tokenType === "nida" || serviceSlug === "nakala-nida" || serviceSlug === "utafutaji-nida" ? "nida" : "huduma";
       const legacyOther = user.tokenBalanceOther === undefined ? Number(user.tokenBalance ?? 0) : Number(user.tokenBalanceOther);
       const tokenField = effectiveTokenType === "nida" ? "tokenBalanceNida" : "tokenBalanceOther";
       const before = Number(effectiveTokenType === "nida" ? (user.tokenBalanceNida ?? 0) : legacyOther);
@@ -864,7 +864,7 @@ export const updateUserAccess = callable(async (request) => {
     const snapshot = await transaction.get(targetRef);
     if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
     const target = snapshot.data() as Profile;
-    const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+    const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
     if (targetRole === "super_admin" || data.role === "super_admin") throw new ApiError("permission-denied", "Mabadiliko ya Super Admin yanahitaji workflow maalum.");
     const patch: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
     if (data.role !== undefined) {
@@ -890,7 +890,7 @@ export const syncAuthClaims = callable(async (request) => {
   const snapshot = await profileRef.get();
   if (!snapshot.exists) throw new ApiError("failed-precondition", "Profile ya akaunti bado haijapatikana.");
   const profile = snapshot.data() as Profile;
-  const resolution = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313");
+  const resolution = resolveAuthRole(profile.role, uid, getWorkerEnv().SUPER_ADMIN_UID);
   const role = resolution.role;
   if (resolution.shouldPromote) {
     await profileRef.update({
@@ -946,31 +946,36 @@ export const claimRegistrationPhone = callable(async (request) => {
   if (request.auth?.email !== phoneAuthAlias(phone)) throw new ApiError("permission-denied", "Namba ya simu haiendani na akaunti hii.");
 
   const registryRef = db.collection("phoneRegistry").doc(phone);
+  const profileRef = db.collection("users").doc(uid);
+  const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);
   await db.runTransaction(async (transaction) => {
     const registry = await transaction.get(registryRef);
     const profiles = await transaction.get(db.collection("users").where("phone", "==", phone).limit(2));
+    const profileSnap = await transaction.get(profileRef);
+    const ledgerSnap = await transaction.get(ledgerRef);
+    const settingsSnap = profileSnap.exists && profileSnap.data()?.tokenBonusRegistrationGranted !== true && !ledgerSnap.exists
+      ? await transaction.get(db.collection("siteSettings").doc("public"))
+      : null;
     if (profiles.docs.some((profile) => profile.id !== uid)) {
       throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
     }
     if (registry.exists && registry.data()?.uid !== uid) {
       throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
     }
-    if (!registry.exists) {
-      transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });
-      const profileRef = db.collection("users").doc(uid);
-      const profileSnap = await transaction.get(profileRef);
-      if (profileSnap.exists) {
-        const settingsSnap = await transaction.get(db.collection("siteSettings").doc("public"));
-        const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};
-        const registrationBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.registrationBonus ?? 15))));
-        if (registrationBonus > 0) {
-          const profile = profileSnap.data() as Profile;
-          const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
-          const after = before + registrationBonus;
-          transaction.update(profileRef, { tokenBalanceOther: after, tokenBalance: after, tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });
-          const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);
-          transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: registrationBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
-        }
+    if (!registry.exists) transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });
+    // Grant once the profile exists, including accounts claimed by older code before profile creation.
+    if (profileSnap.exists && profileSnap.data()?.tokenBonusRegistrationGranted !== true && !ledgerSnap.exists) {
+      const config = settingsSnap?.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};
+      const configuredBonus = Number(config.registrationBonus ?? 15);
+      const registrationBonus = Number.isFinite(configuredBonus) ? Math.max(0, Math.min(10000, Math.floor(configuredBonus))) : 15;
+      const profile = profileSnap.data() as Profile;
+      const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
+      if (registrationBonus > 0 && Number.isSafeInteger(before) && before >= 0) {
+        const after = before + registrationBonus;
+        transaction.update(profileRef, { tokenBalanceOther: after, tokenBalance: after, tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });
+        transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: registrationBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" });
+      } else if (registrationBonus === 0) {
+        transaction.update(profileRef, { tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });
       }
     }
   });
@@ -1025,7 +1030,7 @@ export const resetUserPassword = callable(async (request) => {
   const targetSnapshot = await targetRef.get();
   if (!targetSnapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
   const target = targetSnapshot.data() as Profile;
-  const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+  const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
   if (targetRole === "super_admin" || userId === uid) throw new ApiError("permission-denied", "Akaunti hii haiwezi resetiwa na admin kupitia workflow hii.");
   const projectId = getWorkerEnv().FIREBASE_PROJECT_ID;
   const accessToken = await getGoogleAccessToken();
@@ -1078,7 +1083,7 @@ export const setAccountStatus = callable(async (request) => {
     const snapshot = await transaction.get(targetRef);
     if (!snapshot.exists) throw new ApiError("not-found", "Mtumiaji hakupatikana.");
     const target = snapshot.data() as Profile;
-    const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+    const targetRole = resolveAuthRole(target.role, userId, getWorkerEnv().SUPER_ADMIN_UID).role;
     if (targetRole === "super_admin") throw new ApiError("permission-denied", "Super Admin inalindwa.");
     const next = {
       accountStatus: mode === "denied" ? "blocked" : "active",
