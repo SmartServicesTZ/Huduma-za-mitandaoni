@@ -275,7 +275,7 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
   };
   return <div className="portal-service-card-wrap">
     <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)}>
-      <div className="service-card-icon"><Icon name={service.icon} /></div>
+      <div className="service-card-icon">{/kitambulisho.*wakala|wakala.*kitambulisho/i.test(service.name) ? <img src={`${import.meta.env.BASE_URL}Kitambulisho.jpg`} alt="Kitambulisho cha wakala" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} /> : <Icon name={service.icon} />}</div>
       <div className="service-card-copy"><strong>{service.name}</strong><span>{locked ? (service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") : service.description}</span></div>
       <div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}{external ? <span className="external-label"><ExternalLink size={13} /> FUNGUA</span> : <ChevronRight size={17} />}</div>
     </button>
