@@ -75,6 +75,9 @@
 .chat-composer>button,.chat-composer-actions button{border-color:#dbe4ef;border-radius:11px}
 .chat-composer input:not([type=file]){border-color:#d7e1ec;background:#f8fafc;border-radius:14px}
 .chat-emoji-row{padding-bottom:9px;background:#fff}
+.chat-emoji-row{display:grid;grid-template-columns:repeat(12,minmax(25px,1fr));gap:4px;padding:8px 14px 10px;border-top:1px solid #e8eef5}
+.chat-emoji-row button{width:100%;height:30px;font-size:18px}
+.chat-emoji-row small{grid-column:1/-1;text-align:right}
 @media(max-width:700px){
  .chat-workspace{border-radius:16px;min-height:calc(100dvh - 205px)}
  .chat-sidebar{background:#f8fbff}
@@ -104,4 +107,5 @@
   .chat-message-list { min-height: 260px; }
   .chat-composer { flex-wrap: nowrap; }
   .chat-composer input:not([type="file"]) { min-width: 0; }
+  .chat-emoji-row { grid-template-columns: repeat(8, minmax(28px, 1fr)); padding: 8px 9px 10px; }
 }

@@ -6,7 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { blockChatUser, createChatGroup, deleteChatMessage, editChatMessage, findChatUser, loadChatAttachment, markChatMessageRead, openPrivateConversation, reportChatUser, sendChatMessage, sendGroupChatMessage, setChatTyping, subscribeAllConversations, subscribeChatGroups, subscribePublicChatGroups, subscribeGroupJoinRequests, requestToJoinChatGroup, approveChatGroupJoinRequest, subscribeConversations, subscribePresence, subscribePrivateChat, subscribePublicChat, subscribeTyping, updatePresence, uploadChatFile, type ChatGroup, type ChatGroupJoinRequest, type ChatMessage, type ChatUser, type PrivateConversation } from "@/lib/firebase";
 import "./chat.css";
 
-const emojis = ["😀", "😂", "🥰", "😍", "👍", "🙏", "❤️", "🎉", "😢", "🔥"];
+const emojis = ["😀", "😂", "🥰", "😍", "😎", "🤝", "👍", "👏", "🙏", "❤️", "💚", "🎉", "🔥", "✅", "💪", "😢", "😡", "🤔", "🥳", "⭐", "📌", "💡", "🚀", "🙌"];
 function dateLabel(value: unknown) {
   if (value && typeof value === "object" && "toDate" in value && typeof (value as any).toDate === "function") return (value as any).toDate().toLocaleTimeString("sw-TZ", { hour: "2-digit", minute: "2-digit" });
   return "";
@@ -50,6 +50,7 @@ export default function ChatPage() {
   const [fileBusy, setFileBusy] = useState(false);
   const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [attachments, setAttachments] = useState<Record<string, string>>({});
   const [loadingPublic, setLoadingPublic] = useState(true);
   const [loadingConversations, setLoadingConversations] = useState(true);
@@ -316,16 +317,16 @@ export default function ChatPage() {
         </div>
         {reply && <div className="chat-reply-bar"><Reply size={16}/><span>Unajibu: {reply.text ?? reply.fileName ?? "Kiambatisho"}</span><button onClick={() => setReply(null)}><X size={16}/></button></div>}
         <form className="chat-composer" onSubmit={(event) => { event.preventDefault(); void send(); }}>
-          <input ref={fileRef} type="file" hidden disabled={!mediaReady} onChange={(event) => void onFile(event.target.files?.[0])}/>
+          <input ref={fileRef} type="file" hidden accept="image/*,application/pdf,text/plain,audio/*" disabled={!mediaReady} onChange={(event) => void onFile(event.target.files?.[0])}/>
           <button type="button" title={mediaReady ? "Ambatisha picha/faili" : "Firebase Storage haijawezeshwa"} onClick={() => fileRef.current?.click()} disabled={!mediaReady || fileBusy || (view === "private" && !roomId) || (view === "groups" && !groupId)}><Paperclip size={18}/></button>
-          <button type="button" title="Ongeza emoji" onClick={() => setDraft((value) => value + emojis[0])} disabled={(view === "private" && !roomId) || (view === "groups" && !groupId)}><Smile size={18}/></button>
+          <button type="button" title="Fungua emoji" aria-label="Fungua emoji" aria-expanded={emojiOpen} onClick={() => setEmojiOpen((value) => !value)} disabled={(view === "private" && !roomId) || (view === "groups" && !groupId)}><Smile size={18}/></button>
           <input value={draft} onChange={(event) => setTypingDraft(event.target.value)} placeholder={view === "public" ? "Andika ujumbe wa jumuiya…" : view === "moderation" ? "Moderation ni ya kusoma na kusimamia ujumbe tu" : view === "groups" ? (groupId ? "Andika ujumbe wa group…" : "Chagua group kwanza") : roomId ? "Andika ujumbe…" : "Chagua mazungumzo kwanza"} disabled={(view === "private" && !roomId) || (view === "groups" && !groupId) || view === "moderation"}/>
           <div className="chat-composer-actions">
             {view !== "moderation" && <button type="button" title={!mediaReady ? "Firebase Storage haijawezeshwa" : recording ? "Simamisha kurekodi" : "Rekodi voice message"} onClick={() => recording ? mediaRecorder.current?.stop() : void startVoiceNote()} disabled={!mediaReady || (view === "private" && !roomId) || (view === "groups" && !groupId)}>{recording ? <StopCircle size={18}/> : <Mic size={18}/>}</button>}
             <button className="chat-send-button" type="submit" title="Tuma ujumbe" disabled={fileBusy || sending || view === "moderation" || (view === "private" && !roomId) || (view === "groups" && !groupId) || (!draft.trim() && !recording)}>{sending ? <LoaderCircle className="chat-spin" size={18}/> : <Send size={18}/>}</button>
           </div>
         </form>
-        <div className="chat-emoji-row">{emojis.map((emoji) => <button type="button" key={emoji} onClick={() => setDraft((value) => value + emoji)} disabled={view === "moderation"}>{emoji}</button>)}{fileBusy && <small>Inatuma faili…</small>}</div>
+        {emojiOpen && <div className="chat-emoji-row" role="group" aria-label="Chagua emoji">{emojis.map((emoji) => <button type="button" key={emoji} aria-label={`Tuma ${emoji}`} onClick={() => { setDraft((value) => value + emoji); setEmojiOpen(false); }} disabled={view === "moderation"}>{emoji}</button>)}{fileBusy && <small>Inatuma faili…</small>}</div>}
       </section>
     </section>
     {groupModalOpen && <div className="portal-modal-backdrop" onClick={() => setGroupModalOpen(false)}><form className="portal-modal chat-group-modal" onSubmit={createGroup} onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setGroupModalOpen(false)}><X size={19}/></button><span className="overline">NEW GROUP</span><h3>Tengeneza group</h3><p>Weka jina la group na namba za simu za watu unaotaka kuwaongeza.</p><label className="control-field"><span>Jina la group</span><input value={groupName} onChange={(event) => setGroupName(event.target.value)} placeholder="Mfano: Wafanyabiashara Kiteto" /></label><label className="control-field"><span>Namba za simu</span><textarea value={groupPhones} onChange={(event) => setGroupPhones(event.target.value)} placeholder="0698..., 0754... au kila namba mstari mpya" rows={4}/></label><label className="control-field"><span>Maelezo (hiari)</span><textarea value={groupDescription} onChange={(event) => setGroupDescription(event.target.value)} placeholder="Group hili linahusu nini?" rows={3}/></label><label className="control-field"><span>Aina ya group</span><select value={groupVisibility} onChange={(event) => setGroupVisibility(event.target.value as "private" | "public")}><option value="private">Private — walioalikwa pekee</option><option value="public">Public — ombi la kujiunga</option></select></label><button type="submit" className="button button--green button--wide"><Users size={16}/> Unda group</button></form></div>}<p className="chat-call-notice">Voice/video calls bado hazijatekelezwa, kwa hiyo hakuna vitufe vya simu visivyofanya kazi.</p>
