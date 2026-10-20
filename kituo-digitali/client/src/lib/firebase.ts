@@ -177,13 +177,11 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
   });
   if (!existing.exists()) {
     await invokeWorker("claimRegistrationPhone", { phone, firstName, lastName, name: `${firstName} ${lastName}`.trim(), username: extra.username ?? current.username ?? user.uid.slice(0, 8) });
-    // Worker huunda profile na kuweka bonus kwa usalama; soma upya kabla ya kusawazisha taarifa ili tusifute tokeni hizo.
+    // Worker ndiye mmiliki wa uundaji wa profile na bonus. Usifanye setDoc ya pili kutoka browser,
+    // kwa sababu Firestore Rules haziruhusu browser kubadilisha salio la tokeni.
     existing = await getDoc(ref);
-    current = existing.data() ?? {};
-    // Tumia salio jipya kutoka kwa Worker; profile ya awali ilitengenezwa kabla ya kupata bonus.
-    profile.tokenBalance = typeof current.tokenBalance === "number" ? current.tokenBalance : 0;
-    profile.tokenBalanceNida = typeof current.tokenBalanceNida === "number" ? current.tokenBalanceNida : 0;
-    profile.tokenBalanceOther = typeof current.tokenBalanceOther === "number" ? current.tokenBalanceOther : profile.tokenBalance;
+    if (!existing.exists()) throw Object.assign(new Error("Profile haikuundwa baada ya usajili. Tafadhali jaribu tena."), { code: "profile/not-created" });
+    return ref;
   }
   await setDoc(ref, { ...profile, email: deleteField(), emailVerified: deleteField() }, { merge: true });
   return ref;
