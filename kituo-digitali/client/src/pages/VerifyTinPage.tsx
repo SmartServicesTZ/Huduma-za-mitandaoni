@@ -67,7 +67,7 @@ export default function VerifyTinPage() {
               type="text"
               maxLength={11}
               inputMode="numeric"
-              placeholder="123-456-789"
+              placeholder=""
               autoComplete="off"
               value={formattedTin}
               onChange={(event) => setTin(event.target.value)}
@@ -81,7 +81,7 @@ export default function VerifyTinPage() {
                 className="verify-tin-input"
                 id="verify-name-input"
                 type="text"
-                placeholder="FIRST NAME SECOND NAME SURNAME"
+                placeholder=""
                 autoComplete="off"
                 value={name}
                 onChange={(event) => {
@@ -98,7 +98,7 @@ export default function VerifyTinPage() {
                 id="verify-second-tin"
                 type="text"
                 readOnly
-                placeholder="123-456-789"
+                placeholder=""
                 value={formattedTin}
               />
             </div>
