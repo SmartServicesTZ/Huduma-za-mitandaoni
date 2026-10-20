@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import { triggerDownload } from "@/lib/downloadHistory";
 import { firebaseAuth, getPublicSiteSettings, onAuthStateChanged, subscribeToProfile } from "@/lib/firebase";
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 
@@ -259,14 +260,7 @@ export default function AirtelSmeContractPage() {
           outputBlob = new Blob([await pdf.save()], { type: "application/pdf" });
           extension = "pdf";
         }
-        const outputUrl = URL.createObjectURL(outputBlob);
-        const a = document.createElement("a");
-        a.href = outputUrl;
-        a.download = `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.setTimeout(() => URL.revokeObjectURL(outputUrl), 60_000);
+        triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase());
         const sizeKB = Math.round(outputBlob.size / 1024);
         setStatus(`✓ Mkataba umepakuliwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
       } finally {

@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { generateBusinessLicense, reserveBusinessLicenseNumber, subscribeToCollection } from "@/lib/firebase";
+import { triggerDownload } from "@/lib/downloadHistory";
 import locations from "@/data/tanzaniaLocations.json";
 import LicenseTemplatePreview from "./LicenseTemplatePreview";
 
@@ -206,14 +207,7 @@ export default function BusinessLicensePage() {
       }
 
       const blob = format === "pdf" ? files.pdfBlob : files.jpgBlob;
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `leseni-${files.licenseNumber || "biashara"}.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      triggerDownload(blob, `leseni-${files.licenseNumber || "biashara"}.${format}`, format.toUpperCase());
 
       if (issuedFiles) {
         toast.success(`Hati ya ${format.toUpperCase()} imepakuliwa tena bila kukata tokeni nyingine.`, { description: `Rejea: ${files.reference}` });

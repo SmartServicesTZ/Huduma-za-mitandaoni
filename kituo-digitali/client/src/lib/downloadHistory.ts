@@ -7,6 +7,17 @@ export type DownloadHistoryItem = {
   expiresAt: number;
 };
 
+declare global {
+  interface Window {
+    AndroidDownload?: {
+      beginFile: (name: string, mimeType: string) => boolean;
+      appendFileChunk: (base64Chunk: string) => void;
+      finishFile: () => void;
+      cancelFile?: () => void;
+    };
+  }
+}
+
 const STORAGE_KEY = "smartservicestz_download_history_v1";
 const TTL = 30 * 60 * 1000;
 
@@ -51,6 +62,26 @@ export const clearDownloadHistory = () => {
 
 export const downloadFromHistory = (item: DownloadHistoryItem) => {
   if (!item.dataUrl) return false;
+  const nativeDownload = typeof window !== "undefined" ? window.AndroidDownload : undefined;
+  if (nativeDownload) {
+    try {
+      const [meta, encoded] = item.dataUrl.split(",");
+      const binary = atob(encoded ?? "");
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      if (!nativeDownload.beginFile(item.name, meta.match(/data:([^;]+)/)?.[1] ?? "application/octet-stream")) throw new Error("Android Downloads haikupatikana.");
+      for (let offset = 0; offset < bytes.length; offset += 96 * 1024) {
+        let chunkBinary = "";
+        const chunk = bytes.subarray(offset, Math.min(offset + 96 * 1024, bytes.length));
+        for (let index = 0; index < chunk.length; index += 0x8000) chunkBinary += String.fromCharCode(...chunk.subarray(index, index + 0x8000));
+        nativeDownload.appendFileChunk(btoa(chunkBinary));
+      }
+      nativeDownload.finishFile();
+      return true;
+    } catch {
+      nativeDownload.cancelFile?.();
+    }
+  }
   const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
   if (installedApp && typeof navigator.share === "function") {
     try {
@@ -88,6 +119,24 @@ export const downloadFromHistory = (item: DownloadHistoryItem) => {
 /** Anzisha download kwa njia inayofanya kazi kwenye browser ya kawaida na app ya simu, kisha weka rekodi ya hati kwa dakika 30. */
 export const triggerDownload = (blob: Blob, name: string, type: string) => {
   recordDownload({ name, type });
+  const nativeDownload = typeof window !== "undefined" ? window.AndroidDownload : undefined;
+  if (nativeDownload) {
+    void blob.arrayBuffer().then((buffer) => {
+      const bytes = new Uint8Array(buffer);
+      if (!nativeDownload.beginFile(name, blob.type || "application/octet-stream")) throw new Error("Android Downloads haikupatikana.");
+      for (let offset = 0; offset < bytes.length; offset += 96 * 1024) {
+        let binary = "";
+        const chunk = bytes.subarray(offset, Math.min(offset + 96 * 1024, bytes.length));
+        for (let index = 0; index < chunk.length; index += 0x8000) binary += String.fromCharCode(...chunk.subarray(index, index + 0x8000));
+        nativeDownload.appendFileChunk(btoa(binary));
+      }
+      nativeDownload.finishFile();
+    }).catch(() => {
+      nativeDownload.cancelFile?.();
+      startBrowserDownload(blob, name);
+    });
+    return;
+  }
   const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
   // Katika app iliyosakinishwa, share sheet ya Android huruhusu mtumiaji kuhifadhi hati kwenye Files/Downloads.

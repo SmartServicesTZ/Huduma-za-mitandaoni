@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Image as ImageIcon, RotateCcw, ShieldCheck, Smartphone } from "lucide-react";
 import { getPublicSiteSettings } from "@/lib/firebase";
+import { triggerDownload } from "@/lib/downloadHistory";
 
 type NetworkKey = "airtel" | "vodacom" | "halotel" | "yas";
 type NetworkConfig = { name: string; template: string; logo: string; className: NetworkKey };
@@ -102,10 +103,9 @@ export default function AgentStickerPage() {
 
     const safeName = cleanName(agentName).replace(/\s+/g, "-").toLowerCase();
     const safeNumber = cleanNumber(agentNumber);
-    const link = document.createElement("a");
-    link.download = network + "-" + safeName + "-" + safeNumber + ".png";
-    link.href = canvas.toDataURL("image/png", 1);
-    link.click();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png", 1));
+    if (!blob) throw new Error("Sticker haikuweza kutengenezwa.");
+    triggerDownload(blob, network + "-" + safeName + "-" + safeNumber + ".png", "PNG");
   }
 
   function reset() {
