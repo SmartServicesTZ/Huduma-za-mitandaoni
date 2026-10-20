@@ -944,34 +944,52 @@ export const claimRegistrationPhone = callable(async (request) => {
   const phone = normalizeTanzaniaPhone(data.phone);
   if (!phone) throw new ApiError("invalid-argument", "Namba ya simu ya Tanzania si sahihi.");
   if (request.auth?.email !== phoneAuthAlias(phone)) throw new ApiError("permission-denied", "Namba ya simu haiendani na akaunti hii.");
+  const firstName = typeof data.firstName === "string" ? data.firstName.trim().slice(0, 80) : "";
+  const lastName = typeof data.lastName === "string" ? data.lastName.trim().slice(0, 80) : "";
+  const name = [firstName, lastName].filter(Boolean).join(" ").slice(0, 160);
+  const username = typeof data.username === "string" && data.username.trim() ? data.username.trim().slice(0, 80) : uid.slice(0, 8);
+  if (!firstName) throw new ApiError("invalid-argument", "Jina la kwanza linahitajika wakati wa usajili.");
 
   const registryRef = db.collection("phoneRegistry").doc(phone);
+  const profileRef = db.collection("users").doc(uid);
+  const settingsRef = db.collection("siteSettings").doc("public");
   await db.runTransaction(async (transaction) => {
+    // Soma nyaraka zote kabla ya kuanza kuandika transaction.
     const registry = await transaction.get(registryRef);
     const profiles = await transaction.get(db.collection("users").where("phone", "==", phone).limit(2));
+    const profileSnap = await transaction.get(profileRef);
+    const settingsSnap = await transaction.get(settingsRef);
     if (profiles.docs.some((profile) => profile.id !== uid)) {
       throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
     }
     if (registry.exists && registry.data()?.uid !== uid) {
       throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
     }
-    if (!registry.exists) {
-      transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });
-      const profileRef = db.collection("users").doc(uid);
-      const profileSnap = await transaction.get(profileRef);
-      if (profileSnap.exists) {
-        const settingsSnap = await transaction.get(db.collection("siteSettings").doc("public"));
-        const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};
-        const registrationBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.registrationBonus ?? 15))));
-        if (registrationBonus > 0) {
-          const profile = profileSnap.data() as Profile;
-          const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
-          const after = before + registrationBonus;
-          transaction.update(profileRef, { tokenBalanceOther: after, tokenBalance: after, tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });
-          const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);
-          transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: registrationBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
-        }
-      }
+
+    const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};
+    const registrationBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.registrationBonus ?? 15))));
+    const existingProfile = profileSnap.exists ? profileSnap.data() as Profile : null;
+    const currentOther = Number(existingProfile?.tokenBalanceOther ?? existingProfile?.tokenBalance ?? 0);
+    const shouldGrantBonus = registrationBonus > 0 && existingProfile?.tokenBonusRegistrationGranted !== true;
+    const bonus = shouldGrantBonus ? registrationBonus : 0;
+
+    if (!registry.exists) transaction.create(registryRef, { uid, phone, createdAt: FieldValue.serverTimestamp() });
+
+    if (!profileSnap.exists) {
+      transaction.create(profileRef, {
+        uid, firstName, lastName, phone, name: name || "Mwanachama", username,
+        tokenBalance: bonus, tokenBalanceOther: bonus, tokenBalanceNida: 0,
+        ...(bonus > 0 ? { tokenBonusRegistrationGranted: true } : {}),
+        verificationStatus: "pending", role: "user", permissions: {},
+        createdAt: FieldValue.serverTimestamp(), language: "sw", updatedAt: FieldValue.serverTimestamp(),
+      });
+    } else if (shouldGrantBonus) {
+      transaction.update(profileRef, { tokenBalanceOther: currentOther + bonus, tokenBalance: currentOther + bonus, tokenBonusRegistrationGranted: true, updatedAt: FieldValue.serverTimestamp() });
+    }
+
+    if (bonus > 0) {
+      const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);
+      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: bonus, balanceBefore: currentOther, balanceAfter: currentOther + bonus, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
     }
   });
   return { ok: true };
