@@ -340,8 +340,8 @@ function HistoryPage() {
   }, []);
 
   const timeLeft = (expiresAt: number) => {
-    const hours = Math.max(0, Math.ceil((expiresAt - Date.now()) / (60 * 60 * 1000)));
-    return hours <= 1 ? "Inaisha ndani ya saa 1" : `Inaisha ndani ya saa ${hours}`;
+    const minutes = Math.max(0, Math.ceil((expiresAt - Date.now()) / (60 * 1000)));
+    return minutes <= 1 ? "Inaisha ndani ya dakika 1" : `Inaisha ndani ya dakika ${minutes}`;
   };
 
   return <main className="portal-main">
@@ -351,11 +351,11 @@ function HistoryPage() {
 
     <section className="account-panel" style={{marginBottom:18}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-        <div><span className="overline">DOWNLOADS</span><h2 style={{margin:"4px 0"}}>VITU NILIVYOPAKUA</h2><p style={{margin:0,color:"#64748b"}}>Rekodi huhifadhiwa kwa saa 24 tu, kisha huondolewa moja kwa moja.</p></div>
+        <div><span className="overline">DOWNLOADS</span><h2 style={{margin:"4px 0"}}>VITU NILIVYOPAKUA</h2><p style={{margin:0,color:"#64748b"}}>Rekodi za vipakuliwa huonekana kwa dakika 30 tu, kisha huondolewa moja kwa moja.</p></div>
         {downloads.length > 0 && <button type="button" className="button button--small" onClick={() => { clearDownloadHistory(); refreshDownloads(); }}>Futa zote</button>}
       </div>
       <div style={{display:"grid",gap:10,marginTop:16}}>
-        {downloads.length === 0 ? <div className="notice notice--info"><FileBadge size={17}/><span>Hakuna kitu ulichopakua ndani ya saa 24 zilizopita.</span></div> :
+        {downloads.length === 0 ? <div className="notice notice--info"><FileBadge size={17}/><span>Hakuna hati iliyopakuliwa ndani ya dakika 30 zilizopita.</span></div> :
           downloads.map((item) => <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"12px 14px",border:"1px solid #e2e8f0",borderRadius:12,background:"#f8fafc"}}>
             <div style={{minWidth:0}}><strong style={{display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</strong><small style={{color:"#64748b"}}>{item.type} • {item.dataUrl ? (() => { const bytes = Math.max(0, Math.floor((item.dataUrl!.length - (item.dataUrl!.indexOf(",") + 1)) * 3 / 4)); return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`; })() : "Ukubwa haujulikani"} • {new Date(item.downloadedAt).toLocaleString("sw-TZ")} • {timeLeft(item.expiresAt)}</small></div>
             <div style={{display:"flex",gap:6,flexShrink:0}}>
