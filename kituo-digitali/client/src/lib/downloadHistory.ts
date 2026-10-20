@@ -51,9 +51,33 @@ export const clearDownloadHistory = () => {
 
 export const downloadFromHistory = (item: DownloadHistoryItem) => {
   if (!item.dataUrl) return false;
+  const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  if (installedApp && typeof navigator.share === "function") {
+    try {
+      const [meta, encoded] = item.dataUrl.split(",");
+      const mime = meta.match(/data:([^;]+)/)?.[1] ?? "application/octet-stream";
+      const binary = atob(encoded ?? "");
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const file = new File([bytes], item.name, { type: mime });
+      if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
+        void navigator.share({ files: [file], title: item.name }).catch(() => {
+          const a = document.createElement("a");
+          a.href = item.dataUrl!;
+          a.download = item.name;
+          a.rel = "noopener";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        });
+        return true;
+      }
+    } catch { /* tumia njia ya kawaida ikiwa share haipatikani */ }
+  }
   const a = document.createElement("a");
   a.href = item.dataUrl;
   a.download = item.name;
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -63,18 +87,26 @@ export const downloadFromHistory = (item: DownloadHistoryItem) => {
 
 /** Anzisha download kwa njia inayofanya kazi kwenye browser ya kawaida na app ya simu, kisha weka rekodi ya hati kwa dakika 30. */
 export const triggerDownload = (blob: Blob, name: string, type: string) => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  link.rel = "noopener";
-  link.style.display = "none";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   recordDownload({ name, type });
-  // Hifadhi faili ndogo kwa ajili ya kupakua tena kutoka Historia.
+  const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+  // Katika app iliyosakinishwa, share sheet ya Android huruhusu mtumiaji kuhifadhi hati kwenye Files/Downloads.
+  if (installedApp && typeof navigator.share === "function") {
+    try {
+      const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
+      if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
+        void navigator.share({ files: [file], title: name }).catch(() => startBrowserDownload(blob, name));
+      } else {
+        startBrowserDownload(blob, name);
+      }
+    } catch {
+      startBrowserDownload(blob, name);
+    }
+  } else {
+    startBrowserDownload(blob, name);
+  }
+
+  // Hifadhi hati ndogo ili iweze kupakuliwa tena kutoka Historia kwa dakika 30.
   if (blob.size > 0 && blob.size <= 600 * 1024) {
     void blob.arrayBuffer().then((buffer) => {
       const bytes = new Uint8Array(buffer);
@@ -90,4 +122,17 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
       }
     }).catch(() => undefined);
   }
+};
+
+const startBrowserDownload = (blob: Blob, name: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.rel = "noopener";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
