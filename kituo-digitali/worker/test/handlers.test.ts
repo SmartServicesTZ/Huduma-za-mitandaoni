@@ -42,6 +42,7 @@ async function withMockedGoogleFetch(
 ) {
   const originalFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string; body: Record<string, any> }> = [];
+  let profileCreated = false;
   globalThis.fetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
     const url = input instanceof URL ? input.href : typeof input === "string" ? input : input.url;
     const method = init.method ?? "GET";
@@ -52,15 +53,22 @@ async function withMockedGoogleFetch(
     if (url.includes(":beginTransaction")) return jsonResponse({ transaction: "test-transaction" });
     if (url.includes(":rollback")) return jsonResponse({});
     if (url.includes(":runQuery")) return jsonResponse([]);
-    if (url.includes(":commit")) return jsonResponse({ writeResults: [{}] });
+    if (url.includes(":commit")) {
+      if (body.writes?.some((write: any) => String(write.update?.name ?? "").endsWith(`/users/${uid}`))) profileCreated = true;
+      return jsonResponse({ writeResults: [{}] });
+    }
     if (url.includes("/phoneRegistry/")) {
       return registryUid
         ? jsonResponse(firestoreDocument(`phoneRegistry/${phone}`, { uid: registryUid, phone }))
         : jsonResponse({ error: { status: "NOT_FOUND", message: "not found" } }, 404);
     }
+    if (url.includes("/siteSettings/public") || url.includes("/tokenTransactions/registration_")) {
+      return jsonResponse({ error: { status: "NOT_FOUND", message: "not found" } }, 404);
+    }
     const userId = /\/documents\/users\/([^?]+)/.exec(url)?.[1];
     if (userId) {
       const userProfile = userId === uid ? profile : extraProfiles[userId];
+      if (userId === uid && profileCreated) return jsonResponse(firestoreDocument(`users/${userId}`, { uid, phone, role: "user", tokenBalance: 15 }));
       if (!userProfile) return jsonResponse({ error: { status: "NOT_FOUND", message: "not found" } }, 404);
       return jsonResponse(firestoreDocument(`users/${userId}`, {
         phone: userProfile.phone ?? phone,
@@ -87,9 +95,10 @@ test("claimRegistrationPhone creates one canonical server-owned phone reservatio
   await withMockedGoogleFetch(null, null, async (calls) => {
     const result = await withWorkerEnv(env, async () => claimRegistrationPhone.handler({
       auth: { uid, email: `${phone}@login.huduma-za-mtandao.local` },
-      data: { phone: "0712 345 678" },
+      data: { phone: "0712 345 678", firstName: "Mwanachama", lastName: "Test" },
     }));
-    assert.deepEqual(result, { ok: true });
+    assert.equal(result.ok, true);
+    assert.equal(result.profileCreated, true);
     const commit = calls.find((call) => call.url.includes(":commit"));
     assert.ok(commit);
     assert.equal(commit.body.writes[0].currentDocument.exists, false);
@@ -102,7 +111,7 @@ test("claimRegistrationPhone refuses another account's existing phone reservatio
   const env = environment();
   await withMockedGoogleFetch(null, "different-user", async (calls) => {
     await assert.rejects(
-      withWorkerEnv(env, async () => claimRegistrationPhone.handler({ auth: { uid, email: `${phone}@login.huduma-za-mtandao.local` }, data: { phone } })),
+      withWorkerEnv(env, async () => claimRegistrationPhone.handler({ auth: { uid, email: `${phone}@login.huduma-za-mtandao.local` }, data: { phone, firstName: "Mwanachama" } })),
       (error: { code?: string; message?: string }) => error.code === "already-exists" && error.message === "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.",
     );
     assert.equal(calls.some((call) => call.url.includes(":commit")), false);
