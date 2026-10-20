@@ -26,6 +26,11 @@ import {
   seedServiceCatalog,
   setAccountStatus,
   setHomepageServiceOrder,
+  submitNidaRequest,
+  listMyNidaRequests,
+  listNidaRequests,
+  setNidaRequestStatus,
+  completeNidaRequest,
   setLipaApplicationStatus,
   setServiceApplicationStatus,
   setServiceLock,
@@ -47,6 +52,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, verifyUser,
+  submitNidaRequest, listMyNidaRequests, listNidaRequests, setNidaRequestStatus, completeNidaRequest,
 };
 const webhook: HttpRoute = fimipayWebhook;
 function paymentFlowsEnabled(env: Env) {
