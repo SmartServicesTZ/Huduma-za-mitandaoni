@@ -111,6 +111,38 @@ export default function AccountPage() {
 <div className="settings-action-grid"><Link href="/history">Historia ya shughuli</Link><Link href="/chat">Chat na Magroup</Link><button type="button" onClick={() => void logout()}>Ondoka kwenye akaunti</button></div>
 <div className="settings-shortcuts"><Link href="/chat">💬 Chat & Magroup</Link><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
 <p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
+        <section className="profile-side-card support-center-card">
+          <div className="profile-side-title"><span className="profile-icon"><Bell size={18}/></span><div><h3>Msaada na Mawasiliano</h3><p>Jaribu hatua hizi kabla ya kuwasiliana na msimamizi.</p></div></div>
+          <div style={{display:"grid",gap:9,marginTop:12}}>
+            <a className="profile-side-link" href="https://wa.me/255796621229?text=Habari%20SmartServicesTZ%2C%20nahitaji%20msaada." target="_blank" rel="noreferrer">WhatsApp: 0796 621 229</a>
+            <a className="profile-side-link" href="tel:+255723232323">Piga simu: 0723 232 323</a>
+            <a className="profile-side-link" href="sms:+255723232323">Tuma SMS: 0723 232 323</a>
+          </div>
+          <div className="settings-divider">Maswali ya mara kwa mara</div>
+          <div style={{display:"grid",gap:10}}>
+            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
+              <summary style={{fontWeight:700,cursor:"pointer"}}>Nikipakua hati sioni kwenye simu</summary>
+              <p style={{margin:"9px 0 0"}}>Fungua Historia ndani ya SmartServicesTZ na uangalie sehemu ya “Vitu nilivyopakua”. Rekodi hukaa dakika 30. Kisha angalia Files au My Files &gt; Downloads kwenye simu. Kama haipo, jaribu kupakua tena kupitia Chrome na ruhusu upakuaji ukitakiwa.</p>
+            </details>
+            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
+              <summary style={{fontWeight:700,cursor:"pointer"}}>Nimeshindwa kuingia au nimesahau password</summary>
+              <p style={{margin:"9px 0 0"}}>Kagua namba ya simu na password, hakikisha intaneti inafanya kazi, kisha jaribu tena. Usitengeneze akaunti ya pili ikiwa namba yako tayari imesajiliwa. Ikiendelea kukataa, wasiliana na msaada.</p>
+            </details>
+            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
+              <summary style={{fontWeight:700,cursor:"pointer"}}>Huduma haifunguki au ukurasa ni mweupe</summary>
+              <p style={{margin:"9px 0 0"}}>Angalia intaneti, funga kisha fungua app tena, na ujaribu ku-refresh. Ikiwa bado, fungua tovuti kupitia Chrome. Ukiwasiliana na msaada, tuma jina la huduma na picha ya hitilafu bila kutuma password.</p>
+            </details>
+            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
+              <summary style={{fontWeight:700,cursor:"pointer"}}>TIN au taarifa ninazojaza hazionekani</summary>
+              <p style={{margin:"9px 0 0"}}>Jaza sehemu zinazohitajika mwenyewe na uhakikishe hujaacha nafasi tupu. Tumia taarifa sahihi za mhusika; mfano unaoonekana kwenye sehemu ya kuandika ni mwongozo tu. Usitumie taarifa za mtu mwingine.</p>
+            </details>
+            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
+              <summary style={{fontWeight:700,cursor:"pointer"}}>Tokeni zimekatwa au huduma imekwama</summary>
+              <p style={{margin:"9px 0 0"}}>Fungua Historia uangalie rekodi ya tokeni, usirudie malipo mara moja. Hifadhi rejea ya muamala na jina la huduma, kisha tuma kwa msaada ili ikaguliwe.</p>
+            </details>
+          </div>
+          <p className="profile-muted" style={{marginTop:12}}>Ikiwa hatua hizi hazitatui changamoto, wasiliana nasi kupitia njia iliyo juu na ueleze hatua uliyofikia pamoja na ujumbe wa hitilafu.</p>
+        </section>
         <button className="profile-logout-button" type="button" onClick={() => void logout()}><LogOut size={16}/> Toka kwenye akaunti</button>
       </aside>
     </div>
