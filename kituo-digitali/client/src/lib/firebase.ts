@@ -150,8 +150,8 @@ export function sanitizeProfileData(data: DocumentData): FirebaseProfile {
 
 export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfile> = {}) {
   const ref = doc(firestore, "users", user.uid);
-  const existing = await getDoc(ref);
-  const current = existing.data() ?? {};
+  let existing = await getDoc(ref);
+  let current = existing.data() ?? {};
   const firstName = extra.firstName ?? String(current.firstName ?? user.displayName?.split(" ")[0] ?? "");
   const lastName = extra.lastName ?? String(current.lastName ?? user.displayName?.split(" ").slice(1).join(" ") ?? "");
   const phone = normalizeTanzaniaPhone(extra.phone ?? current.phone ?? phoneFromLegacyAlias(user.email) ?? "") ?? "";
@@ -175,7 +175,12 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     profileImageUrl: extra.profileImageUrl ?? current.profileImageUrl,
     updatedAt: serverTimestamp(),
   });
-  if (!existing.exists()) await invokeWorker("claimRegistrationPhone", { phone, firstName, lastName, name: `${firstName} ${lastName}`.trim(), username: extra.username ?? current.username ?? user.uid.slice(0, 8) });
+  if (!existing.exists()) {
+    await invokeWorker("claimRegistrationPhone", { phone, firstName, lastName, name: `${firstName} ${lastName}`.trim(), username: extra.username ?? current.username ?? user.uid.slice(0, 8) });
+    // Worker huunda profile na kuweka bonus kwa usalama; soma upya kabla ya kusawazisha taarifa ili tusifute tokeni hizo.
+    existing = await getDoc(ref);
+    current = existing.data() ?? {};
+  }
   await setDoc(ref, { ...profile, email: deleteField(), emailVerified: deleteField() }, { merge: true });
   return ref;
 }
