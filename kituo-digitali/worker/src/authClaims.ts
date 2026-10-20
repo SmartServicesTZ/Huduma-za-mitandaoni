@@ -1,15 +1,13 @@
-import { normalizeTanzaniaPhone } from "./fimipayCore.js";
-
 export type AuthRole = "user" | "admin" | "moderator" | "support" | "super_admin";
 
 export function resolveAuthRole(
   profileRole: AuthRole | undefined,
-  profilePhone: unknown,
-  configuredSuperAdminPhone: unknown,
+  authenticatedUid: unknown,
+  configuredSuperAdminUid: unknown,
 ) {
-  const configuredPhone = normalizeTanzaniaPhone(configuredSuperAdminPhone);
-  const normalizedProfilePhone = normalizeTanzaniaPhone(profilePhone);
-  const isConfiguredSuperAdmin = Boolean(configuredPhone && normalizedProfilePhone === configuredPhone);
+  const configuredUid = typeof configuredSuperAdminUid === "string" ? configuredSuperAdminUid.trim() : "";
+  const uid = typeof authenticatedUid === "string" ? authenticatedUid.trim() : "";
+  const isConfiguredSuperAdmin = Boolean(configuredUid && uid && uid === configuredUid);
   const role: AuthRole = isConfiguredSuperAdmin
     ? "super_admin"
     : profileRole === "super_admin"
