@@ -734,8 +734,15 @@ export const listNidaRequests = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  const snapshot = await db.collection("nidaRequests").orderBy("submittedAt", "desc").limit(200).get();
-  return { requests: snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) };
+  // Firestore REST adapter supports equality filters and limits, but not orderBy().
+  // Fetch requests first, then sort newest-first in the Worker to avoid the admin list failing.
+  const snapshot = await db.collection("nidaRequests").limit(200).get();
+  const requests = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  requests.sort((a, b) => {
+    const toMillis = (value: unknown) => value instanceof Date ? value.getTime() : typeof value === "string" ? Date.parse(value) || 0 : value && typeof value === "object" && "seconds" in value ? Number((value as { seconds: unknown }).seconds) * 1000 : 0;
+    return toMillis(b.submittedAt) - toMillis(a.submittedAt);
+  });
+  return { requests };
 });
 
 export const setNidaRequestStatus = callable(async (request) => {
