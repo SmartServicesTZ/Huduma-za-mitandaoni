@@ -180,6 +180,10 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     // Worker huunda profile na kuweka bonus kwa usalama; soma upya kabla ya kusawazisha taarifa ili tusifute tokeni hizo.
     existing = await getDoc(ref);
     current = existing.data() ?? {};
+    // Tumia salio jipya kutoka kwa Worker; profile ya awali ilitengenezwa kabla ya kupata bonus.
+    profile.tokenBalance = typeof current.tokenBalance === "number" ? current.tokenBalance : 0;
+    profile.tokenBalanceNida = typeof current.tokenBalanceNida === "number" ? current.tokenBalanceNida : 0;
+    profile.tokenBalanceOther = typeof current.tokenBalanceOther === "number" ? current.tokenBalanceOther : profile.tokenBalance;
   }
   await setDoc(ref, { ...profile, email: deleteField(), emailVerified: deleteField() }, { merge: true });
   return ref;
