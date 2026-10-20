@@ -174,7 +174,7 @@ export default function BusinessLicensePage() {
     if (!form.region) { toast.error("Chagua Mkoa."); return false; }
     if (!form.ward.trim()) { toast.error("Tafadhali jaza Kata."); return false; }
     if (!form.street.trim()) { toast.error("Tafadhali jaza Mtaa / Kijiji."); return false; }
-    if (!Number.isFinite(form.licenseFee) || form.licenseFee < 0) { toast.error("Weka kiasi sahihi cha ada ya leseni."); return false; }
+    if (!Number.isFinite(form.licenseFee) || form.licenseFee <= 0) { toast.error("Ada ya leseni lazima iwe zaidi ya sifuri."); return false; }
     return true;
   };
 
@@ -307,7 +307,7 @@ export default function BusinessLicensePage() {
               <input inputMode="numeric" maxLength={11} value={form.tin} onChange={(event) => { const digits = event.target.value.replace(/\D/g, "").slice(0, 9); set("tin", digits.replace(/(\d{3})(?=\d)/g, "$1-")); }} placeholder="Weka TIN namba" aria-describedby="tin-format-help" />
               <small id="tin-format-help">Format: 123-456-789</small>
             </Field>
-            <Field label="Malipo ya Leseni" english="License Fee Paid" required><input type="number" min="0" step="0.01" value={form.licenseFee} onChange={(event) => set("licenseFee", Number(event.target.value))} /></Field>
+            <Field label="Malipo ya Leseni" english="License Fee Paid" required><input type="number" min="1" step="1" value={form.licenseFee} onChange={(event) => set("licenseFee", Number(event.target.value))} /></Field>
           </div>
           <div className="license-auto-fields">
             <span className="license-number-field">B.L. NO. <b>{licenseNumber || (numberError ? "Haikupatikana" : isAuthenticated ? "Inatolewa na mfumo..." : "Itatolewa baada ya kuingia")}</b><button type="button" className="license-number-refresh" disabled={!isAuthenticated || serviceLocked || downloadBusy || submitted || numberPending || (!licenseNumber && !numberError)} onClick={refreshLicenseNumber} title="Badilisha tarakimu tano za mwisho za namba ya leseni"><RefreshCw size={13} /> {numberPending ? "Inatolewa..." : numberError ? "Jaribu tena" : "Badilisha namba"}</button><small>{submitted ? "READ ONLY — namba imefungwa kwenye leseni iliyotengenezwa" : "READ ONLY — badilisha kabla ya kutengeneza hati; hakuna tokeni inayokatwa kwa refresh"}</small></span>
