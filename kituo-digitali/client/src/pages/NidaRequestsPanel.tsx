@@ -43,10 +43,11 @@ export default function NidaRequestsPanel() {
   const start = async (item: NidaRequest) => {
     setWorking(item.id);
     try {
+      await navigator.clipboard.writeText(item.phone);
       await setNidaRequestStatus(item.requestId || item.id, "PROCESSING");
-      toast.success("Hali imebadilika kuwa INAFANYIWA KAZI.");
+      toast.success("Namba ya simu imenakiliwa; mwombaji ameambiwa ombi linafanyiwa kazi.");
       await refresh(true);
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Imeshindikana kubadilisha hali."); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Imeshindikana kunakili simu au kubadilisha hali."); }
     finally { setWorking(null); }
   };
   const send = async (item: NidaRequest) => {
@@ -89,7 +90,7 @@ export default function NidaRequestsPanel() {
         {item.status === "APPROVED" && item.nidaNumber && <div className="nida-admin-result"><span>Namba iliyotumwa</span><code>{item.nidaNumber}</code></div>}
         {item.status === "REJECTED" && item.rejectionReason && <p className="nida-admin-reason">Sababu: {item.rejectionReason}</p>}
         {!["APPROVED", "REJECTED"].includes(item.status) && <div className="nida-admin-actions">
-          {item.status === "PENDING" && <button type="button" className="button button--small" disabled={working === item.id} onClick={() => void start(item)}><ShieldCheck size={15}/> {working === item.id ? "Inahifadhi..." : "Anza kushughulikia"}</button>}
+          {item.status === "PENDING" && <button type="button" className="button button--small" disabled={working === item.id} onClick={() => void start(item)}><ShieldCheck size={15}/> {working === item.id ? "Inahifadhi..." : "Nakili simu + anza kazi"}</button>}
           <label className="nida-admin-number"><span>Ingiza namba ya NIDA iliyopatikana</span><input inputMode="numeric" autoComplete="off" value={numbers[item.id] ?? ""} onChange={(e) => setNumbers((old) => ({ ...old, [item.id]: e.target.value.replace(/[^0-9-]/g, "").slice(0, 23) }))} placeholder="XXXXXXXX-XXXXX-XXXXX-XX"/></label>
           <button type="button" className="button button--green button--small" disabled={working === item.id} onClick={() => void send(item)}><Send size={15}/> Tuma NIDA</button>
           <label className="nida-admin-number"><span>Sababu (ikiwa ombi haliwezi kukamilika)</span><input value={reasons[item.id] ?? ""} onChange={(e) => setReasons((old) => ({ ...old, [item.id]: e.target.value }))} placeholder="Sababu ya kukataa ombi"/></label>
