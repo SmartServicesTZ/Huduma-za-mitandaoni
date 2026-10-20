@@ -1,7 +1,8 @@
 import QRCode from "qrcode";
 
 export const TIN_CANVAS_WIDTH = 1012;
-export const TIN_CANVAS_HEIGHT = Math.round(TIN_CANVAS_WIDTH * 3509 / 2481);
+const TIN_CONTENT_HEIGHT = 3189;
+export const TIN_CANVAS_HEIGHT = Math.round(TIN_CANVAS_WIDTH * TIN_CONTENT_HEIGHT / 2481);
 const TIN_Y_SCALE = TIN_CANVAS_HEIGHT / 1300;
 export const BACKGROUND_ASSET = "tin-template.png";
 
@@ -126,7 +127,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   if (BACKGROUND_ASSET) {
     try {
       const background = await loadImage(assetUrl(BACKGROUND_ASSET));
-      ctx.drawImage(background, 0, 0, TIN_CANVAS_WIDTH, TIN_CANVAS_HEIGHT);
+      ctx.drawImage(background, 0, 0, 2481, TIN_CONTENT_HEIGHT, 0, 0, TIN_CANVAS_WIDTH, TIN_CANVAS_HEIGHT);
     } catch {
       drawDefaultBackground(ctx);
     }
