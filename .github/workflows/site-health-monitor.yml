@@ -84,18 +84,15 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const title = "Website health alert: SmartServicesTZ may be down";
-            const { owner, repo } = context.repo;
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner, repo, state: "open", per_page: 100
-            });
-            const existing = issues.find(i => i.title === title && !i.pull_request);
-            if (existing) {
-              await github.rest.issues.createComment({
-                owner, repo, issue_number: existing.number,
-                body: "The website health check has recovered. Homepage response and expected content were verified at " + new Date().toISOString() + " (UTC)."
-              });
-              await github.rest.issues.update({
-                owner, repo, issue_number: existing.number, state: "closed"
-              });
+            try {
+              const title = "Website health alert: SmartServicesTZ may be down";
+              const { owner, repo } = context.repo;
+              const { data: issues } = await github.rest.issues.listForRepo({ owner, repo, state: "open", per_page: 100 });
+              const existing = issues.find(i => i.title === title && !i.pull_request);
+              if (existing) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: "The website health check has recovered. Homepage response and expected content were verified at " + new Date().toISOString() + " (UTC)." });
+                await github.rest.issues.update({ owner, repo, issue_number: existing.number, state: "closed" });
+              }
+            } catch (error) {
+              core.warning("The website check passed, but the GitHub recovery issue could not be updated: " + String(error));
             }
