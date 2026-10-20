@@ -1,7 +1,8 @@
 import QRCode from "qrcode";
 
 export const TIN_CANVAS_WIDTH = 1012;
-export const TIN_CANVAS_HEIGHT = 1300;
+export const TIN_CANVAS_HEIGHT = Math.round(TIN_CANVAS_WIDTH * 3509 / 2481);
+const TIN_Y_SCALE = TIN_CANVAS_HEIGHT / 1300;
 export const BACKGROUND_ASSET = "tin-template.png";
 
 export type TinCertificateForm = {
@@ -133,7 +134,10 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
     drawDefaultBackground(ctx);
   }
 
-  const pos = (key: keyof typeof TIN_TEMPLATE) => ({ ...TIN_TEMPLATE[key], ...(layout?.[key] ?? {}) });
+  const pos = (key: keyof typeof TIN_TEMPLATE) => {
+    const base = { ...TIN_TEMPLATE[key], ...(layout?.[key] ?? {}) };
+    return { ...base, y: base.y * TIN_Y_SCALE, fontSize: base.fontSize * TIN_Y_SCALE };
+  };
 
   text(ctx, pos("taxpayer"), form.name.toUpperCase());
   text(ctx, pos("tinValue"), form.tin);
@@ -146,7 +150,8 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   if (form.tin) {
     const qr = await QRCode.toDataURL(JSON.stringify({ tin: form.tin, name: form.name, date: form.effectDate }), { width: 240, margin: 1, errorCorrectionLevel: "M" });
     const qrImage = await loadImage(qr);
-    ctx.drawImage(qrImage, 720, 110, 90, 90);
+    const qrSize = Math.round(90 * TIN_Y_SCALE);
+    ctx.drawImage(qrImage, 720, Math.round(110 * TIN_Y_SCALE), qrSize, qrSize);
   }
 
   text(ctx, pos("commissioner"), form.commissioner);
