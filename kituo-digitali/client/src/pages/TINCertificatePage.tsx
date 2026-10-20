@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { renderTinCertificateCanvas, type TinCertificateForm } from "@/lib/tinCertificateCanvas";
 import { PDFDocument } from "pdf-lib";
+import { triggerDownload } from "@/lib/downloadHistory";
 
 type FieldProps = { label: string; english?: string; children: React.ReactNode };
 
@@ -15,7 +16,7 @@ function Field({ label, english, children }: FieldProps) {
 }
 
 export default function TINCertificatePage() {
-  const [form, setForm] = useState<TinCertificateForm>({ name:"JUMA ALLY MWAKALONGA", tin:"123-456-789", effectDate:"2024-12-01", traLocation:"DAR ES SALAAM", taxOffice:"KINONDONI", physicalLocation:"KIJITONYAMA", streetArea:"MWENGE / KIJITONYAMA", commissioner:"Alfred T. Mregi" });
+  const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:"", traLocation:"", taxOffice:"", physicalLocation:"", streetArea:"", commissioner:"" });
   const [busy, setBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -56,11 +57,9 @@ export default function TINCertificatePage() {
     setBusy(true);
     try {
       const cropped = await prepareDownloadCanvas();
-      const link = document.createElement("a");
-      link.download = "tin-certificate.png";
-      link.href = cropped.toDataURL("image/png");
-      link.click();
-      toast.success("PNG imepakuliwa.");
+      const blob = await new Promise<Blob>((resolve, reject) => cropped.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kutengeneza PNG.")), "image/png"));
+      triggerDownload(blob, "tin-certificate.png", "PNG");
+      toast.success("PNG imeandaliwa kupakuliwa. Angalia Downloads au Historia ndani ya dakika 30.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PNG.");
     } finally {
@@ -82,13 +81,8 @@ export default function TINCertificatePage() {
       const pdfBytes = new Uint8Array(bytes.byteLength);
       pdfBytes.set(bytes);
       const blob = new Blob([pdfBytes.buffer], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.download = "tin-certificate.pdf";
-      link.href = url;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast.success("PDF imepakuliwa.");
+      triggerDownload(blob, "tin-certificate.pdf", "PDF");
+      toast.success("PDF imeandaliwa kupakuliwa. Angalia Downloads au Historia ndani ya dakika 30.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PDF.");
     } finally {
