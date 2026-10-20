@@ -391,6 +391,51 @@ export async function adminListServices() {
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }
 
+export type WebsiteHealthReport = {
+  id: string;
+  kind: "javascript" | "promise" | "blank-page" | "firebase";
+  message: string;
+  source?: string;
+  stack?: string;
+  pathname?: string;
+  href?: string;
+  userAgent?: string;
+  reporterUid?: string;
+  status: "new" | "ongoing" | "resolved";
+  createdAt?: string | null;
+  resolvedAt?: string | null;
+  resolutionNote?: string;
+};
+
+export async function recordWebsiteHealthReport(input: { kind: WebsiteHealthReport["kind"]; message: string; source?: string; stack?: string }) {
+  const current = firebaseAuth.currentUser;
+  if (!current) return null;
+  return addDoc(collection(firestore, "websiteHealthReports"), {
+    kind: input.kind,
+    message: input.message.slice(0, 1200),
+    source: input.source?.slice(0, 300) ?? "",
+    stack: input.stack?.slice(0, 1600) ?? "",
+    pathname: window.location.pathname.slice(0, 300),
+    href: window.location.href.slice(0, 500),
+    userAgent: navigator.userAgent.slice(0, 500),
+    reporterUid: current.uid,
+    status: "new",
+    createdAt: serverTimestamp(),
+  });
+}
+
+export function subscribeAdminWebsiteHealthReports(callback: (rows: WebsiteHealthReport[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(collection(firestore, "websiteHealthReports"), (snapshot) => {
+    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt), resolvedAt: timestampValue(item.data().resolvedAt) } as WebsiteHealthReport));
+    rows.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+    callback(rows);
+  }, onError);
+}
+
+export async function resolveWebsiteHealthReport(id: string, note = "Imekaguliwa na kutatuliwa na admin.") {
+  await updateDoc(doc(firestore, "websiteHealthReports", id), { status: "resolved", resolutionNote: note.slice(0, 500), resolvedAt: serverTimestamp(), updatedAt: serverTimestamp() });
+}
+
 export async function adminListTransactions() {
   const snapshot = await getDocs(collection(firestore, "tokenTransactions"));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));

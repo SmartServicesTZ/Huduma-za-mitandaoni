@@ -337,6 +337,22 @@ service cloud.firestore {
       allow read: if accountMayRead() && (isAdmin() || resource.data.reporterId == request.auth.uid);
       allow update, delete: if false;
     }
+    match /websiteHealthReports/{id} {
+      allow create: if accountMayRead()
+        && request.resource.data.keys().hasOnly(['kind', 'message', 'source', 'stack', 'pathname', 'href', 'userAgent', 'reporterUid', 'status', 'createdAt'])
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.kind in ['javascript', 'promise', 'blank-page', 'firebase']
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 1200
+        && request.resource.data.status == 'new'
+        && request.resource.data.createdAt == request.time;
+      allow read: if canViewAuditLogs() || isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt', 'resolutionNote', 'updatedAt'])
+        && request.resource.data.status in ['new', 'ongoing', 'resolved'];
+      allow delete: if false;
+    }
     match /adminActions/{id} {
       allow read: if canViewAuditLogs();
       allow create: if isAdmin()
