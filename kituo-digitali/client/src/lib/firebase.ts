@@ -176,7 +176,8 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     updatedAt: serverTimestamp(),
   });
   await setDoc(ref, { ...profile, email: deleteField(), emailVerified: deleteField() }, { merge: true });
-  if (phone) await invokeWorker("claimRegistrationPhone", { phone });
+  const needsRegistrationBonusCheck = current.tokenBonusRegistrationGranted !== true && user.email === phoneAuthAlias(phone);
+  if (phone && (!existing.exists() || needsRegistrationBonusCheck)) await invokeWorker("claimRegistrationPhone", { phone });
   return ref;
 }
 
