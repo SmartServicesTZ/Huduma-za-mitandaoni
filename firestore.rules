@@ -59,7 +59,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || (accountMayRead() && canViewUsers()));
       allow create: if signedIn() && accountMay('profile') && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['uid', 'firstName', 'lastName', 'phone', 'name', 'bio', 'username', 'tokenBalance', 'verificationStatus', 'role', 'permissions', 'createdAt', 'language', 'profileImageUrl', 'settings', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'firstName', 'lastName', 'phone', 'name', 'bio', 'username', 'tokenBalance', 'tokenBalanceNida', 'tokenBalanceOther', 'lastDailyTokenBonusDate', 'verificationStatus', 'role', 'permissions', 'createdAt', 'language', 'profileImageUrl', 'settings', 'updatedAt'])
         && request.resource.data.uid == userId
         && request.resource.data.phone.matches('^255[67][0-9]{8}$')
         && phoneMatchesAuth(request.resource.data)
@@ -67,6 +67,9 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/phoneRegistry/$(request.resource.data.phone)).data.uid == userId
         && request.resource.data.role == 'user'
         && request.resource.data.tokenBalance == 0
+        && (!('tokenBalanceNida' in request.resource.data) || request.resource.data.tokenBalanceNida == 0)
+        && (!('tokenBalanceOther' in request.resource.data) || request.resource.data.tokenBalanceOther == 0)
+        && !('lastDailyTokenBonusDate' in request.resource.data)
         && request.resource.data.verificationStatus == 'pending'
         && request.resource.data.permissions is map
         && request.resource.data.permissions.keys().size() == 0
