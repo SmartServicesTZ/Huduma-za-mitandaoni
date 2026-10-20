@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Clipboard, LoaderCircle, RefreshCw, Search, Send, ShieldCheck } from "lucide-react";
+import { Clipboard, LoaderCircle, RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { completeNidaRequest, listNidaRequests, setNidaRequestStatus, type NidaRequest } from "@/lib/firebase";
 
