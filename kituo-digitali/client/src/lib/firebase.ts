@@ -72,8 +72,8 @@ function workerBaseUrl() {
   return value.replace(/\/+$/, "");
 }
 
-async function invokeWorker<TResponse>(name: string, data: unknown): Promise<TResponse> {
-  const user = firebaseAuth.currentUser;
+async function invokeWorker<TResponse>(name: string, data: unknown, authUser?: User): Promise<TResponse> {
+  const user = authUser ?? firebaseAuth.currentUser;
   if (!user) throw Object.assign(new Error("Ingia kwanza."), { code: "unauthenticated" });
   const token = await user.getIdToken();
   const response = await fetch(`${workerBaseUrl()}/call/${encodeURIComponent(name)}`, {
@@ -177,7 +177,10 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
     updatedAt: serverTimestamp(),
   });
   if (!existing.exists()) {
-    await invokeWorker("claimRegistrationPhone", { phone, firstName, lastName, name: `${firstName} ${lastName}`.trim(), username: extra.username ?? current.username ?? user.uid.slice(0, 8) });
+    const claim = await invokeWorker<{ ok: boolean; profileCreated: boolean; uid: string }>("claimRegistrationPhone", { phone, firstName, lastName, name: `${firstName} ${lastName}`.trim(), username: extra.username ?? current.username ?? user.uid.slice(0, 8) }, user);
+    if (claim.uid !== user.uid || claim.profileCreated !== true) {
+      throw Object.assign(new Error("Worker imetengeneza profile ya akaunti tofauti. Toka kwenye akaunti kisha ingia tena."), { code: "profile/uid-mismatch" });
+    }
     // Worker ndiye mmiliki wa uundaji wa profile na bonus. Usifanye setDoc ya pili kutoka browser,
     // kwa sababu Firestore Rules haziruhusu browser kubadilisha salio la tokeni.
     // Soma kutoka server moja kwa moja, si cache ya browser, kuthibitisha profile ya Worker.
