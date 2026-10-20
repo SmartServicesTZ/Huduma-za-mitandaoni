@@ -20,7 +20,7 @@ type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
-type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; phone?: string; mustChangePassword?: boolean };
+type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBonusRegistrationGranted?: boolean; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; phone?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
