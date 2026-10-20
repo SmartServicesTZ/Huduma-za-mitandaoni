@@ -992,7 +992,14 @@ export const claimRegistrationPhone = callable(async (request) => {
       transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: bonus, balanceBefore: currentOther, balanceAfter: currentOther + bonus, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
     }
   });
-  return { ok: true };
+
+  // Hakikisha commit imeonekana kwenye Firestore kabla ya kurudisha mafanikio kwa browser.
+  const confirmedProfile = await profileRef.get();
+  if (!confirmedProfile.exists) {
+    console.error("claimRegistrationPhone committed but profile verification failed", { uid, projectId: getWorkerEnv().FIREBASE_PROJECT_ID });
+    throw new ApiError("internal", "Profile haikuonekana baada ya kuhifadhiwa. Jaribu tena.");
+  }
+  return { ok: true, profileCreated: true };
 });
 
 export const changeOwnPassword = callable(async (request) => {
