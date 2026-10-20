@@ -641,7 +641,7 @@ export const listLipaApplications = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
   const snapshot = await db.collection("lipaApplications").limit(1000).get();
-  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const rows: Array<Record<string, unknown>> = snapshot.docs.map((item) => ({ ...item.data(), id: item.id }));
   rows.sort((a, b) => {
     const left = String(a.submittedAt ?? "");
     const right = String(b.submittedAt ?? "");
@@ -754,7 +754,7 @@ export const createServiceApplication = callable(async (request) => {
     let ledgerRef: DocumentReference | null = null;
     if (tokenCost > 0) {
       if (user.verificationStatus !== "approved") throw new ApiError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
-      const effectiveTokenType = service.tokenType === "nida" || serviceSlug === "nakala-nida" || serviceSlug === "utafutaji-nida" ? "nida" : "huduma";
+      const effectiveTokenType = (service as Record<string, unknown>).tokenType === "nida" || serviceSlug === "nakala-nida" || serviceSlug === "utafutaji-nida" ? "nida" : "huduma";
       const legacyOther = user.tokenBalanceOther === undefined ? Number(user.tokenBalance ?? 0) : Number(user.tokenBalanceOther);
       const tokenField = effectiveTokenType === "nida" ? "tokenBalanceNida" : "tokenBalanceOther";
       const before = Number(effectiveTokenType === "nida" ? (user.tokenBalanceNida ?? 0) : legacyOther);
