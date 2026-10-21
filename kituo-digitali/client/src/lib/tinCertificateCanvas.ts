@@ -140,6 +140,16 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
     return { ...base, y: base.y * TIN_Y_SCALE, fontSize: base.fontSize * TIN_Y_SCALE };
   };
 
+  // Ondoa taarifa za mfano zilizochapishwa ndani ya template ya nyuma.
+  // Sehemu hizi ni za jina na TIN tu; taarifa nyingine za cheti zinaachwa.
+  const nameStyle = pos("taxpayer");
+  const tinStyle = pos("tinValue");
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(120, Math.round(nameStyle.y - 30), TIN_CANVAS_WIDTH - 240, 70);
+  ctx.fillRect(160, Math.round(tinStyle.y - 30), TIN_CANVAS_WIDTH - 320, 65);
+  ctx.restore();
+
   text(ctx, pos("taxpayer"), form.name.toUpperCase());
   text(ctx, pos("tinValue"), form.tin);
   drawDate(ctx, pos("effectValue"), form.effectDate);
