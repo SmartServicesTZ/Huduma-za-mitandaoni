@@ -79,7 +79,7 @@ export default function AgentIdPage() {
     }));
     await Promise.all(clonedImages.map((image) => typeof image.decode === "function" ? image.decode().catch(() => undefined) : Promise.resolve()));
     clone.style.margin = "0"; clone.style.width = element.offsetWidth + "px"; clone.style.height = element.offsetHeight + "px";
-    const pageStyles = Array.from(document.querySelectorAll(".agent-id-page style")).map((node) => node.textContent ?? "").join("\\n");
+    const pageStyles = Array.from(document.querySelectorAll(".agent-id-page style")).map((node) => node.textContent ?? "").join(" ");
     const html = new XMLSerializer().serializeToString(clone);
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (element.offsetWidth * 2) + '" height="' + (element.offsetHeight * 2) + '" viewBox="0 0 ' + element.offsetWidth + " " + element.offsetHeight + '"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>' + pageStyles.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</style><div class="agent-id-page">' + html + '</div></div></foreignObject></svg>';
     const image = new Image();
