@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
+import html2canvas from "html2canvas";
 import { Download, Upload, RotateCcw } from "lucide-react";
 import { triggerDownload } from "@/lib/downloadHistory";
 
@@ -51,63 +52,65 @@ export default function AgentIdPage() {
       reader.onerror = () => reject(new Error("Imeshindikana kuandaa picha ya kitambulisho."));
       reader.readAsDataURL(blob);
     });
-    const inlineStyles = async (source: Element, target: Element): Promise<void> => {
-      const computed = window.getComputedStyle(source);
-      const declarations = await Promise.all(Array.from(computed).map(async (key) => {
-        let value = computed.getPropertyValue(key);
-        const urls = [...value.matchAll(/url\(["']?(.*?)["']?\)/g)].map((match) => match[1]).filter(Boolean);
-        for (const rawUrl of urls) {
-          const resolved = new URL(rawUrl, document.baseURI);
-          if (resolved.protocol !== "http:" && resolved.protocol !== "https:") continue;
-          const response = await fetch(resolved.href, { mode: "cors", credentials: resolved.origin === window.location.origin ? "same-origin" : "omit" });
-          if (!response.ok) throw new Error("Imeshindikana kupakia picha ya nyuma ya kitambulisho.");
-          value = value.replace(rawUrl, await toDataUrl(await response.blob()));
-        }
-        return key + ":" + value;
-      }));
-      (target as HTMLElement).setAttribute("style", declarations.join(";"));
-      await Promise.all(Array.from(source.children).map(async (child, index) => {
-        const next = target.children[index];
-        if (next) await inlineStyles(child, next);
-      }));
+    const toSameOriginDataUrl = async (src: string) => {
+      if (!src || src.startsWith("data:") || src.startsWith("blob:")) return src;
+      const resolved = new URL(src, document.baseURI);
+      const response = await fetch(resolved.href, {
+        mode: "cors",
+        credentials: resolved.origin === window.location.origin ? "same-origin" : "omit",
+        cache: "force-cache",
+      });
+      if (!response.ok) throw new Error("Imeshindikana kupakia nembo au picha ya kitambulisho. Hakikisha picha inafunguka kisha jaribu tena.");
+      return toDataUrl(await response.blob());
     };
-    await inlineStyles(element, clone);
-    // Embed images as data URLs so remote image sources cannot taint the export canvas.
+
+    // Keep the clone inside the live document so all local CSS is available, but
+    // replace every image with a data URL before html2canvas sees it. This avoids
+    // foreignObject SVG exports and prevents cross-origin images from tainting canvas.
     const sourceImages = Array.from(element.querySelectorAll<HTMLImageElement>("img"));
     const clonedImages = Array.from(clone.querySelectorAll<HTMLImageElement>("img"));
     await Promise.all(clonedImages.map(async (image, index) => {
       const source = sourceImages[index];
       const src = source?.currentSrc || source?.src || image.getAttribute("src") || "";
-      if (!src || src.startsWith("data:")) {
-        if (src) image.setAttribute("src", src);
-        return;
-      }
-      const resolved = new URL(src, document.baseURI);
-      const response = await fetch(resolved.href, {
-        mode: "cors",
-        credentials: resolved.origin === window.location.origin ? "same-origin" : "omit",
-      });
-      if (!response.ok) throw new Error("Imeshindikana kupakia nembo au picha ya kitambulisho. Hakikisha picha inafunguka kisha jaribu tena.");
-      const imageBlob = await response.blob();
-      const dataUrl = await toDataUrl(imageBlob);
-      image.setAttribute("src", dataUrl);
+      if (!src) return;
+      image.setAttribute("src", await toSameOriginDataUrl(src));
       image.removeAttribute("srcset");
+      image.removeAttribute("crossorigin");
     }));
-    await Promise.all(clonedImages.map((image) => typeof image.decode === "function" ? image.decode().catch(() => undefined) : Promise.resolve()));
-    clone.style.margin = "0"; clone.style.width = element.offsetWidth + "px"; clone.style.height = element.offsetHeight + "px";
-    const pageStyles = Array.from(document.querySelectorAll(".agent-id-page style")).map((node) => node.textContent ?? "").join(" ");
-    const html = new XMLSerializer().serializeToString(clone);
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (element.offsetWidth * 2) + '" height="' + (element.offsetHeight * 2) + '" viewBox="0 0 ' + element.offsetWidth + " " + element.offsetHeight + '"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>' + pageStyles.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</style><div class="agent-id-page">' + html + '</div></div></foreignObject></svg>';
-    const image = new Image();
-    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+
+    const width = Math.max(1, element.getBoundingClientRect().width);
+    const height = Math.max(1, element.getBoundingClientRect().height);
+    clone.style.position = "fixed";
+    clone.style.left = "-100000px";
+    clone.style.top = "0";
+    clone.style.margin = "0";
+    clone.style.width = `${width}px`;
+    clone.style.height = `${height}px`;
+    clone.style.maxWidth = "none";
+    clone.style.transform = "none";
+    clone.style.scale = "1";
+    clone.setAttribute("aria-hidden", "true");
+    document.body.appendChild(clone);
     try {
-      await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error("Imeshindikana kuandaa picha ya kitambulisho. Jaribu tena.")); image.src = url; });
-      const canvas = document.createElement("canvas"); canvas.width = element.offsetWidth * 2; canvas.height = element.offsetHeight * 2;
-      const context = canvas.getContext("2d"); if (!context) throw new Error("Imeshindikana kuandaa picha.");
-      context.scale(2, 2); context.drawImage(image, 0, 0, element.offsetWidth, element.offsetHeight);
+      await Promise.all(Array.from(clone.querySelectorAll<HTMLImageElement>("img")).map((image) => {
+        if (typeof image.decode === "function") return image.decode().catch(() => undefined);
+        return Promise.resolve();
+      }));
+      const canvas = await html2canvas(clone, {
+        backgroundColor: null,
+        scale: 2,
+        width,
+        height,
+        useCORS: false,
+        allowTaint: false,
+        logging: false,
+        imageTimeout: 15000,
+      });
       const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi picha ya kitambulisho.")), "image/png"));
       triggerDownload(blob, filename, "PNG");
-    } finally { URL.revokeObjectURL(url); }
+    } finally {
+      clone.remove();
+    }
   };
   const downloadCards = async (side: "front" | "back" | "both") => {
     const columns = Array.from(document.querySelectorAll<HTMLElement>(".agent-preview-column"));
