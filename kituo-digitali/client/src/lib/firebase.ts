@@ -801,6 +801,39 @@ export async function removeServiceUpload(storagePath: string) {
   await deleteObject(storageRef(firebaseStorage, storagePath));
 }
 
+export async function adminListServiceApplications() {
+  const callable = createWorkerCall("listServiceApplications");
+  const result = (await callable({})).data as { applications?: Array<Record<string, unknown>> };
+  return (result.applications ?? []).map((item) => ({
+    id: String(item.id ?? item.applicationId ?? ""),
+    ...item,
+    submittedAt: timestampValue(item.submittedAt),
+    updatedAt: timestampValue(item.updatedAt),
+  } as ServiceApplication));
+}
+
+export function subscribeToAdminServiceApplications(callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const load = async () => {
+    try {
+      const rows = await adminListServiceApplications();
+      if (!stopped) callback(rows);
+    } catch (error) {
+      if (!stopped) onError?.(error);
+    } finally {
+      if (!stopped) timer = setTimeout(load, 5000);
+    }
+  };
+  void load();
+  return () => { stopped = true; if (timer) clearTimeout(timer); };
+}
+
+export async function replyToServiceApplication(applicationId: string, subject: string, body: string, messageType: "reply" | "request-info" = "reply") {
+  const callable = createWorkerCall("replyToServiceApplication");
+  return (await callable({ applicationId, subject, body, messageType })).data;
+}
+
 export async function markServiceApplicationViewed(applicationId: string) {
   const callable = createWorkerCall<{ applicationId: string }, { ok: boolean }>("markServiceApplicationViewed");
   return (await callable({ applicationId })).data;
@@ -809,11 +842,6 @@ export async function markServiceApplicationViewed(applicationId: string) {
 export async function getServiceApplicationDocument(applicationId: string, fieldName: string) {
   const callable = createWorkerCall<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>("getServiceApplicationDocument");
   return (await callable({ applicationId, fieldName })).data;
-}
-
-export async function adminListServiceApplications() {
-  const snapshot = await getDocs(query(collection(firestore, "serviceApplications"), orderBy("submittedAt", "desc")));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt) } as ServiceApplication));
 }
 
 export function subscribeUserServiceApplications(uid: string, callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {

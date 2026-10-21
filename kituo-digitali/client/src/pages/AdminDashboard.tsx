@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowDown, ArrowUp, BarChart3, Bell, Boxes, ChevronRight, ClipboardList, FileKey2, LayoutDashboard, LogOut, Menu, MessageSquare, Palette, PlaySquare, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Trash2, UserCog, Users, WalletCards, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, subscribeAdminWebsiteHealthReports, resolveWebsiteHealthReport, type AdminUserRecord, type LipaApplication, type ServiceApplication, type WebsiteHealthReport } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, subscribeToAdminServiceApplications, subscribeAdminWebsiteHealthReports, resolveWebsiteHealthReport, type AdminUserRecord, type LipaApplication, type ServiceApplication, type WebsiteHealthReport } from "@/lib/firebase";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, moveId } from "../../../shared/serviceOrdering";
 import { mergeServiceCatalogDefaults } from "../../../shared/catalog";
 import { accountRestrictionActionLabels, accountRestrictionActions, resolveAccountAccessMode, type AccountAccessMode, type AccountRestrictionAction } from "../../../shared/accountAccess";
@@ -109,6 +109,10 @@ export default function AdminDashboard() {
     if (!canManageLipaApplications) { setLipaApplications([]); return; }
     return subscribeToAdminLipaApplications(setLipaApplications, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
   }, [canManageLipaApplications, firebaseUser?.uid]);
+  useEffect(() => {
+    if (!hasPermission("manageServices")) { setServiceApplications([]); return; }
+    return subscribeToAdminServiceApplications(setServiceApplications, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
+  }, [canManage, isAdmin, isSuper, firebaseUser?.uid]);
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
   const visibleUsers = useMemo(() => users.filter((item) => `${item.name} ${item.phone} ${item.username}`.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const totalIssued = transactions.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);

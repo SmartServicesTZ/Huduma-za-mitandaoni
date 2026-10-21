@@ -37,12 +37,12 @@ async function profileFor(uid: string) {
 
 const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat" | "applications" | "services" | "payments" | "auth"> = {
   adminDelete: "admin", adminWrite: "admin", adjustTokens: "admin", resetUserPassword: "admin", seedServiceCatalog: "admin",
-  setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", listNidaRequests: "admin", setNidaRequestStatus: "admin", completeNidaRequest: "admin", submitNidaRequest: "applications", listMyNidaRequests: "read",
+  setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", replyToServiceApplication: "admin", listNidaRequests: "admin", setNidaRequestStatus: "admin", completeNidaRequest: "admin", submitNidaRequest: "applications", listMyNidaRequests: "read",
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
-  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", findChatUser: "chat", createTokenPurchaseOrder: "payments",
+  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", createTokenPurchaseOrder: "payments",
   syncAuthClaims: "auth",
 };
 
@@ -912,6 +912,44 @@ export const setServiceApplicationStatus = callable(async (request) => {
     transaction.create(auditRef, { action: `SERVICE_APPLICATION_${status}`, actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     recordAudit(transaction, uid, String(actor.role), `SERVICE_APPLICATION_${status}`, "serviceApplication", applicationId, { status: from }, { status }, { reason: status === "REJECTED" ? rejectionReason : "" });
     return { applicationId, status };
+  });
+});
+
+export const listServiceApplications = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const snapshot = await db.collection("serviceApplications").limit(1000).get();
+  const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
+  return { applications: rows };
+});
+
+export const replyToServiceApplication = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageServices");
+  const data = objectValue(request.data, "Jibu la ombi");
+  const applicationId = text(data.applicationId, 80);
+  const subject = typeof data.subject === "string" ? data.subject.trim().slice(0, 180) : "";
+  const body = typeof data.body === "string" ? data.body.trim().slice(0, 2000) : "";
+  const messageType = data.messageType === "request-info" ? "request-info" : "reply";
+  if (!body) throw new ApiError("invalid-argument", "Andika ujumbe kabla ya kutuma.");
+  const ref = db.collection("serviceApplications").doc(applicationId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
+    const application = snapshot.data()!;
+    const now = FieldValue.serverTimestamp();
+    transaction.set(db.collection("messages").doc(), {
+      recipientId: application.userId,
+      subject: subject || (messageType === "request-info" ? "Tafadhali ongeza taarifa kwenye ombi lako" : "Majibu kuhusu ombi lako"),
+      body, type: messageType === "request-info" ? "serviceApplicationInfoRequest" : "serviceApplicationAdminReply",
+      applicationId, serviceSlug: application.serviceSlug, serviceName: application.serviceName, createdAt: now,
+    });
+    transaction.update(ref, { lastAdminReply: body, lastAdminReplyAt: now, lastAdminReplyBy: uid, updatedAt: now });
+    recordAudit(transaction, uid, String(actor.role), "SERVICE_APPLICATION_ADMIN_REPLY", "serviceApplication", applicationId, {}, { messageType }, {});
+    return { applicationId, sent: true };
   });
 });
 

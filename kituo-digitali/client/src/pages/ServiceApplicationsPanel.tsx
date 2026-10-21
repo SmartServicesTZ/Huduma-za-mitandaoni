@@ -3,6 +3,7 @@ import {
   adminSaveCollectionItem,
   getServiceApplicationDocument,
   markServiceApplicationViewed,
+  replyToServiceApplication,
   setServiceApplicationStatus,
   type ServiceApplication,
 } from "@/lib/firebase";
@@ -248,17 +249,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     setError("");
     try {
       const result = await onRun(
-        () => adminSaveCollectionItem(adminId, "messages", {
-          recipientId: selected.userId,
-          subject,
-          body,
-          applicationId: selected.applicationId || selected.id,
-          applicationReference: String((selected as ServiceApplication & { reference?: string }).reference ?? selected.applicationId ?? selected.id),
-          serviceSlug: selected.serviceSlug,
-          serviceName: selected.serviceName,
-          messageType: "service_application_reply",
-          broadcast: false,
-        }),
+        () => replyToServiceApplication(selected.applicationId || selected.id, subject, body, replyMode),
         replyMode === "request-info" ? "Ombi la taarifa za ziada limetumwa kwa mtumiaji." : "Jibu limetumwa kwa mtumiaji.",
       );
       if (result !== false) {
