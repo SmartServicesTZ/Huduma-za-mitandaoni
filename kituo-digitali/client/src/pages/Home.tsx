@@ -222,8 +222,11 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { user } = useAuth();
-  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/chat", label: "Chat", icon: MessageCircle }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }];
-  return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.profileImageUrl ? <img src={user.profileImageUrl} alt="" /> : (user?.name?.slice(0, 2).toUpperCase() ?? "HM")}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <Link href="/admin" className={`portal-nav-item admin-link ${location.startsWith("/admin") ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
+  const adminAccess = user?.role === "super_admin" || user?.permissions?.manageServices === true;
+  const items = adminAccess
+    ? [{ href: "/admin", label: "Kituo cha Admin", icon: LayoutGrid }, { href: "/services", label: "Huduma za website", icon: Zap }, { href: "/chat", label: "Ujumbe", icon: MessageCircle }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Mipangilio", icon: Settings2 }]
+    : [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/chat", label: "Chat", icon: MessageCircle }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }];
+  return <aside className="sidebar-portal"><div className={`sidebar-brand ${adminAccess ? "sidebar-brand--admin" : ""}`}><Link href={adminAccess ? "/admin" : "/"} onClick={onClose}><b>{adminAccess ? "SMARTSERVICESTZ ADMIN" : "SmartServicesTZ"}</b><small className="brand-subtitle">{adminAccess ? "CONTROL CENTER" : "DIGITAL SERVICE HUB"}</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.profileImageUrl ? <img src={user.profileImageUrl} alt="" /> : (user?.name?.slice(0, 2).toUpperCase() ?? "HM")}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <Link href="/admin" className={`portal-nav-item admin-link ${location.startsWith("/admin") ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
 function TokenCard({ compact = false }: { compact?: boolean }) {
@@ -395,7 +398,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
         const rows = await listMyNidaRequests();
         if (!stopped) {
           setRequests(rows);
-          setActiveRequestId((current) => current || rows[0]?.id || "");
+          setActiveRequestId((current) => current || rows[0]?.requestId || rows[0]?.id || "");
         }
       } catch {
         if (!stopped) setRequests([]);
@@ -470,8 +473,8 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       <button type="button" className="button button--green" onClick={() => void run()} disabled={busy}><Search size={16}/> {busy ? "Inatuma..." : "Tafuta NIDA"}</button>
     </div>
     {!isAuthenticated && <div className="notice notice--info"><LogIn size={16}/><span>Ingia kwenye akaunti yako ili kutuma ombi na kuona matokeo.</span></div>}
-    {isAuthenticated && requests.some((item) => item.id === activeRequestId) && <div className="quick-nida-request-list">
-      {requests.filter((item) => item.id === activeRequestId).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
+    {isAuthenticated && requests.some((item) => item.id === activeRequestId || item.requestId === activeRequestId) && <div className="quick-nida-request-list">
+      {requests.filter((item) => item.id === activeRequestId || item.requestId === activeRequestId).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
         <div className="quick-nida-request__details">
           <div className="quick-nida-request__labels"><span>Namba</span><strong>{item.phone}</strong></div>
           <div className="quick-nida-request__status"><strong>{item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
@@ -622,6 +625,10 @@ export default function Home() {
     setCatalogInitialized(settings?.catalogInitialized === true);
   }), []);
   const canManageServices = user?.role === "super_admin" || user?.permissions?.manageServices === true;
+  // Administrators land in their workspace immediately after sign-in instead of the customer homepage.
+  useEffect(() => {
+    if (isAuthenticated && canManageServices && location === "/") navigate("/admin");
+  }, [isAuthenticated, canManageServices, location, navigate]);
   useEffect(() => {
     if (!firebaseUser?.uid || !canManageServices) return;
     let cancelled = false;
@@ -648,7 +655,8 @@ export default function Home() {
     : accessMode === "limited"
       ? `Akaunti yako imewekewa ruhusa maalum: ${accountRestrictionActions.filter((action) => user?.allowedActions?.includes(action)).map((action) => accountRestrictionActionLabels[action]).join(", ") || "hakuna kitendo kilichoruhusiwa"}.`
       : null;
-  return <div className={`portal-shell ${compactMode ? "app-compact-mode" : ""}`} data-theme={appTheme} data-accent={appAccent} style={{ "--navy": "#071a36", "--green": appAccent === "blue" ? "#3b82f6" : appAccent === "purple" ? "#8b5cf6" : "#18b969", "--navy-2": "#0b2447" } as React.CSSProperties}>
+  return <div className={`portal-shell ${compactMode ? "app-compact-mode" : ""} ${canManageServices ? "portal-shell--admin" : ""}`} data-admin-mode={canManageServices ? "true" : "false"} data-theme={canManageServices ? "light" : appTheme} data-accent={appAccent} style={{ "--navy": "#071a36", "--green": appAccent === "blue" ? "#3b82f6" : appAccent === "purple" ? "#8b5cf6" : "#18b969", "--navy-2": "#0b2447" } as React.CSSProperties}>
+    {canManageServices && <style>{`.portal-shell--admin{background:#f3f6fb!important;color:#0f172a!important;min-height:100vh}.portal-shell--admin .portal-content{background:#f3f6fb}.portal-shell--admin .portal-sidebar-wrap{background:#0b1730;border-right:1px solid #24334f}.portal-shell--admin .sidebar-portal{background:linear-gradient(180deg,#101e39 0%,#081326 100%);color:#e5edff;border-right:0}.portal-shell--admin .sidebar-brand{border-bottom:1px solid #263653}.portal-shell--admin .sidebar-brand a b{color:#fff;letter-spacing:.04em;font-size:.9rem}.portal-shell--admin .brand-subtitle{color:#91a9d3}.portal-shell--admin .sidebar-user{background:#172744;border:1px solid #2a3c5c;border-radius:14px;margin:12px;padding:12px}.portal-shell--admin .sidebar-user strong{color:#fff}.portal-shell--admin .sidebar-user small{color:#a8bad7}.portal-shell--admin .portal-nav-item{margin:3px 10px;border-radius:10px;color:#c6d3e8}.portal-shell--admin .portal-nav-item.active,.portal-shell--admin .portal-nav-item:hover{background:linear-gradient(100deg,#2563eb,#4f46e5);color:#fff;box-shadow:0 5px 15px #1d4ed833}.portal-shell--admin .admin-link{background:#172744;color:#c6d3e8}.portal-shell--admin .portal-main{max-width:1600px;padding:clamp(12px,2vw,24px)}.portal-shell--admin .portal-footer{background:#f3f6fb;color:#64748b;border-top:1px solid #e2e8f0}.portal-shell--admin .bottom-nav{display:none!important}.portal-shell--admin .app-header{background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 2px 8px #0f172a08}.portal-shell--admin .app-header *{color:#0f172a}.portal-shell--admin .sidebar-foot{color:#9fb3d2;border-top:1px solid #263653}.portal-shell--admin .sidebar-close{color:#fff}@media(max-width:760px){.portal-shell--admin .portal-main{padding:10px}.portal-shell--admin .portal-content{padding-bottom:0}}`}</style>}
     {fullAccessBlocked ? <AccountRestrictionGate reason={user?.restrictionReason} message={user?.restrictionMessage} onLogout={logout} /> : <>
       <div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} />
       <div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div>
