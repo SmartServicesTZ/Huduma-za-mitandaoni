@@ -58,7 +58,7 @@ export default function NidaRequestsPanel() {
   };
   const send = async (item: NidaRequest) => {
     const number = (numbers[item.id] ?? "").trim();
-    if (!/^(?:\d{20}|\d{8}-\d{5}-\d{5}-\d{2})$/.test(number)) {
+    if (!/^\\d{20}$/.test(number)) {
       toast.error("NIDA lazima iwe na tarakimu 20 tu, bila alama au nafasi.");
       return;
     }
