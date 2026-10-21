@@ -55,7 +55,7 @@ export default function AgentIdPage() {
       const computed = window.getComputedStyle(source);
       const declarations = await Promise.all(Array.from(computed).map(async (key) => {
         let value = computed.getPropertyValue(key);
-        const urls = [...value.matchAll(/url\\(["']?(.*?)["']?\\)/g)].map((match) => match[1]).filter(Boolean);
+        const urls = [...value.matchAll(/url\(["']?(.*?)["']?\)/g)].map((match) => match[1]).filter(Boolean);
         for (const rawUrl of urls) {
           const resolved = new URL(rawUrl, document.baseURI);
           if (resolved.protocol !== "http:" && resolved.protocol !== "https:") continue;
