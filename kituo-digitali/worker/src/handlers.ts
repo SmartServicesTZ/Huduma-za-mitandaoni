@@ -777,7 +777,7 @@ export const completeNidaRequest = callable(async (request) => {
   const data = objectValue(request.data, "Matokeo ya NIDA");
   const requestId = text(data.requestId, 80);
   const nidaNumber = text(data.nidaNumber, 40);
-  if (!/^(?:\d{20}|\d{8}-\d{5}-\d{5}-\d{2})$/.test(nidaNumber)) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20, ikiwa na vistari vya muundo unaotumika au bila vistari.");
+  if (!/^\d{20}$/.test(nidaNumber)) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20 tu, bila vistari au nafasi.");
   const ref = db.collection("nidaRequests").doc(requestId);
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
