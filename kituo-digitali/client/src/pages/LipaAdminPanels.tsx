@@ -208,7 +208,8 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
 
   const runStatus = async (status: "PROCESSING" | "APPROVED" | "REJECTED", reason = "") => {
     if (!selected) return;
-    await onRun(() => setLipaApplicationStatus(selected.applicationId || selected.id, status, reason), status === "PROCESSING" ? "Ombi limehamishwa PROCESSING." : status === "APPROVED" ? "Ombi limeidhinishwa." : "Ombi limekataliwa.");
+    const succeeded = await onRun(() => setLipaApplicationStatus(selected.applicationId || selected.id, status, reason), status === "PROCESSING" ? "Ombi limehamishwa PROCESSING." : status === "APPROVED" ? "Ombi limeidhinishwa." : "Ombi limekataliwa.");
+    if (succeeded === false) return;
     setSelected(null);
     setRejecting(false);
   };
