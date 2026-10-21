@@ -121,25 +121,32 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
   recordDownload({ name, type });
   const nativeDownload = typeof window !== "undefined" ? window.AndroidDownload : undefined;
   if (nativeDownload) {
-    void blob.arrayBuffer().then((buffer) => {
+    window.dispatchEvent(new CustomEvent("smartservicestz-download-start", { detail: { name, progress: 0 } }));
+    void blob.arrayBuffer().then(async (buffer) => {
       const bytes = new Uint8Array(buffer);
       if (!nativeDownload.beginFile(name, blob.type || "application/octet-stream")) throw new Error("Android imeshindwa kuanzisha faili kwenye Downloads.");
-      // Chunks ndogo hupunguza hatari ya Android WebView kukataa ujumbe mrefu wa JavaScript bridge.
-      for (let offset = 0; offset < bytes.length; offset += 24 * 1024) {
+      const chunkSize = 24 * 1024;
+      const totalChunks = Math.max(1, Math.ceil(bytes.length / chunkSize));
+      for (let offset = 0, chunkIndex = 0; offset < bytes.length; offset += chunkSize, chunkIndex++) {
         let binary = "";
-        const chunk = bytes.subarray(offset, Math.min(offset + 24 * 1024, bytes.length));
+        const chunk = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
         for (let index = 0; index < chunk.length; index += 0x4000) binary += String.fromCharCode(...chunk.subarray(index, index + 0x4000));
         if (!nativeDownload.appendFileChunk(btoa(binary))) throw new Error("Android imeshindwa kuandika sehemu ya faili.");
+        const progress = Math.min(95, Math.round(((chunkIndex + 1) / totalChunks) * 95));
+        window.dispatchEvent(new CustomEvent("smartservicestz-download-progress", { detail: { name, progress } }));
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       }
       if (!nativeDownload.finishFile()) throw new Error("Android imeshindwa kuhifadhi faili. Jaribu tena.");
+      window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
     }).catch((error: unknown) => {
       nativeDownload.cancelFile?.();
       const message = error instanceof Error ? error.message : "Download imeshindikana kwenye Android.";
-      window.dispatchEvent(new CustomEvent("smartservicestz-download-error", { detail: message }));
+      window.dispatchEvent(new CustomEvent("smartservicestz-download-error", { detail: { name, message } }));
       window.alert(message);
     });
     return;
   }
+  window.dispatchEvent(new CustomEvent("smartservicestz-download-start", { detail: { name, progress: 10 } }));
   const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
   // Katika app iliyosakinishwa, share sheet ya Android huruhusu mtumiaji kuhifadhi hati kwenye Files/Downloads.
@@ -157,6 +164,8 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
   } else {
     startBrowserDownload(blob, name);
   }
+
+  window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
 
   // Hifadhi hati ndogo ili iweze kupakuliwa tena kutoka Historia kwa dakika 30.
   if (blob.size > 0 && blob.size <= 600 * 1024) {
