@@ -22,6 +22,7 @@ const fmt = (value: string) => value ? new Date(value + "T00:00:00").toLocaleDat
 
 export default function AgentIdPage() {
   const [network, setNetwork] = useState<Network>("Airtel");
+  const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [name, setName] = useState("");
   const [agentId, setAgentId] = useState("");
   const [phone, setPhone] = useState("");
@@ -113,7 +114,8 @@ export default function AgentIdPage() {
     }
   };
   const downloadCards = async (side: "front" | "back" | "both") => {
-    const columns = Array.from(document.querySelectorAll<HTMLElement>(".agent-preview-column"));
+    const allColumns = Array.from(document.querySelectorAll<HTMLElement>(".agent-preview-column"));
+    const columns = side === "both" ? allColumns : allColumns.filter((column) => column.classList.contains(orientation === "landscape" ? "agent-preview-column--landscape" : "agent-preview-column--portrait"));
     const pairs = columns.map((column) => Array.from(column.querySelectorAll<HTMLElement>(".agent-card, .agent-portrait-card")));
     const selected = side === "both" ? pairs.flat() : pairs.map((pair) => pair[side === "front" ? 0 : 1]).filter((card): card is HTMLElement => Boolean(card));
     if (!selected.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
@@ -139,7 +141,7 @@ export default function AgentIdPage() {
     <div className="agent-id-layout">
       <section className="agent-id-form">
         <h3>Taarifa za Kitambulisho</h3>
-        <div className="agent-template-choice" role="group" aria-label="Aina ya kitambulisho"><span className="agent-template-chip">KITAMBULISHO CHA MTANDAO</span><span className="agent-template-chip agent-template-chip--portrait">KITAMBULISHO CHA HUDUMA</span></div><p className="agent-choice-note">Jaza taarifa mara moja; miundo yote miwili inasasishwa pamoja.</p><div className="agent-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n)=><button type="button" key={n} className={network===n?"active":""} onClick={()=>setNetwork(n)}>{n==="Mbeya One Company Limited"?"MBEYA ONE":n}</button>)}</div>
+        <div className="agent-template-choice" role="group" aria-label="Chagua aina ya kitambulisho"><button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button><button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button></div><p className="agent-choice-note">Chagua aina unayotaka kupakua. Preview na upakuaji vitafuata chaguo hili.</p><div className="agent-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n)=><button type="button" key={n} className={network===n?"active":""} onClick={()=>setNetwork(n)}>{n==="Mbeya One Company Limited"?"MBEYA ONE":n}</button>)}</div>
         <label className="agent-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>setPhoto(String(r.result));r.readAsDataURL(f)}}/></label>
         <label className="agent-field"><span>Jina Kamili</span><input value={name} onChange={e=>setName(e.target.value)} /></label>
         <label className="agent-field"><span>Agent ID / Code</span><input value={agentId} onChange={e=>setAgentId(e.target.value)} /></label>
@@ -150,8 +152,8 @@ export default function AgentIdPage() {
         <label className="agent-field"><span>Kata / Eneo</span><input value={area} onChange={e=>setArea(e.target.value)} /></label>
         <label className="agent-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={e=>setIssueDate(e.target.value)} /></label>
         <div className="agent-buttons"><button className="button button--green" onClick={()=>fileRef.current?.click()}><Upload size={16}/> Picha</button><button className="button" onClick={reset}><RotateCcw size={16}/> Anza upya</button></div>
-        <div className="agent-buttons"><button className="button button--green" onClick={()=>void downloadCards("front")}><Download size={16}/> Pakua Mbele (PNG)</button><button className="button button--green" onClick={()=>void downloadCards("back")}><Download size={16}/> Pakua Nyuma (PNG)</button></div>
-        <button className="button button--green button--wide" style={{marginTop:8}} onClick={()=>void downloadCards("both")}><Download size={16}/> Pakua Vitambulisho Vyote (PNG)</button>
+        <div className="agent-buttons"><button className="button button--green" onClick={()=>void downloadCards("front")}><Download size={16}/> Pakua Mbele ({orientation === "landscape" ? "Kulala" : "Kusimama"})</button><button className="button button--green" onClick={()=>void downloadCards("back")}><Download size={16}/> Pakua Nyuma ({orientation === "landscape" ? "Kulala" : "Kusimama"})</button></div>
+        <button className="button button--green button--wide" style={{marginTop:8}} onClick={()=>void downloadCards("both")}><Download size={16}/> Pakua Vyote (Kulala na Kusimama, PNG)</button>
         <p className="agent-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
 
