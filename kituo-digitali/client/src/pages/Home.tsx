@@ -490,7 +490,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
           <div className="quick-nida-request__labels"><span>Namba</span><strong>{item.phone}</strong></div>
           <div className="quick-nida-request__status"><strong>{(item.status === "PENDING" || item.status === "PROCESSING") && <LoaderCircle size={15} className="quick-nida-spinner" aria-label="Inatafuta NIDA"/>} {item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
             {item.status === "PENDING" && <span>Subiri kidogo, mfumo unatafuta taarifa za NIDA...</span>}
-            {item.status === "PROCESSING" && <span>Admin analifanyia kazi ombi lako. Matokeo yataonekana hapa.</span>}
+            {item.status === "PROCESSING" && <span>Mfumo unaendelea kutafuta taarifa za NIDA. Matokeo yataonekana hapa.</span>}
             {item.status === "REJECTED" && <span>{String(item.rejectionReason || "NIN NOT FOUND").toUpperCase().includes("NIN NOT FOUND") ? "NIN NOT FOUND" : item.rejectionReason}</span>}
           </div>
           {item.status === "APPROVED" && item.nidaNumber && <div className="quick-nida-result">
