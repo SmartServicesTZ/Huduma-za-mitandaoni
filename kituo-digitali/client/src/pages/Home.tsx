@@ -402,6 +402,24 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     return () => { stopped = true; window.clearInterval(timer); };
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    for (const item of requests) {
+      if (item.status !== "APPROVED" || !item.nidaNumber || hideTimers.current[item.id]) continue;
+      let expiresAt = 0;
+      try { expiresAt = Number(window.sessionStorage.getItem(`smartservices-nida-hide-${item.id}`) ?? 0); } catch { /* session storage may be unavailable */ }
+      if (!expiresAt) continue;
+      const remaining = expiresAt - Date.now();
+      if (remaining <= 0) {
+        setCopiedResults((old) => ({ ...old, [item.id]: true }));
+        continue;
+      }
+      hideTimers.current[item.id] = window.setTimeout(() => {
+        setCopiedResults((old) => ({ ...old, [item.id]: true }));
+        delete hideTimers.current[item.id];
+      }, remaining);
+    }
+  }, [requests]);
+
   useEffect(() => () => {
     Object.values(hideTimers.current).forEach((timer) => window.clearTimeout(timer));
   }, []);
@@ -424,6 +442,8 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       await navigator.clipboard.writeText(result);
       setCopiedResults((old) => ({ ...old, [requestId]: false }));
       if (hideTimers.current[requestId]) window.clearTimeout(hideTimers.current[requestId]);
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+      try { window.sessionStorage.setItem(`smartservices-nida-hide-${requestId}`, String(expiresAt)); } catch { /* timer still works for this page */ }
       hideTimers.current[requestId] = window.setTimeout(() => {
         setCopiedResults((old) => ({ ...old, [requestId]: true }));
         delete hideTimers.current[requestId];
@@ -447,7 +467,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       {requests.map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
         <div className="quick-nida-request__details">
           <div className="quick-nida-request__labels"><span>Namba</span><strong>{item.phone}</strong></div>
-          <div className="quick-nida-request__status"><strong>{statusText[item.status] ?? item.status}</strong>
+          <div className="quick-nida-request__status"><strong>{item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
             {item.status === "PENDING" && <span>Ombi lako linasubiri kushughulikiwa.</span>}
             {item.status === "PROCESSING" && <span>Admin analifanyia kazi ombi lako. Matokeo yataonekana hapa.</span>}
             {item.status === "REJECTED" && <span>{String(item.rejectionReason || "NIN NOT FOUND").toUpperCase().includes("NIN NOT FOUND") ? "NIN NOT FOUND" : item.rejectionReason}</span>}
