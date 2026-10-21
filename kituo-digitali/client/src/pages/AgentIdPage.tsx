@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Printer, Upload, RotateCcw } from "lucide-react";
+import { Download, Upload, RotateCcw } from "lucide-react";
+import { triggerDownload } from "@/lib/downloadHistory";
 
 type Network = "Airtel" | "Vodacom" | "Yas" | "Halotel" | "Mbeya One Company Limited" | "Huduma za Mtandaoni";
 const NETWORKS: Record<Network, {
@@ -20,13 +21,13 @@ const fmt = (value: string) => value ? new Date(value + "T00:00:00").toLocaleDat
 
 export default function AgentIdPage() {
   const [network, setNetwork] = useState<Network>("Airtel");
-  const [name, setName] = useState("Juma Ally");
-  const [agentId, setAgentId] = useState("AGT-001234");
-  const [phone, setPhone] = useState("0712345678");
+  const [name, setName] = useState("");
+  const [agentId, setAgentId] = useState("");
+  const [phone, setPhone] = useState("");
   const [type, setType] = useState("Freelancer");
-  const [region, setRegion] = useState("Dar es Salaam");
-  const [district, setDistrict] = useState("Kinondoni");
-  const [area, setArea] = useState("Kijitonyama");
+  const [region, setRegion] = useState("");
+  const [district, setDistrict] = useState("");
+  const [area, setArea] = useState("");
   const [issueDate, setIssueDate] = useState(today());
   const [photo, setPhoto] = useState("");
   const [qr, setQr] = useState("");
@@ -40,12 +41,43 @@ export default function AgentIdPage() {
     QRCode.toDataURL(qrText, { width: 420, margin: 4, errorCorrectionLevel: "H", color: { dark: "#111111", light: "#ffffff" } }).then(setQr).catch(() => setQr(""));
   }, [qrText]);
 
-  const reset = () => { setName("Juma Ally"); setAgentId("AGT-001234"); setPhone("0712345678"); setType("Freelancer"); setRegion("Dar es Salaam"); setDistrict("Kinondoni"); setArea("Kijitonyama"); setIssueDate(today()); setPhoto(""); setNetwork("Airtel"); };
+  const reset = () => { setName(""); setAgentId(""); setPhone(""); setType("Freelancer"); setRegion(""); setDistrict(""); setArea(""); setIssueDate(today()); setPhoto(""); setNetwork("Airtel"); };
 
-  const printCards = (side: "both" | "front" | "back") => {
-    document.body.dataset.agentPrint = side;
-    window.print();
-    window.setTimeout(() => delete document.body.dataset.agentPrint, 500);
+  const downloadCardImage = async (element: HTMLElement, filename: string) => {
+    const clone = element.cloneNode(true) as HTMLElement;
+    const inlineStyles = (source: Element, target: Element) => {
+      const computed = window.getComputedStyle(source);
+      (target as HTMLElement).setAttribute("style", Array.from(computed).map((key) => key + ":" + computed.getPropertyValue(key)).join(";"));
+      Array.from(source.children).forEach((child, index) => { const next = target.children[index]; if (next) inlineStyles(child, next); });
+    };
+    inlineStyles(element, clone);
+    clone.style.margin = "0"; clone.style.width = element.offsetWidth + "px"; clone.style.height = element.offsetHeight + "px";
+    const pageStyles = Array.from(document.querySelectorAll(".agent-id-page style")).map((node) => node.textContent ?? "").join("\n");
+    const html = new XMLSerializer().serializeToString(clone);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (element.offsetWidth * 2) + '" height="' + (element.offsetHeight * 2) + '" viewBox="0 0 ' + element.offsetWidth + " " + element.offsetHeight + '"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>' + pageStyles.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</style><div class="agent-id-page">' + html + '</div></div></foreignObject></svg>';
+    const image = new Image();
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    try {
+      await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error("Imeshindikana kuandaa picha ya kitambulisho. Jaribu tena.")); image.src = url; });
+      const canvas = document.createElement("canvas"); canvas.width = element.offsetWidth * 2; canvas.height = element.offsetHeight * 2;
+      const context = canvas.getContext("2d"); if (!context) throw new Error("Imeshindikana kuandaa picha.");
+      context.scale(2, 2); context.drawImage(image, 0, 0, element.offsetWidth, element.offsetHeight);
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi picha ya kitambulisho.")), "image/png"));
+      triggerDownload(blob, filename, "PNG");
+    } finally { URL.revokeObjectURL(url); }
+  };
+  const downloadCards = async (side: "front" | "back" | "both") => {
+    const columns = Array.from(document.querySelectorAll<HTMLElement>(".agent-preview-column"));
+    const pairs = columns.map((column) => Array.from(column.querySelectorAll<HTMLElement>(".agent-card, .agent-portrait-card")));
+    const selected = side === "both" ? pairs.flat() : pairs.map((pair) => pair[side === "front" ? 0 : 1]).filter((card): card is HTMLElement => Boolean(card));
+    if (!selected.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+    try {
+      for (const card of selected) {
+        const orientation = card.classList.contains("agent-portrait-card") ? "kusimama" : "kulala";
+        const face = card.classList.contains("portrait-back") || card.classList.contains("agent-back-card") || card.classList.contains("agent-back") ? "nyuma" : (card.classList.contains("agent-portrait-card") ? (card.parentElement?.querySelectorAll(".agent-portrait-card")[1] === card ? "nyuma" : "mbele") : (card.parentElement?.querySelectorAll(".agent-card")[1] === card ? "nyuma" : "mbele"));
+        await downloadCardImage(card, "kitambulisho-" + orientation + "-" + face + ".png");
+      }
+    } catch (error) { window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho."); }
   };
 
   return <main className="portal-main agent-id-page">
@@ -72,8 +104,8 @@ export default function AgentIdPage() {
         <label className="agent-field"><span>Kata / Eneo</span><input value={area} onChange={e=>setArea(e.target.value)} /></label>
         <label className="agent-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={e=>setIssueDate(e.target.value)} /></label>
         <div className="agent-buttons"><button className="button button--green" onClick={()=>fileRef.current?.click()}><Upload size={16}/> Picha</button><button className="button" onClick={reset}><RotateCcw size={16}/> Anza upya</button></div>
-        <div className="agent-buttons"><button className="button button--green" onClick={()=>printCards("front")}><Printer size={16}/> Print Mbele</button><button className="button button--green" onClick={()=>printCards("back")}><Printer size={16}/> Print Nyuma</button></div>
-        <button className="button button--green button--wide" style={{marginTop:8}} onClick={()=>printCards("both")}><Printer size={16}/> Print Pande Zote</button>
+        <div className="agent-buttons"><button className="button button--green" onClick={()=>void downloadCards("front")}><Download size={16}/> Pakua Mbele (PNG)</button><button className="button button--green" onClick={()=>void downloadCards("back")}><Download size={16}/> Pakua Nyuma (PNG)</button></div>
+        <button className="button button--green button--wide" style={{marginTop:8}} onClick={()=>void downloadCards("both")}><Download size={16}/> Pakua Vitambulisho Vyote (PNG)</button>
         <p className="agent-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
 
