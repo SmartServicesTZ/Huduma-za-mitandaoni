@@ -45,12 +45,33 @@ export default function AgentIdPage() {
 
   const downloadCardImage = async (element: HTMLElement, filename: string) => {
     const clone = element.cloneNode(true) as HTMLElement;
-    const inlineStyles = (source: Element, target: Element) => {
+    const toDataUrl = async (blob: Blob) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Imeshindikana kuandaa picha ya kitambulisho."));
+      reader.onerror = () => reject(new Error("Imeshindikana kuandaa picha ya kitambulisho."));
+      reader.readAsDataURL(blob);
+    });
+    const inlineStyles = async (source: Element, target: Element): Promise<void> => {
       const computed = window.getComputedStyle(source);
-      (target as HTMLElement).setAttribute("style", Array.from(computed).map((key) => key + ":" + computed.getPropertyValue(key)).join(";"));
-      Array.from(source.children).forEach((child, index) => { const next = target.children[index]; if (next) inlineStyles(child, next); });
+      const declarations = await Promise.all(Array.from(computed).map(async (key) => {
+        let value = computed.getPropertyValue(key);
+        const urls = [...value.matchAll(/url\\(["']?(.*?)["']?\\)/g)].map((match) => match[1]).filter(Boolean);
+        for (const rawUrl of urls) {
+          const resolved = new URL(rawUrl, document.baseURI);
+          if (resolved.protocol !== "http:" && resolved.protocol !== "https:") continue;
+          const response = await fetch(resolved.href, { mode: "cors", credentials: resolved.origin === window.location.origin ? "same-origin" : "omit" });
+          if (!response.ok) throw new Error("Imeshindikana kupakia picha ya nyuma ya kitambulisho.");
+          value = value.replace(rawUrl, await toDataUrl(await response.blob()));
+        }
+        return key + ":" + value;
+      }));
+      (target as HTMLElement).setAttribute("style", declarations.join(";"));
+      await Promise.all(Array.from(source.children).map(async (child, index) => {
+        const next = target.children[index];
+        if (next) await inlineStyles(child, next);
+      }));
     };
-    inlineStyles(element, clone);
+    await inlineStyles(element, clone);
     // Embed images as data URLs so remote image sources cannot taint the export canvas.
     const sourceImages = Array.from(element.querySelectorAll<HTMLImageElement>("img"));
     const clonedImages = Array.from(clone.querySelectorAll<HTMLImageElement>("img"));
@@ -68,12 +89,7 @@ export default function AgentIdPage() {
       });
       if (!response.ok) throw new Error("Imeshindikana kupakia nembo au picha ya kitambulisho. Hakikisha picha inafunguka kisha jaribu tena.");
       const imageBlob = await response.blob();
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Imeshindikana kuandaa picha ya kitambulisho."));
-        reader.onerror = () => reject(new Error("Imeshindikana kuandaa picha ya kitambulisho."));
-        reader.readAsDataURL(imageBlob);
-      });
+      const dataUrl = await toDataUrl(imageBlob);
       image.setAttribute("src", dataUrl);
       image.removeAttribute("srcset");
     }));
