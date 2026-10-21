@@ -322,13 +322,15 @@ jobs:
               }
 
               private void finishNativeFile() throws Exception {
-                  if (nativeOutput == null) return;
+                  if (nativeOutput == null) throw new Exception("Faili halijaanzishwa au limekatika.");
+                  nativeOutput.flush();
                   nativeOutput.close();
                   nativeOutput = null;
                   if (nativeUri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                       ContentValues values = new ContentValues();
                       values.put(MediaStore.Downloads.IS_PENDING, 0);
-                      getContentResolver().update(nativeUri, values, null, null);
+                      int updated = getContentResolver().update(nativeUri, values, null, null);
+                      if (updated <= 0) throw new Exception("Android haikuweza kukamilisha kuhifadhi faili.");
                   }
                   runOnUiThread(() -> Toast.makeText(MainActivity.this, "Faili limehifadhiwa kwenye Downloads/SmartServicesTZ", Toast.LENGTH_LONG).show());
               }
@@ -346,11 +348,13 @@ jobs:
                   @JavascriptInterface public boolean beginFile(String name, String mimeType) {
                       try { beginNativeFile(name, mimeType); return true; } catch (Exception e) { cancelNativeFile(); return false; }
                   }
-                  @JavascriptInterface public void appendFileChunk(String base64Chunk) {
-                      try { appendNativeFileChunk(base64Chunk); } catch (Exception e) { cancelNativeFile(); }
+                  @JavascriptInterface public boolean appendFileChunk(String base64Chunk) {
+                      try { appendNativeFileChunk(base64Chunk); return true; }
+                      catch (Exception e) { cancelNativeFile(); runOnUiThread(() -> Toast.makeText(MainActivity.this, "Imeshindikana kuandika faili. Jaribu tena.", Toast.LENGTH_LONG).show()); return false; }
                   }
-                  @JavascriptInterface public void finishFile() {
-                      try { finishNativeFile(); } catch (Exception e) { cancelNativeFile(); runOnUiThread(() -> Toast.makeText(MainActivity.this, "Download imeshindikana.", Toast.LENGTH_SHORT).show()); }
+                  @JavascriptInterface public boolean finishFile() {
+                      try { finishNativeFile(); return true; }
+                      catch (Exception e) { cancelNativeFile(); runOnUiThread(() -> Toast.makeText(MainActivity.this, "Download imeshindikana.", Toast.LENGTH_LONG).show()); return false; }
                   }
                   @JavascriptInterface public void cancelFile() { cancelNativeFile(); }
               }
