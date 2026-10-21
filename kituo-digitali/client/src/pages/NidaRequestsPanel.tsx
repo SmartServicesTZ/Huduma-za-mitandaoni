@@ -58,7 +58,7 @@ export default function NidaRequestsPanel() {
   };
   const send = async (item: NidaRequest) => {
     const number = (numbers[item.id] ?? "").trim();
-    if (!/^\\d{20}$/.test(number)) {
+    if (!/^\d{20}$/.test(number)) {
       toast.error("NIDA lazima iwe na tarakimu 20 tu, bila alama au nafasi.");
       return;
     }
@@ -112,7 +112,7 @@ export default function NidaRequestsPanel() {
         {!["APPROVED", "REJECTED"].includes(item.status) && <>
           <div className="nida-admin-actions nida-admin-actions--primary">
             {item.status === "PENDING" && <button type="button" className="button button--small" disabled={working === item.id} onClick={() => void start(item)}><ShieldCheck size={15}/> {working === item.id ? "Inahifadhi..." : "Anza kushughulikia"}</button>}
-            <label className="nida-admin-number"><span>Namba ya NIDA iliyopatikana</span><input inputMode="numeric" autoComplete="off" maxLength={20} value={numbers[item.id] ?? ""} onChange={(e) => setNumbers((old) => ({ ...old, [item.id]: e.target.value.replace(/\\D/g, "").slice(0, 20) }))} placeholder="Ingiza tarakimu 20"/></label>
+            <label className="nida-admin-number"><span>Namba ya NIDA iliyopatikana</span><input inputMode="numeric" autoComplete="off" maxLength={20} value={numbers[item.id] ?? ""} onChange={(e) => setNumbers((old) => ({ ...old, [item.id]: e.target.value.replace(/\D/g, "").slice(0, 20) }))} placeholder="Ingiza tarakimu 20"/></label>
             <button type="button" className="button button--green button--small" disabled={working === item.id} onClick={() => void send(item)}><Send size={15}/> Tuma NIDA</button>
           </div>
           <div className="nida-admin-quick-reply"><div><strong>Matokeo hayajapatikana?</strong><span>Tuma jibu la kawaida kwa kubonyeza mara moja.</span></div><button type="button" className="nida-not-found-button" disabled={working === item.id} onClick={() => void reject(item, true)}><XCircle size={15}/> NIN NOT FOUND</button></div>
