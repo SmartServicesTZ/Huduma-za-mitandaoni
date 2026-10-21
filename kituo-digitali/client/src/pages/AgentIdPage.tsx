@@ -51,37 +51,35 @@ export default function AgentIdPage() {
       Array.from(source.children).forEach((child, index) => { const next = target.children[index]; if (next) inlineStyles(child, next); });
     };
     inlineStyles(element, clone);
-    clone.style.margin = "0"; clone.style.width = element.offsetWidth + "px"; clone.style.height = element.offsetHeight + "px";
-    // Embed every image as a data URL before rasterizing. Otherwise a logo loaded
-    // from a different origin can taint the canvas and make toBlob() fail.
+    // Embed images as data URLs so remote image sources cannot taint the export canvas.
     const sourceImages = Array.from(element.querySelectorAll<HTMLImageElement>("img"));
     const clonedImages = Array.from(clone.querySelectorAll<HTMLImageElement>("img"));
-    await Promise.all(clonedImages.map(async (img, index) => {
+    await Promise.all(clonedImages.map(async (image, index) => {
       const source = sourceImages[index];
-      const originalSrc = source?.currentSrc || source?.src || img.getAttribute("src") || "";
-      if (!originalSrc || originalSrc.startsWith("data:")) {
-        if (originalSrc) img.src = originalSrc;
+      const src = source?.currentSrc || source?.src || image.getAttribute("src") || "";
+      if (!src || src.startsWith("data:")) {
+        if (src) image.setAttribute("src", src);
         return;
       }
-      try {
-        const response = await fetch(originalSrc, { mode: "cors", credentials: "same-origin" });
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const blob = await response.blob();
-        img.src = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Imeshindikana kusoma picha."));
-          reader.onerror = () => reject(new Error("Imeshindikana kusoma picha."));
-          reader.readAsDataURL(blob);
-        });
-      } catch {
-        // Same-origin relative URLs are resolved against the current page before
-        // fetch. If a source is not embeddable, fail clearly instead of exporting
-        // a tainted canvas or silently producing a broken card.
-        throw new Error("Picha au nembo ya kitambulisho haikuweza kuandaliwa. Hakikisha mtandao upo kisha jaribu tena.");
-      }
+      const resolved = new URL(src, document.baseURI);
+      const response = await fetch(resolved.href, {
+        mode: "cors",
+        credentials: resolved.origin === window.location.origin ? "same-origin" : "omit",
+      });
+      if (!response.ok) throw new Error("Imeshindikana kupakia nembo au picha ya kitambulisho. Hakikisha picha inafunguka kisha jaribu tena.");
+      const imageBlob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Imeshindikana kuandaa picha ya kitambulisho."));
+        reader.onerror = () => reject(new Error("Imeshindikana kuandaa picha ya kitambulisho."));
+        reader.readAsDataURL(imageBlob);
+      });
+      image.setAttribute("src", dataUrl);
+      image.removeAttribute("srcset");
     }));
-    await Promise.all(clonedImages.map((img) => img.decode().catch(() => undefined)));
-    const pageStyles = Array.from(document.querySelectorAll(".agent-id-page style")).map((node) => node.textContent ?? "").join("\n");
+    await Promise.all(clonedImages.map((image) => typeof image.decode === "function" ? image.decode().catch(() => undefined) : Promise.resolve()));
+    clone.style.margin = "0"; clone.style.width = element.offsetWidth + "px"; clone.style.height = element.offsetHeight + "px";
+    const pageStyles = Array.from(document.querySelectorAll(".agent-id-page style")).map((node) => node.textContent ?? "").join("\\n");
     const html = new XMLSerializer().serializeToString(clone);
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (element.offsetWidth * 2) + '" height="' + (element.offsetHeight * 2) + '" viewBox="0 0 ' + element.offsetWidth + " " + element.offsetHeight + '"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>' + pageStyles.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</style><div class="agent-id-page">' + html + '</div></div></foreignObject></svg>';
     const image = new Image();
