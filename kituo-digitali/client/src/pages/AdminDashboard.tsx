@@ -69,7 +69,7 @@ export default function AdminDashboard() {
   const hasPermission = (permission: string) => isSuper || isAdmin || permissions[permission as keyof typeof permissions] === true;
   const canManageLipaApplications = hasPermission("manageLipaApplications");
   const canManage = isAuthenticated && (isSuper || isAdmin || Object.values(permissions).some(Boolean));
-  const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
+  const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "nida";
   const panel = (nav.some(([key]) => key === rawPanel) ? rawPanel : "overview") as Panel;
   const visibleNav = nav.filter(([key]) => key === "overview" || (key === "health" ? (isSuper || isAdmin) : (key === "ordering" ? isSuper : !panelPermission[key] || hasPermission(panelPermission[key]!))));
 
