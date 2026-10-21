@@ -79,8 +79,11 @@ export default function AgentIdPage() {
       image.removeAttribute("crossorigin");
     }));
 
-    const width = Math.max(1, element.getBoundingClientRect().width);
-    const height = Math.max(1, element.getBoundingClientRect().height);
+    // Export at the card template dimensions, never at the mobile preview dimensions.
+    // Responsive CSS can shrink or reshape the on-screen preview, which must not affect PNG output.
+    const isPortrait = element.classList.contains("agent-portrait-card");
+    const width = isPortrait ? 320 : 560;
+    const height = isPortrait ? 520 : 350;
     clone.style.position = "fixed";
     clone.style.left = "-100000px";
     clone.style.top = "0";
@@ -102,6 +105,10 @@ export default function AgentIdPage() {
         scale: 2,
         width,
         height,
+        windowWidth: 1200,
+        windowHeight: 900,
+        scrollX: 0,
+        scrollY: 0,
         useCORS: false,
         allowTaint: false,
         logging: false,
