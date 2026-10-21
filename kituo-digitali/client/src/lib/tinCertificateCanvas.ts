@@ -146,8 +146,8 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
   const tinStyle = pos("tinValue");
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(120, Math.round(nameStyle.y - 30), TIN_CANVAS_WIDTH - 240, 70);
-  ctx.fillRect(160, Math.round(tinStyle.y - 30), TIN_CANVAS_WIDTH - 320, 65);
+  ctx.fillRect(245, Math.round(nameStyle.y - 27), TIN_CANVAS_WIDTH - 490, 56);
+  ctx.fillRect(385, Math.round(tinStyle.y - 25), TIN_CANVAS_WIDTH - 770, 50);
   ctx.restore();
 
   text(ctx, pos("taxpayer"), form.name.toUpperCase());
