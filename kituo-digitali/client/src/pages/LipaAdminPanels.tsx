@@ -73,6 +73,18 @@ function PanelStyles() {
     .lipa-admin-count { background: #edf4ef; border-radius: 999px; color: #126c44; font-size: .72rem; margin-left: 4px; padding: 2px 7px; }
     .lipa-admin-card { background: #fff; border: 1px solid #e2e9e4; border-radius: 14px; overflow: hidden; }
     .lipa-admin-table-wrap { overflow-x: auto; }
+    .lipa-admin-mobile-list { display:none; }
+    .lipa-admin-mobile-card { background:#fff; border:1px solid #e2e9e4; border-radius:12px; padding:13px; }
+    .lipa-admin-mobile-card + .lipa-admin-mobile-card { margin-top:10px; }
+    .lipa-admin-mobile-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+    .lipa-admin-mobile-card h3 { margin:0 0 4px; font-size:.95rem; overflow-wrap:anywhere; }
+    .lipa-admin-mobile-card p { margin:0; color:#68746e; font-size:.8rem; overflow-wrap:anywhere; }
+    .lipa-admin-mobile-card-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:13px 0; }
+    .lipa-admin-mobile-card-grid span { display:block; color:#68746e; font-size:.7rem; }
+    .lipa-admin-mobile-card-grid strong { display:block; font-size:.82rem; overflow-wrap:anywhere; margin-top:3px; }
+    .lipa-admin-mobile-open { width:100%; min-height:42px; background:#168653; color:#fff; border:0; border-radius:9px; font-weight:800; cursor:pointer; }
+    .lipa-admin-mobile-open:disabled { opacity:.55; }
+
     .lipa-admin-table { border-collapse: collapse; min-width: 1120px; width: 100%; }
     .lipa-admin-table th { background: #f7faf8; color: #63716a; font-size: .72rem; letter-spacing: .025em; text-align: left; text-transform: uppercase; white-space: nowrap; }
     .lipa-admin-table th, .lipa-admin-table td { border-bottom: 1px solid #edf1ee; padding: 12px 11px; vertical-align: top; }
@@ -110,6 +122,7 @@ function PanelStyles() {
     .lipa-admin-file-actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .lipa-admin-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 22px; }
     .lipa-admin-detail-banner { background: linear-gradient(135deg,#0f172a,#243b63); border-radius: 13px; color:#fff; padding:15px; margin-bottom:16px; }
+    @media (max-width:760px) { .lipa-admin-table-wrap { display:none; } .lipa-admin-mobile-list { display:block; } .lipa-admin-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .lipa-admin-tabs { overflow-x:auto; flex-wrap:nowrap; padding-bottom:4px; } .lipa-admin-tab { flex:none; } .lipa-admin-action-bar { flex-direction:column; } .lipa-admin-action-bar .lipa-admin-button { width:100%; flex-basis:auto; min-height:42px; } }
     .lipa-admin-detail-banner-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }
     .lipa-admin-detail-banner-item { background:#ffffff12; border:1px solid #ffffff1c; border-radius:9px; padding:9px 10px; }
     .lipa-admin-detail-banner-item span { display:block; color:#b9c8dc; font-size:.68rem; }
@@ -285,6 +298,21 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
       })}
     </div>
     <div className="lipa-admin-card lipa-admin-table-wrap"><table className="lipa-admin-table"><caption className="lipa-admin-muted">Lipa applications filtered by {tab}</caption><thead><tr>{columns.map(([key, label]) => <th key={key} scope="col"><button type="button" className="lipa-admin-sort" onClick={() => changeSort(key)}>{label}{sortKey === key ? (descending ? <ArrowDown size={13} aria-label="descending" /> : <ArrowUp size={13} aria-label="ascending" />) : null}</button></th>)}<th scope="col">Action</th></tr></thead><tbody>{visibleApplications.length === 0 ? <tr><td colSpan={columns.length + 1}><div className="lipa-admin-empty">Hakuna maombi kwenye kichupo hiki.</div></td></tr> : visibleApplications.map((application) => <tr key={application.id || application.applicationId}><td>{application.applicationId || application.id}</td><td>{application.userName || application.userId || "—"}<small>UID: {application.userId}</small></td><td>{byNetwork[application.networkId]?.name ?? application.network ?? "—"}</td><td>{application.applicantName || "—"}</td><td>{application.phone || "—"}</td><td>{application.nidaNumber || "—"}</td><td>{application.tinNumber || "—"}</td><td>{application.businessName || "—"}</td><td>{dateText(application.submittedAt)}</td><td><StatusBadge status={application.status} /></td><td>{application.assignedAdmin || "—"}</td><td>{application.lipaNumber || "—"}</td><td>{application.rewardStatus === "PAID" ? "AMELIPWA" : application.rewardStatus === "NOT_ELIGIBLE" ? "HASTAHILI" : application.rewardStatus === "UNPAID" ? "BADO" : "INASUBIRI"}<small>{Number(application.reward ?? 0) > 0 ? ` · TZS ${Number(application.reward).toLocaleString()}` : ""}</small></td><td><button type="button" className="lipa-admin-row-action" onClick={() => openApplication(application)}><Eye size={15} /> VIEW DETAILS</button></td></tr>)}</tbody></table></div>
+    <div className="lipa-admin-mobile-list" aria-label="Maombi ya Lipa Namba">
+      {visibleApplications.length === 0 ? <div className="lipa-admin-empty">Hakuna maombi kwenye kichupo hiki.</div> : visibleApplications.map((application) => <article className="lipa-admin-mobile-card" key={application.id || application.applicationId}>
+        <div className="lipa-admin-mobile-card-head"><div><h3>{application.applicantName || application.userName || "Mwombaji"}</h3><p>{byNetwork[application.networkId]?.name ?? application.network ?? "Mtandao haujaainishwa"} · {application.phone || "Simu haipo"}</p></div><StatusBadge status={application.status} /></div>
+        <div className="lipa-admin-mobile-card-grid">
+          <div><span>Application ID</span><strong>{application.applicationId || application.id}</strong></div>
+          <div><span>Tarehe</span><strong>{dateText(application.submittedAt)}</strong></div>
+          <div><span>NIDA</span><strong>{application.nidaNumber || "—"}</strong></div>
+          <div><span>TIN</span><strong>{application.tinNumber || "—"}</strong></div>
+          <div><span>Biashara</span><strong>{application.businessName || "—"}</strong></div>
+          <div><span>Lipa namba</span><strong>{application.lipaNumber || "Bado haijawekwa"}</strong></div>
+          <div><span>Zawadi</span><strong>{application.rewardStatus === "PAID" ? "AMELIPWA" : application.rewardStatus === "NOT_ELIGIBLE" ? "HASTAHILI" : application.rewardStatus === "UNPAID" ? "BADO" : "INASUBIRI"}{Number(application.reward ?? 0) > 0 ? ` · TZS ${Number(application.reward).toLocaleString()}` : ""}</strong></div>
+        </div>
+        <button type="button" className="lipa-admin-mobile-open" disabled={busy} onClick={() => openApplication(application)}>FUNGUA OMBI / CHUKUA HATUA</button>
+      </article>)}
+    </div>
     {selected && <div className="lipa-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="lipa-admin-modal" role="dialog" aria-modal="true" aria-labelledby="lipa-application-detail-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-application-detail-heading">VIEW DETAILS — {selected.applicationId || selected.id}</h3><p>{byNetwork[selected.networkId]?.name ?? selected.network ?? "Unknown network"} · <StatusBadge status={selected.status} /></p></div><button type="button" className="lipa-admin-close" aria-label="Close application details" onClick={() => setSelected(null)}><X size={19} /></button></div>
       <div className="lipa-admin-detail-banner">
         <strong style={{fontSize:"1rem"}}>TAARIFA KAMILI YA OMBI</strong>
