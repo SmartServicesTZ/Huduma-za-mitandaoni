@@ -381,6 +381,7 @@ function AccountPage() { return <AccountSettingsPage />; }
 function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [phone, setPhone] = useState("");
   const [requests, setRequests] = useState<NidaRequest[]>([]);
+  const [activeRequestId, setActiveRequestId] = useState("");
   const [busy, setBusy] = useState(false);
   const [copiedResults, setCopiedResults] = useState<Record<string, boolean>>({});
   const hideTimers = useRef<Record<string, number>>({});
@@ -392,7 +393,10 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     const load = async () => {
       try {
         const rows = await listMyNidaRequests();
-        if (!stopped) setRequests(rows);
+        if (!stopped) {
+          setRequests(rows);
+          setActiveRequestId((current) => current || rows[0]?.id || "");
+        }
       } catch {
         if (!stopped) setRequests([]);
       }
@@ -429,10 +433,13 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     if (!/^\d{9,10}$/.test(phone)) { toast.error("Weka namba ya simu yenye tarakimu 9 au 10."); return; }
     setBusy(true);
     try {
-      await submitNidaRequest(phone);
-      toast.success("Ombi limepokelewa. Linaingia kwenye foleni ya admin.");
+      const submitted = await submitNidaRequest(phone);
+      toast.success("Ombi limepokelewa.");
       setPhone("");
-      setRequests(await listMyNidaRequests());
+      setActiveRequestId(submitted.requestId);
+      const rows = await listMyNidaRequests();
+      setRequests(rows);
+      setActiveRequestId(submitted.requestId);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena.");
     } finally { setBusy(false); }
@@ -456,15 +463,15 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   return <section className="quick-nida-panel">
     <div className="quick-nida-panel__head">
       <div className="quick-nida-search__icon"><Search size={20}/></div>
-      <div><span className="overline">HUDUMA KUU • NIDA</span><h3>TAFUTA NAMBA YA NIDA</h3><p>Weka namba ya simu yenye tarakimu 9 au 10. Ukipatikana, utaona na kunakili NIDA hapa. Matokeo yaliyokopiwa hufichwa baada ya dakika 10.</p></div>
+      <div><span className="overline">HUDUMA KUU • NIDA</span><h3>TAFUTA NAMBA YA NIDA</h3></div>
     </div>
     <div className="quick-nida-form">
       <label className="quick-nida-phone-field"><span>Namba ya simu</span><input inputMode="numeric" autoComplete="tel" maxLength={10} value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Ingiza tarakimu 9 au 10" aria-label="Namba ya simu ya mteja"/></label>
       <button type="button" className="button button--green" onClick={() => void run()} disabled={busy}><Search size={16}/> {busy ? "Inatuma..." : "Tafuta NIDA"}</button>
     </div>
     {!isAuthenticated && <div className="notice notice--info"><LogIn size={16}/><span>Ingia kwenye akaunti yako ili kutuma ombi na kuona matokeo.</span></div>}
-    {isAuthenticated && requests.length > 0 && <div className="quick-nida-request-list">
-      {requests.map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
+    {isAuthenticated && requests.some((item) => item.id === activeRequestId) && <div className="quick-nida-request-list">
+      {requests.filter((item) => item.id === activeRequestId).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
         <div className="quick-nida-request__details">
           <div className="quick-nida-request__labels"><span>Namba</span><strong>{item.phone}</strong></div>
           <div className="quick-nida-request__status"><strong>{item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
@@ -482,7 +489,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
         </div>
       </article>)}
     </div>}
-    <style>{`.quick-nida-panel{display:grid;gap:16px;padding:clamp(16px,3vw,24px);border:1px solid #dbeafe;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#f5f8ff 100%);box-shadow:0 12px 32px rgba(15,23,42,.07)}.quick-nida-panel__head{display:flex;align-items:flex-start;gap:13px}.quick-nida-search__icon{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:13px;background:#e0eaff;color:#1d4ed8}.quick-nida-panel__head h3{margin:4px 0 6px;color:#0f172a;font-size:1.1rem;font-weight:900}.quick-nida-panel__head p{margin:0;color:#64748b;font-size:.87rem;line-height:1.55}.quick-nida-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}.quick-nida-phone-field{display:grid;gap:6px;color:#334155;font-size:.8rem;font-weight:800}.quick-nida-phone-field input{width:100%;min-width:0;padding:13px 14px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#0f172a;font-size:1rem;outline:none}.quick-nida-phone-field input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}.quick-nida-form .button{min-height:44px;white-space:nowrap}.quick-nida-request-list{display:grid;gap:10px}.quick-nida-request{padding:14px;border:1px solid #dbe3ee;border-radius:13px;background:#fff}.quick-nida-request--success{border-color:#86efac;background:#f0fdf4}.quick-nida-request--error{border-color:#fca5a5;background:#fff1f2}.quick-nida-request__details{display:grid;gap:11px}.quick-nida-request__labels{display:grid;gap:3px}.quick-nida-request__labels span,.quick-nida-result>span{font-size:.75rem;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.quick-nida-request__labels strong{color:#0f172a;font-size:1rem}.quick-nida-request__status{display:grid;gap:4px}.quick-nida-request__status strong{color:#1d4ed8;font-size:.84rem;font-weight:900}.quick-nida-request--success .quick-nida-request__status strong{color:#15803d}.quick-nida-request--error .quick-nida-request__status strong{color:#b91c1c}.quick-nida-request__status span{font-size:.84rem;color:#475569;overflow-wrap:anywhere}.quick-nida-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 12px;align-items:center;padding-top:10px;border-top:1px solid #bbf7d0}.quick-nida-result>span{grid-column:1/-1;color:#166534}.quick-nida-result code{color:#166534;font-size:1.05rem;font-weight:900;overflow-wrap:anywhere}.quick-nida-expired{grid-column:1/-1;margin:0;color:#64748b;font-size:.84rem}.quick-nida-request--error .quick-nida-request__status span{color:#b91c1c;font-weight:800}@media(max-width:560px){.quick-nida-form{grid-template-columns:1fr}.quick-nida-form .button{width:100%;justify-content:center}.quick-nida-result{grid-template-columns:1fr}.quick-nida-result .button{width:100%;justify-content:center}}`}</style>
+    <style>{`.quick-nida-panel{display:grid;gap:10px;padding:clamp(12px,2vw,16px);border:1px solid #dbeafe;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#f5f8ff 100%);box-shadow:0 12px 32px rgba(15,23,42,.07)}.quick-nida-panel__head{display:flex;align-items:center;gap:10px}.quick-nida-search__icon{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:13px;background:#e0eaff;color:#1d4ed8}.quick-nida-panel__head h3{margin:2px 0 0;color:#0f172a;font-size:1.1rem;font-weight:900}.quick-nida-panel__head p{display:none}.quick-nida-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.quick-nida-phone-field{display:grid;gap:6px;color:#334155;font-size:.8rem;font-weight:800}.quick-nida-phone-field input{width:100%;min-width:0;padding:13px 14px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;color:#0f172a;font-size:1rem;outline:none}.quick-nida-phone-field input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}.quick-nida-form .button{min-height:44px;white-space:nowrap}.quick-nida-request-list{display:grid;gap:6px}.quick-nida-request{padding:10px 12px;border:1px solid #dbe3ee;border-radius:13px;background:#fff}.quick-nida-request--success{border-color:#86efac;background:#f0fdf4}.quick-nida-request--error{border-color:#fca5a5;background:#fff1f2}.quick-nida-request__details{display:grid;gap:7px}.quick-nida-request__labels{display:grid;gap:3px}.quick-nida-request__labels span,.quick-nida-result>span{font-size:.75rem;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.quick-nida-request__labels strong{color:#0f172a;font-size:1rem}.quick-nida-request__status{display:grid;gap:4px}.quick-nida-request__status strong{color:#1d4ed8;font-size:.84rem;font-weight:900}.quick-nida-request--success .quick-nida-request__status strong{color:#15803d}.quick-nida-request--error .quick-nida-request__status strong{color:#b91c1c}.quick-nida-request__status span{font-size:.84rem;color:#475569;overflow-wrap:anywhere}.quick-nida-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 8px;align-items:center;padding-top:10px;border-top:1px solid #bbf7d0}.quick-nida-result>span{grid-column:1/-1;color:#166534}.quick-nida-result code{color:#166534;font-size:1.05rem;font-weight:900;overflow-wrap:anywhere}.quick-nida-expired{grid-column:1/-1;margin:0;color:#64748b;font-size:.84rem}.quick-nida-request--error .quick-nida-request__status span{color:#b91c1c;font-weight:800}@media(max-width:560px){.quick-nida-form{grid-template-columns:1fr}.quick-nida-form .button{width:100%;justify-content:center}.quick-nida-result{grid-template-columns:1fr}.quick-nida-result .button{width:100%;justify-content:center}}`}</style>
   </section>;
 }
 function PortalHome({ search, onUse, services, userName, isAuthenticated, allServicesPage }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[]; userName?: string; isAuthenticated: boolean; allServicesPage: boolean }) {
