@@ -11,8 +11,8 @@ declare global {
   interface Window {
     AndroidDownload?: {
       beginFile: (name: string, mimeType: string) => boolean;
-      appendFileChunk: (base64Chunk: string) => void;
-      finishFile: () => void;
+      appendFileChunk: (base64Chunk: string) => boolean;
+      finishFile: () => boolean;
       cancelFile?: () => void;
     };
   }
@@ -123,17 +123,20 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
   if (nativeDownload) {
     void blob.arrayBuffer().then((buffer) => {
       const bytes = new Uint8Array(buffer);
-      if (!nativeDownload.beginFile(name, blob.type || "application/octet-stream")) throw new Error("Android Downloads haikupatikana.");
-      for (let offset = 0; offset < bytes.length; offset += 96 * 1024) {
+      if (!nativeDownload.beginFile(name, blob.type || "application/octet-stream")) throw new Error("Android imeshindwa kuanzisha faili kwenye Downloads.");
+      // Chunks ndogo hupunguza hatari ya Android WebView kukataa ujumbe mrefu wa JavaScript bridge.
+      for (let offset = 0; offset < bytes.length; offset += 24 * 1024) {
         let binary = "";
-        const chunk = bytes.subarray(offset, Math.min(offset + 96 * 1024, bytes.length));
-        for (let index = 0; index < chunk.length; index += 0x8000) binary += String.fromCharCode(...chunk.subarray(index, index + 0x8000));
-        nativeDownload.appendFileChunk(btoa(binary));
+        const chunk = bytes.subarray(offset, Math.min(offset + 24 * 1024, bytes.length));
+        for (let index = 0; index < chunk.length; index += 0x4000) binary += String.fromCharCode(...chunk.subarray(index, index + 0x4000));
+        if (!nativeDownload.appendFileChunk(btoa(binary))) throw new Error("Android imeshindwa kuandika sehemu ya faili.");
       }
-      nativeDownload.finishFile();
-    }).catch(() => {
+      if (!nativeDownload.finishFile()) throw new Error("Android imeshindwa kuhifadhi faili. Jaribu tena.");
+    }).catch((error: unknown) => {
       nativeDownload.cancelFile?.();
-      startBrowserDownload(blob, name);
+      const message = error instanceof Error ? error.message : "Download imeshindikana kwenye Android.";
+      window.dispatchEvent(new CustomEvent("smartservicestz-download-error", { detail: message }));
+      window.alert(message);
     });
     return;
   }
