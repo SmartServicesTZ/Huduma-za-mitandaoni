@@ -19,6 +19,7 @@ const NETWORKS: Record<Network, {
 const today = () => new Date().toISOString().slice(0, 10);
 const expiry = (value: string) => { const d = new Date(value); d.setFullYear(d.getFullYear() + 1); return d.toISOString().slice(0, 10); };
 const fmt = (value: string) => value ? new Date(value + "T00:00:00").toLocaleDateString("sw-TZ", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
+const preserveWords = (value: string, fallback: string) => (value.trim() || fallback).split(/\s+/).join("\u00a0");
 
 export default function AgentIdPage() {
   const [network, setNetwork] = useState<Network>("Airtel");
@@ -190,7 +191,7 @@ function FrontCard({ cfg, network, photo, name, agentId, phone, type, region, di
     <div className="agent-body">
       <div className="agent-photo">{photo?<img src={photo} alt="Wakala"/>:<span>PICHA YA WAKALA</span>}</div>
       <div className="agent-details">
-        <div className="agent-name">{name||"JINA LA WAKALA"}</div>
+        <div className="agent-name">{preserveWords(name, "JINA LA WAKALA")}</div>
         <div className="agent-row"><b>Agent ID</b><span>{agentId||"—"}</span></div>
         <div className="agent-row"><b>Phone</b><span>{phone||"—"}</span></div>
         <div className="agent-row"><b>Company</b><span>{network==="Mbeya One Company Limited"?"Mbeya One Company Limited":cfg.slogan}</span></div>
@@ -222,7 +223,7 @@ function BackCard({ cfg, network, qr, name, agentId, phone, region, district, ar
       <div><img className="agent-qr" src={qr} alt="QR Code"/><div style={{fontSize:7,textAlign:"center",marginTop:3}}>SCAN TO VERIFY</div></div>
     </div>
     <div className="agent-back-info">
-      <div><b>Jina la Wakala</b>{name||"—"}</div><div><b>Agent Code</b>{agentId||"—"}</div>
+      <div><b>Jina la Wakala</b>{name ? preserveWords(name, "—") : "—"}</div><div><b>Agent Code</b>{agentId||"—"}</div>
       <div><b>Namba ya Simu</b>{phone||"—"}</div><div><b>Mkoa</b>{region||"—"}</div>
       <div><b>Wilaya / Eneo</b>{district} / {area}</div><div><b>Issue / Expiry</b>{fmt(issueDate)} / {fmt(expiry(issueDate))}</div>
     </div>
