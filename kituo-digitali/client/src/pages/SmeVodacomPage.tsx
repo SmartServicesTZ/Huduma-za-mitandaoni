@@ -7,13 +7,6 @@ import { createServiceApplication } from "@/lib/firebase";
 import { formatNida } from "../../../shared/serviceForms";
 import type { ServiceFormValues } from "../../../shared/serviceForms";
 
-const REGIONS = [
-  "Arusha", "Dar es Salaam", "Dodoma", "Geita", "Iringa", "Kagera", "Katavi", "Kigoma",
-  "Kilimanjaro", "Lindi", "Manyara", "Mara", "Mbeya", "Morogoro", "Mtwara", "Mwanza",
-  "Njombe", "Pwani", "Rukwa", "Ruvuma", "Shinyanga", "Simiyu", "Singida", "Songwe",
-  "Tabora", "Tanga", "Kaskazini Pemba", "Kaskazini Unguja", "Kusini Pemba",
-  "Kusini Unguja", "Mjini Magharibi",
-];
 const DATA_PLANS = [
   { price: 15000, data: "10 GB" }, { price: 20000, data: "15 GB" },
   { price: 30000, data: "30 GB" }, { price: 50000, data: "60 GB" },
@@ -32,10 +25,10 @@ const COMBO_PLANS = [
 type PlanType = "data" | "combo";
 type FormState = {
   fullName: string; nidaNumber: string; smePhone: string; contactPhone: string;
-  region: string; district: string; voucherAmount: string; hasTin: string; tinNumber: string; planType: PlanType; selectedPlan: string;
+  voucherAmount: string; hasTin: string; tinNumber: string; planType: PlanType; selectedPlan: string;
 };
 const INITIAL: FormState = {
-  fullName: "", nidaNumber: "", smePhone: "", contactPhone: "", region: "", district: "",
+  fullName: "", nidaNumber: "", smePhone: "", contactPhone: "",
   voucherAmount: "", hasTin: "", tinNumber: "", planType: "data", selectedPlan: "",
 };
 function newApplicationId() {
@@ -50,6 +43,7 @@ function normalizePhone(value: string) {
 }
 function validPhone(value: string) { return /^255[67]\d{8}$/.test(normalizePhone(value)); }
 function money(value: number) { return value.toLocaleString("en-TZ"); }
+function formatTin(value: string) { const digits = value.replace(/\D/g, "").slice(0, 9); return [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)].filter(Boolean).join("-"); }
 
 export default function SmeVodacomPage() {
   const { firebaseUser, loading: authLoading } = useAuth();
@@ -71,12 +65,10 @@ export default function SmeVodacomPage() {
     const next: Record<string, string> = {};
     if (form.fullName.trim().length < 3) next.fullName = "Jaza majina kamili.";
     if (!/^\d{20}$/.test(form.nidaNumber.replace(/\D/g, ""))) next.nidaNumber = "NIDA lazima iwe na tarakimu 20.";
-    if (!validPhone(form.smePhone)) next.smePhone = "Weka namba halali ya Tanzania, mfano 0712000000.";
-    if (!validPhone(form.contactPhone)) next.contactPhone = "Weka namba halali ya mawasiliano.";
-    if (form.hasTin === "ndio" && !/^\d{9}$/.test(form.tinNumber.replace(/\D/g, ""))) next.tinNumber = "Weka namba sahihi ya TIN yenye tarakimu 9.";
+    if (!validPhone(form.smePhone)) next.smePhone = "Weka namba ya Tanzania inayoanza na 255, mfano 255712000000.";
+    if (!validPhone(form.contactPhone)) next.contactPhone = "Weka namba halali ya mawasiliano, mfano 255754000000.";
+    if (form.hasTin === "ndio" && !/^\d{9}$/.test(form.tinNumber.replace(/\D/g, ""))) next.tinNumber = "Weka TIN kwa muundo 133-231-251.";
     if (!form.hasTin) next.hasTin = "Chagua kama una namba ya TIN au huna.";
-    if (!form.region) next.region = "Chagua mkoa.";
-    if (!form.district.trim()) next.district = "Jaza wilaya.";
     const voucher = Number(form.voucherAmount);
     if (!form.voucherAmount || !Number.isFinite(voucher) || voucher < 15000) next.voucherAmount = "Kiasi cha vocha lazima kiwe TSh 15,000 au zaidi.";
     if (!form.selectedPlan) next.selectedPlan = "Chagua kifurushi unachotaka.";
@@ -93,7 +85,8 @@ export default function SmeVodacomPage() {
       const values: ServiceFormValues = {
         fullName: form.fullName.trim(), nidaNumber: formatNida(form.nidaNumber),
         smePhone: normalizePhone(form.smePhone), contactPhone: normalizePhone(form.contactPhone),
-        hasTin: form.hasTin, tinNumber: form.hasTin === "ndio" ? form.tinNumber.replace(/\D/g, "") : "HANA", region: form.region, district: form.district.trim(),
+        alternativePhone: normalizePhone(form.contactPhone), alternatePhone: normalizePhone(form.contactPhone),
+        hasTin: form.hasTin, tinNumber: form.hasTin === "ndio" ? formatTin(form.tinNumber) : "HANA",
         voucherAmount: String(Number(form.voucherAmount)), planType: form.planType,
         selectedPlan: form.selectedPlan, selectedPlanName: `${form.planType === "data" ? "Data Plan" : "Combo Plan"} — TSh ${money(Number(form.selectedPlan))}`,
       };
@@ -183,8 +176,8 @@ export default function SmeVodacomPage() {
               <div className="grid gap-5 sm:grid-cols-2">
                 <div><label htmlFor="sme-full-name" className="text-sm font-extrabold">Majina kamili <span className="text-red-600">*</span></label><input id="sme-full-name" autoComplete="name" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} placeholder="Andika majina yako yote" className={fieldClass("fullName")} aria-invalid={!!errors.fullName}/><FieldError field="fullName"/></div>
                 <div><label htmlFor="sme-nida" className="text-sm font-extrabold">Namba ya NIDA <span className="text-red-600">*</span></label><input id="sme-nida" inputMode="numeric" value={form.nidaNumber} onChange={(e) => update("nidaNumber", e.target.value.replace(/\D/g, "").slice(0,20))} placeholder="Tarakimu 20" className={fieldClass("nidaNumber")} aria-invalid={!!errors.nidaNumber}/><FieldError field="nidaNumber"/></div>
-                <div><label htmlFor="sme-phone" className="text-sm font-extrabold">Namba ya Vodacom ya SME <span className="text-red-600">*</span></label><input id="sme-phone" type="tel" autoComplete="tel" value={form.smePhone} onChange={(e) => update("smePhone", e.target.value)} placeholder="0712 000 000" className={fieldClass("smePhone")} aria-invalid={!!errors.smePhone}/><FieldError field="smePhone"/></div>
-                <div><label htmlFor="sme-alternative" className="text-sm font-extrabold">Namba ya mawasiliano <span className="text-red-600">*</span></label><input id="sme-alternative" type="tel" value={form.contactPhone} onChange={(e) => update("contactPhone", e.target.value)} placeholder="0754 000 000" className={fieldClass("contactPhone")} aria-invalid={!!errors.contactPhone}/><FieldError field="contactPhone"/></div>
+                <div><label htmlFor="sme-phone" className="text-sm font-extrabold">Namba ya Vodacom ya SME <span className="text-red-600">*</span></label><input id="sme-phone" type="tel" autoComplete="tel" value={form.smePhone} onChange={(e) => update("smePhone", e.target.value)} placeholder="255712000000" className={fieldClass("smePhone")} aria-invalid={!!errors.smePhone}/><FieldError field="smePhone"/></div>
+                <div><label htmlFor="sme-alternative" className="text-sm font-extrabold">Namba ya mawasiliano <span className="text-red-600">*</span></label><input id="sme-alternative" type="tel" value={form.contactPhone} onChange={(e) => update("contactPhone", e.target.value)} placeholder="255754000000" className={fieldClass("contactPhone")} aria-invalid={!!errors.contactPhone}/><FieldError field="contactPhone"/></div>
               </div>
               <div className="rounded-2xl border border-red-100 bg-red-50/70 p-4 sm:p-5">
                 <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-700 shadow-sm"><Wallet size={21}/></span><div className="flex-1"><label htmlFor="sme-voucher" className="text-sm font-black text-slate-900">Vocha imewekwa ya shilingi ngapi? <span className="text-red-600">*</span></label><p className="mt-1 text-xs leading-5 text-slate-600">Ingiza kiasi cha vocha kilichowekwa kwenye laini. Kiwango cha chini ni TSh 15,000.</p><div className="relative mt-3"><span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-black text-slate-500">TSh</span><input id="sme-voucher" type="number" min="15000" step="1000" inputMode="numeric" value={form.voucherAmount} onChange={(e) => update("voucherAmount", e.target.value)} placeholder="Mfano: 15000" className={`${fieldClass("voucherAmount")} pl-14`} aria-invalid={!!errors.voucherAmount}/></div><FieldError field="voucherAmount"/></div></div>
@@ -197,10 +190,9 @@ export default function SmeVodacomPage() {
                   <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm font-bold ${form.hasTin === "hana" ? "border-red-600 bg-red-50 text-red-700" : "border-slate-200"}`}><input type="radio" name="hasTin" value="hana" checked={form.hasTin === "hana"} onChange={() => { update("hasTin", "hana"); update("tinNumber", ""); }} className="accent-red-700"/> Sina TIN</label>
                 </div>
                 <FieldError field="hasTin"/>
-                {form.hasTin === "ndio" && <div className="mt-4"><label htmlFor="sme-tin-number" className="text-sm font-extrabold">Namba ya TIN <span className="text-red-600">*</span></label><input id="sme-tin-number" inputMode="numeric" value={form.tinNumber} onChange={(e) => update("tinNumber", e.target.value.replace(/\D/g, "").slice(0,9))} placeholder="Tarakimu 9 za TIN" className={fieldClass("tinNumber")} aria-invalid={!!errors.tinNumber}/><FieldError field="tinNumber"/></div>}
+                {form.hasTin === "ndio" && <div className="mt-4"><label htmlFor="sme-tin-number" className="text-sm font-extrabold">Namba ya TIN <span className="text-red-600">*</span></label><input id="sme-tin-number" inputMode="numeric" value={form.tinNumber} onChange={(e) => update("tinNumber", formatTin(e.target.value))} placeholder="133-231-251" className={fieldClass("tinNumber")} aria-invalid={!!errors.tinNumber}/><FieldError field="tinNumber"/></div>}
               </div>
-              <div className="grid gap-5 sm:grid-cols-2"><div><label htmlFor="sme-region" className="text-sm font-extrabold">Mkoa <span className="text-red-600">*</span></label><select id="sme-region" value={form.region} onChange={(e) => update("region", e.target.value)} className={fieldClass("region")} aria-invalid={!!errors.region}><option value="">Chagua mkoa</option>{REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}</select><FieldError field="region"/></div><div><label htmlFor="sme-district" className="text-sm font-extrabold">Wilaya <span className="text-red-600">*</span></label><input id="sme-district" value={form.district} onChange={(e) => update("district", e.target.value)} placeholder="Andika wilaya" className={fieldClass("district")} aria-invalid={!!errors.district}/><FieldError field="district"/></div></div>
-              {message && <div role="status" aria-live="polite" className={`rounded-2xl border p-4 text-sm ${reference ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>{message}{reference && <p className="mt-1 font-black">Namba ya kumbukumbu: {reference}</p>}</div>}
+                            {message && <div role="status" aria-live="polite" className={`rounded-2xl border p-4 text-sm ${reference ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>{message}{reference && <p className="mt-1 font-black">Namba ya kumbukumbu: {reference}</p>}</div>}
               <button type="submit" disabled={submitting || authLoading} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#a90017] to-[#d20b2c] px-5 py-4 font-black text-white shadow-lg shadow-red-700/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? <><LoaderCircle size={19} className="animate-spin"/> Inatuma ombi...</> : <><Send size={18}/> TUMA OMBI LA SME VODACOM</>}</button>
               <p className="text-center text-xs leading-5 text-slate-500">Taarifa zako zitatumwa kwa ajili ya kushughulikia ombi la SME VODACOM.</p>
             </form>
