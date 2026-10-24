@@ -112,7 +112,7 @@ export default function SmeAirtelPage() {
           </div>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {plans.map((plan) => { const selected = form.selectedPlan === String(plan.price); const combo = "calls" in plan; return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={"relative rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md " + (selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300")}>
+          {plans.map((plan) => { const selected = form.selectedPlan === String(plan.price); const combo = "calls" in plan; return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={"relative rounded-2xl border p-3 sm:p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md " + (selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300")}>
             {selected && <span className="absolute right-3 top-3 text-red-700"><CircleCheck size={20}/></span>}
             <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black tracking-wider text-slate-600">KILA MWEZI</span>
             <p className="mt-3 text-2xl font-black text-slate-900">{plan.data}</p><p className="mt-1 text-sm font-bold text-red-700">TSh {money(plan.price)}</p>
