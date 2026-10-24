@@ -173,6 +173,32 @@ function PanelStyles() {
     .lipa-admin-network-actions { display: flex; flex-wrap: wrap; gap: 7px; }
     .lipa-admin-muted { color: #68746e; font-size: .78rem; }
     .lipa-admin-preview-link { overflow-wrap: anywhere; }
+    .lipa-admin-panel { color:#152238; }
+    .lipa-admin-heading { align-items:center; background:linear-gradient(120deg,#f7f9ff,#eef7ff); border:1px solid #dce7f7; border-radius:16px; padding:18px; }
+    .lipa-admin-heading h2 { color:#142b50; letter-spacing:-.035em; }
+    .lipa-admin-heading p { max-width:620px; line-height:1.55; }
+    .lipa-admin-stat { border-radius:14px; box-shadow:0 5px 16px #102b5010; }
+    .lipa-admin-card { border-color:#dce5f1; border-radius:15px; box-shadow:0 8px 24px #102b500a; }
+    .lipa-admin-modal { max-width:1000px; border:1px solid #dce5f1; border-radius:20px; padding:clamp(17px,3vw,28px); }
+    .lipa-admin-modal-header { padding-bottom:14px; border-bottom:1px solid #e6edf7; }
+    .lipa-admin-modal-header h3 { color:#132b50; font-size:clamp(1.1rem,2.6vw,1.45rem); letter-spacing:-.03em; }
+    .lipa-admin-detail-banner { border-radius:15px; }
+    .lipa-admin-detail-grid { gap:8px 18px; }
+    .lipa-admin-detail-item { min-width:0; padding:10px 0; }
+    .lipa-admin-detail-item dt { font-size:.75rem; }
+    .lipa-admin-detail-item dd { font-size:.9rem; line-height:1.5; overflow-wrap:anywhere; }
+    .lipa-admin-action-bar { display:flex; flex-wrap:wrap; gap:9px; padding:12px; margin:14px 0; border:1px solid #dce7f7; border-radius:13px; background:#f6f9ff; }
+    .lipa-admin-action-bar .lipa-admin-button { min-height:42px; }
+    .lipa-admin-modal .lipa-admin-card { padding:16px !important; background:#f9fbff; }
+    .lipa-admin-modal .lipa-admin-field label { display:block; margin-bottom:6px; font-size:.82rem; font-weight:800; color:#243a5a; }
+    .lipa-admin-modal .lipa-admin-field input, .lipa-admin-modal .lipa-admin-field textarea, .lipa-admin-modal .lipa-admin-field select { width:100%; max-width:100%; min-height:43px; padding:10px 12px; border:1px solid #cbd8ea; border-radius:10px; background:#fff; color:#152238; font:inherit; }
+    .lipa-admin-modal .lipa-admin-field textarea { min-height:105px; resize:vertical; }
+    .lipa-admin-modal .lipa-admin-actions .lipa-admin-button { min-height:43px; }
+    .lipa-admin-file { align-items:center; flex-wrap:wrap; }
+    .lipa-admin-file-actions { flex-wrap:wrap; }
+    .lipa-admin-button { min-height:38px; border-radius:10px; }
+    .lipa-admin-mobile-card { border-radius:15px; box-shadow:0 6px 20px #102b5008; }
+    .lipa-admin-mobile-open { min-height:45px; border-radius:11px; }
     @media (max-width: 900px) { .lipa-admin-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (max-width: 620px) { .lipa-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lipa-admin-detail-grid, .lipa-admin-form-grid { grid-template-columns: 1fr; } .lipa-admin-field-wide { grid-column: auto; } .lipa-admin-modal { padding: 17px; } .lipa-admin-network-item { align-items: flex-start; flex-direction: column; } .lipa-admin-network-actions { width: 100%; } .lipa-admin-network-actions .lipa-admin-button { flex: 1; } }
   `}</style>;
@@ -353,7 +379,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
          <div className="lipa-admin-field" style={{marginTop:12}}><label>Taarifa za ziada zinazohitajika</label><textarea value={replyForm.infoRequest} onChange={(e) => setReplyForm((v) => ({...v, infoRequest:e.target.value}))} placeholder="Mfano: Tafadhali tuma picha iliyo wazi ya NIDA..." /></div>
          <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={replySaving || (!replyForm.reply.trim() && !replyForm.infoRequest.trim())} onClick={() => void saveAdminReply()}>{replySaving ? "Inatuma..." : "TUMA JIBU / OMBI LA TAARIFA"}</button></div>
        </section>
-      <h4 className="lipa-admin-section-title">Status timestamps</h4><dl className="lipa-admin-detail-grid">{(["PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-detail-item" key={status}><dt>{status}</dt><dd>{dateText(applicationStatusTimestamp(selected, status))}</dd></div>)}</dl>
+      <h4 className="lipa-admin-section-title">Historia ya mabadiliko ya hali</h4><dl className="lipa-admin-detail-grid">{(["PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-detail-item" key={status}><dt>{status}</dt><dd>{dateText(applicationStatusTimestamp(selected, status))}</dd></div>)}</dl>
       {selected.status === "APPROVED" && <section className="lipa-admin-card" style={{marginTop:18,padding:16}}>
         <h4 className="lipa-admin-section-title" style={{marginTop:0}}>Lipa Namba, Zawadi & Ufuatiliaji</h4>
         <p className="lipa-admin-muted">Hapa utaweka Lipa Namba iliyotolewa, idadi ya miamala kutoka report ya kesho, kisha utatenganisha waliohitimu, ambao hawajafuzu na waliolipwa.</p>
