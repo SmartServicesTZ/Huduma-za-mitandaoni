@@ -330,6 +330,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
         {visibleApplications.length === 0 ? (
           <div className="service-app-admin-empty">Hakuna maombi katika hali hii.</div>
         ) : (
+          <>
           <div className="service-app-admin-mobile-list" aria-label="Maombi ya huduma kwenye simu">
             {visibleApplications.map((application) => {
               const service = serviceForApplication(application, services);
@@ -379,6 +380,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
