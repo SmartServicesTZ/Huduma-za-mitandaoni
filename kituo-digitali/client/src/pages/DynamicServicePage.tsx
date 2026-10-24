@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   createServiceApplication,
+  updateServiceApplication,
   removeServiceUpload,
   subscribeUserServiceApplications,
   uploadServiceDocument,
@@ -54,6 +55,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     [service.fields],
   );
   const [applicationId] = useState(newApplicationId);
+  const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [values, setValues] = useState<ServiceFormValues>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploads, setUploads] = useState<Record<string, UploadPreview>>({});
@@ -223,8 +225,17 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     }
     setSubmitting(true);
     try {
-      const result = await createServiceApplication(applicationId, service.slug, values) as ResultLike;
-      setSuccessReference(String(result.reference ?? result.applicationId ?? applicationId));
+      if (editingApplicationId) {
+        await updateServiceApplication(editingApplicationId, values);
+        setSuccessReference(editingApplicationId);
+        setEditingApplicationId(null);
+        setValues({});
+        setUploads({});
+        setFormError("Mabadiliko yamehifadhiwa. Ombi bado linasubiri kuanza kushughulikiwa.");
+      } else {
+        const result = await createServiceApplication(applicationId, service.slug, values) as ResultLike;
+        setSuccessReference(String(result.reference ?? result.applicationId ?? applicationId));
+      }
     } catch (error) {
       setFormError(errorMessage(error, "Imeshindikana kutuma ombi. Tafadhali jaribu tena."));
     } finally {
@@ -413,7 +424,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
             </form>
           ) : <p className="dynamic-service-empty">Fomu ya huduma hii bado haijawekewa sehemu za kujaza.</p>}
         </section>
-        {firebaseUser && <section className="dynamic-service-card dynamic-service-history" aria-labelledby="dynamic-service-history-heading"><h2 className="dynamic-service-card-heading" id="dynamic-service-history-heading">Maombi yangu ya {service.name}</h2>{ownApplications.length ? ownApplications.map((application) => <article className="dynamic-service-history-row" key={application.id}><div className="dynamic-service-history-meta"><strong>Rejea: {application.applicationId}</strong><span className="dynamic-service-status">{application.status}</span></div><small>Imetumwa: {formatDate(application.submittedAt)}</small>{application.rejectionReason && <div className="dynamic-service-rejection"><strong>Sababu ya kukataliwa:</strong> {application.rejectionReason}</div>}</article>) : <p className="dynamic-service-empty">Bado hujatuma ombi la huduma hii.</p>}</section>}
+        {firebaseUser && <section className="dynamic-service-card dynamic-service-history" aria-labelledby="dynamic-service-history-heading"><h2 className="dynamic-service-card-heading" id="dynamic-service-history-heading">Maombi yangu ya {service.name}</h2>{ownApplications.length ? ownApplications.map((application) => <article className="dynamic-service-history-row" key={application.id}><div className="dynamic-service-history-meta"><strong>Rejea: {application.applicationId}</strong><span className="dynamic-service-status">{application.status}</span></div><small>Imetumwa: {formatDate(application.submittedAt)}</small><dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">{Object.entries(application.applicantData ?? {}).filter(([key,value]) => value !== undefined && value !== null && value !== "").map(([key,value]) => <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-2"><dt className="text-xs text-slate-500">{fields.find(field => field.fieldName === key)?.label ?? key}</dt><dd className="break-words text-sm font-semibold">{typeof value === "string" && /^(serviceApplications|serviceUploads)\\//.test(value) ? "Faili limeambatishwa" : String(value)}</dd></div>)}</dl>{application.status === "PENDING" && <button type="button" className="dynamic-service-upload-button mt-3" onClick={() => { setEditingApplicationId(application.applicationId || application.id); setValues({ ...(application.applicantData ?? {}) }); setUploads({}); setFormError("Unahariri ombi ambalo bado halijaanza kushughulikiwa. Badilisha taarifa kisha hifadhi."); setSuccessReference(""); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Hariri ombi</button>}{application.rejectionReason && <div className="dynamic-service-rejection"><strong>Sababu ya kukataliwa:</strong> {application.rejectionReason}</div>}</article>) : <p className="dynamic-service-empty">Bado hujatuma ombi la huduma hii.</p>}</section>}
       </div>
     </main>
   );
