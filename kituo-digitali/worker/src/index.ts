@@ -64,7 +64,7 @@ function paymentFlowsEnabled(env: Env) {
 const firebaseJwks = createRemoteJWKSet(new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"));
 
 function allowedOrigins(env: Env) {
-  return new Set((env.ALLOWED_ORIGINS ?? "https://steward-tz.github.io")
+  return new Set((env.ALLOWED_ORIGINS ?? "https://smartservicestz.github.io,https://steward-tz.github.io")
     .split(",").map((origin) => origin.trim()).filter(Boolean));
 }
 
