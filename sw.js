@@ -1,21 +1,16 @@
-const CACHE = "smartservices-tz-pwa-v4";
-
-self.addEventListener("install", event => {
-  event.waitUntil(self.skipWaiting());
-});
-
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
-      .then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
-  event.respondWith(fetch(event.request).then(response => {
-    if (response && response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
-    return response;
-  }).catch(() => caches.match(event.request)));
+// Disable the old aggressive cache layer while diagnosing startup hangs.
+// The site is served by GitHub Pages; the browser should load current assets
+// directly rather than let a stale service worker intercept JS/CSS requests.
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    try {
+      await caches.delete("steward-tz-pwa-v3");
+      await self.registration.unregister();
+      await self.clients.claim();
+    } catch (error) {
+      // Service-worker cleanup must never prevent the website from loading.
+      console.warn("SmartServicesTZ service-worker cleanup skipped:", error);
+    }
+  })());
 });
