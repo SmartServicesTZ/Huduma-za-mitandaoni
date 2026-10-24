@@ -87,7 +87,7 @@ export default function SmeAirtelPage() {
       setMessage(detail); toast.error(detail);
     } finally { setSubmitting(false); }
   };
-  const fieldClass = (key: string) => "mt-2 w-full rounded-xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 " + (errors[key] ? "border-red-500" : "border-slate-200");
+  const fieldClass = (key: string) => "mt-2 w-full rounded-xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 focus:shadow-lg " + (errors[key] ? "border-red-500" : "border-slate-200");
   const FieldError = ({ field }: { field: string }) => errors[field] ? <p className="mt-1.5 text-xs font-semibold text-red-600">{errors[field]}</p> : null;
 
   return <main className="min-h-screen bg-[#f5f6fa] px-3 py-5 text-slate-800 sm:px-6 sm:py-8">
@@ -111,13 +111,13 @@ export default function SmeAirtelPage() {
             <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={"rounded-lg px-4 py-2.5 text-sm font-extrabold " + (form.planType === "combo" ? "bg-red-700 text-white shadow" : "text-slate-600")}><Smartphone size={15} className="mr-1 inline"/> Combo bando</button>
           </div>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3">
-          {plans.map((plan) => { const selected = form.selectedPlan === String(plan.price); const combo = "calls" in plan; return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={"relative rounded-2xl border p-2 sm:p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md " + (selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300")}>
+        <div className="mt-5 grid grid-cols-3 gap-1.5 sm:gap-3">
+          {plans.map((plan) => { const selected = form.selectedPlan === String(plan.price); const combo = "calls" in plan; return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={"relative rounded-xl border p-1.5 text-left transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] sm:rounded-2xl sm:p-3 " + (selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300")}>
             {selected && <span className="absolute right-3 top-3 text-red-700"><CircleCheck size={20}/></span>}
-            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black tracking-wider text-slate-600">KILA MWEZI</span>
-            <p className="mt-2 text-xl font-black text-slate-900 sm:text-2xl">{plan.data}</p><p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
-            {combo ? <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-slate-200 pt-2 text-[11px] font-semibold text-slate-600"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div> : <p className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500">Data pekee</p>}
-            <span className={"mt-2 inline-flex items-center gap-1 text-[11px] font-extrabold " + (selected ? "text-red-700" : "text-slate-500")}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"}</span>
+            <span className="inline-flex rounded-full bg-slate-100 px-1.5 py-1 text-[8px] font-black tracking-wide text-slate-600 sm:px-2.5 sm:text-[10px]">KILA MWEZI</span>
+            <p className="mt-2 text-base font-black text-slate-900 sm:text-2xl">{plan.data}</p><p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
+            {combo ? <div className="mt-1 flex flex-col gap-0.5 border-t border-slate-200 pt-1 text-[9px] font-semibold text-slate-600 sm:mt-2 sm:flex-row sm:gap-x-2 sm:gap-y-1 sm:pt-2 sm:text-[11px]"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div> : <p className="mt-1 border-t border-slate-100 pt-1 text-[9px] text-slate-500 sm:mt-2 sm:pt-2 sm:text-[11px]">Data pekee</p>}
+            <span className={"mt-1 inline-flex items-center gap-1 text-[9px] font-extrabold sm:mt-2 sm:text-[11px] " + (selected ? "text-red-700" : "text-slate-500")}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"}</span>
           </button>; })}
         </div><FieldError field="selectedPlan"/>
         <div className="mt-5 flex flex-col gap-2 rounded-2xl bg-slate-900 p-4 text-white sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-white/60">Kifurushi ulichochagua</p><p className="mt-1 text-lg font-black">{chosenPlan ? chosenPlan.data + " · TSh " + money(chosenPlan.price) : "Bado hujachagua kifurushi"}</p></div><span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3 py-2 text-xs font-bold"><CheckCircle2 size={15}/> Airtel Business</span></div>
@@ -125,7 +125,7 @@ export default function SmeAirtelPage() {
 
       <section className="mt-6 grid items-start gap-6 lg:grid-cols-[.7fr_1.3fr]">
         <aside className="rounded-3xl bg-[#fff1f2] p-5 ring-1 ring-red-100 sm:p-6"><span className="text-xs font-black tracking-[.18em] text-red-700">ZAWADI YA SME</span><p className="mt-2 text-4xl font-black text-red-700">TSh 2,000</p><p className="mt-2 text-sm leading-6 text-slate-600">Kwa kila SME moja itakayokubaliwa na kuthibitishwa na admin. Zawadi hii si malipo ya papo hapo wakati wa kutuma ombi.</p><div className="mt-5 rounded-2xl bg-white p-4 text-sm font-semibold text-slate-700">Laini lazima iwe imewekewa vocha ya angalau <strong>TSh 10,000</strong>.</div></aside>
-        <form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-7">
+        <form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm animate-[fadeInUp_.65s_ease-out_both] transition-shadow duration-500 hover:shadow-md sm:p-7">
           <div className="mb-6"><span className="text-xs font-black tracking-[.18em] text-red-700">TAARIFA ZA MWOMBAJI</span><h2 className="mt-1 text-2xl font-black">Jaza fomu ya SME Airtel</h2><p className="mt-1 text-sm text-slate-500">Hakikisha taarifa zinafanana na kitambulisho.</p></div>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block sm:col-span-2"><span className="text-sm font-bold">Namba ya simu ya Airtel (mpya au ya zamani) *</span><input required autoComplete="tel" inputMode="tel" value={form.phone} onChange={e => update("phone", e.target.value)} placeholder="Mfano 0681234567" className={fieldClass("phone")}/><FieldError field="phone"/></label>
