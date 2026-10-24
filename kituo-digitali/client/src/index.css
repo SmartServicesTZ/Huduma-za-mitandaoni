@@ -2339,3 +2339,57 @@ html body .portal-shell .portal-content .portal-main .portal-service-grid > .por
   .admin-app > .admin-drawer-backdrop { z-index: 80; }
   .admin-app > .admin-content { min-width: 0; }
 }
+
+
+/* SmartServicesTZ: consistent modern colour accents and visible outlines across forms/cards. */
+:root {
+  --form-outline: #4f8cff;
+  --form-outline-alt: #9b6bff;
+  --form-focus: #21c7a8;
+  --form-surface: #f8fbff;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  border: 1.5px solid var(--form-outline) !important;
+  border-radius: 10px !important;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+textarea:focus,
+select:focus {
+  border-color: var(--form-focus) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(33,199,168,.18) !important;
+}
+form,
+[class*="card"],
+[class*="Card"],
+[class*="panel"],
+[class*="Panel"],
+[class*="form-box"],
+[class*="formBox"] {
+  border-color: var(--form-outline-alt) !important;
+}
+[class*="card"],
+[class*="Card"],
+[class*="panel"],
+[class*="Panel"],
+[class*="form-box"],
+[class*="formBox"] {
+  box-shadow: 0 8px 24px rgba(48, 74, 140, .09);
+}
+.portal-service-card,
+.tutorial-card,
+.special-card {
+  border: 1.5px solid var(--form-outline) !important;
+}
+.admin-form-grid input,
+.admin-form-grid textarea,
+.admin-panel > select,
+.auth-fields input {
+  border-color: var(--form-outline) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  input, textarea, select { transition: none !important; }
+}
