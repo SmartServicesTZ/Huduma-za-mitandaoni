@@ -541,17 +541,27 @@ export const setLipaApplicationStatus = callable(async (request) => {
     if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
     const application = snapshot.data()!;
     const from = String(application.status ?? "PENDING");
-    const allowed = (status === "PROCESSING" && from === "PENDING") || ((status === "APPROVED" || status === "REJECTED") && from === "PROCESSING");
+    const allowed = from !== status && (
+      (status === "PROCESSING" && from === "PENDING") ||
+      (status === "APPROVED" && (from === "PENDING" || from === "PROCESSING")) ||
+      (status === "REJECTED" && (from === "PENDING" || from === "PROCESSING"))
+    );
     if (!allowed) throw new ApiError("failed-precondition", `Mabadiliko kutoka ${from} kwenda ${status} hayaruhusiwi.`);
     const now = FieldValue.serverTimestamp();
+    const networkName = String(application.network ?? application.networkId ?? "").trim();
+    const isAirtel = /airtel/i.test(networkName) || /airtel/i.test(String(application.networkId ?? ""));
+    const approvedMessage = isAirtel
+      ? `Ombi lako la lipa namba Airtel la namba hii ${String(application.phone ?? application.applicantData?.phone ?? "—")} limefanikiwa.\\n\\nKuwezesha account ya biashara fuata hatua hizi\\n*150*60*05#\\nChagua 1 kuendelea\\nChagua 1 Get lipa namba\\nKisha weka namba ya siri\\n(Utapokea lipa namba yako kupitia SMS)`
+      : `Ombi lako la Lipa Namba la ${networkName || "mtandao uliochagua"} limekubaliwa. Tafadhali fuata maelekezo ya mtandao husika ili kukamilisha kuwezesha account ya biashara.`;
     const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
     if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
-    if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid });
+    if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid, adminReply: approvedMessage, rejectionReason: "" });
     if (status === "REJECTED") Object.assign(patch, { rejectionReason, rejectedAt: now, rejectedBy: uid });
     transaction.update(ref, patch);
     if (status === "APPROVED" || status === "REJECTED") transaction.delete(db.collection("lipaOpenApplications").doc(`${application.userId}_${application.networkId}_${application.applicationId}`));
-    const reasonSuffix = status === "REJECTED" ? ` Sababu: ${rejectionReason}` : "";
-    transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${application.network}`, body: status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? "Maombi yako yamekubaliwa." : `Maombi yako yamekataliwa.${reasonSuffix}`, type: "lipaApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
+    const reasonSuffix = status === "REJECTED" ? `\\n\\nSababu: ${rejectionReason}` : "";
+    const messageBody = status === "PROCESSING" ? "Ombi lako linafanyiwa kazi na Admin." : status === "APPROVED" ? approvedMessage : `Ombi lako limekataliwa.${reasonSuffix}`;
+    transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${networkName || "Lipa Namba"}`, body: messageBody, type: "lipaApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     const auditRef = db.collection("auditLogs").doc();
     transaction.create(auditRef, { action: status === "PROCESSING" ? "LIPA_APPLICATION_PROCESSING" : status === "APPROVED" ? "LIPA_APPLICATION_APPROVED" : "LIPA_APPLICATION_REJECTED", actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     recordAudit(transaction, uid, String(actor.role), `LIPA_APPLICATION_${status}`, "lipaApplication", applicationId, { status: from }, { status }, { reason: status === "REJECTED" ? rejectionReason : "" });
