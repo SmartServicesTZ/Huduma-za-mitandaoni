@@ -508,7 +508,7 @@ export const submitLipaApplication = callable(async (request) => {
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const application = {
       applicationId, userId: uid, userName: String(profile.name ?? ""), network: String(config.name ?? networkId), networkId, serviceId: "pata-lipa-namba",
-      applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" "),
+      applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" ") || String(profile.name ?? profile.firstName ?? "Mwombaji"),
       phone: String(applicantData.phone ?? ""), businessName: String(applicantData.businessName ?? ""), nidaNumber: String(applicantData.nidaNumber ?? ""), tinNumber: String(applicantData.tinNumber ?? ""),
       businessLicense: String(applicantData.businessLicense ?? ""), idDocumentUrl: String(applicantData.idDocument ?? ""), idDocumentType: String(applicantData.idDocumentType ?? ""), applicantData,
       reward: Number(config.reward ?? 0), additionalNotes, rewardStatus: Number(config.reward ?? 0) > 0 ? "UNPAID" : "NOT_ELIGIBLE", qualificationStatus: Number(config.reward ?? 0) > 0 ? "PENDING_CHECK" : "NOT_QUALIFIED", verifiedTransactions: 0, lipaNumber: "", rewardPaymentReference: "", rewardNote: "", status: "PENDING", rejectionReason: "", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
