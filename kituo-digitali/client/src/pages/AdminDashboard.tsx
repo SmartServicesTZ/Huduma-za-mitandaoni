@@ -13,9 +13,9 @@ import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels
 import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
 import NidaRequestsPanel from "./NidaRequestsPanel";
 
-type Panel = "overview" | "health" | "users" | "tokens" | "services" | "serviceControl" | "applications" | "nida" | "lipa" | "ordering" | "videos" | "transactions" | "announcements" | "cms" | "security" | "messages" | "licenses";
+type Panel = "overview" | "health" | "users" | "tokens" | "services" | "serviceControl" | "applications" | "nida" | "lipa" | "lipaReport" | "ordering" | "videos" | "transactions" | "announcements" | "cms" | "security" | "messages" | "licenses";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
-  ["overview", "Muhtasari", LayoutDashboard], ["health", "Mlinzi wa Hitilafu", ShieldCheck], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "Maombi ya huduma", ClipboardList], ["nida", "Maombi ya NIDA", Search], ["lipa", "Pata Lipa Namba", WalletCards], ["ordering", "Mpangilio wa vipengele", SlidersHorizontal], ["videos", "Video", PlaySquare], ["transactions", "Transactions", BarChart3], ["announcements", "Matangazo", Bell], ["cms", "Muonekano & CMS", Palette], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["licenses", "Leseni", FileKey2],
+  ["overview", "Muhtasari", LayoutDashboard], ["health", "Mlinzi wa Hitilafu", ShieldCheck], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "Maombi ya huduma", ClipboardList], ["nida", "Maombi ya NIDA", Search], ["lipa", "Pata Lipa Namba", WalletCards], ["lipaReport", "Ripoti za Lipa", BarChart3], ["ordering", "Mpangilio wa vipengele", SlidersHorizontal], ["videos", "Video", PlaySquare], ["transactions", "Transactions", BarChart3], ["announcements", "Matangazo", Bell], ["cms", "Muonekano & CMS", Palette], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["licenses", "Leseni", FileKey2],
 ];
 const emptyService = { id: "", name: "", slug: "", description: "", icon: "sparkles", tokenCost: 2, reward: 0, isFree: false, isVisible: true, active: true, isLocked: false, maintenanceMessage: "", category: "Huduma kuu", actionUrl: "", instructions: "", buttonText: "TUMA OMBI", statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], adminWorkflow: true, order: 0, fields: [] as ServiceFormField[] };
 const emptyVideo = { id: "", title: "", videoUrl: "", category: "Mafunzo", enabled: true, order: 0 };
@@ -32,6 +32,84 @@ function safeError(error: any) {
 }
 function Field({ label, value, onChange, type = "text", placeholder = "" }: { label: string; value: string | number; onChange: (value: string) => void; type?: string; placeholder?: string }) { return <label className="control-field"><span>{label}</span><input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} /></label>; }
 function Empty({ text = "Hakuna data bado" }: { text?: string }) { return <div className="admin-empty">{text}</div>; }
+
+
+function LipaGlobalReport({ applications }: { applications: LipaApplication[] }) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const dateOf = (value: any): Date | null => {
+    try {
+      const parsed = value && typeof value.toDate === "function" ? value.toDate() : value?.seconds ? new Date(value.seconds * 1000) : value ? new Date(value) : null;
+      return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+    } catch { return null; }
+  };
+  const createdAt = (app: any) => dateOf(app.submittedAt ?? app.createdAt ?? app.updatedAt);
+  const rows = applications.filter((app: any) => {
+    const d = createdAt(app);
+    if (!d) return !from && !to;
+    const day = d.toLocaleDateString("en-CA");
+    return (!from || day >= from) && (!to || day <= to);
+  });
+  const count = (fn: (app: any) => boolean) => rows.filter(fn).length;
+  const paid = rows.filter((a: any) => a.rewardStatus === "PAID");
+  const unpaid = rows.filter((a: any) => a.qualificationStatus === "QUALIFIED" && (a.rewardStatus ?? "UNPAID") === "UNPAID");
+  const rejected = rows.filter((a: any) => a.status === "REJECTED");
+  const money = (n: number) => "TSh " + n.toLocaleString("en-US");
+  const stamp = (v: any) => { const d = dateOf(v); return d ? d.toLocaleString("sw-TZ") : "—"; };
+  const deadline = (app: any) => {
+    const created = createdAt(app);
+    if (!created) return null;
+    const start = new Date(created);
+    const daysSinceFriday = (start.getDay() + 2) % 7;
+    start.setDate(start.getDate() - daysSinceFriday);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 10); // Thursday week end + Friday/Saturday/Sunday grace period
+    end.setHours(23, 59, 59, 999);
+    return end;
+  };
+  const remaining = (app: any) => {
+    const end = deadline(app);
+    if (!end) return "Tarehe haipo";
+    const ms = end.getTime() - Date.now();
+    if (ms <= 0) return "Muda umeisha";
+    const days = Math.floor(ms / 86400000);
+    const hours = Math.floor((ms % 86400000) / 3600000);
+    return days ? days + " siku, " + hours + " saa" : hours + " saa";
+  };
+  const cards = [
+    ["Lipa zilizotengenezwa", rows.length],
+    ["Zilizoidhinishwa", count((a: any) => a.status === "APPROVED")],
+    ["Zilizokataliwa", rejected.length],
+    ["Zilizokidhi vigezo", count((a: any) => a.qualificationStatus === "QUALIFIED")],
+    ["Bado hazijakidhi", count((a: any) => a.qualificationStatus === "PENDING_CHECK" && a.status === "APPROVED")],
+    ["Zilizolipwa", paid.length],
+    ["Bado hazijalipwa", unpaid.length],
+  ];
+  const download = () => {
+    const header = ["ID", "Tarehe ya kutengeneza", "Mtandao", "Hali ya ombi", "Sababu ya kukataliwa", "Hali ya vigezo", "Miamala iliyothibitishwa", "Zawadi TSh", "Hali ya malipo", "Tarehe ya malipo", "Reference ya malipo", "Muda uliobaki"];
+    const data = rows.map((a: any) => [a.id, stamp(a.submittedAt ?? a.createdAt), a.networkName ?? a.networkId ?? "", a.status ?? "", a.rejectionReason ?? "", a.qualificationStatus ?? "", Number(a.verifiedTransactions ?? 0), Number(a.reward ?? 0), a.rewardStatus ?? "", stamp(a.rewardPaidAt), a.rewardPaymentReference ?? "", a.qualificationStatus === "PENDING_CHECK" ? remaining(a) : ""]);
+    const csv = [header, ...data].map(row => row.map(v => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\\r\\n");
+    const url = URL.createObjectURL(new Blob(["\\ufeff", csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a"); link.href = url; link.download = "ripoti-za-lipa.csv"; link.click(); URL.revokeObjectURL(url);
+  };
+  return <section className="admin-card" style={{display:"grid",gap:18}}>
+    <div className="admin-card-heading"><div><span className="admin-kicker">LIPA · RIPOTI YA JUMLA</span><h2>Ripoti za Lipa zote</h2><p>Hesabu zinatokana na maombi ya Lipa yaliyopo kwenye mfumo na kichujio cha tarehe.</p></div><BarChart3 size={22}/></div>
+    <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"end"}}>
+      <label className="control-field"><span>Tarehe kuanzia</span><input type="date" value={from} onChange={e=>setFrom(e.target.value)} /></label>
+      <label className="control-field"><span>Tarehe hadi</span><input type="date" value={to} min={from || undefined} onChange={e=>setTo(e.target.value)} /></label>
+      <button type="button" className="admin-secondary" onClick={()=>{setFrom("");setTo("");}}>Ondoa kichujio</button>
+      <button type="button" className="admin-primary" onClick={download}><Download size={16} style={{verticalAlign:"middle"}}/> Pakua CSV</button>
+    </div>
+    <div className="admin-stat-grid">{cards.map(([label,value])=><div className="admin-stat-card" key={label}><div className="admin-stat-icon"><BarChart3 size={18}/></div><span>{label}</span><strong>{Number(value).toLocaleString()}</strong><small>Data halisi · {from || "mwanzo"} — {to || "leo"}</small></div>)}</div>
+    <div className="admin-two-col">
+      <section className="admin-card"><h3>Zawadi na malipo</h3><p>Jumla ya zawadi zilizolipwa: <strong>{money(paid.reduce((sum:number,a:any)=>sum+Number(a.reward??0),0))}</strong></p><p>Jumla ya zawadi zinazodaiwa kwa waliofuzu: <strong>{money(unpaid.reduce((sum:number,a:any)=>sum+Number(a.reward??0),0))}</strong></p><p>Tarehe ya malipo inaonekana kwa rekodi zilizohifadhiwa baada ya malipo.</p></section>
+      <section className="admin-card"><h3>Sababu za kukataliwa</h3>{rejected.length ? Object.entries(rejected.reduce((acc:Record<string,number>,a:any)=>{const reason=String(a.rejectionReason||"Sababu haijawekwa");acc[reason]=(acc[reason]||0)+1;return acc;},{})).map(([reason,n])=><p key={reason} style={{display:"flex",justifyContent:"space-between",gap:12}}><span>{reason}</span><strong>{n}</strong></p>) : <p>Hakuna Lipa zilizokataliwa kwenye kipindi hiki.</p>}</section>
+    </div>
+    <section><h3>Maelezo ya kila Lipa ({rows.length})</h3><div style={{overflowX:"auto"}}><table className="admin-table" style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>{["Tarehe","Mtandao","Hali","Sababu ya kukataliwa","Vigezo","Miamala","Zawadi","Malipo","Tarehe ya malipo / muda"].map(x=><th key={x} style={{textAlign:"left",padding:10}}>{x}</th>)}</tr></thead><tbody>{rows.slice().sort((a:any,b:any)=>(createdAt(b)?.getTime()??0)-(createdAt(a)?.getTime()??0)).map((a:any)=><tr key={a.id} style={{borderTop:"1px solid var(--border,#e2e8f0)"}}><td style={{padding:10}}>{stamp(a.submittedAt??a.createdAt)}</td><td style={{padding:10}}>{a.networkName??a.networkId??"—"}</td><td style={{padding:10}}>{a.status??"—"}</td><td style={{padding:10}}>{a.rejectionReason||"—"}</td><td style={{padding:10}}>{a.qualificationStatus??"—"}</td><td style={{padding:10}}>{Number(a.verifiedTransactions??0).toLocaleString()}</td><td style={{padding:10}}>{money(Number(a.reward??0))}</td><td style={{padding:10}}>{a.rewardStatus??"—"}</td><td style={{padding:10}}>{a.rewardStatus==="PAID"?stamp(a.rewardPaidAt):a.qualificationStatus==="PENDING_CHECK"?remaining(a):"—"}</td></tr>)}</tbody></table></div>{rows.length===0&&<Empty text="Hakuna maombi ya Lipa katika kipindi hiki."/>}</section>
+    <p style={{fontSize:12,color:"var(--muted,#64748b)"}}>Kumbuka: muda uliobaki unakokotolewa kwa wiki ya Ijumaa–Alhamisi na siku za nyongeza Ijumaa–Jumapili. Rekodi zisizo na tarehe zinaonyeshwa kama tarehe haipo. Ripoti haisababishi malipo ya moja kwa moja.</p>
+  </section>;
+}
 
 export default function AdminDashboard() {
   const [location, navigate] = useLocation();
@@ -157,7 +235,7 @@ export default function AdminDashboard() {
       {panel === "services" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} />}
       {panel === "serviceControl" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} controlOnly onEdit={() => navigate("/admin/services")} />}
       {panel === "applications" && <ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} />}
-      {panel === "nida" && <NidaRequestsPanel />}
+      {panel === "nida" && <NidaRequestsPanel />}\n      {panel === "lipaReport" && <LipaGlobalReport applications={lipaApplications} />}
       {panel === "lipa" && <div className="lipa-admin-layout"><div className="admin-card" style={{marginBottom:16}}><div className="admin-card-heading"><div><span className="admin-kicker">LIPA NAMBA · ADMIN CONTROL</span><h2>Usimamizi wa Lipa Namba</h2><p>Hapa admin anaona maombi yote, anafungua VIEW DETAILS, anaweka PROCESSING / APPROVED / REJECTED, anaingiza Lipa Namba, anafuatilia zawadi na kumjibu mtumiaji.</p></div><WalletCards size={22}/></div><div className="quick-actions"><Link href="/admin/lipa">↻ Refresh inbox</Link><span className="pill">{lipaApplications.length} MAOMBI</span><span className="pill">{lipaApplications.filter((a)=>a.status==="PENDING").length} PENDING</span><span className="pill">{lipaApplications.filter((a)=>a.status==="APPROVED").length} APPROVED</span></div></div><LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} />{hasPermission("manageServices") && <LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} />}</div>}
       {panel === "ordering" && isSuper && <ServiceOrderingPanel services={services} serviceOrder={serviceOrder} setServiceOrder={setServiceOrder} sectionOrder={homepageSectionOrder} setSectionOrder={setHomepageSectionOrder} onSave={() => run(() => setHomepageServiceOrder(serviceOrder, homepageSectionOrder), "Mpangilio wa huduma umehifadhiwa.")} busy={busy} />}
       {panel === "videos" && <CollectionPanel title="Video za Mafunzo" collectionName="tutorialVideos" rows={videos} form={video} setForm={setVideo} fields={[["title", "Title"], ["videoUrl", "Video URL"], ["category", "Category"], ["order", "Order"]]} onRun={run} adminId={firebaseUser!.uid} />}
