@@ -106,7 +106,7 @@ export default function SmeVodacomPage() {
     } finally { setSubmitting(false); }
   };
   const fieldClass = (field: string) =>
-    `mt-2 w-full rounded-xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 ${errors[field] ? "border-red-500" : "border-slate-200"}`;
+    `mt-2 w-full rounded-xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 focus:shadow-lg ${errors[field] ? "border-red-500" : "border-slate-200"}`;
   const FieldError = ({ field }: { field: string }) => errors[field] ? <p className="mt-1.5 text-xs font-semibold text-red-600">{errors[field]}</p> : null;
 
   return (
@@ -143,18 +143,18 @@ export default function SmeVodacomPage() {
               <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={`rounded-lg px-4 py-2.5 text-sm font-extrabold transition ${form.planType === "combo" ? "bg-red-700 text-white shadow" : "text-slate-600 hover:bg-white"}`}><Smartphone size={15} className="mr-1 inline"/> Combo</button>
             </div>
           </div>
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3">
+          <div className="mt-5 grid grid-cols-3 gap-1.5 sm:gap-3">
             {plans.map((plan) => {
               const selected = form.selectedPlan === String(plan.price);
               const combo = "calls" in plan;
-              return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={`group relative rounded-2xl border p-2 sm:p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300"}`}>
+              return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={`group relative rounded-xl border p-1.5 text-left transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] sm:rounded-2xl sm:p-3 ${selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300"}`}>
                 {selected && <span className="absolute right-3 top-3 text-red-700"><CircleCheck size={20}/></span>}
-                <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black tracking-wider text-slate-600">SIKU 30</span>
-                <p className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{plan.data}</p>
+                <span className="inline-flex rounded-full bg-slate-100 px-1.5 py-1 text-[8px] font-black tracking-wide text-slate-600 sm:px-2.5 sm:text-[10px]">SIKU 30</span>
+                <p className="mt-2 text-base font-black tracking-tight text-slate-900 sm:text-2xl">{plan.data}</p>
                 <p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
-                {combo && <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-200 pt-2 text-xs font-semibold text-slate-600"><span>☎ {plan.calls}</span><span>✉ {plan.sms}</span></div>}
-                {!combo && <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">Data pekee · siku 30</p>}
-                <span className={`mt-2 inline-flex items-center gap-1 text-[11px] font-extrabold ${selected ? "text-red-700" : "text-slate-500 group-hover:text-red-700"}`}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"} <ChevronDown size={14}/></span>
+                {combo && <div className="mt-1 flex flex-col gap-0.5 border-t border-slate-200 pt-1 text-[9px] font-semibold text-slate-600 sm:mt-2 sm:flex-row sm:gap-x-3 sm:gap-y-1 sm:pt-2 sm:text-xs"><span>☎ {plan.calls}</span><span>✉ {plan.sms}</span></div>}
+                {!combo && <p className="mt-1 border-t border-slate-100 pt-1 text-[9px] text-slate-500 sm:mt-2 sm:pt-2 sm:text-xs">Data pekee · siku 30</p>}
+                <span className={`mt-1 inline-flex items-center gap-1 text-[9px] font-extrabold sm:mt-2 sm:text-[11px] ${selected ? "text-red-700" : "text-slate-500 group-hover:text-red-700"}`}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"} <ChevronDown size={14}/></span>
               </button>;
             })}
           </div>
@@ -174,7 +174,7 @@ export default function SmeVodacomPage() {
             </div>
           </aside>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm animate-[fadeInUp_.65s_ease-out_both] transition-shadow duration-500 hover:shadow-md sm:p-8">
             <div className="flex items-center gap-3 border-b border-slate-100 pb-5"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700"><FileText size={23}/></span><div><p className="text-xs font-black tracking-[.16em] text-red-700">HATUA YA 2</p><h2 className="text-xl font-black sm:text-2xl">Taarifa za mwombaji</h2><p className="mt-1 text-sm text-slate-500">Jaza sehemu zote zenye alama ya *</p></div></div>
             {!firebaseUser && !authLoading && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Ingia kwenye akaunti yako kabla ya kujaza na kutuma ombi.</div>}
             <form onSubmit={submit} noValidate className="mt-6 space-y-5">
@@ -198,7 +198,7 @@ export default function SmeVodacomPage() {
                 {form.hasTin === "ndio" && <div className="mt-4"><label htmlFor="sme-tin-number" className="text-sm font-extrabold">Namba ya TIN <span className="text-red-600">*</span></label><input id="sme-tin-number" inputMode="numeric" value={form.tinNumber} onChange={(e) => update("tinNumber", formatTin(e.target.value))} placeholder="133-231-251" className={fieldClass("tinNumber")} aria-invalid={!!errors.tinNumber}/><FieldError field="tinNumber"/></div>}
               </div>
                             {message && <div role="status" aria-live="polite" className={`rounded-2xl border p-4 text-sm ${reference ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>{message}{reference && <p className="mt-1 font-black">Namba ya kumbukumbu: {reference}</p>}</div>}
-              <button type="submit" disabled={submitting || authLoading} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#a90017] to-[#d20b2c] px-5 py-4 font-black text-white shadow-lg shadow-red-700/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? <><LoaderCircle size={19} className="animate-spin"/> Inatuma ombi...</> : <><Send size={18}/> TUMA OMBI LA SME VODACOM</>}</button>
+              <button type="submit" disabled={submitting || authLoading} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#a90017] to-[#d20b2c] px-5 py-4 font-black text-white shadow-lg shadow-red-700/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? <><LoaderCircle size={19} className="animate-spin"/> Inatuma ombi...</> : <><Send size={18}/> TUMA OMBI LA SME VODACOM</>}</button>
               <p className="text-center text-xs leading-5 text-slate-500">Taarifa zako zitatumwa kwa ajili ya kushughulikia ombi la SME VODACOM.</p>
             </form>
           </section>
