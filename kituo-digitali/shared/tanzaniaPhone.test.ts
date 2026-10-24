@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeTanzaniaPhone, phoneAuthAlias } from "./tanzaniaPhone";
+import { normalizeTanzaniaPhone, phoneAuthAlias, tanzaniaPhoneStoredAliases } from "./tanzaniaPhone";
 
 describe("normalizeTanzaniaPhone", () => {
   it.each([
@@ -22,5 +22,19 @@ describe("normalizeTanzaniaPhone", () => {
     const variants = ["0698232313", "0698 232 313", "+255698232313", "255698232313"];
     const aliases = variants.map((phone) => phoneAuthAlias(normalizeTanzaniaPhone(phone)!));
     expect(new Set(aliases).size).toBe(1);
+  });
+});
+
+describe("tanzaniaPhoneStoredAliases", () => {
+  it("returns common legacy representations for an exact Firestore phone lookup", () => {
+    const aliases = tanzaniaPhoneStoredAliases("255712345678");
+    expect(aliases).toContain("255712345678");
+    expect(aliases).toContain("+255712345678");
+    expect(aliases).toContain("0712345678");
+    expect(aliases).toContain("712345678");
+    expect(aliases).toContain("0712 345 678");
+    expect(aliases).toContain("0712-345-678");
+    expect(aliases).toContain("+255 712 345 678");
+    expect(new Set(aliases).size).toBe(aliases.length);
   });
 });

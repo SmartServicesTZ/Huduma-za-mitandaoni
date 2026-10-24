@@ -8,7 +8,7 @@ import { resolveAuthRole } from "./authClaims.js";
 import { defaultAccessLipaServices, defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 import { generateRandomBusinessLicenseNumber } from "./businessLicenseNumber.js";
 import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
-import { phoneAuthAlias } from "../../shared/tanzaniaPhone.js";
+import { phoneAuthAlias, tanzaniaPhoneStoredAliases } from "../../shared/tanzaniaPhone.js";
 import { accountRestrictionActions, resolveAccountAccessMode, type AccountRestrictionAction } from "../../shared/accountAccess.js";
 
 const db = getFirestore();
@@ -1123,10 +1123,12 @@ export const claimRegistrationPhone = callable(async (request) => {
   await db.runTransaction(async (transaction) => {
     // Soma nyaraka zote kabla ya kuanza kuandika transaction.
     const registry = await transaction.get(registryRef);
-    const profiles = await transaction.get(db.collection("users").where("phone", "==", phone).limit(2));
+    const profileQueries = await Promise.all(tanzaniaPhoneStoredAliases(phone).map((storedPhone) =>
+      transaction.get(db.collection("users").where("phone", "==", storedPhone).limit(2))));
+    const conflictingProfile = profileQueries.flatMap((profiles) => profiles.docs).find((profile) => profile.id !== uid);
     const profileSnap = await transaction.get(profileRef);
     const settingsSnap = await transaction.get(settingsRef);
-    if (profiles.docs.some((profile) => profile.id !== uid)) {
+    if (conflictingProfile) {
       throw new ApiError("already-exists", "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.");
     }
     if (registry.exists && registry.data()?.uid !== uid) {

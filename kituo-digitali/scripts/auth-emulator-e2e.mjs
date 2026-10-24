@@ -33,14 +33,15 @@ async function waitForServer() {
   throw new Error("Vite did not become ready within 60 seconds.");
 }
 async function register(page, number) {
+  const authModal = page.locator(".auth-modal");
   await page.getByRole("button", { name: "Ingia / Jisajili", exact: true }).click();
   await page.getByRole("button", { name: "Jisajili", exact: true }).click();
-  await page.getByLabel("Jina la kwanza").fill("AuthTest");
-  await page.getByLabel("Jina la mwisho").fill("E2E");
-  await page.getByLabel("Namba ya simu").fill(number);
-  await page.getByPlaceholder("Password", { exact: true }).fill(password);
-  await page.getByPlaceholder("Thibitisha password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "TENGENEZA AKAUNTI" }).click();
+  await authModal.getByLabel("Jina la kwanza", { exact: true }).fill("AuthTest");
+  await authModal.getByLabel("Jina la mwisho", { exact: true }).fill("E2E");
+  await authModal.getByLabel("Namba ya simu", { exact: true }).fill(number);
+  await authModal.getByPlaceholder("Password", { exact: true }).fill(password);
+  await authModal.getByPlaceholder("Thibitisha password", { exact: true }).fill(password);
+  await authModal.getByRole("button", { name: "TENGENEZA AKAUNTI", exact: true }).click();
 }
 async function logout(page) {
   await page.goto(`${appUrl}/account`);
@@ -63,9 +64,28 @@ async function installWorkerTestRoutes(context) {
     if (typeof phone !== "string" || !uid) return route.fulfill({ status: 400, body: "invalid test request" });
     registeredUid = uid;
     await rulesEnv.withSecurityRulesDisabled(async (testContext) => {
-      await setDoc(doc(testContext.firestore(), "phoneRegistry", phone), { uid, phone, createdAt: serverTimestamp() });
+      const db = testContext.firestore();
+      await setDoc(doc(db, "phoneRegistry", phone), { uid, phone, createdAt: serverTimestamp() });
+      await setDoc(doc(db, "users", uid), {
+        uid,
+        firstName: body.data.firstName ?? "AuthTest",
+        lastName: body.data.lastName ?? "E2E",
+        phone,
+        name: body.data.name ?? "AuthTest E2E",
+        username: body.data.username ?? uid.slice(0, 8),
+        tokenBalance: 15,
+        tokenBalanceOther: 15,
+        tokenBalanceNida: 0,
+        tokenBonusRegistrationGranted: true,
+        verificationStatus: "pending",
+        role: "user",
+        permissions: {},
+        language: "sw",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     });
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { ok: true } }) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { ok: true, profileCreated: true, uid } }) });
   });
   await context.route("**/call/changeOwnPassword", async (route) => {
     if (!registeredUid) return route.fulfill({ status: 400, body: "missing test user" });
@@ -116,10 +136,11 @@ try {
   console.log("PASS 2: reject duplicate phone despite different formatting");
 
   // Login using the international prefix for that same local number.
-  await page.getByRole("button", { name: "Ingia", exact: true }).click();
-  await page.getByLabel("Namba ya simu").fill(`+255${phone.slice(1)}`);
-  await page.getByPlaceholder("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "INGIA", exact: true }).click();
+  const authModal = page.locator(".auth-modal");
+  await authModal.getByRole("button", { name: "Ingia", exact: true }).click();
+  await authModal.getByLabel("Namba ya simu", { exact: true }).fill(`+255${phone.slice(1)}`);
+  await authModal.getByPlaceholder("Password", { exact: true }).fill(password);
+  await authModal.getByRole("button", { name: "INGIA", exact: true }).click();
   await page.locator(".auth-modal").waitFor({ state: "detached" });
   await page.locator(".header-user").waitFor({ state: "visible" });
   console.log("PASS 3: login using +255 phone format and password");
