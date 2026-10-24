@@ -58,6 +58,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("sme-airtel-mkataba", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "HUDUMA ZA WAKALA"),
   free("sme-vodacom", "SME VODACOM", "Omba kuunganishwa SME Vodacom na uwasilishe cheti cha TIN.", "smartphone", "HUDUMA ZA WAKALA"),
   { ...free("sme-airtel", "SME AIRTEL", "Sajili laini mpya au ya zamani kwenye SME Airtel. Vocha kuanzia TSh 10,000; zawadi ya TSh 2,000 kwa SME iliyothibitishwa.", "smartphone", "HUDUMA ZA WAKALA"), reward: 2000 },
+  free("change-business-name-airtel-lipa", "CHANGE BUSINESS NAME AIRTEL LIPA", "Jaza fomu rasmi ya kubadili jina la biashara kwenye Airtel Lipa bila kuondoka kwenye website au app.", "store", "HUDUMA ZA WAKALA"),
   free("tengeneza-mkataba", "TENGENEZA MKATABA", "Tengeneza mkataba unaoweza kuhariri, kuona na kuhifadhi kama PDF.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("brela", "BRELA", "Msaada wa huduma za BRELA.", "landmark", "HUDUMA ZA WAKALA"),
   locked("cheti-kuzaliwa", "CHETI CHA KUZALIWA", "Huduma hii inasubiri kufunguliwa.", "baby", "HUDUMA ZA WAKALA"),
