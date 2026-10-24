@@ -1998,3 +1998,100 @@ html body .portal-shell .portal-content .portal-main .portal-service-grid > .por
     gap: 7px !important;
   }
 }
+
+
+/* SMARTSERVICESTZ AUTH REFRESH — modern login/register experience */
+.auth-backdrop{
+  padding:20px!important;
+  background:rgba(5,12,29,.78)!important;
+  backdrop-filter:blur(10px);
+  animation:auth-backdrop-in .22s ease both;
+}
+.auth-modal{
+  width:min(900px,100%)!important;
+  max-width:900px!important;
+  max-height:min(92dvh,860px)!important;
+  overflow:auto!important;
+  display:grid!important;
+  grid-template-columns:minmax(260px,.88fr) minmax(0,1.12fr);
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  border-radius:25px!important;
+  color:#172443!important;
+  background:#fff!important;
+  box-shadow:0 32px 100px rgba(0,0,0,.4)!important;
+  isolation:isolate;
+  animation:auth-card-in .35s cubic-bezier(.2,.8,.2,1) both;
+}
+.auth-hero{
+  position:relative;
+  min-height:100%;
+  overflow:hidden;
+  padding:42px 34px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  color:#fff;
+  background:radial-gradient(circle at 85% 12%,rgba(255,255,255,.18),transparent 28%),radial-gradient(circle at 15% 95%,rgba(7,18,52,.4),transparent 42%),linear-gradient(145deg,#4268f5 0%,#654ee8 55%,#263e8c 100%);
+}
+.auth-hero:before,.auth-hero:after{
+  content:"";position:absolute;border:1px solid rgba(255,255,255,.16);border-radius:50%;pointer-events:none
+}
+.auth-hero:before{width:310px;height:310px;right:-170px;top:-110px;box-shadow:0 0 0 28px rgba(255,255,255,.035),0 0 0 58px rgba(255,255,255,.025)}
+.auth-hero:after{width:220px;height:220px;left:-140px;bottom:-100px;box-shadow:0 0 0 25px rgba(255,255,255,.035)}
+.auth-hero>*{position:relative;z-index:1}
+.auth-hero-mark{width:58px;height:58px;display:grid;place-items:center;margin-bottom:30px;border:1px solid rgba(255,255,255,.26);border-radius:18px;color:#fff;background:rgba(255,255,255,.13);box-shadow:0 10px 25px rgba(9,18,58,.15)}
+.auth-hero-kicker{margin-bottom:14px;color:#c9d6ff;font-size:9px;font-weight:900;letter-spacing:.16em}
+.auth-hero h2{margin:0 0 12px;color:#fff;font-size:clamp(27px,3vw,36px);line-height:1.12;letter-spacing:-.045em}
+.auth-hero p{max-width:290px;margin:0;color:rgba(255,255,255,.83);font-size:13px;line-height:1.8}
+.auth-hero-note{display:flex;align-items:center;gap:8px;margin-top:30px;color:#e2eaff;font-size:11px;font-weight:750}
+.auth-form-content{min-width:0;padding:42px clamp(22px,4vw,48px) 34px;align-self:center}
+.auth-form-content>.overline{display:block;margin-bottom:8px;color:#4565e8;font-size:10px;font-weight:900;letter-spacing:.16em}
+.auth-form-content h3{margin:0 0 20px!important;color:#14213d!important;font-size:clamp(20px,2.5vw,25px)!important;font-weight:850;letter-spacing:-.045em}
+.auth-modal .modal-close{z-index:5;top:13px;right:13px;width:35px;height:35px;display:grid;place-items:center;border:1px solid #e6eaf3;border-radius:11px;color:#64748b;background:rgba(255,255,255,.94);cursor:pointer;transition:background .2s,color .2s,transform .2s}
+.auth-modal .modal-close:hover{color:#1e3a8a;background:#eef2ff;transform:rotate(4deg)}
+.auth-modal .auth-switch{gap:5px;margin-bottom:21px;padding:5px;border:1px solid #e7ebf5;border-radius:13px;background:#f3f6fc}
+.auth-modal .auth-switch button{min-height:39px;border-radius:9px;color:#64748b;background:transparent;font-size:12px;transition:background .22s,color .22s,box-shadow .22s}
+.auth-modal .auth-switch button.active{color:#fff;background:linear-gradient(110deg,#4268f5,#7550e8);box-shadow:0 5px 13px rgba(75,94,224,.24)}
+.auth-modal .auth-fields{gap:14px;margin-bottom:17px}
+.auth-modal .auth-fields label{gap:7px;color:#34425f;font-size:11px;font-weight:800}
+.auth-modal .auth-fields input{min-height:45px;padding:12px 13px;border:1px solid #dce4f1;border-radius:11px;color:#172443;background:#f8faff;font-size:13px;transition:border-color .18s,box-shadow .18s,background .18s}
+.auth-modal .auth-fields input::placeholder{color:#9aa6bb}
+.auth-modal .auth-fields input:focus{border-color:#5c75ee;background:#fff;box-shadow:0 0 0 4px rgba(82,105,237,.12)}
+.auth-modal .password-field{position:relative}
+.auth-modal .password-field input{padding-right:46px}
+.auth-modal .password-field button{position:absolute;top:50%;right:7px;transform:translateY(-50%);width:33px;height:33px;display:grid;place-items:center;border:0;border-radius:9px;color:#7b88a2;background:transparent;cursor:pointer}
+.auth-modal .password-field button:hover{color:#405fe0;background:#eef2ff}
+.auth-modal form>.button--green{min-height:47px;border-radius:12px!important;color:#fff!important;background:linear-gradient(110deg,#4268f5,#7550e8)!important;box-shadow:0 8px 18px rgba(75,94,224,.22);font-size:12px;font-weight:900;transition:transform .18s,box-shadow .18s}
+.auth-modal form>.button--green:hover{transform:translateY(-1px);box-shadow:0 11px 23px rgba(75,94,224,.3)}
+.auth-modal form>.button--green:disabled{opacity:.65;transform:none}
+.auth-modal .auth-error-alert{border-width:1px;border-radius:12px}
+.auth-modal .auth-error-alert strong{line-height:1.5}
+.auth-modal .auth-error-alert code{overflow-wrap:anywhere}
+@keyframes auth-backdrop-in{from{opacity:0}to{opacity:1}}
+@keyframes auth-card-in{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:680px){
+  .auth-backdrop{place-items:center!important;padding:10px!important}
+  .auth-modal{width:min(480px,100%)!important;max-height:94dvh!important;grid-template-columns:minmax(0,1fr);border-radius:21px!important}
+  .auth-hero{min-height:0;padding:23px 24px 21px;align-items:center;text-align:center}
+  .auth-hero-mark{width:43px;height:43px;margin-bottom:10px;border-radius:13px}
+  .auth-hero-kicker{margin-bottom:7px;font-size:8px}
+  .auth-hero h2{margin-bottom:6px;font-size:25px}
+  .auth-hero p{max-width:330px;font-size:11px;line-height:1.55}
+  .auth-hero-note{margin-top:10px;font-size:10px}
+  .auth-form-content{padding:25px 23px 24px}
+  .auth-form-content h3{margin-bottom:15px!important;font-size:21px!important}
+  .auth-modal .auth-switch{margin-bottom:17px}
+  .auth-modal .auth-fields{gap:12px}
+  .auth-modal .auth-fields--two{grid-template-columns:minmax(0,1fr)!important}
+  .auth-modal .auth-fields input{min-height:44px}
+}
+@media(max-width:360px){
+  .auth-form-content{padding:22px 16px}
+  .auth-hero{padding-inline:17px}
+}
+@media(prefers-reduced-motion:reduce){
+  .auth-backdrop,.auth-modal{animation:none!important}
+  .auth-modal *, .auth-modal *:before,.auth-modal *:after{transition:none!important}
+}
