@@ -133,7 +133,43 @@ export default function AccessLipaNumberPage() {
     .access-submit{display:flex;justify-content:flex-end;margin-top:18px}.access-submit button,.access-whatsapp{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:11px;color:#fff;font-size:11px;font-weight:900;text-decoration:none}.access-submit button{min-height:45px;padding:11px 17px;background:linear-gradient(135deg,#6d4aff,#3d79ff);cursor:pointer}.access-submit button:disabled{opacity:.55;cursor:not-allowed}.access-success,.access-notice{margin-top:14px;padding:13px;border-radius:11px;font-size:10px;line-height:1.5}.access-success{border:1px solid #a7dfc2;color:#12633d;background:#effbf4}.access-notice{display:flex;align-items:flex-start;gap:8px;color:#5c4a24;background:#fff8e7;border:1px solid #f0dfaa}
     .access-side{display:grid;gap:15px}.access-highlight{padding:15px;border-radius:14px;color:#fff;background:linear-gradient(135deg,#0d315d,#165a91)}.access-highlight strong,.access-highlight span{display:block}.access-highlight strong{font-size:16px}.access-highlight span{margin-top:4px;color:#c9dfef;font-size:10px;line-height:1.5}.access-side .access-card{padding:18px}.access-whatsapp{margin-top:12px;padding:10px 12px;background:#168653}
     @media(max-width:900px){.access-layout{grid-template-columns:1fr}.access-side{grid-template-columns:repeat(2,minmax(0,1fr)}}@media(max-width:650px){.access-page{padding:12px 10px 50px}.access-hero{padding:25px 19px;border-radius:22px}.access-network-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.access-form-grid,.access-payment-grid,.access-side{grid-template-columns:1fr}.access-card{padding:18px}.access-submit{display:block}.access-submit button{width:100%;justify-content:center}.access-upload-row{align-items:flex-start;flex-wrap:wrap}}
-  `}</style>
+  `}
+/* Premium redesign: animated entrance, lively network choices, refined form controls */
+.access-page{background:radial-gradient(ellipse at 5% 0%,#dbeafe 0,transparent 34%),radial-gradient(ellipse at 95% 12%,#ede9fe 0,transparent 30%),linear-gradient(180deg,#f8faff,#edf2f9);animation:accessFade .5s ease-out both}
+.access-hero{isolation:isolate;animation:accessRise .55s cubic-bezier(.2,.75,.25,1) both}
+.access-hero:before{content:"";position:absolute;z-index:-1;width:260px;height:260px;right:15%;bottom:-210px;border-radius:50%;background:#8d7bff55;filter:blur(8px);animation:accessFloat 8s ease-in-out infinite}
+.access-network-panel,.access-card{position:relative;overflow:hidden;box-shadow:0 14px 36px #1a2a460c;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;animation:accessRise .48s ease-out both}
+.access-network-panel:before,.access-card:before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;background:linear-gradient(90deg,#5b5cf0,#32c98e,#42a5ff);background-size:200% 100%;animation:accessGradient 5s linear infinite}
+.access-network-card{min-height:94px;border-radius:18px;box-shadow:0 5px 15px #17233b06;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.access-network-card:nth-child(2){animation:accessRise .4s .04s both}.access-network-card:nth-child(3){animation:accessRise .4s .08s both}.access-network-card:nth-child(4){animation:accessRise .4s .12s both}
+.access-network-card:hover:not(:disabled){transform:translateY(-4px) scale(1.015);box-shadow:0 14px 28px #17233b14}
+.access-network-card.is-selected{background:linear-gradient(135deg,#fff,#f5f3ff);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent),0 15px 30px #17233b12}
+.access-network-logo{width:60px;height:52px;border-radius:13px;box-shadow:0 3px 9px #17233b0a;transition:transform .22s ease}
+.access-network-card:hover .access-network-logo{transform:scale(1.06)}
+.access-network-logo img{width:100%;height:100%;max-width:100%;max-height:100%;padding:5px;box-sizing:border-box;object-fit:contain}
+.access-card h2{line-height:1.2}.access-card h3{letter-spacing:-.015em}
+.access-form-grid{gap:17px}
+.access-field{gap:8px;font-size:12px}
+.access-field input{min-height:48px;padding:13px 14px;border-radius:13px;font-size:14px;box-shadow:0 2px 6px #17233b05;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+.access-field input:hover{border-color:#b6c6d8}
+.access-field input:focus{transform:translateY(-1px);border-color:#7462f4;background:#fff;box-shadow:0 0 0 4px #7462f41c}
+.access-upload{border-radius:15px;transition:border-color .2s ease,background .2s ease}
+.access-upload:hover{border-color:#7462f4;background:#f4f2ff}
+.access-upload-button,.access-submit button,.access-whatsapp{transition:transform .2s ease,box-shadow .2s ease,filter .2s ease}
+.access-upload-button:hover,.access-submit button:hover:not(:disabled),.access-whatsapp:hover{transform:translateY(-2px);filter:brightness(1.04);box-shadow:0 10px 22px #20345c24}
+.access-submit button{position:relative;overflow:hidden;min-height:49px;padding:12px 19px;border-radius:13px;box-shadow:0 9px 20px #5145cd25}
+.access-payment{transition:transform .2s ease,box-shadow .2s ease}.access-payment:hover{transform:translateY(-3px);box-shadow:0 10px 20px #17233b0d}
+.access-rule{transition:background .2s ease;padding:12px 8px;border-radius:10px}.access-rule:hover{background:#f7f9fc}
+.access-highlight{position:relative;overflow:hidden;box-shadow:0 14px 28px #0d315d20}
+.access-highlight:after{content:"";position:absolute;width:100px;height:100px;right:-35px;top:-35px;border:1px solid #ffffff40;border-radius:50%;box-shadow:0 0 0 18px #ffffff0d}
+.access-success{animation:accessRise .35s ease-out both}
+@keyframes accessFade{from{opacity:0}to{opacity:1}}
+@keyframes accessRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes accessFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-18px,-16px)}}
+@keyframes accessGradient{to{background-position:200% 0}}
+@media(max-width:650px){.access-page{padding:12px 10px calc(34px + env(safe-area-inset-bottom))}.access-hero{padding:24px 18px}.access-network-card{min-height:82px;padding:11px;gap:9px}.access-network-logo{width:46px;height:42px}.access-card{padding:17px}.access-field input{font-size:16px}.access-submit button{min-height:50px}}
+@media(prefers-reduced-motion:reduce){.access-page,.access-hero,.access-network-panel,.access-card,.access-network-card,.access-success{animation:none!important}.access-hero:before,.access-network-panel:before,.access-card:before,.access-highlight:after{animation:none!important}.access-network-card,.access-network-logo,.access-field input,.access-upload-button,.access-submit button,.access-whatsapp,.access-payment,.access-rule{transition:none!important}}
+</style>
   <div className="access-shell">
     <div className="access-top"><Link href="/" className="access-back"><ArrowLeft size={16}/> Rudi kwenye huduma</Link><span className="access-secure"><ShieldCheck size={14}/> Ombi salama kwa admin</span></div>
     <header className="access-hero"><span className="access-eyebrow"><Sparkles size={13}/> HUDUMA MPYA • ACCESS LIPA NAMBA</span><h1>MAOMBI YA ACCESS LIPA NAMBA</h1><p>Chagua mtandao unaohitaji, soma masharti yake, kisha tuma taarifa zako. Ombi lako litaingia moja kwa moja kwenye mfumo wa admin kwa ajili ya kukaguliwa na kufanyiwa kazi.</p></header>
