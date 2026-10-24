@@ -100,6 +100,7 @@ export default function TINCertificatePage() {
       <span className="overline">HUDUMA YA TIN</span>
       <h1>CHETI CHA TIN</h1>
       <p>Jaza taarifa na uone Live Preview</p>
+      <p className="tin-disclaimer" role="note"><strong>TAARIFA MUHIMU:</strong> Hii ni preview ya taarifa tu; si hati rasmi ya TRA, na haijatolewa wala kuthibitishwa na TRA. Watermark itaonekana kwenye preview, PNG na PDF.</p>
     </div>
 
     <div className="tin-layout">

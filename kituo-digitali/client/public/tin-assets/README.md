@@ -1,18 +1,7 @@
-# TIN DEMO TEMPLATE ASSETS
+# TIN certificate template asset
 
-Weka background image ya DEMO hapa:
+The current background template is `tin-template.png` in this directory. The renderer loads this asset, overlays the user's entered fields, and then draws a permanent bilingual watermark:
 
-`kituo-digitali/client/public/tin-assets/tin-demo-template.png`
+`SI HATI RASMI YA TRA / NOT AN OFFICIAL TRA DOCUMENT`
 
-Kisha kwenye:
-`kituo-digitali/client/src/lib/tinCertificateCanvas.ts`
-
-badilisha:
-
-`export const BACKGROUND_ASSET = "";`
-
-kuwa:
-
-`export const BACKGROUND_ASSET = "tin-demo-template.png";`
-
-Usiondoe watermark ya `DEMO • NOT OFFICIAL`.
+The same `renderTinCertificateCanvas` function is used for the live preview and for both PNG and PDF downloads. Do not remove the watermark or describe the generated result as an official TRA document.
