@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, CircleCheck, LoaderCircle, Send, Smartphone, Wifi } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { createServiceApplication } from "@/lib/firebase";
+import { createServiceApplication, subscribeUserServiceApplications, type ServiceApplication } from "@/lib/firebase";
 import { formatNida } from "../../../shared/serviceForms";
 import type { ServiceFormValues } from "../../../shared/serviceForms";
 
@@ -38,6 +38,11 @@ export default function SmeAirtelPage() {
   const [message, setMessage] = useState("");
   const [reference, setReference] = useState("");
   const [applicationId, setApplicationId] = useState(newApplicationId);
+  const [myApplications, setMyApplications] = useState<ServiceApplication[]>([]);
+  useEffect(() => {
+    if (!firebaseUser?.uid) { setMyApplications([]); return; }
+    return subscribeUserServiceApplications(firebaseUser.uid, (rows) => setMyApplications(rows.filter((row) => row.serviceSlug === "sme-airtel")));
+  }, [firebaseUser?.uid]);
   const plans = form.planType === "data" ? DATA_PLANS : COMBO_PLANS;
   const chosenPlan = useMemo(() => plans.find((p) => String(p.price) === form.selectedPlan), [plans, form.selectedPlan]);
   const update = (field: keyof FormState, value: string | boolean) => {
@@ -134,6 +139,10 @@ export default function SmeAirtelPage() {
           <button type="submit" disabled={submitting || authLoading} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 px-5 py-4 text-sm font-black text-white shadow-lg transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? <><LoaderCircle size={18} className="animate-spin"/> Inatuma ombi...</> : <><Send size={17}/> TUMA OMBI LA SME AIRTEL</>}</button>
           <p className="mt-3 text-center text-xs leading-5 text-slate-500">Kwa kutuma ombi unathibitisha kuwa taarifa ni sahihi. Zawadi ya SME huhesabiwa baada ya uthibitisho wa admin.</p>
         </form>
+      </section>
+      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-7" aria-labelledby="my-airtel-sme-applications">
+        <div className="flex items-center justify-between gap-3"><div><h2 id="my-airtel-sme-applications" className="text-xl font-black">Maombi yangu ya SME Airtel</h2><p className="mt-1 text-sm text-slate-500">Angalia hali ya maombi uliyotuma.</p></div><span className="rounded-full bg-red-50 px-3 py-1 text-sm font-black text-red-700">{myApplications.length}</span></div>
+        {!firebaseUser ? <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Ingia kwenye akaunti yako kuona maombi yako.</p> : myApplications.length === 0 ? <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Bado hujatuma ombi la SME Airtel.</p> : <div className="mt-4 space-y-3">{myApplications.map((app) => <article key={app.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-slate-900">SME Airtel</strong><span className={"rounded-full px-3 py-1 text-xs font-black " + (app.status === "APPROVED" ? "bg-emerald-100 text-emerald-800" : app.status === "REJECTED" ? "bg-red-100 text-red-800" : app.status === "PROCESSING" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800")}>{app.status === "PENDING" ? "Inasubiri" : app.status === "PROCESSING" ? "Inashughulikiwa" : app.status === "APPROVED" ? "Imeidhinishwa" : app.status === "REJECTED" ? "Imekataliwa" : app.status}</span></div><p className="mt-2 text-xs text-slate-500">Tarehe: {app.submittedAt ? new Date(String(app.submittedAt)).toLocaleString("sw-TZ") : "—"}</p>{app.rejectionReason && <p className="mt-2 text-sm text-red-700"><strong>Sababu:</strong> {app.rejectionReason}</p>}</article>)}</div>}
       </section>
     </div>
   </main>;
