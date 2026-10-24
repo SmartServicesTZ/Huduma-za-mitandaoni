@@ -731,11 +731,21 @@ export async function uploadLipaDocument(uid: string, applicationId: string, fie
     body.set("fileName", safeName);
     body.set("contentType", normalizedType);
     body.set("file", file, safeName);
-    const response = await fetch(`${workerBaseUrl()}/upload/lipa`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      body,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${workerBaseUrl()}/upload/lipa`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        body,
+      });
+    } catch {
+      // If the Worker request is blocked by a transient network/CORS failure,
+      // upload through the authenticated Firebase Storage SDK instead.
+      // Storage rules still enforce the user's UID, allowed image types and size.
+      const fallbackRef = storageRef(firebaseStorage, `lipaUploads/${uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`);
+      await uploadBytes(fallbackRef, file, { contentType: normalizedType, cacheControl: "private,no-store,max-age=0" });
+      return fallbackRef.fullPath;
+    }
     const result = await response.json().catch(() => null) as { data?: { path?: string }; error?: { message?: string } } | null;
     if (!response.ok || !result?.data?.path) throw new Error(result?.error?.message ?? `Seva ya kuhifadhi picha imekataa faili (HTTP ${response.status}).`);
     return result.data.path;
