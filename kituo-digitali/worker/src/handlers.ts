@@ -984,9 +984,15 @@ export const setServiceApplicationStatus = callable(async (request) => {
     const userSnapshot = isFalseInfoRejection ? await transaction.get(userRef) : null;
     transaction.update(ref, patch);
     if (["APPROVED", "REJECTED"].includes(status)) transaction.delete(db.collection("serviceOpenApplications").doc(`${application.userId}_${application.serviceSlug}`));
-    const isAirtelSme = ["sme-airtel", "sme-airtel-lipa", "airtel-sme"].includes(String(application.serviceSlug ?? "").toLowerCase());
-    const airtelInstructions = "MSISITIZO: Jiunge kifurushi siku hiyo hiyo. Piga *149*01*77# kisha fuata maelekezo. Kuchagua aina ya kifurushi, piga *149*91# kisha chagua 1 kwa Combo au 2 kwa Internet.";
-    const body = status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? (isAirtelSme ? `Maombi yako ya SME Airtel yamekubaliwa.\n\n${airtelInstructions}` : "Maombi yako yamekubaliwa.") : status === "REJECTED" ? `Maombi yako yamekataliwa. Sababu: ${rejectionReason}` : `Hali ya ombi lako imebadilishwa kuwa ${status}.`;
+    const serviceSlug = String(application.serviceSlug ?? "").toLowerCase();
+    const serviceName = String(application.serviceName ?? service?.name ?? "huduma");
+    const isAccessLipa = serviceSlug.includes("access-lipa") || serviceSlug.includes("pata-lipa");
+    const isSme = serviceSlug.includes("sme");
+    const reference = String(application.applicationNumber ?? application.requestNumber ?? applicationId);
+    const airtelInstructions = "NAMNA YA KUJIUNGA KIFURUSHI CHA AIRTEL: Jiunge siku hiyo hiyo. Piga *149*01*77# kisha fuata maelekezo. Kuchagua aina ya kifurushi, piga *149*91# kisha chagua 1 kwa Combo au 2 kwa Internet.";
+    const accessLipaApproved = `Ombi namba ${reference} la ${serviceName} limefanikiwa (APPROVED). Tafadhali wasiliana na 0698232313 kwa maelezo zaidi na kwa ajili ya kuanza kazi.`;
+    const smeApproved = `Ombi namba ${reference} la ${serviceName} limefanikiwa (APPROVED). Tafadhali wasiliana na 0698232313 kwa maelezo zaidi kuhusu kujiunga kifurushi ikiwa utashindwa.\\n\\n${airtelInstructions}`;
+    const body = status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? (isAccessLipa ? accessLipaApproved : isSme ? smeApproved : `Ombi namba ${reference} la ${serviceName} limefanikiwa (APPROVED).`) : status === "REJECTED" ? `Maombi yako yamekataliwa. Sababu: ${rejectionReason}` : `Hali ya ombi lako imebadilishwa kuwa ${status}`;
     transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${application.serviceName}`, body, type: "serviceApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     if (isFalseInfoRejection && userSnapshot?.exists) {
         const userData = userSnapshot.data()!;
