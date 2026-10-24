@@ -418,7 +418,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
               </div>
               <div className="dynamic-service-submit-row">
                 <button className="dynamic-service-submit" type="submit" disabled={submitting || uploading !== null || authLoading}>
-                  {submitting ? "Inatuma…" : service.buttonText || "Tuma ombi"}
+                  {submitting ? (editingApplicationId ? "Inahifadhi mabadiliko…" : "Inatuma…") : editingApplicationId ? "HIFADHI MABADILIKO" : service.buttonText || "Tuma ombi"}
                 </button>
               </div>
             </form>
