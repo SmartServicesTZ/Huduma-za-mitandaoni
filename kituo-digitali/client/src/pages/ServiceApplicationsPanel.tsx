@@ -352,7 +352,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                       <td><StatusBadge status={application.status} /></td>
                       <td>
                         <button className="service-app-admin-open" type="button" onClick={(event) => { event.stopPropagation(); openApplication(application); }}>
-                          Fungua
+                          Open
                         </button>
                       </td>
                     </tr>
