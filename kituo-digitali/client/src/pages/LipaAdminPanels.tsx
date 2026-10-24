@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Download, Edit3, ExternalLink, Eye, FileText, Image as ImageIcon, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { adminDeleteCollectionItem, adminSaveCollectionItem, getLipaApplicationDocument, markLipaApplicationViewed, replyToLipaApplication, seedServiceCatalog, setLipaApplicationStatus, updateLipaRewardTracking, type LipaApplication, type LipaNetworkConfig } from "@/lib/firebase";
@@ -150,6 +150,11 @@ function PanelStyles() {
     @media (max-width:620px) { .lipa-admin-detail-banner-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     .lipa-admin-error { background: #fff4f3; border: 1px solid #e7bbb6; border-radius: 8px; color: #9d332b; font-size: .84rem; margin-top: 10px; padding: 9px 11px; }
     .lipa-admin-preview { display: block; max-height: 65vh; max-width: 100%; object-fit: contain; }
+    .lipa-admin-file-block { display:grid; gap:9px; min-width:0; }
+    .lipa-admin-inline-image-heading { display:flex; align-items:center; gap:7px; color:#24507e; font-size:.82rem; }
+    .lipa-admin-inline-image-link { display:block; width:100%; max-width:460px; }
+    .lipa-admin-inline-image { display:block; width:100%; max-height:360px; object-fit:contain; object-position:left center; border:1px solid #dce5f1; border-radius:12px; background:#f6f9fc; }
+    .lipa-admin-inline-image-status { margin:0; color:#68746e; font-size:.8rem; overflow-wrap:anywhere; }
     .lipa-admin-form { display: grid; gap: 13px; }
     .lipa-admin-form-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .lipa-admin-field { display: grid; gap: 5px; }
@@ -286,6 +291,8 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
   const [documentBusy, setDocumentBusy] = useState<string | null>(null);
   const [documentError, setDocumentError] = useState("");
+  const [inlineImages, setInlineImages] = useState<Record<string, string>>({});
+  const [inlineImageErrors, setInlineImageErrors] = useState<Record<string, string>>({});
   const [rewardSaving, setRewardSaving] = useState(false);
   const [replySaving, setReplySaving] = useState(false);
   const [replyForm, setReplyForm] = useState({ reply: "", infoRequest: "" });
@@ -311,6 +318,36 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
       return descending ? -comparison : comparison;
     });
   }, [applications, byNetwork, descending, rewardFilter, sortKey, tab]);
+
+  useEffect(() => {
+    if (!selected) {
+      setInlineImages({});
+      setInlineImageErrors({});
+      return;
+    }
+    let active = true;
+    const createdUrls: string[] = [];
+    setInlineImages({});
+    setInlineImageErrors({});
+    const imageFields = fieldsForApplication(selected, byNetwork[selected.networkId]).filter((field) => {
+      const value = selected.applicantData?.[field.fieldName];
+      return Boolean(value) && (field.type === "IMAGE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\\//.test(value)));
+    });
+    void Promise.all(imageFields.map(async (field) => {
+      try {
+        const result = await getLipaApplicationDocument(selected.applicationId || selected.id, field.fieldName);
+        if (!result?.url) throw new Error("Picha haikupatikana.");
+        createdUrls.push(result.url);
+        if (active) setInlineImages((current) => ({ ...current, [field.fieldName]: result.url }));
+      } catch (error) {
+        if (active) setInlineImageErrors((current) => ({ ...current, [field.fieldName]: errorText(error) }));
+      }
+    }));
+    return () => {
+      active = false;
+      createdUrls.forEach((url) => { if (url.startsWith("blob:")) URL.revokeObjectURL(url); });
+    };
+  }, [selected, byNetwork]);
 
   const openApplication = (application: LipaApplication) => {
     setSelected(application);
@@ -464,7 +501,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
         </div>
                <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={rewardSaving} onClick={() => void saveRewardTracking()}>{rewardSaving ? "Inahifadhi..." : "HIFADHI TAARIFA ZA ZAWADI"}</button></div>
       </section>}
-      <h4 className="lipa-admin-section-title">Taarifa zote alizotuma mwombaji</h4><div className="lipa-admin-detail-grid">{fieldsForApplication(selected, byNetwork[selected.networkId]).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isFile = field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\//.test(value)); return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName}</dt><dd>{isFile && value ? <div className="lipa-admin-file"><span className="lipa-admin-file-label">{field.type === "IMAGE_UPLOAD" ? <ImageIcon size={15} /> : <FileText size={15} />}<span>{field.type === "IMAGE_UPLOAD" ? "Picha / kitambulisho kilichotumwa" : "Faili lililotumwa"}</span></span><span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}>{field.type === "IMAGE_UPLOAD" ? <><Eye size={14} /> Tazama picha</> : <><ExternalLink size={14} /> Fungua faili</>}</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> Pakua</button></span></div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
+      <h4 className="lipa-admin-section-title">Taarifa zote alizotuma mwombaji</h4><div className="lipa-admin-detail-grid">{fieldsForApplication(selected, byNetwork[selected.networkId]).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isFile = field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\//.test(value)); return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName}</dt><dd>{isFile && value ? <div className="lipa-admin-file-block">{field.type === "IMAGE_UPLOAD" ? <><div className="lipa-admin-inline-image-heading"><ImageIcon size={15} /><strong>Picha / kitambulisho kilichotumwa</strong></div>{inlineImages[field.fieldName] ? <a className="lipa-admin-inline-image-link" href={inlineImages[field.fieldName]} target="_blank" rel="noreferrer"><img className="lipa-admin-inline-image" src={inlineImages[field.fieldName]} alt={field.label || "Picha ya mwombaji"} loading="lazy" /></a> : <p className="lipa-admin-inline-image-status">{inlineImageErrors[field.fieldName] ? `Imeshindwa kuonyesha picha: ${inlineImageErrors[field.fieldName]}` : "Inapakia picha..."}</p>}</> : <div className="lipa-admin-file"><span className="lipa-admin-file-label"><FileText size={15} /><span>Faili lililotumwa</span></span><span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}><ExternalLink size={14} /> Fungua faili</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> Pakua</button></span></div>}</div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
       {documentError && <div className="lipa-admin-error" role="alert">{documentError}</div>}
       <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button lipa-admin-button-secondary" onClick={() => setSelected(null)}>Funga Details</button></div>
     </div></div>}
