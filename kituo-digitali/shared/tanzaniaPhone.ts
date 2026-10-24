@@ -8,6 +8,26 @@ export function normalizeTanzaniaPhone(value: unknown): string | null {
   return null;
 }
 
+/** Common exact values used by older profiles before phone numbers were canonicalized. */
+export function tanzaniaPhoneStoredAliases(value: unknown): string[] {
+  const phone = normalizeTanzaniaPhone(value);
+  if (!phone) return [];
+  const national = phone.slice(3);
+  const local = `0${national}`;
+  const nationalGroups = `${national.slice(0, 3)} ${national.slice(3, 6)} ${national.slice(6)}`;
+  const localGroups = `${local.slice(0, 4)} ${local.slice(4, 7)} ${local.slice(7)}`;
+  return [...new Set([
+    phone,
+    `+${phone}`,
+    local,
+    national,
+    `255 ${nationalGroups}`,
+    `+255 ${nationalGroups}`,
+    localGroups,
+    localGroups.replaceAll(" ", "-"),
+  ])];
+}
+
 /** Firebase email/password requires an email-shaped key; this reserved alias is internal only. */
 export function phoneAuthAlias(normalizedPhone: string): string {
   return `${normalizedPhone}@login.huduma-za-mtandao.local`;

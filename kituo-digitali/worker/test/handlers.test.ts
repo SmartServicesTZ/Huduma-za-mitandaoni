@@ -39,6 +39,7 @@ async function withMockedGoogleFetch(
   registryUid: string | null,
   callback: (calls: Array<{ url: string; method: string; body: Record<string, any> }>) => Promise<unknown>,
   extraProfiles: Record<string, { uid?: string; phone?: string; role?: string; mustChangePassword?: boolean; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string }> = {},
+  legacyProfile: { uid: string; phone: string } | null = null,
 ) {
   const originalFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string; body: Record<string, any> }> = [];
@@ -52,7 +53,13 @@ async function withMockedGoogleFetch(
     if (url.includes("identitytoolkit.googleapis.com")) return jsonResponse({ localId: uid });
     if (url.includes(":beginTransaction")) return jsonResponse({ transaction: "test-transaction" });
     if (url.includes(":rollback")) return jsonResponse({});
-    if (url.includes(":runQuery")) return jsonResponse([]);
+    if (url.includes(":runQuery")) {
+      const requestedPhone = body.structuredQuery?.where?.fieldFilter?.value?.stringValue;
+      if (legacyProfile && requestedPhone === legacyProfile.phone) {
+        return jsonResponse([{ document: firestoreDocument(`users/${legacyProfile.uid}`, legacyProfile) }]);
+      }
+      return jsonResponse([]);
+    }
     if (url.includes(":commit")) {
       if (body.writes?.some((write: any) => String(write.update?.name ?? "").endsWith(`/users/${uid}`))) profileCreated = true;
       return jsonResponse({ writeResults: [{}] });
@@ -96,7 +103,7 @@ test("claimRegistrationPhone creates one canonical server-owned phone reservatio
     const result = await withWorkerEnv(env, async () => claimRegistrationPhone.handler({
       auth: { uid, email: `${phone}@login.huduma-za-mtandao.local` },
       data: { phone: "0712 345 678", firstName: "Mwanachama", lastName: "Test" },
-    }));
+    })) as { ok: boolean; profileCreated: boolean; uid: string };
     assert.equal(result.ok, true);
     assert.equal(result.profileCreated, true);
     const commit = calls.find((call) => call.url.includes(":commit"));
@@ -116,6 +123,19 @@ test("claimRegistrationPhone refuses another account's existing phone reservatio
     );
     assert.equal(calls.some((call) => call.url.includes(":commit")), false);
   });
+});
+
+test("claimRegistrationPhone refuses a legacy-format profile without a registry reservation", async () => {
+  const env = environment();
+  const legacyProfile = { uid: "legacy-user-1", phone: "0712 345 678" };
+  await withMockedGoogleFetch(null, null, async (calls) => {
+    await assert.rejects(
+      async () => { await withWorkerEnv(env, () => claimRegistrationPhone.handler({ auth: { uid, email: `${phone}@login.huduma-za-mtandao.local` }, data: { phone, firstName: "Mwanachama" } })); },
+      (error: { code?: string; message?: string }) => error.code === "already-exists" && error.message === "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.",
+    );
+    assert.equal(calls.some((call) => call.url.includes(":commit")), false);
+    assert.ok(calls.some((call) => call.url.includes(":runQuery") && call.body.structuredQuery?.where?.fieldFilter?.value?.stringValue === legacyProfile.phone));
+  }, {}, legacyProfile);
 });
 
 test("changeOwnPassword updates Firebase Auth then clears the server-only gate without storing the password", async () => {
