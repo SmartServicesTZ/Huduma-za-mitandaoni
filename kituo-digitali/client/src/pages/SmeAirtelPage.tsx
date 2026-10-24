@@ -23,8 +23,8 @@ const COMBO_PLANS = [
   { price: 100000, data: "120 GB", calls: "DAK 8,000", sms: "SMS 100" },
 ];
 type PlanType = "data" | "combo";
-type FormState = { phone: string; fullName: string; nidaNumber: string; contactPhone: string; voucherConfirmed: boolean; planType: PlanType; selectedPlan: string };
-const INITIAL: FormState = { phone: "", fullName: "", nidaNumber: "", contactPhone: "", voucherConfirmed: false, planType: "data", selectedPlan: "" };
+type FormState = { phone: string; fullName: string; nidaNumber: string; contactPhone: string; hasTin: "" | "ndio" | "hana"; tinNumber: string; voucherConfirmed: boolean; planType: PlanType; selectedPlan: string };
+const INITIAL: FormState = { phone: "", fullName: "", nidaNumber: "", contactPhone: "", hasTin: "", tinNumber: "", voucherConfirmed: false, planType: "data", selectedPlan: "" };
 const normalizePhone = (value: string) => { const d = value.replace(/\D/g, ""); return d.startsWith("255") ? d : d.startsWith("0") ? "255" + d.slice(1) : d; };
 const validPhone = (value: string) => /^255[67]\d{8}$/.test(normalizePhone(value));
 const money = (value: number) => value.toLocaleString("en-TZ");
@@ -50,6 +50,8 @@ export default function SmeAirtelPage() {
     if (form.fullName.trim().split(/\s+/).filter(Boolean).length < 3) next.fullName = "Jaza majina yote matatu kama yalivyo kwenye kitambulisho.";
     if (!/^\d{20}$/.test(form.nidaNumber.replace(/\D/g, ""))) next.nidaNumber = "Namba ya NIDA lazima iwe na tarakimu 20.";
     if (!validPhone(form.contactPhone)) next.contactPhone = "Weka namba halali ya mawasiliano.";
+    if (!form.hasTin) next.hasTin = "Chagua kama una TIN au huna.";
+    if (form.hasTin === "ndio" && !/^\d{9}$/.test(form.tinNumber.replace(/\D/g, ""))) next.tinNumber = "Weka namba sahihi ya TIN yenye tarakimu 9.";
     if (!form.voucherConfirmed) next.voucherConfirmed = "Thibitisha kuwa laini imewekewa vocha ya TSh 10,000 au zaidi.";
     if (!form.selectedPlan) next.selectedPlan = "Chagua kifurushi cha Airtel Business.";
     setErrors(next); return Object.keys(next).length === 0;
@@ -64,7 +66,8 @@ export default function SmeAirtelPage() {
       const values: ServiceFormValues = {
         network: "Airtel", smePhone: normalizePhone(form.phone), phoneType: "mpya-au-ya-zamani",
         fullName: form.fullName.trim().replace(/\s+/g, " "), nidaNumber: formatNida(form.nidaNumber),
-        contactPhone: normalizePhone(form.contactPhone), voucherAmount: 10000,
+        contactPhone: normalizePhone(form.contactPhone), hasTin: form.hasTin,
+        tinNumber: form.hasTin === "ndio" ? form.tinNumber.replace(/\D/g, "") : "HANA", voucherAmount: 10000,
         voucherConfirmed: "NDIYO", planType: form.planType, selectedPlan: form.selectedPlan,
         selectedPlanName: (form.planType === "data" ? "DATA BANDO" : "COMBO BANDO") + " — TSh " + money(Number(form.selectedPlan)),
         reward: 2000, rewardCurrency: "TZS", rewardRule: "TSh 2,000 kwa kila SME itakayokubaliwa na kuthibitishwa na admin",
@@ -124,6 +127,7 @@ export default function SmeAirtelPage() {
             <label className="block sm:col-span-2"><span className="text-sm font-bold">Majina yote matatu kama yalivyo kwenye kitambulisho *</span><input required value={form.fullName} onChange={e => update("fullName", e.target.value)} placeholder="Jina la kwanza, la pili na la tatu" className={fieldClass("fullName")}/><FieldError field="fullName"/></label>
             <label className="block"><span className="text-sm font-bold">Namba ya NIDA *</span><input required inputMode="numeric" maxLength={23} value={form.nidaNumber} onChange={e => update("nidaNumber", e.target.value.replace(/[^\d-]/g, "").slice(0, 23))} placeholder="Tarakimu 20 za NIDA" className={fieldClass("nidaNumber")}/><FieldError field="nidaNumber"/></label>
             <label className="block"><span className="text-sm font-bold">Namba ya mawasiliano *</span><input required autoComplete="tel" inputMode="tel" value={form.contactPhone} onChange={e => update("contactPhone", e.target.value)} placeholder="Mfano 0712345678" className={fieldClass("contactPhone")}/><FieldError field="contactPhone"/></label>
+            <div className="rounded-2xl border border-slate-200 p-4 sm:col-span-2"><p className="text-sm font-extrabold">Je, unayo namba ya TIN? *</p><p className="mt-1 text-xs text-slate-500">Ukiwa nayo, chagua Ndiyo na sehemu ya namba itaonekana.</p><div className="mt-3 grid grid-cols-2 gap-3"><label className={"flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm font-bold " + (form.hasTin === "ndio" ? "border-red-600 bg-red-50 text-red-700" : "border-slate-200")}><input type="radio" name="airtelHasTin" checked={form.hasTin === "ndio"} onChange={() => update("hasTin", "ndio")} className="accent-red-700"/> Ndiyo, ninayo</label><label className={"flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm font-bold " + (form.hasTin === "hana" ? "border-red-600 bg-red-50 text-red-700" : "border-slate-200")}><input type="radio" name="airtelHasTin" checked={form.hasTin === "hana"} onChange={() => { update("hasTin", "hana"); update("tinNumber", ""); }} className="accent-red-700"/> Sina TIN</label></div><FieldError field="hasTin"/>{form.hasTin === "ndio" && <div className="mt-4"><label className="text-sm font-bold">Namba ya TIN *</label><input inputMode="numeric" value={form.tinNumber} onChange={e => update("tinNumber", e.target.value.replace(/\D/g, "").slice(0,9))} placeholder="Tarakimu 9 za TIN" className={fieldClass("tinNumber")}/><FieldError field="tinNumber"/></div>}</div>
             <label className="flex items-start gap-3 rounded-2xl border p-4 sm:col-span-2" style={{borderColor: errors.voucherConfirmed ? "#dc2626" : "#fecdd3", background: "#fff7f7"}}><input type="checkbox" checked={form.voucherConfirmed} onChange={e => update("voucherConfirmed", e.target.checked)} className="mt-1 h-4 w-4 accent-red-600"/><span className="text-sm font-semibold leading-6">Nathibitisha kuwa laini hii imewekewa vocha ya <strong>TSh 10,000 au zaidi</strong>. *<FieldError field="voucherConfirmed"/></span></label>
           </div>
           {message && <div role="status" className={"mt-5 rounded-2xl border p-4 text-sm font-semibold " + (reference ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800")}>{message}{reference && <p className="mt-2 break-all text-xs">Namba ya kumbukumbu: <strong>{reference}</strong></p>}</div>}
