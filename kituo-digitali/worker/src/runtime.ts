@@ -4,6 +4,8 @@ import { importPKCS8, SignJWT } from "jose";
 export interface WorkerEnv {
   FIREBASE_PROJECT_ID: string;
   FIREBASE_STORAGE_BUCKET: string;
+  LIPA_DOCUMENTS?: R2Bucket;
+  WORKER_PUBLIC_URL?: string;
   FIREBASE_SERVICE_ACCOUNT_JSON: string;
   SUPER_ADMIN_PHONE?: string;
   FIMIPAY_SECRET_KEY?: string;

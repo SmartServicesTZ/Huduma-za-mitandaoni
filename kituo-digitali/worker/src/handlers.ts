@@ -725,6 +725,11 @@ export const getLipaApplicationDocument = callable(async (request) => {
   const allowedPath = storagePath.startsWith(`lipaUploads/${application.userId}/${applicationId}/`)
     || storagePath.startsWith(`lipaApplications/${applicationId}/documents/`);
   if (!allowedPath) throw new ApiError("not-found", "Faili halikupatikana.");
+  const env = getWorkerEnv();
+  if (env.LIPA_DOCUMENTS) {
+    const workerUrl = String(env.WORKER_PUBLIC_URL ?? "https://huduma-za-mtandao-api.stewardjackson999.workers.dev").replace(/\/+$/, "");
+    return { url: `${workerUrl}/download/lipa?applicationId=${encodeURIComponent(applicationId)}&fieldName=${encodeURIComponent(fieldName)}`, expiresAt: Date.now() + 5 * 60 * 1000 };
+  }
   const [url] = await bucket.file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60 * 1000 });
   return { url, expiresAt: Date.now() + 5 * 60 * 1000 };
 });

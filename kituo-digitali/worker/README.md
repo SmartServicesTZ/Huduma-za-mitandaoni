@@ -17,6 +17,8 @@ Token purchases and FimiPay webhooks are intentionally disabled during the first
 
 `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, and `ALLOWED_ORIGINS` are non-secret Worker variables configured in `wrangler.toml`. Keep the allowed origins restricted to the production site and approved local development origins.
 
+PATA LIPA NAMBA documents use the `LIPA_DOCUMENTS` Cloudflare R2 binding (`smartservices-lipa-documents`). GitHub Actions creates the bucket if it does not exist before deploying the Worker. This keeps the Lipa upload flow independent of Firebase Storage availability and the Firebase Blaze requirement. The Firebase Storage variable remains as a compatibility fallback for older attachment paths.
+
 ## GitHub deployment
 
 For the GitHub Actions deployment, configure repository secrets `CLOUDFLARE_API_TOKEN` (scoped to deploy/edit this Worker) and `CLOUDFLARE_ACCOUNT_ID`. Set repository variable `VITE_CLOUDFLARE_WORKER_URL` to the exact Worker URL. The main-branch workflow deploys the Worker, verifies core readiness, and then publishes GitHub Pages. FimiPay secrets are not a prerequisite for the core-only launch.
@@ -29,7 +31,7 @@ Removing the retired backend source from this repository does not delete any end
 
 The license PDF and QR code are rendered in the user's browser. The Worker allocates the license number, validates service/account eligibility, checks the service lock, deducts two tokens exactly once, and records the application, ledger, usage, and audit data transactionally in Firestore. The PDF is downloaded locally; its bytes are not uploaded to Firebase Storage.
 
-This avoids Firebase Storage for license PDFs and does not require Firebase Blaze for Firestore or Cloudflare Workers Free usage. Firebase's official policy now requires Blaze to maintain access to Firebase Storage buckets (effective February 3, 2026). Existing profile-image and application-attachment flows still use Firebase Storage and therefore remain unavailable on Spark unless separately moved to an object store such as Cloudflare R2.
+This avoids Firebase Storage for license PDFs and Lipa Namba documents and does not require Firebase Blaze for those flows. Firebase's official policy now requires Blaze to maintain access to Firebase Storage buckets (effective February 3, 2026). Other legacy profile-image and application-attachment flows still use Firebase Storage unless separately moved to an object store.
 
 Cloudflare Workers Free currently allows 100,000 requests per day and 10 ms CPU time per invocation. The PDF/QR rendering work has been moved out of the Worker, but live API performance and Firebase quota usage still need staging verification before production traffic is switched.
 

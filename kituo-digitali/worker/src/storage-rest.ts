@@ -21,6 +21,11 @@ function bucketName() {
   return bucket;
 }
 
+function r2BucketForPath(objectPath: string) {
+  const isLipaPath = objectPath.startsWith("lipaUploads/") || objectPath.startsWith("lipaApplications/");
+  return isLipaPath ? getWorkerEnv().LIPA_DOCUMENTS : undefined;
+}
+
 function objectApiUrl(bucket: string, objectPath: string) {
   return `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(objectPath)}`;
 }
@@ -94,8 +99,13 @@ async function storageFetch(url: string, init: RequestInit = {}) {
 }
 
 export async function uploadStorageObject(objectPath: string, contentType: string, body: ArrayBuffer) {
-  const bucket = bucketName();
-  const url = `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(objectPath)}`;
+  const bucket = r2BucketForPath(objectPath);
+  if (bucket) {
+    await bucket.put(objectPath, body, { httpMetadata: { contentType, cacheControl: "private, no-store" } });
+    return;
+  }
+  const firebaseBucket = bucketName();
+  const url = `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(firebaseBucket)}/o?uploadType=media&name=${encodeURIComponent(objectPath)}`;
   return storageFetch(url, {
     method: "POST",
     headers: { "Content-Type": contentType, "Content-Length": String(body.byteLength) },
@@ -111,15 +121,33 @@ export class StorageFile {
   }
 
   async getMetadata() {
+    const r2 = r2BucketForPath(this.name);
+    if (r2) {
+      const object = await r2.head(this.name);
+      if (!object) throw Object.assign(new Error("Cloudflare R2 object not found."), { code: 404 });
+      return [{ name: this.name, size: String(object.size), contentType: object.httpMetadata?.contentType, uploaded: object.uploaded.toISOString() } as StorageMetadata] as [StorageMetadata];
+    }
     const response = await storageFetch(`${objectApiUrl(bucketName(), this.name)}?fields=name,size,contentType,metadata,generation,timeCreated,updated`);
     return [await response.json() as StorageMetadata] as [StorageMetadata];
   }
 
   async delete() {
+    const r2 = r2BucketForPath(this.name);
+    if (r2) {
+      await r2.delete(this.name);
+      return;
+    }
     await storageFetch(objectApiUrl(bucketName(), this.name), { method: "DELETE" });
   }
 
   async copy(destination: StorageFile) {
+    const r2 = r2BucketForPath(this.name) ?? r2BucketForPath(destination.name);
+    if (r2) {
+      const source = await r2.get(this.name);
+      if (!source) throw Object.assign(new Error("Cloudflare R2 object not found."), { code: 404 });
+      await r2.put(destination.name, source.body, { httpMetadata: source.httpMetadata, customMetadata: source.customMetadata });
+      return [destination] as [StorageFile];
+    }
     const bucket = bucketName();
     let url = `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(this.name)}/rewriteTo/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(destination.name)}`;
     for (let count = 0; count < 100; count += 1) {

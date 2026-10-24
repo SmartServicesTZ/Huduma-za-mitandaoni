@@ -45,6 +45,7 @@ import {
 import { ApiError, ApiHttpResponse, type CallableRoute, type HttpRoute } from "./api-adapter.js";
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 import { uploadStorageObject } from "./storage-rest.js";
+import { getFirestore } from "./firestore-rest.js";
 
 interface Env extends WorkerEnv {}
 
@@ -201,6 +202,33 @@ async function handleLipaDocumentUpload(request: Request, cors: Headers, env: En
   return jsonResponse({ data: { path, size: file.size, contentType } }, 200, cors);
 }
 
+async function handleLipaDocumentDownload(request: Request, cors: Headers, env: Env) {
+  if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
+  const auth = await verifyFirebaseIdToken(request, env);
+  const query = new URL(request.url).searchParams;
+  const applicationId = query.get("applicationId")?.trim() ?? "";
+  const fieldName = query.get("fieldName")?.trim() ?? "";
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId) || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new ApiError("invalid-argument", "Taarifa za faili si sahihi.");
+  const snapshot = await getFirestore().collection("lipaApplications").doc(applicationId).get();
+  if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
+  const application = snapshot.data() as { userId?: unknown; applicantData?: Record<string, unknown> };
+  const profile = await getFirestore().collection("users").doc(auth.uid).get();
+  const actor = profile.data() as { role?: unknown; permissions?: Record<string, unknown> } | undefined;
+  const isOwner = String(application.userId ?? "") == auth.uid;
+  const isAdmin = actor?.role === "super_admin" || actor?.permissions?.manageLipaApplications === true;
+  if (!isOwner && !isAdmin) throw new ApiError("permission-denied", "Huna ruhusa ya kuona picha hii.");
+  const storagePath = String(application.applicantData?.[fieldName] ?? "");
+  const allowedPath = storagePath.startsWith(`lipaUploads/${String(application.userId ?? "")}/${applicationId}/`) || storagePath.startsWith(`lipaApplications/${applicationId}/documents/`);
+  if (!allowedPath || !env.LIPA_DOCUMENTS) throw new ApiError("not-found", "Faili halikupatikana.");
+  const object = await env.LIPA_DOCUMENTS.get(storagePath);
+  if (!object) throw new ApiError("not-found", "Faili halikupatikana.");
+  const headers = new Headers(cors);
+  headers.set("Content-Type", object.httpMetadata?.contentType ?? "application/octet-stream");
+  headers.set("Cache-Control", "private, no-store");
+  headers.set("Content-Disposition", "inline");
+  return new Response(object.body, { status: 200, headers });
+}
+
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const cors = corsHeaders(request, env);
@@ -227,6 +255,13 @@ const worker = {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
         console.error("Lipa upload proxy failed", { code: error instanceof Error ? error.name : "unknown" });
         return jsonResponse({ error: { code: "internal", message: "Picha haikupakiwa kwa sasa. Jaribu tena." } }, 500, cors);
+      }));
+    }
+    if (url.pathname === "/download/lipa") {
+      return withWorkerEnv(env, () => handleLipaDocumentDownload(request, cors, env).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("Lipa download proxy failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Picha haikupatikana kwa sasa." } }, 500, cors);
       }));
     }
     if (url.pathname === "/webhooks/fimipay") {

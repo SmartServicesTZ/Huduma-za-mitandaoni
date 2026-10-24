@@ -684,7 +684,14 @@ export async function markLipaApplicationViewed(applicationId: string) {
 
 export async function getLipaApplicationDocument(applicationId: string, fieldName: string) {
   const callable = createWorkerCall<{ applicationId: string; fieldName: string }, { url: string; expiresAt: number }>("getLipaApplicationDocument");
-  return (await callable({ applicationId, fieldName })).data;
+  const result = (await callable({ applicationId, fieldName })).data;
+  if (!result.url.includes("/download/lipa?")) return result;
+  const user = firebaseAuth.currentUser;
+  if (!user) throw Object.assign(new Error("Ingia kwanza."), { code: "unauthenticated" });
+  const response = await fetch(result.url, { headers: { Authorization: `Bearer ${await user.getIdToken()}` } });
+  if (!response.ok) throw new Error("Picha haikupatikana kwa sasa.");
+  const blob = await response.blob();
+  return { ...result, url: URL.createObjectURL(blob) };
 }
 
 async function waitForLipaUploadAuth(expectedUid: string): Promise<User> {
