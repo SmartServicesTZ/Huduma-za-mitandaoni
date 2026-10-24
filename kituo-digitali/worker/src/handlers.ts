@@ -840,6 +840,8 @@ export const createServiceApplication = callable(async (request) => {
   const seededAccessService = defaultAccessLipaServices.find((item) => item.slug === serviceSlug);
   const seededSmeVodacom = serviceSlug === "sme-vodacom" ? defaultServices.find((item) => item.slug === serviceSlug) : undefined;
   const service = serviceSnapshot.empty ? (seededAccessService ?? seededSmeVodacom) : serviceSnapshot.docs[0]?.data();
+  // Keep the dedicated SME Vodacom form schema in sync even when an older catalog document exists in Firestore.
+  if (serviceSlug === "sme-vodacom" && service && seededSmeVodacom) service.fields = seededSmeVodacom.fields;
   if (!service) throw new ApiError("not-found", "Huduma haikupatikana.");
   const isAccessService = defaultAccessLipaServices.some((item) => item.slug === serviceSlug);
   if (service.active === false || (!isAccessService && service.isVisible === false)) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
