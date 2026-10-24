@@ -224,6 +224,54 @@ function PanelStyles() {
       .lipa-admin-detail-banner-grid { grid-template-columns:minmax(0,1fr); }
       .lipa-admin-file-actions { grid-template-columns:minmax(0,1fr); }
     }
+    /* Responsive application cards are the primary layout on desktop and mobile. */
+    .lipa-admin-table-wrap { display:none !important; }
+    .lipa-admin-mobile-list { display:grid !important; grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr)); gap:14px; align-items:stretch; }
+    .lipa-admin-mobile-card { border:1px solid #dce6f4; border-radius:16px; padding:17px; box-shadow:0 8px 24px #142d5010; display:flex; flex-direction:column; min-width:0; }
+    .lipa-admin-mobile-card-head { padding-bottom:13px; border-bottom:1px solid #e9eef7; }
+    .lipa-admin-mobile-card h3 { color:#142b4b; font-size:1rem; line-height:1.35; }
+    .lipa-admin-mobile-card p { font-size:.84rem; line-height:1.5; }
+    .lipa-admin-mobile-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .lipa-admin-mobile-card-grid > div { background:#f7f9fd; border-radius:10px; padding:9px; min-width:0; }
+    .lipa-admin-mobile-card-grid span { font-size:.72rem; }
+    .lipa-admin-mobile-card-grid strong { font-size:.86rem; line-height:1.4; }
+    .lipa-admin-mobile-open { margin-top:auto; min-height:46px; background:linear-gradient(135deg,#155eef,#087e8b); }
+    .lipa-admin-heading { align-items:center; padding:18px; border-radius:16px; background:linear-gradient(120deg,#f0f6ff,#f5fbff); border:1px solid #dbe8fa; }
+    .lipa-admin-stats { grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); }
+    .lipa-admin-stat { box-shadow:0 4px 16px #142d5008; }
+    .lipa-admin-tabs { gap:8px; padding-bottom:5px; }
+    .lipa-admin-tab { border-radius:10px 10px 4px 4px; background:#f6f8fc; white-space:normal; }
+    .lipa-admin-modal { max-width:1040px; border:1px solid #dce6f4; }
+    .lipa-admin-detail-item { background:#f8faff; border:1px solid #e7edf7; border-radius:10px; padding:12px; min-width:0; }
+    .lipa-admin-detail-item dd { overflow-wrap:anywhere; line-height:1.5; }
+    .lipa-admin-field select, .lipa-admin-field textarea { width:100%; max-width:100%; }
+    .lipa-admin-field select { min-height:44px; border:1px solid #cbd7e8; border-radius:10px; padding:10px; background:#fff; }
+    .lipa-admin-action-bar { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 18px; }
+    .lipa-admin-action-bar .lipa-admin-button { min-height:44px; }
+    @media (min-width:761px) {
+      .lipa-admin-mobile-list { grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); }
+      .lipa-admin-modal { max-height:90vh; }
+    }
+    @media (max-width:760px) {
+      .lipa-admin-heading { display:block; padding:15px; }
+      .lipa-admin-heading .lipa-admin-status { margin-top:12px; }
+      .lipa-admin-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .lipa-admin-tabs { align-items:stretch; }
+      .lipa-admin-tab { flex:1 1 auto; }
+      .lipa-admin-mobile-list { grid-template-columns:minmax(0,1fr); }
+      .lipa-admin-mobile-card { padding:14px; }
+      .lipa-admin-mobile-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .lipa-admin-modal { width:100%; max-width:none; height:100dvh; max-height:100dvh; border-radius:0; padding:14px 14px calc(18px + env(safe-area-inset-bottom)); overflow-x:hidden; overflow-y:auto; }
+      .lipa-admin-modal-header { position:sticky; top:-14px; z-index:5; margin:-14px -14px 14px; padding:14px; background:#fff; box-shadow:0 5px 12px #102b5010; }
+      .lipa-admin-action-bar { position:sticky; top:64px; z-index:4; display:grid; grid-template-columns:1fr; background:#f6f9ff; padding:8px; border-radius:12px; }
+      .lipa-admin-action-bar .lipa-admin-button, .lipa-admin-actions .lipa-admin-button { width:100%; min-height:46px; }
+      .lipa-admin-detail-grid { grid-template-columns:minmax(0,1fr); }
+      .lipa-admin-file { align-items:stretch; flex-direction:column; }
+      .lipa-admin-file-actions, .lipa-admin-actions { display:grid; grid-template-columns:1fr; }
+    }
+    @media (max-width:380px) {
+      .lipa-admin-mobile-card-grid, .lipa-admin-detail-banner-grid { grid-template-columns:minmax(0,1fr); }
+    }
   `}</style>;
 }
 
@@ -421,7 +469,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
       <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button lipa-admin-button-secondary" onClick={() => setSelected(null)}>Funga Details</button></div>
     </div></div>}
     {documentPreview && <div className="lipa-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDocumentPreview(null); }}><div className="lipa-admin-modal modal-small lipa-admin-modal-small" role="dialog" aria-modal="true" aria-labelledby="lipa-document-preview-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-document-preview-heading">{documentPreview.label}</h3><p>Signed private preview</p></div><button type="button" className="lipa-admin-close" aria-label="Close document preview" onClick={() => setDocumentPreview(null)}><X size={19} /></button></div><img className="lipa-admin-preview" src={documentPreview.url} alt={`${documentPreview.label} preview`} /></div></div>}
-    {rejecting && <div className="lipa-admin-overlay" role="presentation"><div className="lipa-admin-modal lipa-admin-modal-small" role="dialog" aria-modal="true" aria-labelledby="lipa-reject-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-reject-heading">Reject application</h3><p>Reason is required and will be saved with the trusted status action.</p></div><button type="button" className="lipa-admin-close" aria-label="Close rejection dialog" onClick={() => setRejecting(false)}><X size={19} /></button></div><div className="lipa-admin-field"><label htmlFor="lipa-rejection-reason">Rejection reason</label><textarea id="lipa-rejection-reason" value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} autoFocus required placeholder="Andika sababu ya kukataa ombi..." /></div><div className="lipa-admin-actions"><button type="button" className="lipa-admin-button lipa-admin-button-secondary" onClick={() => setRejecting(false)}>Cancel</button><button type="button" className="lipa-admin-button lipa-admin-button-danger" disabled={busy || !rejectReason.trim()} onClick={() => void runStatus("REJECTED", rejectReason.trim())}><X size={15} /> Confirm reject</button></div></div></div>}
+    {rejecting && <div className="lipa-admin-overlay" role="presentation"><div className="lipa-admin-modal lipa-admin-modal-small" role="dialog" aria-modal="true" aria-labelledby="lipa-reject-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-reject-heading">Reject application</h3><p>Reason is required and will be saved with the trusted status action.</p></div><button type="button" className="lipa-admin-close" aria-label="Close rejection dialog" onClick={() => setRejecting(false)}><X size={19} /></button></div><div className="lipa-admin-field"><label htmlFor="lipa-rejection-preset">Chagua sababu ya kukataa</label><select id="lipa-rejection-preset" value={["NIDA ya mhusika tayari imetumika kutengeneza Lipa Namba nyingine.","Namba ya simu si sahihi.","Taarifa zilizowasilishwa si sahihi.","Picha ya NIDA/kitambulisho haisomeki.","Taarifa hazijakamilika."].includes(rejectReason) ? rejectReason : "__custom__"} onChange={(event) => setRejectReason(event.target.value === "__custom__" ? "" : event.target.value)}><option value="">Chagua sababu...</option><option value="NIDA ya mhusika tayari imetumika kutengeneza Lipa Namba nyingine.">NIDA tayari imetumika kutengeneza Lipa Namba nyingine</option><option value="Namba ya simu si sahihi.">Namba ya simu si sahihi</option><option value="Taarifa zilizowasilishwa si sahihi.">Taarifa si sahihi</option><option value="Picha ya NIDA/kitambulisho haisomeki.">Picha ya kitambulisho haisomeki</option><option value="Taarifa hazijakamilika.">Taarifa hazijakamilika</option><option value="__custom__">Sababu nyingine (andika mwenyewe)</option></select><label htmlFor="lipa-rejection-reason" style={{display:"block",marginTop:12}}>Sababu / maelezo ya ziada</label><textarea id="lipa-rejection-reason" value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} autoFocus required placeholder="Chagua sababu hapo juu au andika sababu yako..." /></div><div className="lipa-admin-actions"><button type="button" className="lipa-admin-button lipa-admin-button-secondary" onClick={() => setRejecting(false)}>Cancel</button><button type="button" className="lipa-admin-button lipa-admin-button-danger" disabled={busy || !rejectReason.trim()} onClick={() => void runStatus("REJECTED", rejectReason.trim())}><X size={15} /> Confirm reject</button></div></div></div>}
   </section>;
 }
 
