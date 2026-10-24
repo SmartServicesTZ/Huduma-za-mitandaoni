@@ -833,6 +833,11 @@ export async function createServiceApplication(applicationId: string, serviceSlu
   return (await callable({ applicationId, serviceSlug, values })).data as { applicationId: string; status: string; duplicate: boolean; balanceAfter: number | null; reference: string };
 }
 
+export async function updateServiceApplication(applicationId: string, values: ServiceFormValues) {
+  const callable = createWorkerCall("updateServiceApplication");
+  return (await callable({ applicationId, values })).data as { applicationId: string; status: string; updated: boolean };
+}
+
 export async function setServiceApplicationStatus(applicationId: string, status: string, rejectionReason = "") {
   const callable = createWorkerCall("setServiceApplicationStatus");
   return (await callable({ applicationId, status, rejectionReason })).data;
