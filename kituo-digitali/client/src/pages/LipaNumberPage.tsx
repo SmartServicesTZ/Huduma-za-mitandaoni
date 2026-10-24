@@ -91,11 +91,38 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
     reward: Number(row.reward ?? 0),
     active: row.active !== false,
     fields: (() => {
-      const fields = safeFields(row.fields);
+      let fields = safeFields(row.fields);
+      if (id === "vodacom") {
+        const nameFields = fields.filter((field) => ["firstName", "middleName", "lastName"].includes(field.fieldName));
+        if (nameFields.length) {
+          const order = Math.min(...nameFields.map((field) => field.order ?? 0));
+          fields = fields.filter((field) => !["firstName", "middleName", "lastName"].includes(field.fieldName));
+          fields.push({ fieldName: "fullName", label: "Majina yote matatu kama yalivyo kwenye kitambulisho", type: "TEXT", required: true, helpText: "Andika majina yako yote matatu kwa usahihi kama yalivyo kwenye kitambulisho chako. Usitumie jina la mteja.", order });
+        }
+        fields = fields.map((field) => field.fieldName === "phone"
+          ? { ...field, label: "Namba ya simu ya kuwezesha Lipa (ya wakala)", placeholder: "2557XXXXXXXX", helpText: "Weka namba yako ya wakala inayoanza na 255. Namba hii haitakiwi kuwa tayari imewezeshwa akaunti ya M-Pesa.", required: true }
+          : field);
+        if (!fields.some((field) => field.fieldName === "contactPhone")) {
+          const phoneOrder = fields.find((field) => field.fieldName === "phone")?.order ?? 4;
+          fields.push({ fieldName: "contactPhone", label: "Namba ya mawasiliano ya wakala", type: "PHONE", placeholder: "2557XXXXXXXX", required: true, helpText: "Weka namba yako mwenyewe ya mawasiliano, si namba ya mteja. Tumia muundo wa 255.", order: phoneOrder + 0.5 });
+        }
+        if (fields.some((field) => field.fieldName === "tinNumber") && !fields.some((field) => field.fieldName === "hasTinNumber")) {
+          const tinOrder = fields.find((field) => field.fieldName === "tinNumber")?.order ?? 6;
+          fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Chagua Ndiyo kama una TIN; ukichagua Ndiyo, utaombwa kuiandika.", order: tinOrder - 0.1 });
+        }
+        fields = fields.map((field) => field.fieldName === "tinNumber"
+          ? { ...field, label: "Namba ya TIN", placeholder: "123-123-123", required: false, helpText: "Weka namba kwa muundo 123-123-123." }
+          : field);
+      }
+      fields = fields.map((field) => field.type === "PHONE"
+        ? { ...field, placeholder: field.placeholder?.startsWith("255") ? field.placeholder : "2557XXXXXXXX" }
+        : field);
       const imageFields = fields.filter((field) => field.type === "IMAGE_UPLOAD");
-      if (imageFields.length <= 1) return fields;
-      const keep = imageFields.find((field) => field.fieldName === "idDocument") ?? imageFields[0];
-      return fields.filter((field) => field.type !== "IMAGE_UPLOAD" || field.fieldName === keep.fieldName);
+      if (imageFields.length > 1) {
+        const keep = imageFields.find((field) => field.fieldName === "idDocument") ?? imageFields[0];
+        fields = fields.filter((field) => field.type !== "IMAGE_UPLOAD" || field.fieldName === keep.fieldName);
+      }
+      return fields.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     })(),
   };
 }
@@ -124,13 +151,13 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     reward: 5000,
     active: true,
     fields: [
-      { fieldName: "firstName", label: "Jina la Kwanza", type: "TEXT", required: true, order: 0 },
-      { fieldName: "middleName", label: "Jina la Pili", type: "TEXT", required: true, order: 1 },
-      { fieldName: "lastName", label: "Jina la Mwisho", type: "TEXT", required: true, order: 2 },
+      { fieldName: "fullName", label: "Majina yote matatu kama yalivyo kwenye kitambulisho", type: "TEXT", required: true, helpText: "Andika majina yako yote matatu kwa usahihi kama yalivyo kwenye kitambulisho chako.", order: 0 },
       { fieldName: "businessName", label: "Majina ya Biashara", type: "TEXT", required: false, order: 3 },
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Weka namba ya simu ya usajili/mawasiliano, tarakimu 10 (mfano 0712345678).", order: 4 },
+      { fieldName: "phone", label: "Namba ya simu ya kuwezesha Lipa (ya wakala)", type: "PHONE", placeholder: "2557XXXXXXXX", required: true, helpText: "Weka namba yako ya wakala inayoanza na 255. Namba hii haitakiwi kuwa tayari imewezeshwa akaunti ya M-Pesa.", order: 4 },
+      { fieldName: "contactPhone", label: "Namba ya mawasiliano ya wakala", type: "PHONE", placeholder: "2557XXXXXXXX", required: true, helpText: "Weka namba yako mwenyewe ya mawasiliano, si namba ya mteja. Tumia muundo wa 255.", order: 4.5 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 5 },
-      { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 6 },
+      { fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Chagua Ndiyo kama una TIN; ukichagua Ndiyo, utaombwa kuiandika.", order: 5.9 },
+      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: false, helpText: "Weka namba kwa muundo 123-123-123.", order: 6 },
       { fieldName: "idDocument", label: "Picha 1 — Kitambulisho au Passport Size", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha 1 tu: Kitambulisho au Passport Size. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 6 },
     ],
   },
@@ -469,7 +496,17 @@ export default function LipaNumberPage() {
   const submit = async () => {
     if (!firebaseAuth.currentUser) { toast.error("Ingia kwanza ili kuomba Lipa Namba."); return; }
     if (!selectedNetwork) { toast.error("Chagua mtandao wenye huduma iliyo wazi."); return; }
-    const nextErrors = validateServiceForm(selectedNetwork.fields, values);
+    const visibleFields = selectedNetwork.fields.filter((field) => field.fieldName !== "tinNumber" || values.hasTinNumber === "Ndiyo");
+    const nextErrors = validateServiceForm(visibleFields, values);
+    for (const fieldName of ["phone", "contactPhone"]) {
+      if (selectedNetwork.fields.some((field) => field.fieldName === fieldName) && values[fieldName]) {
+        const digits = String(values[fieldName]).replace(/\D/g, "");
+        if (!/^255\d{9}$/.test(digits)) nextErrors[fieldName] = "Weka namba kamili kwa muundo wa 255XXXXXXXXX.";
+      }
+    }
+    if (selectedNetwork.id === "vodacom" && values.hasTinNumber === "Ndiyo" && !String(values.tinNumber ?? "").trim()) {
+      nextErrors.tinNumber = "Umechagua Ndiyo; tafadhali andika namba yako ya TIN.";
+    }
     for (const field of selectedNetwork.fields.filter((item) => item.type === "IMAGE_UPLOAD" || item.type === "FILE_UPLOAD")) {
       if (nextErrors[field.fieldName] && valueForField(values, field).startsWith("lipaUploads/")) delete nextErrors[field.fieldName];
     }
@@ -499,9 +536,22 @@ export default function LipaNumberPage() {
 
   const renderField = (field: ServiceFormField) => {
     const value = valueForField(values, field);
+    if (field.fieldName === "tinNumber" && selectedNetwork?.id === "vodacom" && values.hasTinNumber !== "Ndiyo") return null;
     const inputId = `lipa-${field.fieldName}`;
     const common = { id: inputId, name: field.fieldName, placeholder: field.placeholder, value, required: field.required, "aria-invalid": Boolean(errors[field.fieldName]), "aria-describedby": `${inputId}-help` };
-    const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => updateValue(field, field.type === "NUMBER" ? (event.target.value === "" ? null : Number(event.target.value)) : field.type === "NIDA" ? formatNida(event.target.value) : event.target.value);
+    const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      let next = event.target.value;
+      if (field.type === "PHONE") {
+        let digits = next.replace(/\D/g, "");
+        if (digits.startsWith("0")) digits = "255" + digits.slice(1);
+        else if (digits && !digits.startsWith("255")) digits = "255" + digits;
+        next = digits.slice(0, 12);
+      } else if (field.type === "TIN") {
+        const digits = next.replace(/\D/g, "").slice(0, 9);
+        next = [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)].filter(Boolean).join("-");
+      } else if (field.type === "NIDA") next = formatNida(next);
+      updateValue(field, field.type === "NUMBER" ? (next === "" ? null : Number(next)) : next);
+    };
     if (field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD") {
       const preview = draftPreviews[field.fieldName];
       return <div className={`lipa-upload-box ${errors[field.fieldName] ? "has-error" : ""}`}>
