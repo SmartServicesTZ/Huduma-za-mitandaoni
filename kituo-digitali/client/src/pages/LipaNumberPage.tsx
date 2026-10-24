@@ -255,6 +255,116 @@ function ApplicationModal({ application, onClose, onDocument }: { application: L
   </div>;
 }
 
+
+function UserLipaReport({ applications }: { applications: LipaApplication[] }) {
+  const dateOf = (value: unknown): Date | null => {
+    try {
+      const v = value as { toDate?: () => Date; seconds?: number } | null;
+      const date = v && typeof v.toDate === "function" ? v.toDate()
+        : v && typeof v.seconds === "number" ? new Date(v.seconds * 1000)
+        : value ? new Date(value as string | number | Date) : null;
+      return date && !Number.isNaN(date.getTime()) ? date : null;
+    } catch { return null; }
+  };
+  const stamp = (value: unknown) => {
+    const date = dateOf(value);
+    return date ? date.toLocaleString("sw-TZ", { dateStyle: "medium", timeStyle: "short" }) : "—";
+  };
+  const money = (value: number) => "TSh " + value.toLocaleString("sw-TZ");
+  const createdAt = (app: LipaApplication) => dateOf(app.submittedAt ?? (app as any).createdAt ?? app.updatedAt);
+  const paid = applications.filter(app => app.rewardStatus === "PAID");
+  const owed = applications.filter(app => app.qualificationStatus === "QUALIFIED" && (app.rewardStatus ?? "UNPAID") === "UNPAID");
+  const rejected = applications.filter(app => app.status === "REJECTED");
+  const qualified = applications.filter(app => app.qualificationStatus === "QUALIFIED");
+  const waiting = applications.filter(app => app.status === "APPROVED" && (app.qualificationStatus ?? "PENDING_CHECK") === "PENDING_CHECK");
+  const paidAmount = paid.reduce((sum, app) => sum + Number(app.reward ?? 0), 0);
+  const owedAmount = owed.reduce((sum, app) => sum + Number(app.reward ?? 0), 0);
+  const deadline = (app: LipaApplication) => {
+    const created = createdAt(app);
+    if (!created) return null;
+    const start = new Date(created);
+    const daysSinceFriday = (start.getDay() + 2) % 7;
+    start.setDate(start.getDate() - daysSinceFriday);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 10);
+    end.setHours(23, 59, 59, 999);
+    return end;
+  };
+  const remaining = (app: LipaApplication) => {
+    const end = deadline(app);
+    if (!end) return "Tarehe haipo";
+    const ms = end.getTime() - Date.now();
+    if (ms <= 0) return "Muda umeisha";
+    const days = Math.floor(ms / 86400000);
+    const hours = Math.floor((ms % 86400000) / 3600000);
+    return days ? days + " siku, " + hours + " saa" : hours + " saa";
+  };
+  const download = () => {
+    const header = ["Rejea ya ombi", "Tarehe ya kutuma", "Mtandao", "Hali ya ombi", "Sababu ya kukataliwa", "Hali ya vigezo", "Miamala iliyothibitishwa", "Zawadi TSh", "Hali ya malipo", "Kiasi kinachodaiwa TSh", "Tarehe ya malipo", "Rejea ya malipo", "Muda uliobaki"];
+    const data = applications.map(app => [
+      app.applicationId, stamp(app.submittedAt ?? (app as any).createdAt), app.network, app.status,
+      app.rejectionReason ?? "", app.qualificationStatus ?? "PENDING_CHECK", Number(app.verifiedTransactions ?? 0),
+      Number(app.reward ?? 0), app.rewardStatus ?? "UNPAID",
+      app.qualificationStatus === "QUALIFIED" && (app.rewardStatus ?? "UNPAID") === "UNPAID" ? Number(app.reward ?? 0) : 0,
+      stamp(app.rewardPaidAt), app.rewardPaymentReference ?? "",
+      app.qualificationStatus === "PENDING_CHECK" ? remaining(app) : ""
+    ]);
+    const csv = [header, ...data].map(row => row.map(value => '"' + String(value ?? "").replace(/"/g, '""') + '"').join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url; link.download = "ripoti-yangu-ya-lipa.csv"; link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const cards: Array<[string, number, string]> = [
+    ["Jumla ya Lipa", applications.length, "Maombi yako yote"],
+    ["Zilizoidhinishwa", applications.filter(app => app.status === "APPROVED").length, "APPROVED"],
+    ["Zilizokataliwa", rejected.length, "Angalia sababu kwenye jedwali"],
+    ["Zilizokidhi vigezo", qualified.length, "Zilizofuzu"],
+    ["Bado hazijakidhi", waiting.length, "Zinasubiri ukaguzi"],
+    ["Zilizolipwa", paid.length, money(paidAmount)],
+    ["Lipa zinazodaiwa", owed.length, money(owedAmount)]
+  ];
+  return <section className="lipa-history" style={{marginTop:22}}>
+    <div className="section-title" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+      <div><span className="overline">RIPOTI BINAFSI</span><h2>Ripoti Zangu za Lipa</h2><p style={{margin:"5px 0 0",color:"#64748b",fontSize:13}}>Taarifa za maombi yako pekee, pamoja na hali ya vigezo na malipo.</p></div>
+      <button type="button" className="lipa-button" onClick={download}><Download size={16}/> Pakua ripoti (CSV)</button>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,175px),1fr))",gap:12,marginTop:16}}>
+      {cards.map(([label,value,detail]) => <div key={label} style={{padding:15,border:"1px solid #dfe7f3",borderRadius:14,background:label==="Lipa zinazodaiwa"?"#fff7ed":"#fff"}}>
+        <div style={{fontSize:12,color:"#64748b",fontWeight:700}}>{label}</div>
+        <strong style={{display:"block",fontSize:23,color:label==="Lipa zinazodaiwa"?"#b45309":"#173d75",marginTop:7}}>{Number(value).toLocaleString("sw-TZ")}</strong>
+        <small style={{display:"block",fontSize:11,color:label==="Lipa zinazodaiwa"?"#9a3412":"#64748b",marginTop:4}}>{detail}</small>
+      </div>)}
+    </div>
+    <div style={{padding:16,marginTop:14,border:"1px solid #fed7aa",borderRadius:14,background:"#fff7ed"}}>
+      <strong style={{display:"block",color:"#9a3412",fontSize:14}}>Kiasi kinachodaiwa kwako: {money(owedAmount)}</strong>
+      <p style={{margin:"6px 0 0",color:"#7c2d12",fontSize:12,lineHeight:1.6}}>Hiki ni jumla ya zawadi za maombi yaliyofuzu ambayo bado hayajawekwa kuwa yamelipwa na admin ({owed.length} {owed.length === 1 ? "ombi" : "maombi"}). Maombi yanayosubiri uhakiki hayajahesabiwa kama deni mpaka yafuzu na kiasi cha zawadi kithibitishwe.</p>
+      <p style={{margin:"8px 0 0",color:"#7c2d12",fontSize:12}}>Jumla uliyolipwa: <strong>{money(paidAmount)}</strong></p>
+    </div>
+    <div style={{overflowX:"auto",marginTop:18}}>
+      <table style={{width:"100%",minWidth:850,borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr>{["Tarehe","Mtandao","Hali","Sababu ya kukataliwa","Vigezo","Zawadi","Malipo","Kinachodaiwa","Tarehe ya malipo / muda"].map(label=><th key={label} style={{textAlign:"left",padding:10,background:"#f1f5f9",color:"#334155"}}>{label}</th>)}</tr></thead>
+        <tbody>{applications.slice().sort((a,b)=>(createdAt(b)?.getTime()??0)-(createdAt(a)?.getTime()??0)).map(app => {
+          const due = app.qualificationStatus === "QUALIFIED" && (app.rewardStatus ?? "UNPAID") === "UNPAID";
+          return <tr key={app.id || app.applicationId} style={{borderBottom:"1px solid #e2e8f0"}}>
+            <td style={{padding:10,whiteSpace:"nowrap"}}>{stamp(app.submittedAt ?? (app as any).createdAt)}</td>
+            <td style={{padding:10}}>{app.network || "—"}</td><td style={{padding:10}}>{app.status}</td>
+            <td style={{padding:10,maxWidth:190,whiteSpace:"normal"}}>{app.rejectionReason || "—"}</td>
+            <td style={{padding:10}}>{app.qualificationStatus === "QUALIFIED" ? "Amefuzu" : app.qualificationStatus === "NOT_QUALIFIED" ? "Hajafuzu" : "Inasubiri"}</td>
+            <td style={{padding:10,whiteSpace:"nowrap"}}>{money(Number(app.reward ?? 0))}</td>
+            <td style={{padding:10}}>{app.rewardStatus === "PAID" ? "Yamelipwa" : app.rewardStatus === "NOT_ELIGIBLE" ? "Hastahili" : "Bado"}</td>
+            <td style={{padding:10,whiteSpace:"nowrap",color:due?"#b45309":"#64748b",fontWeight:due?800:400}}>{due ? money(Number(app.reward ?? 0)) : "—"}</td>
+            <td style={{padding:10,whiteSpace:"nowrap"}}>{app.rewardStatus === "PAID" ? stamp(app.rewardPaidAt) : app.qualificationStatus === "PENDING_CHECK" ? remaining(app) : "—"}</td>
+          </tr>;
+        })}</tbody>
+      </table>
+    </div>
+    {applications.length === 0 && <div className="lipa-empty" style={{marginTop:12}}>Bado hakuna maombi ya Lipa kwenye akaunti hii. Ripoti itaonekana baada ya kutuma ombi.</div>}
+    <p style={{marginTop:12,fontSize:11,color:"#64748b",lineHeight:1.6}}>Muda uliobaki unakokotolewa kwa wiki ya Ijumaa–Alhamisi pamoja na siku za nyongeza hadi Jumapili. Ripoti huonyesha hali iliyohifadhiwa na mfumo; haianzishi malipo yenyewe.</p>
+  </section>;
+}
+
 export default function LipaNumberPage() {
   const { firebaseUser } = useAuth();
   const [configs, setConfigs] = useState<LipaNetworkConfig[]>([]);
@@ -453,6 +563,7 @@ export default function LipaNumberPage() {
     <FieldHelp field={{fieldName:"additionalNotes",label:"Maelezo ya ziada",type:"TEXTAREA",required:false}} />
   </div>
 </div></div><div className="lipa-actions"><button type="button" className="lipa-button lipa-button--outline" onClick={() => void clearDraftUploads(crypto.randomUUID())}><RefreshCw size={16} /> Anza upya</button><button type="button" className="lipa-button" disabled={!firebaseUser || submitting || selectedNetwork.fields.length === 0} onClick={() => void submit()}>{submitting ? <><RefreshCw size={16} /> Inatuma…</> : <><CloudUpload size={16} /> Tuma ombi</>}</button></div></>}</section><aside className="lipa-side-stack"><div className="lipa-info-card"><h3>Mahitaji</h3><p>{selectedNetwork?.requirements ?? "Chagua mtandao ili kuona mahitaji ya huduma hiyo."}</p>{selectedNetwork?.paymentInfo && <><h3>Malipo</h3><p>{selectedNetwork.paymentInfo}</p></>}</div><div className="lipa-info-card lipa-info-card--light"><h3>Jinsi inavyofanya kazi</h3><ul><li>Chagua mtandao ulio hai.</li><li>Jaza kila sehemu yenye alama ya nyota.</li><li>Pakia nyaraka zinazohitajika.</li><li>Fuatilia hali ya ombi lako hapa chini.</li></ul></div></aside></div>
+    {firebaseUser && <UserLipaReport applications={applications} />}
     {firebaseUser && <section className="lipa-history"><div className="section-title"><div><span className="overline">MAOMBI YAKO</span><h2>Historia ya Lipa Namba</h2></div><span className="section-count">{applications.length}</span></div>{applications.length === 0 ? <div className="lipa-empty">Bado hujatuma ombi la Lipa Namba. Maombi yako yataonekana hapa.</div> : <div className="lipa-history-list">{applications.map((application) => <div className="lipa-history-row" key={application.id || application.applicationId}><span className="lipa-network-mark" style={{ "--network-color": networkCards.find((item) => item.id === application.networkId)?.color ?? "#24527f" } as React.CSSProperties}>{(application.network?.[0] ?? "L").toUpperCase()}</span><div><strong>{application.network}</strong><small>{displayDate(application.submittedAt)} · Rejea {application.applicationId}</small></div><span className={`lipa-status lipa-status--${statusTone[application.status]}`}>{statusLabels[application.status]}</span><button type="button" className="lipa-icon-button" aria-label={`Fungua maelezo ya ombi ${application.applicationId}`} onClick={() => setSelectedApplication(application)}><Eye size={16} /></button></div>)}</div>}</section>}
     {selectedApplication && <ApplicationModal application={selectedApplication} onClose={() => setSelectedApplication(null)} onDocument={(fieldName, label) => void openDocument(selectedApplication, fieldName, label)} />}
     {documentPreview && <div className="lipa-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDocumentPreview(null); }}><section className="lipa-document-viewer" role="dialog" aria-modal="true" aria-labelledby="lipa-document-title"><button className="lipa-icon-button lipa-modal-close" aria-label="Funga hakikisho" onClick={() => setDocumentPreview(null)}><X size={19} /></button><h3 id="lipa-document-title">{documentPreview.name}</h3>{documentPreview.url.toLowerCase().includes(".pdf") ? <iframe title={documentPreview.name} src={documentPreview.url} /> : <img src={documentPreview.url} alt={`Nyaraka ${documentPreview.name}`} /> }<div className="lipa-document-viewer-actions"><a className="lipa-button lipa-button--outline" href={documentPreview.url} target="_blank" rel="noreferrer"><Download size={15} /> Fungua / pakua</a><button className="lipa-button" onClick={() => setDocumentPreview(null)}>Funga</button></div></section></div>}
