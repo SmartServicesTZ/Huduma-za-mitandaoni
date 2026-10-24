@@ -111,13 +111,13 @@ export default function SmeAirtelPage() {
             <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={"rounded-lg px-4 py-2.5 text-sm font-extrabold " + (form.planType === "combo" ? "bg-red-700 text-white shadow" : "text-slate-600")}><Smartphone size={15} className="mr-1 inline"/> Combo bando</button>
           </div>
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {plans.map((plan) => { const selected = form.selectedPlan === String(plan.price); const combo = "calls" in plan; return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={"relative rounded-2xl border p-3 sm:p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md " + (selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300")}>
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3">
+          {plans.map((plan) => { const selected = form.selectedPlan === String(plan.price); const combo = "calls" in plan; return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={"relative rounded-2xl border p-2 sm:p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md " + (selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300")}>
             {selected && <span className="absolute right-3 top-3 text-red-700"><CircleCheck size={20}/></span>}
             <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black tracking-wider text-slate-600">KILA MWEZI</span>
-            <p className="mt-3 text-2xl font-black text-slate-900">{plan.data}</p><p className="mt-1 text-sm font-bold text-red-700">TSh {money(plan.price)}</p>
-            {combo ? <div className="mt-3 space-y-1 border-t border-slate-200 pt-3 text-xs font-semibold text-slate-600"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div> : <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">Data pekee</p>}
-            <span className={"mt-3 inline-flex items-center gap-1 text-xs font-extrabold " + (selected ? "text-red-700" : "text-slate-500")}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"}</span>
+            <p className="mt-2 text-xl font-black text-slate-900 sm:text-2xl">{plan.data}</p><p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
+            {combo ? <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-slate-200 pt-2 text-[11px] font-semibold text-slate-600"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div> : <p className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500">Data pekee</p>}
+            <span className={"mt-2 inline-flex items-center gap-1 text-[11px] font-extrabold " + (selected ? "text-red-700" : "text-slate-500")}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"}</span>
           </button>; })}
         </div><FieldError field="selectedPlan"/>
         <div className="mt-5 flex flex-col gap-2 rounded-2xl bg-slate-900 p-4 text-white sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-white/60">Kifurushi ulichochagua</p><p className="mt-1 text-lg font-black">{chosenPlan ? chosenPlan.data + " · TSh " + money(chosenPlan.price) : "Bado hujachagua kifurushi"}</p></div><span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3 py-2 text-xs font-bold"><CheckCircle2 size={15}/> Airtel Business</span></div>
