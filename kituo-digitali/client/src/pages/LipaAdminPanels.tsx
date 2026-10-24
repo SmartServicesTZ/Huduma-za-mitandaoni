@@ -90,8 +90,8 @@ function PanelStyles() {
     .lipa-admin-tab:hover, .lipa-admin-tab-active { border-bottom-color: #168653; color: #126c44; }
     .lipa-admin-count { background: #edf4ef; border-radius: 999px; color: #126c44; font-size: .72rem; margin-left: 4px; padding: 2px 7px; }
     .lipa-admin-card { background: #fff; border: 1px solid #e2e9e4; border-radius: 14px; overflow: hidden; }
-    .lipa-admin-table-wrap { overflow-x: auto; }
-    .lipa-admin-mobile-list { display:none; }
+    .lipa-admin-table-wrap { display:none; }
+    .lipa-admin-mobile-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr)); gap:14px; align-items:stretch; }
     .lipa-admin-mobile-card { background:#fff; border:1px solid #e2e9e4; border-radius:12px; padding:13px; }
     .lipa-admin-mobile-card + .lipa-admin-mobile-card { margin-top:10px; }
     .lipa-admin-mobile-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
@@ -140,7 +140,7 @@ function PanelStyles() {
     .lipa-admin-file-actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .lipa-admin-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 22px; }
     .lipa-admin-detail-banner { background: linear-gradient(135deg,#0f172a,#243b63); border-radius: 13px; color:#fff; padding:15px; margin-bottom:16px; }
-    @media (max-width:760px) { .lipa-admin-table-wrap { display:none; } .lipa-admin-mobile-list { display:block; } .lipa-admin-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .lipa-admin-tabs { overflow-x:auto; flex-wrap:nowrap; padding-bottom:4px; } .lipa-admin-tab { flex:none; } .lipa-admin-action-bar { flex-direction:column; } .lipa-admin-action-bar .lipa-admin-button { width:100%; flex-basis:auto; min-height:42px; } }
+    @media (max-width:760px) { .lipa-admin-table-wrap { display:none; } .lipa-admin-mobile-list { display:grid; grid-template-columns:minmax(0,1fr); } .lipa-admin-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .lipa-admin-tabs { overflow-x:auto; flex-wrap:nowrap; padding-bottom:4px; } .lipa-admin-tab { flex:none; } .lipa-admin-action-bar { flex-direction:column; } .lipa-admin-action-bar .lipa-admin-button { width:100%; flex-basis:auto; min-height:42px; } }
     .lipa-admin-detail-banner-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }
     .lipa-admin-detail-banner-item { background:#ffffff12; border:1px solid #ffffff1c; border-radius:9px; padding:9px 10px; }
     .lipa-admin-detail-banner-item span { display:block; color:#b9c8dc; font-size:.68rem; }
@@ -254,7 +254,7 @@ function PanelStyles() {
     .lipa-admin-action-bar { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 18px; }
     .lipa-admin-action-bar .lipa-admin-button { min-height:44px; }
     @media (min-width:761px) {
-      .lipa-admin-mobile-list { grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); }
+      .lipa-admin-mobile-list { grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); }
       .lipa-admin-modal { max-height:90vh; }
     }
     @media (max-width:760px) {
@@ -312,6 +312,13 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     const statusFiltered = tab === "ALL" ? [...applications] : applications.filter((application) => application.status === tab);
     const filtered = statusFiltered.filter((application) => rewardFilter === "ALL" || (rewardFilter === "PENDING_CHECK" && application.qualificationStatus === "PENDING_CHECK") || (rewardFilter === "WAITING_PAYMENT" && application.qualificationStatus === "QUALIFIED" && application.rewardStatus === "UNPAID") || (rewardFilter === "PAID" && application.rewardStatus === "PAID") || (rewardFilter === "NOT_ELIGIBLE" && application.rewardStatus === "NOT_ELIGIBLE"));
     return filtered.sort((a, b) => {
+      const attentionRank = (item: LipaApplication) => item.status === "PENDING" ? 0 : item.status === "PROCESSING" ? 1 : item.status === "APPROVED" ? 2 : 3;
+      const rankDifference = attentionRank(a) - attentionRank(b);
+      if (rankDifference !== 0) return rankDifference;
+      if (sortKey === "submittedAt" && (a.status === "PENDING" || a.status === "PROCESSING") && (b.status === "PENDING" || b.status === "PROCESSING")) {
+        const time = (value: unknown) => { if (!value) return 0; if (typeof value === "object" && value !== null && "toDate" in value && typeof (value as {toDate?: unknown}).toDate === "function") return (value as {toDate:()=>Date}).toDate().getTime(); const n = new Date(String(value)).getTime(); return Number.isFinite(n) ? n : 0; };
+        return time(a.submittedAt) - time(b.submittedAt);
+      }
       const left = sortKey === "network" ? (byNetwork[a.networkId]?.name ?? a.network) : sortKey === "submittedAt" ? dateText(a.submittedAt) : String((a as unknown as Record<string, unknown>)[sortKey] ?? "");
       const right = sortKey === "network" ? (byNetwork[b.networkId]?.name ?? b.network) : sortKey === "submittedAt" ? dateText(b.submittedAt) : String((b as unknown as Record<string, unknown>)[sortKey] ?? "");
       const comparison = left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" });
@@ -501,7 +508,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
         </div>
                <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={rewardSaving} onClick={() => void saveRewardTracking()}>{rewardSaving ? "Inahifadhi..." : "HIFADHI TAARIFA ZA ZAWADI"}</button></div>
       </section>}
-      <h4 className="lipa-admin-section-title">Taarifa zote alizotuma mwombaji</h4><div className="lipa-admin-detail-grid">{fieldsForApplication(selected, byNetwork[selected.networkId]).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isFile = field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\//.test(value)); return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName}</dt><dd>{isFile && value ? <div className="lipa-admin-file-block">{field.type === "IMAGE_UPLOAD" ? <><div className="lipa-admin-inline-image-heading"><ImageIcon size={15} /><strong>Picha / kitambulisho kilichotumwa</strong></div>{inlineImages[field.fieldName] ? <a className="lipa-admin-inline-image-link" href={inlineImages[field.fieldName]} target="_blank" rel="noreferrer"><img className="lipa-admin-inline-image" src={inlineImages[field.fieldName]} alt={field.label || "Picha ya mwombaji"} loading="lazy" /></a> : <p className="lipa-admin-inline-image-status">{inlineImageErrors[field.fieldName] ? `Imeshindwa kuonyesha picha: ${inlineImageErrors[field.fieldName]}` : "Inapakia picha..."}</p>}</> : <div className="lipa-admin-file"><span className="lipa-admin-file-label"><FileText size={15} /><span>Faili lililotumwa</span></span><span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}><ExternalLink size={14} /> Fungua faili</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> Pakua</button></span></div>}</div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
+      <h4 className="lipa-admin-section-title">Taarifa zote alizotuma mwombaji</h4><div className="lipa-admin-detail-grid">{fieldsForApplication(selected, byNetwork[selected.networkId]).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isImage = field.type === "IMAGE_UPLOAD" || (typeof value === "string" && /\.(jpe?g|png|webp)(?:$|[?#])/i.test(value)); const isFile = isImage || field.type === "FILE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\//.test(value)); return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName}</dt><dd>{isFile && value ? <div className="lipa-admin-file-block">{isImage ? <><div className="lipa-admin-inline-image-heading"><ImageIcon size={15} /><strong>Picha / kitambulisho kilichotumwa</strong></div>{inlineImages[field.fieldName] ? <a className="lipa-admin-inline-image-link" href={inlineImages[field.fieldName]} target="_blank" rel="noreferrer"><img className="lipa-admin-inline-image" src={inlineImages[field.fieldName]} alt={field.label || "Picha ya mwombaji"} loading="lazy" /></a> : <p className="lipa-admin-inline-image-status">{inlineImageErrors[field.fieldName] ? `Imeshindwa kuonyesha picha: ${inlineImageErrors[field.fieldName]}` : "Inapakia picha..."}</p>}</> : <div className="lipa-admin-file"><span className="lipa-admin-file-label"><FileText size={15} /><span>Faili lililotumwa</span></span><span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}><ExternalLink size={14} /> Fungua faili</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> Pakua</button></span></div>}</div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
       {documentError && <div className="lipa-admin-error" role="alert">{documentError}</div>}
       <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button lipa-admin-button-secondary" onClick={() => setSelected(null)}>Funga Details</button></div>
     </div></div>}
