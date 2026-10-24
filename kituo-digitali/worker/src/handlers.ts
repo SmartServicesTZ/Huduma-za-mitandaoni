@@ -637,6 +637,26 @@ export const updateLipaRewardTracking = callable(async (request) => {
     const patch: Record<string, unknown> = { lipaNumber, verifiedTransactions, qualificationStatus, rewardStatus, rewardPaymentReference, rewardNote, updatedAt: now, rewardUpdatedAt: now, rewardUpdatedBy: uid };
     if (rewardStatus === "PAID") { patch.rewardPaidAt = now; patch.rewardPaidBy = uid; }
     transaction.update(ref, patch);
+    const qualificationLabel = qualificationStatus === "QUALIFIED" ? "Umefikia vigezo vya zawadi" : qualificationStatus === "NOT_QUALIFIED" ? "Kwa sasa hujafikia vigezo vya zawadi" : "Miamala yako bado inafuatiliwa";
+    const paymentLabel = rewardStatus === "PAID" ? "Malipo yamekamilika" : rewardStatus === "NOT_ELIGIBLE" ? "Hustahili malipo ya zawadi kwa ombi hili" : qualificationStatus === "QUALIFIED" ? "Umefuzu; malipo yanasubiri kufanyika" : "Malipo yanasubiri uthibitisho wa vigezo";
+    const progressMessage = [
+      `Hali ya ufuatiliaji wa Lipa Namba yako ya ${String(application.network ?? application.networkId ?? "mtandao")} imesasishwa.`,
+      `Lipa Namba: ${lipaNumber || "Bado haijawekwa"}`,
+      `Miamala iliyothibitishwa: ${verifiedTransactions}`,
+      `Ufuatiliaji: ${qualificationLabel}`,
+      `Malipo ya zawadi: ${paymentLabel}`,
+      reward > 0 ? `Kiasi cha zawadi: TSh ${reward.toLocaleString("en-US")}` : "",
+      rewardStatus === "PAID" ? `Reference ya malipo: ${rewardPaymentReference}` : "",
+      rewardNote ? `Maelezo: ${rewardNote}` : "",
+    ].filter(Boolean).join("\\n");
+    transaction.set(db.collection("messages").doc(), {
+      recipientId: application.userId,
+      subject: rewardStatus === "PAID" ? "Malipo ya Lipa Namba yamekamilika" : "Taarifa za malipo ya Lipa Namba zimesasishwa",
+      body: progressMessage,
+      type: "lipaRewardTracking",
+      applicationId,
+      createdAt: now,
+    });
     recordAudit(transaction, uid, String(actor.role), "LIPA_REWARD_TRACKING_UPDATED", "lipaApplication", applicationId, {
       qualificationStatus: application.qualificationStatus ?? "PENDING_CHECK",
       rewardStatus: application.rewardStatus ?? "UNPAID",
