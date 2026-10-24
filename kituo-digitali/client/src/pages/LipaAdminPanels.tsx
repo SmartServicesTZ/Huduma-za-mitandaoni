@@ -201,6 +201,29 @@ function PanelStyles() {
     .lipa-admin-mobile-open { min-height:45px; border-radius:11px; }
     @media (max-width: 900px) { .lipa-admin-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (max-width: 620px) { .lipa-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lipa-admin-detail-grid, .lipa-admin-form-grid { grid-template-columns: 1fr; } .lipa-admin-field-wide { grid-column: auto; } .lipa-admin-modal { padding: 17px; } .lipa-admin-network-item { align-items: flex-start; flex-direction: column; } .lipa-admin-network-actions { width: 100%; } .lipa-admin-network-actions .lipa-admin-button { flex: 1; } }
+
+    /* Mobile-first Lipa application review: keep applicant identity and actions visible. */
+    @media (max-width: 760px) {
+      .lipa-admin-overlay { align-items:stretch; padding:0; }
+      .lipa-admin-modal { width:100%; max-width:none; height:100dvh; max-height:100dvh; border-radius:0; padding:14px 14px calc(18px + env(safe-area-inset-bottom)); overflow-x:hidden; overflow-y:auto; }
+      .lipa-admin-modal-header { position:sticky; top:-14px; z-index:5; margin: -14px -14px 14px; padding:14px; background:#fff; box-shadow:0 5px 12px #102b5010; }
+      .lipa-admin-modal-header > div { min-width:0; }
+      .lipa-admin-modal-header h3 { overflow-wrap:anywhere; }
+      .lipa-admin-action-bar { position:sticky; top:64px; z-index:4; display:grid; grid-template-columns:1fr; background:#f6f9ff; box-shadow:0 5px 12px #102b500d; }
+      .lipa-admin-action-bar .lipa-admin-button { width:100%; min-height:46px; }
+      .lipa-admin-detail-banner-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .lipa-admin-detail-grid { grid-template-columns:minmax(0,1fr); }
+      .lipa-admin-file { align-items:stretch; flex-direction:column; }
+      .lipa-admin-file-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .lipa-admin-file-actions button { min-width:0; white-space:normal; }
+      .lipa-admin-actions { display:grid; grid-template-columns:1fr; }
+      .lipa-admin-actions .lipa-admin-button { width:100%; min-height:46px; white-space:normal; }
+    }
+    @media (max-width: 380px) {
+      .lipa-admin-mobile-card-grid { grid-template-columns:minmax(0,1fr); }
+      .lipa-admin-detail-banner-grid { grid-template-columns:minmax(0,1fr); }
+      .lipa-admin-file-actions { grid-template-columns:minmax(0,1fr); }
+    }
   `}</style>;
 }
 
