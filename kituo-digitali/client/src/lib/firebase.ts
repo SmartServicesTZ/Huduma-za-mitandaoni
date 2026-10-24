@@ -687,6 +687,24 @@ export async function getLipaApplicationDocument(applicationId: string, fieldNam
   return (await callable({ applicationId, fieldName })).data;
 }
 
+async function waitForLipaUploadAuth(expectedUid: string): Promise<User> {
+  if (firebaseAuth.currentUser?.uid === expectedUid) return firebaseAuth.currentUser;
+  return await new Promise<User>((resolve, reject) => {
+    let unsubscribe: (() => void) | undefined;
+    let settled = false;
+    const finish = (user: User | null) => {
+      if (settled) return;
+      settled = true;
+      if (unsubscribe) unsubscribe();
+      clearTimeout(timeout);
+      if (user?.uid === expectedUid) resolve(user);
+      else reject(Object.assign(new Error("Kikao cha kuingia hakijapatikana. Toka kwenye akaunti kisha ingia tena."), { code: "unauthenticated" }));
+    };
+    const timeout = setTimeout(() => finish(firebaseAuth.currentUser), 8000);
+    unsubscribe = onAuthStateChanged(firebaseAuth, finish);
+  });
+}
+
 export async function uploadLipaDocument(uid: string, applicationId: string, fieldName: string, file: File, maxSizeMb = 5, accept = ["image/jpeg", "image/png", "image/webp"]) {
   if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new Error("Jina la field si sahihi.");
   const extension = String(file.name || "").toLowerCase().split(".").pop() || "";
@@ -696,16 +714,21 @@ export async function uploadLipaDocument(uid: string, applicationId: string, fie
   const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 10);
   if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi MB ${sizeLimit}.`);
   const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
-  const callable = createWorkerCall("createLipaDocumentUploadUrl");
   try {
-    const result = (await callable({ applicationId, fieldName, fileName: safeName, contentType: normalizedType })).data as { url?: string; path?: string };
+    // Wait for Firebase to restore the signed-in session before requesting the upload URL.
+    const authUser = await waitForLipaUploadAuth(uid);
+    const result = await invokeWorker<{ applicationId: string; fieldName: string; fileName: string; contentType: string }, { url?: string; path?: string }>(
+      "createLipaDocumentUploadUrl", { applicationId, fieldName, fileName: safeName, contentType: normalizedType }, authUser
+    );
     if (!result?.url || !result?.path) throw new Error("Kiungo salama cha kupakia picha hakikupatikana.");
     const response = await fetch(result.url, { method: "PUT", headers: { "Content-Type": normalizedType }, body: file });
-    if (!response.ok) throw new Error(`Server imekataa picha (HTTP ${response.status}).`);
+    if (!response.ok) throw new Error(`Seva ya kuhifadhi picha imekataa faili (HTTP ${response.status}).`);
     return result.path;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Imeshindikana kupakia picha.";
-    throw new Error(`Imeshindikana kupakia ${file.name}. Hakikisha umeingia, picha ni JPG/PNG/WebP na haizidi MB ${sizeLimit}. ${message}`);
+    const err = error as { message?: string; code?: string };
+    const message = err?.message || "Hitilafu isiyojulikana.";
+    if (err?.code === "unauthenticated") throw new Error(message);
+    throw new Error(`Imeshindikana kupakia ${file.name}: ${message}`);
   }
 }
 
