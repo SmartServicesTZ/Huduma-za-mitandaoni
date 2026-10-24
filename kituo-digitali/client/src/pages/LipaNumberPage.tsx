@@ -626,7 +626,43 @@ export default function LipaNumberPage() {
 .lipa-detail-list strong{overflow-wrap:anywhere;font-size:13px;line-height:1.5}
 @media(max-width:900px){.lipa-layout{grid-template-columns:minmax(0,1fr)}.lipa-side-stack{grid-template-columns:repeat(2,minmax(0,1fr))}.lipa-hero{grid-template-columns:minmax(0,1fr)}.lipa-hero-card{width:100%}}
 @media(max-width:620px){.lipa-page{width:calc(100% - 20px);padding-top:10px}.lipa-hero{padding:20px;border-radius:18px;gap:12px}.lipa-layout{gap:14px;margin-top:14px}.lipa-panel,.lipa-info-card,.lipa-history{padding:15px;border-radius:15px}.lipa-form-grid{grid-template-columns:minmax(0,1fr);gap:13px}.lipa-side-stack{grid-template-columns:minmax(0,1fr)}.lipa-network-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.lipa-network-card{padding:11px;min-height:72px}.lipa-network-logo{flex-basis:48px;width:48px;height:42px;padding:4px}.lipa-network-card strong{font-size:12px}.lipa-network-card small{font-size:10px}.lipa-history-row{grid-template-columns:auto minmax(0,1fr) auto;gap:9px}.lipa-history-row>.lipa-status{grid-column:2;grid-row:2;justify-self:start;margin:0}.lipa-history-row>.lipa-icon-button{grid-column:3;grid-row:1/3}.lipa-detail-list{grid-template-columns:minmax(0,1fr)}.lipa-modal-backdrop{padding:0;align-items:stretch}.lipa-modal{width:100%;max-height:100dvh;height:100dvh;border-radius:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}.lipa-dialog-row{align-items:flex-start;flex-direction:column;gap:5px}.lipa-dialog-row strong{max-width:100%;text-align:left;font-size:13px}.lipa-document-viewer{width:100%;max-height:100dvh;overflow-y:auto;border-radius:0;padding:16px}.lipa-document-viewer img{max-height:68dvh}.lipa-document-viewer-actions{display:grid;grid-template-columns:1fr}.lipa-actions{display:grid;grid-template-columns:1fr}.lipa-actions .lipa-button{width:100%}}
-@media(max-width:360px){.lipa-network-grid{grid-template-columns:minmax(0,1fr)}.lipa-topbar{align-items:flex-start;flex-direction:column}.lipa-history-row{grid-template-columns:auto minmax(0,1fr)}.lipa-history-row>.lipa-icon-button{grid-column:2;grid-row:3;justify-self:start}}`}</style>
+@media(max-width:360px){.lipa-network-grid{grid-template-columns:minmax(0,1fr)}.lipa-topbar{align-items:flex-start;flex-direction:column}.lipa-history-row{grid-template-columns:auto minmax(0,1fr)}.lipa-history-row>.lipa-icon-button{grid-column:2;grid-row:3;justify-self:start}}`}
+/* Modern form refresh: motion, depth, clearer fields and responsive cards */
+.lipa-page{animation:formRise .55s cubic-bezier(.2,.75,.25,1) both}
+.lipa-hero{isolation:isolate;animation:heroReveal .65s ease-out both}
+.lipa-hero:before{content:"";position:absolute;z-index:-1;width:280px;height:280px;right:8%;bottom:-210px;border-radius:50%;background:#7c5cff55;filter:blur(10px);animation:orbFloat 7s ease-in-out infinite}
+.lipa-panel,.lipa-info-card,.lipa-history{animation:formRise .55s ease-out both}
+.lipa-panel{position:relative;overflow:hidden}
+.lipa-panel:before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;background:linear-gradient(90deg,#5b5cf0,#36c98f,#43a5ff);background-size:200% 100%;animation:gradientFlow 5s linear infinite}
+.lipa-network-card{min-height:88px;gap:12px;padding:13px;border-radius:17px;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,background .22s ease;animation:cardPop .42s ease both}
+.lipa-network-card:nth-child(2){animation-delay:.04s}.lipa-network-card:nth-child(3){animation-delay:.08s}.lipa-network-card:nth-child(4){animation-delay:.12s}
+.lipa-network-card:hover:not(:disabled){transform:translateY(-4px) scale(1.012)}
+.lipa-network-card.is-selected{transform:translateY(-2px);box-shadow:0 14px 30px #6d4aff20,inset 0 0 0 1px #6d4aff}
+.lipa-network-logo{display:flex;align-items:center;justify-content:center;flex:0 0 58px;width:58px;height:48px;padding:5px;border-radius:12px;background:#fff;border:1px solid #e5eaf1;overflow:hidden}
+.lipa-network-logo img{display:block;width:100%;height:100%;object-fit:contain}
+.lipa-network-logo.is-active{border-color:var(--network-color);box-shadow:0 0 0 2px color-mix(in srgb,var(--network-color) 18%,transparent)}
+.lipa-form-section{animation:formRise .35s ease-out both}
+.lipa-field{gap:9px}
+.lipa-field input,.lipa-field textarea,.lipa-select-wrap select{min-height:49px;border-radius:13px;box-shadow:0 2px 5px #12213a05;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+.lipa-field input:hover,.lipa-field textarea:hover,.lipa-select-wrap select:hover{border-color:#b5c5d8}
+.lipa-field input:focus,.lipa-field textarea:focus,.lipa-select-wrap select:focus{transform:translateY(-1px);border-color:#7160f4;box-shadow:0 0 0 4px #7160f41c}
+.lipa-upload-box{transition:border-color .2s ease,background .2s ease,transform .2s ease}
+.lipa-upload-box:hover{border-color:#7464f5;background:linear-gradient(135deg,#f5f3ff,#eff8ff)}
+.lipa-button{position:relative;overflow:hidden;transition:transform .2s ease,box-shadow .2s ease,filter .2s ease}
+.lipa-button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 24px #6d4aff36}
+.lipa-button:active:not(:disabled){transform:scale(.985)}
+.lipa-button:after{content:"";position:absolute;top:-70%;left:-35%;width:25%;height:240%;background:#ffffff38;transform:rotate(25deg);transition:left .55s ease}
+.lipa-button:hover:after{left:120%}
+.lipa-history-row{transition:transform .2s ease,box-shadow .2s ease}.lipa-history-row:hover{transform:translateY(-2px);box-shadow:0 9px 22px #172b4d0c}
+.lipa-page .lipa-eyebrow{letter-spacing:.13em}
+@keyframes formRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes heroReveal{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes cardPop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes orbFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-22px,-18px)}}
+@keyframes gradientFlow{to{background-position:200% 0}}
+@media(max-width:620px){.lipa-network-card{min-height:82px;padding:10px;gap:8px}.lipa-network-logo{flex-basis:45px;width:45px;height:40px}.lipa-field input,.lipa-field textarea,.lipa-select-wrap select{min-height:48px}}
+@media(prefers-reduced-motion:reduce){.lipa-page,.lipa-hero,.lipa-panel,.lipa-info-card,.lipa-history,.lipa-form-section,.lipa-network-card{animation:none!important}.lipa-hero:before,.lipa-panel:before{animation:none!important}.lipa-network-card,.lipa-field input,.lipa-field textarea,.lipa-select-wrap select,.lipa-button,.lipa-history-row{transition:none!important}}
+</style>
     <div className="lipa-topbar"><Link href="/" className="lipa-back"><ArrowLeft size={16} /> Rudi kwenye huduma</Link><span className="lipa-secure"><ShieldCheck size={15} /> Taarifa zako zinalindwa</span></div>
     <section className="lipa-hero"><div><span className="lipa-eyebrow">HUDUMA YA LIPA NAMBA</span><h1>PATA LIPA NAMBA</h1><p>Chagua mtandao wako, jaza taarifa zinazohitajika na tuma ombi lako kwa usalama. Timu yetu itakujulisha kila hatua ya mchakato.</p></div><div className="lipa-hero-card"><span>Mtandao uliochaguliwa</span><strong>{selectedNetwork?.name ?? "Chagua hapa chini"}</strong><small>{selectedNetwork ? "Fomu yako imepakiwa kutoka kwenye mipangilio hai." : "Mitandao itaonekana baada ya mipangilio kupakiwa."}</small></div></section>
     {!firebaseUser && <div className="notice notice--warning lipa-notice"><LockKeyhole size={17} /><span>Ingia kwanza ili kuhifadhi na kutuma ombi la Lipa Namba.</span></div>}
