@@ -336,7 +336,6 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                 <tr>
                   <th scope="col">Mwombaji</th>
                   <th scope="col">Service</th>
-                  <th scope="col">Jina la mwombaji</th>
                   <th scope="col">Date</th>
                   <th scope="col">Status</th>
                   <th scope="col"><span className="service-app-admin-muted">Open</span></th>
@@ -349,7 +348,6 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                     <tr key={application.id || application.applicationId} onClick={() => openApplication(application)}>
                       <td>{application.userName || "Jina halijawekwa"}</td>
                       <td>{service?.name ?? application.serviceName ?? "—"}</td>
-                      <td>{application.userName || "—"}</td>
                       <td>{dateText(application.submittedAt)}</td>
                       <td><StatusBadge status={application.status} /></td>
                       <td>
