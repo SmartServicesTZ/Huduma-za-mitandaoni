@@ -44,6 +44,7 @@ import {
 } from "./handlers.js";
 import { ApiError, ApiHttpResponse, type CallableRoute, type HttpRoute } from "./api-adapter.js";
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
+import { signStorageUrl } from "./storage-rest.js";
 
 interface Env extends WorkerEnv {}
 
@@ -169,6 +170,37 @@ async function handleWebhook(request: Request, cors: Headers) {
   return response.toResponse(cors);
 }
 
+async function handleLipaDocumentUpload(request: Request, cors: Headers, env: Env) {
+  if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+  const contentLength = Number(request.headers.get("Content-Length") ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > 11 * 1024 * 1024) {
+    return jsonResponse({ error: { code: "invalid-argument", message: "Picha imezidi MB 10." } }, 413, cors);
+  }
+  const auth = await verifyFirebaseIdToken(request, env);
+  await enforceAccountRestriction(auth.uid, "submitLipaApplication");
+  let form: FormData;
+  try { form = await request.formData(); } catch { return jsonResponse({ error: { code: "invalid-argument", message: "Muundo wa picha si sahihi." } }, 400, cors); }
+  const applicationId = String(form.get("applicationId") ?? "").trim();
+  const fieldName = String(form.get("fieldName") ?? "").trim();
+  const file = form.get("file");
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) return jsonResponse({ error: { code: "invalid-argument", message: "Namba ya ombi si sahihi." } }, 400, cors);
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) return jsonResponse({ error: { code: "invalid-argument", message: "Field ya picha si sahihi." } }, 400, cors);
+  if (!(file instanceof File)) return jsonResponse({ error: { code: "invalid-argument", message: "Chagua picha kwanza." } }, 400, cors);
+  if (file.size < 1 || file.size > 10 * 1024 * 1024) return jsonResponse({ error: { code: "invalid-argument", message: "Picha lazima iwe kati ya byte 1 na MB 10." } }, 400, cors);
+  const contentType = file.type.toLowerCase() === "image/jpg" ? "image/jpeg" : file.type.toLowerCase();
+  if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) return jsonResponse({ error: { code: "invalid-argument", message: "Picha lazima iwe JPG, PNG au WebP." } }, 400, cors);
+  const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
+  const path = `lipaUploads/${auth.uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`;
+  const signedUrl = await signStorageUrl("write", path, Date.now() + 10 * 60 * 1000);
+  const upload = await fetch(signedUrl, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
+  if (!upload.ok) {
+    const detail = (await upload.text().catch(() => "")).slice(0, 180);
+    console.error("Lipa document upload failed", { status: upload.status, detail });
+    return jsonResponse({ error: { code: "unavailable", message: "Picha haikuhifadhiwa kwenye hifadhi salama." } }, 503, cors);
+  }
+  return jsonResponse({ data: { path, size: file.size, contentType } }, 200, cors);
+}
+
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const cors = corsHeaders(request, env);
@@ -189,6 +221,13 @@ const worker = {
         ...(!validServiceAccount ? ["FIREBASE_SERVICE_ACCOUNT_JSON"] : []),
       ];
       return jsonResponse({ ready: missing.length === 0, missing }, missing.length === 0 ? 200 : 503, cors);
+    }
+    if (url.pathname === "/upload/lipa") {
+      return withWorkerEnv(env, () => handleLipaDocumentUpload(request, cors, env).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("Lipa upload proxy failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Picha haikupakiwa kwa sasa. Jaribu tena." } }, 500, cors);
+      }));
     }
     if (url.pathname === "/webhooks/fimipay") {
       if (!paymentFlowsEnabled(env)) {

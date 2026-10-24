@@ -715,15 +715,23 @@ export async function uploadLipaDocument(uid: string, applicationId: string, fie
   if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi MB ${sizeLimit}.`);
   const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
   try {
-    // Wait for Firebase to restore the signed-in session before requesting the upload URL.
+    // Wait for Firebase to restore the signed-in session before sending the file to the Worker.
     const authUser = await waitForLipaUploadAuth(uid);
-    const result = await invokeWorker<{ applicationId: string; fieldName: string; fileName: string; contentType: string }, { url?: string; path?: string }>(
-      "createLipaDocumentUploadUrl", { applicationId, fieldName, fileName: safeName, contentType: normalizedType }, authUser
-    );
-    if (!result?.url || !result?.path) throw new Error("Kiungo salama cha kupakia picha hakikupatikana.");
-    const response = await fetch(result.url, { method: "PUT", headers: { "Content-Type": normalizedType }, body: file });
-    if (!response.ok) throw new Error(`Seva ya kuhifadhi picha imekataa faili (HTTP ${response.status}).`);
-    return result.path;
+    const token = await authUser.getIdToken();
+    const body = new FormData();
+    body.set("applicationId", applicationId);
+    body.set("fieldName", fieldName);
+    body.set("fileName", safeName);
+    body.set("contentType", normalizedType);
+    body.set("file", file, safeName);
+    const response = await fetch(`${workerBaseUrl()}/upload/lipa`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      body,
+    });
+    const result = await response.json().catch(() => null) as { data?: { path?: string }; error?: { message?: string } } | null;
+    if (!response.ok || !result?.data?.path) throw new Error(result?.error?.message ?? `Seva ya kuhifadhi picha imekataa faili (HTTP ${response.status}).`);
+    return result.data.path;
   } catch (error) {
     const err = error as { message?: string; code?: string };
     const message = err?.message || "Hitilafu isiyojulikana.";
