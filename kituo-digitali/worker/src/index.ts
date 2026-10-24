@@ -191,7 +191,13 @@ async function handleLipaDocumentUpload(request: Request, cors: Headers, env: En
   if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) return jsonResponse({ error: { code: "invalid-argument", message: "Picha lazima iwe JPG, PNG au WebP." } }, 400, cors);
   const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
   const path = `lipaUploads/${auth.uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`;
-  await uploadStorageObject(path, contentType, await file.arrayBuffer());
+  try {
+    await uploadStorageObject(path, contentType, await file.arrayBuffer());
+  } catch (error) {
+    const detail = String(error instanceof Error ? error.message : "Unknown storage error").replace(/[\r\n]+/g, " ").slice(0, 240);
+    console.error("Lipa document upload failed", { detail, code: error instanceof Error && "code" in error ? String((error as { code?: unknown }).code) : "unknown" });
+    return jsonResponse({ error: { code: "unavailable", message: `Hifadhi ya picha imekataa upload: ${detail}` } }, 503, cors);
+  }
   return jsonResponse({ data: { path, size: file.size, contentType } }, 200, cors);
 }
 
