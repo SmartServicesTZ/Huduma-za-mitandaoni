@@ -2095,3 +2095,141 @@ html body .portal-shell .portal-content .portal-main .portal-service-grid > .por
   .auth-backdrop,.auth-modal{animation:none!important}
   .auth-modal *, .auth-modal *:before,.auth-modal *:after{transition:none!important}
 }
+
+
+/* AUTH DESIGN MATCH: dark navy + orange, inspired by the supplied reference */
+.auth-backdrop{
+  padding:24px!important;
+  background:rgba(4,7,16,.86)!important;
+  backdrop-filter:blur(7px)!important;
+}
+.auth-modal{
+  width:min(960px,100%)!important;
+  max-width:960px!important;
+  max-height:min(94dvh,900px)!important;
+  overflow:auto!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  border-radius:28px!important;
+  color:#f8fafc!important;
+  background:#11182a!important;
+  box-shadow:0 25px 80px rgba(0,0,0,.48)!important;
+  isolation:isolate;
+}
+.auth-modal .auth-hero{
+  display:none!important;
+}
+.auth-modal .auth-form-content{
+  width:100%;
+  min-width:0;
+  padding:44px clamp(24px,5vw,62px)!important;
+  color:#f8fafc!important;
+  background:
+    radial-gradient(ellipse at 95% 5%,rgba(255,113,56,.09),transparent 35%),
+    linear-gradient(145deg,#131b2e,#0f1525)!important;
+}
+.auth-modal .auth-form-content>.overline{
+  color:#ff984f!important;
+  letter-spacing:.15em!important;
+}
+.auth-modal .auth-form-content h3{
+  color:#f8fafc!important;
+  font-size:clamp(27px,3vw,34px)!important;
+  letter-spacing:-.045em!important;
+}
+.auth-modal .modal-close{
+  top:14px!important;right:14px!important;
+  border:1px solid rgba(255,255,255,.13)!important;
+  color:#a6b1c7!important;
+  background:#172137!important;
+}
+.auth-modal .modal-close:hover{color:#fff!important;background:#252f45!important}
+.auth-modal .auth-switch{
+  display:flex!important;
+  gap:6px!important;
+  margin:0 0 24px!important;
+  padding:5px!important;
+  border:1px solid rgba(255,255,255,.1)!important;
+  border-radius:13px!important;
+  background:#0b1020!important;
+}
+.auth-modal .auth-switch button{
+  flex:1;min-height:42px!important;
+  border:0!important;border-radius:9px!important;
+  color:#a6b1c7!important;background:transparent!important;
+}
+.auth-modal .auth-switch button.active{
+  color:#fff!important;
+  background:linear-gradient(110deg,#ff7138,#f04e28)!important;
+  box-shadow:0 7px 20px rgba(255,89,43,.2)!important;
+}
+.auth-modal .auth-fields{
+  gap:16px!important;
+  margin-bottom:18px!important;
+}
+.auth-modal .auth-fields--two{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+.auth-modal .auth-fields label{
+  display:flex!important;flex-direction:column!important;gap:8px!important;
+  color:#dce4f3!important;font-size:12px!important;font-weight:600!important;
+}
+.auth-modal .auth-fields input{
+  width:100%!important;min-width:0!important;min-height:49px!important;
+  padding:13px 15px!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  border-radius:13px!important;
+  color:#f8fafc!important;background:rgba(255,255,255,.035)!important;
+  font-size:13px!important;
+}
+.auth-modal .auth-fields input::placeholder{color:#77839c!important}
+.auth-modal .auth-fields input:focus{
+  border-color:#ff7138!important;
+  background:rgba(255,113,56,.035)!important;
+  box-shadow:0 0 0 4px rgba(255,113,56,.1)!important;
+}
+.auth-modal .password-field{position:relative!important;width:100%!important}
+.auth-modal .password-field input{padding-right:48px!important}
+.auth-modal .password-field button{
+  position:absolute!important;top:50%!important;right:8px!important;
+  transform:translateY(-50%)!important;width:32px!important;height:32px!important;
+  display:grid!important;place-items:center!important;
+  border:0!important;border-radius:8px!important;color:#a6b1c7!important;
+  background:transparent!important;
+}
+.auth-modal .password-field button:hover{color:#fff!important;background:rgba(255,255,255,.07)!important}
+.auth-modal form>.button--green{
+  width:100%!important;min-height:49px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  border:0!important;border-radius:13px!important;
+  color:#fff!important;
+  background:linear-gradient(110deg,#ff7138,#f04e28)!important;
+  box-shadow:0 9px 25px rgba(255,89,43,.19)!important;
+  font-size:13px!important;font-weight:800!important;
+}
+.auth-modal form>.button--green:hover{filter:brightness(1.06)!important;transform:translateY(-1px)}
+.auth-modal form>.button--green.button--small{
+  width:auto!important;min-height:36px!important;margin:0 0 14px!important;
+  padding:8px 12px!important;background:#172137!important;
+  border:1px solid rgba(255,255,255,.1)!important;box-shadow:none!important;
+}
+.auth-modal .auth-error-alert{
+  margin-bottom:15px!important;border-color:rgba(255,113,56,.28)!important;
+  border-radius:10px!important;color:#ffd1bd!important;background:rgba(255,113,56,.08)!important;
+}
+@media(max-width:680px){
+ .auth-backdrop{padding:12px!important;align-items:center!important}
+ .auth-modal{width:100%!important;max-width:480px!important;max-height:94dvh!important;border-radius:22px!important}
+ .auth-modal .auth-form-content{padding:32px 23px 27px!important}
+ .auth-modal .auth-form-content h3{font-size:27px!important}
+ .auth-modal .auth-fields--two{grid-template-columns:minmax(0,1fr)!important}
+ .auth-modal .auth-fields{gap:13px!important}
+}
+@media(max-width:360px){
+ .auth-backdrop{padding:8px!important}
+ .auth-modal .auth-form-content{padding:29px 17px 22px!important}
+}
