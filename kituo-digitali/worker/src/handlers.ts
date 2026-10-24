@@ -375,7 +375,7 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
     const settingsSnapshot = await transaction.get(settingsRef);
     const alreadyInitialized = settingsSnapshot.data()?.catalogInitialized === true;
     const refsToSeed = alreadyInitialized && skipIfInitialized
-      ? refs.filter((item) => item.ref.parent.id === "services" && ["access-lipa-number", "access-lipa-airtel", "access-lipa-yas", "access-lipa-vodacom", "access-lipa-halotel"].includes(String((item.data as { slug?: string }).slug ?? "")))
+      ? refs.filter((item) => item.ref.parent.id === "services" && ["access-lipa-number", "access-lipa-airtel", "access-lipa-yas", "access-lipa-vodacom", "access-lipa-halotel", "sme-vodacom"].includes(String((item.data as { slug?: string }).slug ?? "")))
       : refs;
     const existingRecords: Array<{ item: (typeof refs)[number]; snapshot: DocumentSnapshot; targetRef: DocumentReference }> = [];
     for (const item of refsToSeed) {
@@ -838,7 +838,8 @@ export const createServiceApplication = callable(async (request) => {
   if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new ApiError("invalid-argument", "Namba ya ombi si sahihi.");
   const serviceSnapshot = await db.collection("services").where("slug", "==", serviceSlug).limit(1).get();
   const seededAccessService = defaultAccessLipaServices.find((item) => item.slug === serviceSlug);
-  const service = serviceSnapshot.empty ? seededAccessService : serviceSnapshot.docs[0]?.data();
+  const seededSmeVodacom = serviceSlug === "sme-vodacom" ? defaultServices.find((item) => item.slug === serviceSlug) : undefined;
+  const service = serviceSnapshot.empty ? (seededAccessService ?? seededSmeVodacom) : serviceSnapshot.docs[0]?.data();
   if (!service) throw new ApiError("not-found", "Huduma haikupatikana.");
   const isAccessService = defaultAccessLipaServices.some((item) => item.slug === serviceSlug);
   if (service.active === false || (!isAccessService && service.isVisible === false)) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
