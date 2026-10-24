@@ -1000,7 +1000,6 @@ export const setServiceApplicationStatus = callable(async (request) => {
           transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Onyo ${warnings}/5: taarifa za uongo`, body: `Tumegundua taarifa zisizo sahihi kwenye ombi lako. Hili ni onyo ${warnings} kati ya 5. Ukirudia baada ya maonyo 5, akaunti yako itazuiwa.`, type: "falseInformationWarning", applicationId, createdAt: now });
         }
       }
-    }
     const auditRef = db.collection("auditLogs").doc();
     transaction.create(auditRef, { action: `SERVICE_APPLICATION_${status}`, actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     recordAudit(transaction, uid, String(actor.role), `SERVICE_APPLICATION_${status}`, "serviceApplication", applicationId, { status: from }, { status }, { reason: status === "REJECTED" ? rejectionReason : "" });
