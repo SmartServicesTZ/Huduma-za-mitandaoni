@@ -44,7 +44,7 @@ import {
 } from "./handlers.js";
 import { ApiError, ApiHttpResponse, type CallableRoute, type HttpRoute } from "./api-adapter.js";
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
-import { uploadStorageObject } from "./storage-rest.js";
+import { getStorage, uploadStorageObject } from "./storage-rest.js";
 import { getFirestore } from "./firestore-rest.js";
 
 interface Env extends WorkerEnv {}
@@ -220,13 +220,25 @@ async function handleLipaDocumentDownload(request: Request, cors: Headers, env: 
   const storagePath = String(application.applicantData?.[fieldName] ?? "");
   const allowedPath = storagePath.startsWith(`lipaUploads/${String(application.userId ?? "")}/${applicationId}/`) || storagePath.startsWith(`lipaApplications/${applicationId}/documents/`);
   if (!allowedPath || !env.LIPA_DOCUMENTS) throw new ApiError("not-found", "Faili halikupatikana.");
-  const object = await env.LIPA_DOCUMENTS.get(storagePath);
-  if (!object) throw new ApiError("not-found", "Faili halikupatikana.");
   const headers = new Headers(cors);
-  headers.set("Content-Type", object.httpMetadata?.contentType ?? "application/octet-stream");
   headers.set("Cache-Control", "private, no-store");
   headers.set("Content-Disposition", "inline");
-  return new Response(object.body, { status: 200, headers });
+  const object = await env.LIPA_DOCUMENTS.get(storagePath);
+  if (object) {
+    headers.set("Content-Type", object.httpMetadata?.contentType ?? "application/octet-stream");
+    return new Response(object.body, { status: 200, headers });
+  }
+  // Existing uploads may still live in Firebase Storage from before R2 was enabled.
+  // Read those legacy objects securely after the same application ownership/admin check above.
+  try {
+    const [legacyUrl] = await getStorage().bucket().file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 60_000 });
+    const legacyResponse = await fetch(legacyUrl, { signal: AbortSignal.timeout(20000) });
+    if (!legacyResponse.ok || !legacyResponse.body) throw new Error("Legacy object not found.");
+    headers.set("Content-Type", legacyResponse.headers.get("Content-Type") ?? "application/octet-stream");
+    return new Response(legacyResponse.body, { status: 200, headers });
+  } catch {
+    throw new ApiError("not-found", "Faili halikupatikana kwenye R2 wala hifadhi ya zamani.");
+  }
 }
 
 const worker = {
