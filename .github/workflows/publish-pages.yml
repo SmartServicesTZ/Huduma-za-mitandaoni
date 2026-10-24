@@ -1,0 +1,64 @@
+name: Build and publish SmartServicesTZ to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "kituo-digitali/client/**"
+      - "kituo-digitali/shared/**"
+      - "kituo-digitali/package.json"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - "kituo-digitali/vite.config.ts"
+      - ".github/workflows/publish-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: smartservicestz-pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: kituo-digitali/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: kituo-digitali
+        run: pnpm install --frozen-lockfile
+
+      - name: Build production frontend
+        working-directory: kituo-digitali
+        env:
+          GITHUB_ACTIONS: "true"
+        run: pnpm build
+
+      - name: Publish generated static files to the Pages root
+        run: |
+          test -f kituo-digitali/dist/public/index.html
+          cp -a kituo-digitali/dist/public/. .
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No generated site changes to publish."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Publish SmartServicesTZ production build [skip ci]"
+          git push
