@@ -38,6 +38,7 @@ import {
   submitLipaApplication,
   syncAuthClaims,
   updateUserAccess,
+  updateLipaRewardTracking,
   verifyUser,
   enforceAccountRestriction,
 } from "./handlers.js";
@@ -53,7 +54,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   listServiceApplications, replyToServiceApplication,
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
-  setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, verifyUser,
+  setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, updateLipaRewardTracking, verifyUser,
   submitNidaRequest, listMyNidaRequests, listNidaRequests, setNidaRequestStatus, completeNidaRequest,
 };
 const webhook: HttpRoute = fimipayWebhook;
