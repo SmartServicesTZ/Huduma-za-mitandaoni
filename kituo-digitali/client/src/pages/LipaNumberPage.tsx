@@ -63,6 +63,15 @@ const statusTone: Record<LipaApplication["status"], string> = {
   REJECTED: "rejected",
 };
 
+function rewardProgress(application: LipaApplication) {
+  const qualification = application.qualificationStatus ?? "PENDING_CHECK";
+  const payment = application.rewardStatus ?? (Number(application.reward ?? 0) > 0 ? "UNPAID" : "NOT_ELIGIBLE");
+  if (payment === "PAID") return { title: "Malipo yamekamilika", detail: "Zawadi yako imelipwa.", tone: "paid" };
+  if (payment === "NOT_ELIGIBLE" || qualification === "NOT_QUALIFIED") return { title: "Hujastahili malipo ya zawadi", detail: application.rewardNote || "Kwa sasa vigezo vya malipo havijafikiwa.", tone: "pending" };
+  if (qualification === "QUALIFIED") return { title: "Umefuzu — malipo yanasubiri", detail: "Vigezo vimethibitishwa; subiri malipo yafanyike.", tone: "processing" };
+  return { title: "Miamala inafuatiliwa", detail: "Admin anathibitisha idadi ya miamala kabla ya kuamua kuhusu malipo.", tone: "processing" };
+}
+
 function safeFields(value: unknown): ServiceFormField[] {
   if (!Array.isArray(value)) return [];
   return value.filter((field): field is ServiceFormField => Boolean(field && typeof field === "object" && typeof (field as ServiceFormField).fieldName === "string" && typeof (field as ServiceFormField).label === "string" && typeof (field as ServiceFormField).type === "string"))
@@ -216,6 +225,28 @@ function ApplicationModal({ application, onClose, onDocument }: { application: L
       {application.rejectionReason && <div className="lipa-rejection"><strong>Sababu ya kukataliwa</strong><p>{application.rejectionReason}</p></div>}
       {application.adminReply && <div className="lipa-rejection" style={{color:"#14532d",borderLeftColor:"#22c55e",background:"#ecfdf3"}}><strong>Jibu la Admin</strong><p>{application.adminReply}</p></div>}
       {application.additionalInfoRequest && <div className="lipa-rejection" style={{color:"#7c2d12",borderLeftColor:"#f59e0b",background:"#fff7ed"}}><strong>Taarifa za ziada zinahitajika</strong><p>{application.additionalInfoRequest}</p></div>}
+      {application.status === "APPROVED" && (() => {
+        const progress = rewardProgress(application);
+        const hasReward = Number(application.reward ?? 0) > 0;
+        return <section className="lipa-dialog-section" aria-label="Hali ya malipo ya Lipa Namba">
+          <h3>Ufuatiliaji wa Lipa Namba na malipo</h3>
+          <div style={{border:"1px solid #dbeafe",background:"#f8fbff",borderRadius:12,padding:14,marginBottom:12}}>
+            <strong style={{display:"block",fontSize:16,color:progress.tone==="paid"?"#166534":progress.tone==="pending"?"#92400e":"#1d4ed8"}}>{progress.title}</strong>
+            <p style={{margin:"6px 0 0",color:"#475569",lineHeight:1.5}}>{progress.detail}</p>
+          </div>
+          <div className="lipa-detail-list">
+            <div><span>Lipa Namba iliyotolewa</span><strong>{application.lipaNumber || "Bado haijawekwa"}</strong></div>
+            <div><span>Miamala iliyothibitishwa</span><strong>{Number(application.verifiedTransactions ?? 0)}</strong></div>
+            {hasReward && <div><span>Zawadi inayotarajiwa</span><strong>TSh {Number(application.reward).toLocaleString("sw-TZ")}</strong></div>}
+            <div><span>Hali ya vigezo</span><strong>{(application.qualificationStatus ?? "PENDING_CHECK") === "QUALIFIED" ? "Amefuzu" : (application.qualificationStatus ?? "PENDING_CHECK") === "NOT_QUALIFIED" ? "Hajafuzu" : "Inafuatiliwa"}</strong></div>
+            <div><span>Hali ya malipo</span><strong>{(application.rewardStatus ?? "UNPAID") === "PAID" ? "Yamelipwa" : (application.rewardStatus ?? "UNPAID") === "NOT_ELIGIBLE" ? "Hastahili" : "Bado hayajalipwa"}</strong></div>
+            {application.rewardStatus === "PAID" && application.rewardPaymentReference && <div><span>Rejea ya malipo</span><strong>{application.rewardPaymentReference}</strong></div>}
+            {application.rewardPaidAt && <div><span>Tarehe ya malipo</span><strong>{displayDate(application.rewardPaidAt)}</strong></div>}
+          </div>
+          {application.rewardNote && <div className="lipa-rejection" style={{color:"#334155",borderLeftColor:"#64748b",background:"#f8fafc",marginTop:12}}><strong>Maelezo ya ufuatiliaji</strong><p>{application.rewardNote}</p></div>}
+          <p style={{fontSize:12,color:"#64748b",marginTop:10}}>Hali hii husasishwa na admin baada ya kukagua taarifa na ripoti za miamala. Kuidhinishwa kwa ombi hakumaanishi kuwa zawadi tayari imelipwa.</p>
+        </section>;
+      })()}
 
       {entries.length > 0 && <div className="lipa-dialog-section"><h3>Taarifa ulizowasilisha</h3>{entries.map(([key, value]) => <div className="lipa-dialog-row" key={key}><span>{key}</span><strong>{String(value)}</strong></div>)}</div>}
       {documents.length > 0 && <div className="lipa-dialog-section"><h3>Nyaraka</h3>{documents.map(([key]) => <button className="lipa-document-row" key={key} onClick={() => onDocument(key, key)}><FileImage size={18} /><span>{key}</span><Eye size={16} /></button>)}</div>}
