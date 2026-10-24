@@ -331,7 +331,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     setInlineImageErrors({});
     const imageFields = fieldsForApplication(selected, byNetwork[selected.networkId]).filter((field) => {
       const value = selected.applicantData?.[field.fieldName];
-      return Boolean(value) && (field.type === "IMAGE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\\//.test(value)));
+      return Boolean(value) && (field.type === "IMAGE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\//.test(value)));
     });
     void Promise.all(imageFields.map(async (field) => {
       try {
