@@ -45,7 +45,7 @@ import {
 type DraftPreview = { url: string; name: string; type: string };
 type DocumentPreview = { url: string; name: string; fieldName: string };
 
-type FallbackNetwork = Pick<LipaNetworkConfig, "id" | "name"> & { color: string; short: string };
+type FallbackNetwork = Pick<LipaNetworkConfig, "id" | "name"> & { color: string; short: string; logo: string };
 
 const networkColors = ["#1c65ab", "#138451", "#7347a8", "#bb5440", "#ab8615", "#2b8290"];
 
@@ -226,7 +226,9 @@ function FieldHelp({ field, error }: { field: ServiceFormField; error?: string }
 }
 
 function NetworkMark({ network, active }: { network: FallbackNetwork; active: boolean }) {
-  return <span className={`lipa-network-mark ${active ? "is-active" : ""}`} style={{ "--network-color": network.color } as React.CSSProperties}>{network.short}</span>;
+  return <span className={`lipa-network-mark lipa-network-logo ${active ? "is-active" : ""}`} style={{ "--network-color": network.color } as React.CSSProperties}>
+    <img src={network.logo} alt={`Nembo ya mtandao ${network.name}`} loading="eager" />
+  </span>;
 }
 
 function ApplicationModal({ application, onClose, onDocument }: { application: LipaApplication; onClose: () => void; onDocument: (fieldName: string, label: string) => void }) {
@@ -431,7 +433,22 @@ export default function LipaNumberPage() {
   }, [draftPreviews]);
 
   const selectedNetwork = useMemo(() => configs.find((network) => network.id === selectedId) ?? null, [configs, selectedId]);
-  const networkCards = useMemo(() => configs.map((config, index) => ({ id: config.id, name: config.name, short: config.name.trim().slice(0, 1).toUpperCase() || "L", color: networkColors[index % networkColors.length], config })), [configs]);
+  const networkCards = useMemo(() => configs.map((config, index) => {
+    const networkId = config.id.toLowerCase();
+    const logoFile = networkId.includes("airtel") ? "airtel-logo.png"
+      : networkId.includes("vodacom") ? "vodacom-logo.png"
+      : networkId.includes("halotel") ? "halotel-logo.png"
+      : networkId.includes("yas") || networkId.includes("tigo") ? "yas-logo.png"
+      : "";
+    return {
+      id: config.id,
+      name: config.name,
+      short: config.name.trim().slice(0, 1).toUpperCase() || "L",
+      color: networkId.includes("airtel") ? "#e31b36" : networkId.includes("vodacom") ? "#e21b2d" : networkId.includes("halotel") ? "#f2a900" : networkId.includes("yas") || networkId.includes("tigo") ? "#1769aa" : networkColors[index % networkColors.length],
+      logo: logoFile ? `${import.meta.env.BASE_URL}${logoFile}` : "",
+      config
+    };
+  }), [configs]);
   const hasConfig = Boolean(selectedNetwork);
 
   const clearDraftUploads = async (nextApplicationId?: string) => {
@@ -586,7 +603,7 @@ export default function LipaNumberPage() {
 .lipa-network-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:12px}
 .lipa-network-card{display:flex;align-items:center;gap:12px;min-width:0;text-align:left;border:1px solid #dbe4f1;background:#f8faff;transition:all .16s ease}
 .lipa-network-card.is-selected{border:2px solid #2366d1;background:#edf5ff;box-shadow:0 0 0 3px #2366d116}
-.lipa-network-card strong,.lipa-network-card small{overflow-wrap:anywhere;line-height:1.45}
+.lipa-network-card strong,.lipa-network-card small{overflow-wrap:anywhere;line-height:1.45}.lipa-network-logo{display:flex;align-items:center;justify-content:center;flex:0 0 58px;width:58px;height:48px;padding:5px;border-radius:10px;background:#fff;border:1px solid #e5eaf1;overflow:hidden}.lipa-network-logo img{display:block;width:100%;height:100%;object-fit:contain}.lipa-network-logo.is-active{border-color:var(--network-color);box-shadow:0 0 0 2px color-mix(in srgb,var(--network-color) 18%,transparent)}
 .lipa-form-section{border-top:1px solid #e8edf5}
 .lipa-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .lipa-field{min-width:0;display:flex;flex-direction:column;gap:8px;font-size:13px;color:#263954}
@@ -608,7 +625,7 @@ export default function LipaNumberPage() {
 .lipa-detail-list>div{min-width:0;padding:13px;border:1px solid #e4eaf4}
 .lipa-detail-list strong{overflow-wrap:anywhere;font-size:13px;line-height:1.5}
 @media(max-width:900px){.lipa-layout{grid-template-columns:minmax(0,1fr)}.lipa-side-stack{grid-template-columns:repeat(2,minmax(0,1fr))}.lipa-hero{grid-template-columns:minmax(0,1fr)}.lipa-hero-card{width:100%}}
-@media(max-width:620px){.lipa-page{width:calc(100% - 20px);padding-top:10px}.lipa-hero{padding:20px;border-radius:18px;gap:12px}.lipa-layout{gap:14px;margin-top:14px}.lipa-panel,.lipa-info-card,.lipa-history{padding:15px;border-radius:15px}.lipa-form-grid{grid-template-columns:minmax(0,1fr);gap:13px}.lipa-side-stack{grid-template-columns:minmax(0,1fr)}.lipa-network-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.lipa-network-card{padding:11px;min-height:72px}.lipa-network-card strong{font-size:12px}.lipa-network-card small{font-size:10px}.lipa-history-row{grid-template-columns:auto minmax(0,1fr) auto;gap:9px}.lipa-history-row>.lipa-status{grid-column:2;grid-row:2;justify-self:start;margin:0}.lipa-history-row>.lipa-icon-button{grid-column:3;grid-row:1/3}.lipa-detail-list{grid-template-columns:minmax(0,1fr)}.lipa-modal-backdrop{padding:0;align-items:stretch}.lipa-modal{width:100%;max-height:100dvh;height:100dvh;border-radius:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}.lipa-dialog-row{align-items:flex-start;flex-direction:column;gap:5px}.lipa-dialog-row strong{max-width:100%;text-align:left;font-size:13px}.lipa-document-viewer{width:100%;max-height:100dvh;overflow-y:auto;border-radius:0;padding:16px}.lipa-document-viewer img{max-height:68dvh}.lipa-document-viewer-actions{display:grid;grid-template-columns:1fr}.lipa-actions{display:grid;grid-template-columns:1fr}.lipa-actions .lipa-button{width:100%}}
+@media(max-width:620px){.lipa-page{width:calc(100% - 20px);padding-top:10px}.lipa-hero{padding:20px;border-radius:18px;gap:12px}.lipa-layout{gap:14px;margin-top:14px}.lipa-panel,.lipa-info-card,.lipa-history{padding:15px;border-radius:15px}.lipa-form-grid{grid-template-columns:minmax(0,1fr);gap:13px}.lipa-side-stack{grid-template-columns:minmax(0,1fr)}.lipa-network-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.lipa-network-card{padding:11px;min-height:72px}.lipa-network-logo{flex-basis:48px;width:48px;height:42px;padding:4px}.lipa-network-card strong{font-size:12px}.lipa-network-card small{font-size:10px}.lipa-history-row{grid-template-columns:auto minmax(0,1fr) auto;gap:9px}.lipa-history-row>.lipa-status{grid-column:2;grid-row:2;justify-self:start;margin:0}.lipa-history-row>.lipa-icon-button{grid-column:3;grid-row:1/3}.lipa-detail-list{grid-template-columns:minmax(0,1fr)}.lipa-modal-backdrop{padding:0;align-items:stretch}.lipa-modal{width:100%;max-height:100dvh;height:100dvh;border-radius:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}.lipa-dialog-row{align-items:flex-start;flex-direction:column;gap:5px}.lipa-dialog-row strong{max-width:100%;text-align:left;font-size:13px}.lipa-document-viewer{width:100%;max-height:100dvh;overflow-y:auto;border-radius:0;padding:16px}.lipa-document-viewer img{max-height:68dvh}.lipa-document-viewer-actions{display:grid;grid-template-columns:1fr}.lipa-actions{display:grid;grid-template-columns:1fr}.lipa-actions .lipa-button{width:100%}}
 @media(max-width:360px){.lipa-network-grid{grid-template-columns:minmax(0,1fr)}.lipa-topbar{align-items:flex-start;flex-direction:column}.lipa-history-row{grid-template-columns:auto minmax(0,1fr)}.lipa-history-row>.lipa-icon-button{grid-column:2;grid-row:3;justify-self:start}}`}</style>
     <div className="lipa-topbar"><Link href="/" className="lipa-back"><ArrowLeft size={16} /> Rudi kwenye huduma</Link><span className="lipa-secure"><ShieldCheck size={15} /> Taarifa zako zinalindwa</span></div>
     <section className="lipa-hero"><div><span className="lipa-eyebrow">HUDUMA YA LIPA NAMBA</span><h1>PATA LIPA NAMBA</h1><p>Chagua mtandao wako, jaza taarifa zinazohitajika na tuma ombi lako kwa usalama. Timu yetu itakujulisha kila hatua ya mchakato.</p></div><div className="lipa-hero-card"><span>Mtandao uliochaguliwa</span><strong>{selectedNetwork?.name ?? "Chagua hapa chini"}</strong><small>{selectedNetwork ? "Fomu yako imepakiwa kutoka kwenye mipangilio hai." : "Mitandao itaonekana baada ya mipangilio kupakiwa."}</small></div></section>
