@@ -143,18 +143,18 @@ export default function SmeVodacomPage() {
               <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={`rounded-lg px-4 py-2.5 text-sm font-extrabold transition ${form.planType === "combo" ? "bg-red-700 text-white shadow" : "text-slate-600 hover:bg-white"}`}><Smartphone size={15} className="mr-1 inline"/> Combo</button>
             </div>
           </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3">
             {plans.map((plan) => {
               const selected = form.selectedPlan === String(plan.price);
               const combo = "calls" in plan;
-              return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={`group relative rounded-2xl border p-3 sm:p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300"}`}>
+              return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={`group relative rounded-2xl border p-2 sm:p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300"}`}>
                 {selected && <span className="absolute right-3 top-3 text-red-700"><CircleCheck size={20}/></span>}
                 <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black tracking-wider text-slate-600">SIKU 30</span>
                 <p className="mt-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{plan.data}</p>
-                <p className="mt-1 text-sm font-bold text-red-700">TSh {money(plan.price)}</p>
+                <p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
                 {combo && <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-200 pt-2 text-xs font-semibold text-slate-600"><span>☎ {plan.calls}</span><span>✉ {plan.sms}</span></div>}
                 {!combo && <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">Data pekee · siku 30</p>}
-                <span className={`mt-3 inline-flex items-center gap-1 text-xs font-extrabold ${selected ? "text-red-700" : "text-slate-500 group-hover:text-red-700"}`}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"} <ChevronDown size={14}/></span>
+                <span className={`mt-2 inline-flex items-center gap-1 text-[11px] font-extrabold ${selected ? "text-red-700" : "text-slate-500 group-hover:text-red-700"}`}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"} <ChevronDown size={14}/></span>
               </button>;
             })}
           </div>
