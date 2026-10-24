@@ -96,7 +96,7 @@ function PanelStyles() {
       .service-app-admin-tab:hover, .service-app-admin-tab-active { border-bottom-color: #168653; color: #126c44; }
       .service-app-admin-count { background: #edf4ef; border-radius: 999px; color: #126c44; font-size: .72rem; margin-left: 4px; padding: 2px 7px; }
       .service-app-admin-card { background: #fff; border: 1px solid #e2e9e4; border-radius: 14px; overflow: hidden; }
-      .service-app-admin-table-wrap { overflow-x: auto; }
+      .service-app-admin-table-wrap { overflow-x: auto; }\n      .service-app-admin-mobile-list { display: none; }\n      .service-app-admin-mobile-item { border-bottom: 1px solid #edf1ee; padding: 13px; }\n      .service-app-admin-mobile-item:last-child { border-bottom: 0; }\n      .service-app-admin-mobile-top { align-items: flex-start; display: flex; gap: 10px; justify-content: space-between; }\n      .service-app-admin-mobile-name { font-size: .92rem; font-weight: 800; overflow-wrap: anywhere; }\n      .service-app-admin-mobile-service { color: #126c44; font-size: .82rem; font-weight: 700; margin-top: 4px; overflow-wrap: anywhere; }\n      .service-app-admin-mobile-meta { color: #68746e; display: flex; flex-wrap: wrap; font-size: .75rem; gap: 6px 12px; margin-top: 9px; }
       .service-app-admin-table { border-collapse: collapse; min-width: 920px; width: 100%; }
       .service-app-admin-table th { background: #f7faf8; color: #63716a; font-size: .72rem; letter-spacing: .025em; text-align: left; text-transform: uppercase; white-space: nowrap; }
       .service-app-admin-table th, .service-app-admin-table td { border-bottom: 1px solid #edf1ee; padding: 12px 11px; vertical-align: top; }
@@ -152,7 +152,7 @@ function PanelStyles() {
       .service-app-admin-preview-frame { border: 0; display: block; height: min(65vh, 680px); width: 100%; }
       .service-app-admin-button:focus-visible, .service-app-admin-open:focus-visible, .service-app-admin-tab:focus-visible, .service-app-admin-close:focus-visible, .service-app-admin-form textarea:focus-visible { outline: 3px solid rgba(24, 137, 83, .24); outline-offset: 2px; }
       @media (max-width: 720px) { .service-app-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      @media (max-width: 620px) { .service-app-admin-heading { flex-direction: column; } .service-app-admin-detail-grid { grid-template-columns: 1fr; } .service-app-admin-modal { padding: 17px; } .service-app-admin-file { align-items: flex-start; flex-direction: column; } .service-app-admin-file-actions { width: 100%; } .service-app-admin-file-actions .service-app-admin-button { flex: 1; } }
+      @media (max-width: 620px) { .service-app-admin-table-wrap { display: none; } .service-app-admin-mobile-list { display: block; } .service-app-admin-heading { flex-direction: column; } .service-app-admin-detail-grid { grid-template-columns: 1fr; } .service-app-admin-modal { padding: 17px; } .service-app-admin-file { align-items: flex-start; flex-direction: column; } .service-app-admin-file-actions { width: 100%; } .service-app-admin-file-actions .service-app-admin-button { flex: 1; } }
     `}</style>
   );
 }
@@ -330,6 +330,24 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
         {visibleApplications.length === 0 ? (
           <div className="service-app-admin-empty">Hakuna maombi katika hali hii.</div>
         ) : (
+          <div className="service-app-admin-mobile-list" aria-label="Maombi ya huduma kwenye simu">
+            {visibleApplications.map((application) => {
+              const service = serviceForApplication(application, services);
+              return (
+                <article className="service-app-admin-mobile-item" key={application.id || application.applicationId}>
+                  <div className="service-app-admin-mobile-top">
+                    <div>
+                      <div className="service-app-admin-mobile-name">{application.userName || "Jina halijawekwa"}</div>
+                      <div className="service-app-admin-mobile-service">{service?.name ?? application.serviceName ?? "Huduma haijatajwa"}</div>
+                    </div>
+                    <StatusBadge status={application.status} />
+                  </div>
+                  <div className="service-app-admin-mobile-meta"><span>{dateText(application.submittedAt)}</span></div>
+                  <div style={{ marginTop: 10 }}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>Open</button></div>
+                </article>
+              );
+            })}
+          </div>
           <div className="service-app-admin-table-wrap">
             <table className="service-app-admin-table">
               <thead>
