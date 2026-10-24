@@ -118,6 +118,24 @@ function drawDefaultBackground(ctx: CanvasRenderingContext2D) {
   ctx.strokeRect(52, 52, TIN_CANVAS_WIDTH - 104, TIN_CANVAS_HEIGHT - 104);
 }
 
+export const TIN_WATERMARK_TEXT = "SI HATI RASMI YA TRA / NOT AN OFFICIAL TRA DOCUMENT";
+
+export function drawTinWatermark(ctx: CanvasRenderingContext2D) {
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = "#9f1d2a";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "700 29px Arial, sans-serif";
+  ctx.translate(TIN_CANVAS_WIDTH / 2, TIN_CANVAS_HEIGHT / 2);
+  ctx.rotate(-Math.PI / 7);
+  const spacing = Math.round(TIN_CANVAS_HEIGHT / 4);
+  for (const y of [-spacing * 2, -spacing, 0, spacing, spacing * 2]) {
+    ctx.fillText(TIN_WATERMARK_TEXT, 0, y, TIN_CANVAS_WIDTH * 1.3);
+  }
+  ctx.restore();
+}
+
 export async function renderTinCertificateCanvas(form: TinCertificateForm, canvas: HTMLCanvasElement = document.createElement("canvas"), layout?: Record<string, { x?: number; y?: number; fontSize?: number }>) {
   canvas.width = TIN_CANVAS_WIDTH;
   canvas.height = TIN_CANVAS_HEIGHT;
@@ -165,6 +183,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
     ctx.drawImage(qrImage, 720, Math.round(110 * TIN_Y_SCALE), qrSize, qrSize);
   }
 
+  drawTinWatermark(ctx);
   text(ctx, pos("commissioner"), form.commissioner);
   return canvas;
 }
