@@ -6,7 +6,7 @@ import {
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { createServiceApplication, subscribeUserServiceApplications, type ServiceApplication } from "@/lib/firebase";
+import { createServiceApplication, updateServiceApplication, subscribeUserServiceApplications, type ServiceApplication } from "@/lib/firebase";
 import { formatNida } from "../../../shared/serviceForms";
 import type { ServiceFormValues } from "../../../shared/serviceForms";
 
@@ -71,6 +71,7 @@ export default function SmeAirtelPage() {
   const [message, setMessage] = useState("");
   const [reference, setReference] = useState("");
   const [applicationId, setApplicationId] = useState(newApplicationId);
+  const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [myApplications, setMyApplications] = useState<ServiceApplication[]>([]);
   const [shakeKey, setShakeKey] = useState(0);
 
@@ -132,11 +133,18 @@ export default function SmeAirtelPage() {
         selectedPlanName: (form.planType === "data" ? "DATA BANDO" : "COMBO BANDO") + " — TSh " + money(Number(form.selectedPlan)),
         reward: 2000, rewardCurrency: "TZS", rewardRule: "TSh 2,000 kwa kila SME itakayokubaliwa na kuthibitishwa na admin",
       };
-      const result = await createServiceApplication(applicationId, "sme-airtel", values);
-      const ref = String(result.reference ?? result.applicationId ?? applicationId);
-      setReference(ref); setMessage("Ombi la SME AIRTEL limetumwa kwa mafanikio. Malipo ya TSh 2,000 kwa SME hutegemea ombi kukubaliwa na kuthibitishwa na admin.");
-      setForm(INITIAL); setApplicationId(newApplicationId());
-      toast.success("Ombi la SME AIRTEL limetumwa kwa admin.");
+      if (editingApplicationId) {
+        await updateServiceApplication(editingApplicationId, values);
+        setReference(editingApplicationId); setMessage("Mabadiliko ya ombi lako la SME AIRTEL yamehifadhiwa.");
+        setEditingApplicationId(null); setForm(INITIAL); setApplicationId(newApplicationId());
+        toast.success("Mabadiliko ya ombi yamehifadhiwa.");
+      } else {
+        const result = await createServiceApplication(applicationId, "sme-airtel", values);
+        const ref = String(result.reference ?? result.applicationId ?? applicationId);
+        setReference(ref); setMessage("Ombi la SME AIRTEL limetumwa kwa mafanikio. Malipo ya TSh 2,000 kwa SME hutegemea ombi kukubaliwa na kuthibitishwa na admin.");
+        setForm(INITIAL); setApplicationId(newApplicationId());
+        toast.success("Ombi la SME AIRTEL limetumwa kwa admin.");
+      }
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Imeshindikana kutuma ombi.";
       setMessage(detail); toast.error(detail);
@@ -359,6 +367,17 @@ export default function SmeAirtelPage() {
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">Tarehe: {app.submittedAt ? new Date(String(app.submittedAt)).toLocaleString("sw-TZ") : "—"}</p>
+                <div className="mt-3 grid gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-sm sm:grid-cols-2">
+                  {Object.entries(app.applicantData ?? {}).filter(([key, value]) => !/rewardRule|rewardCurrency/.test(key) && value !== undefined && value !== null && value !== "").map(([key, value]) => <div key={key} className="min-w-0"><span className="block text-xs font-semibold text-slate-500">{({fullName:"Majina kamili",smePhone:"Namba ya SME",phone:"Namba ya SME",nidaNumber:"Namba ya NIDA",contactPhone:"Namba ya mawasiliano",hasTin:"TIN",tinNumber:"Namba ya TIN",planType:"Aina ya kifurushi",selectedPlanName:"Kifurushi"} as Record<string,string>)[key] ?? key}</span><span className="break-words font-semibold text-slate-800">{typeof value === "boolean" ? (value ? "Ndiyo" : "Hapana") : String(value)}</span></div>)}
+                </div>
+                {app.status === "PENDING" && <button type="button" onClick={() => {
+                  const data = app.applicantData ?? {};
+                  setEditingApplicationId(app.applicationId || app.id);
+                  setApplicationId(app.applicationId || app.id);
+                  setForm({ phone: String(data.smePhone ?? data.phone ?? ""), fullName: String(data.fullName ?? ""), nidaNumber: String(data.nidaNumber ?? "").replace(/\\D/g, ""), contactPhone: String(data.contactPhone ?? ""), hasTin: data.hasTin === "ndio" ? "ndio" : data.hasTin === "hana" || data.tinNumber === "HANA" ? "hana" : "", tinNumber: String(data.tinNumber ?? "").replace(/\\D/g, ""), voucherConfirmed: true, planType: data.planType === "combo" ? "combo" : "data", selectedPlan: String(data.selectedPlan ?? "") });
+                  setMessage("Unahariri ombi ambalo bado halijaanza kushughulikiwa. Hakiki taarifa kisha hifadhi.");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100">Hariri ombi</button>}
                 {app.rejectionReason && <p className="mt-2 text-sm text-red-700"><strong>Sababu:</strong> {app.rejectionReason}</p>}
               </article>)}</div>}
       </section>
