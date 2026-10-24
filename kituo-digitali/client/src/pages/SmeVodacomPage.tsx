@@ -73,7 +73,7 @@ export default function SmeVodacomPage() {
     if (!/^\d{20}$/.test(form.nidaNumber.replace(/\D/g, ""))) next.nidaNumber = "NIDA lazima iwe na tarakimu 20.";
     if (!validPhone(form.smePhone)) next.smePhone = "Weka namba halali ya Tanzania, mfano 0712000000.";
     if (!validPhone(form.contactPhone)) next.contactPhone = "Weka namba halali ya mawasiliano.";
-    if (form.hasTin === "ndio" && !/^\\d{9}$/.test(form.tinNumber.replace(/\\D/g, ""))) next.tinNumber = "Weka namba sahihi ya TIN yenye tarakimu 9.";
+    if (form.hasTin === "ndio" && !/^\d{9}$/.test(form.tinNumber.replace(/\D/g, ""))) next.tinNumber = "Weka namba sahihi ya TIN yenye tarakimu 9.";
     if (!form.hasTin) next.hasTin = "Chagua kama una namba ya TIN au huna.";
     if (!form.region) next.region = "Chagua mkoa.";
     if (!form.district.trim()) next.district = "Jaza wilaya.";
@@ -93,7 +93,7 @@ export default function SmeVodacomPage() {
       const values: ServiceFormValues = {
         fullName: form.fullName.trim(), nidaNumber: formatNida(form.nidaNumber),
         smePhone: normalizePhone(form.smePhone), contactPhone: normalizePhone(form.contactPhone),
-        hasTin: form.hasTin, tinNumber: form.hasTin === "ndio" ? form.tinNumber.replace(/\\D/g, "") : "HANA", region: form.region, district: form.district.trim(),
+        hasTin: form.hasTin, tinNumber: form.hasTin === "ndio" ? form.tinNumber.replace(/\D/g, "") : "HANA", region: form.region, district: form.district.trim(),
         voucherAmount: String(Number(form.voucherAmount)), planType: form.planType,
         selectedPlan: form.selectedPlan, selectedPlanName: `${form.planType === "data" ? "Data Plan" : "Combo Plan"} — TSh ${money(Number(form.selectedPlan))}`,
       };
@@ -127,7 +127,7 @@ export default function SmeVodacomPage() {
               <h1 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">SME <span className="text-red-200">VODACOM</span></h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">Omba kuunganishwa kwenye vifurushi vya biashara vya siku 30. Linganisha Data Plan na Combo Plan, chagua kifurushi, kisha weka taarifa zako kwa usahihi.</p>
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/85">
-                <span className="rounded-lg bg-white/10 px-3 py-2">✓ Vifurushi vya siku 30</span><span className="rounded-lg bg-white/10 px-3 py-2">✓ Cheti cha TIN kinahitajika</span><span className="rounded-lg bg-white/10 px-3 py-2">✓ Vocha kuanzia TSh 15,000</span>
+                <span className="rounded-lg bg-white/10 px-3 py-2">✓ Vifurushi vya siku 30</span><span className="rounded-lg bg-white/10 px-3 py-2">✓ Taarifa za TIN huulizwa</span><span className="rounded-lg bg-white/10 px-3 py-2">✓ Vocha kuanzia TSh 15,000</span>
               </div>
             </div>
             <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white p-4 shadow-2xl ring-1 ring-white/40 sm:h-36 sm:w-36">
@@ -171,7 +171,7 @@ export default function SmeVodacomPage() {
           <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white sm:p-6"><ShieldCheck size={25} className="text-red-300"/><h2 className="mt-3 text-xl font-black">Tayarisha maombi</h2><p className="mt-2 text-sm leading-6 text-white/70">Hakikisha una taarifa na nyaraka hizi kabla ya kutuma.</p></div>
             <div className="space-y-4 p-5 sm:p-6">
-              {["Majina kamili yanayolingana na NIDA","Namba ya NIDA yenye tarakimu 20","Namba ya SME na namba ya mawasiliano","Cheti cha TIN (PDF, JPG au PNG; hadi MB 5)","Vocha iliyowekwa ya angalau TSh 15,000"].map((item, index) => <div key={item} className="flex items-start gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-black text-red-700">{index + 1}</span><p className="pt-1 text-sm font-semibold leading-5 text-slate-700">{item}</p></div>)}
+              {["Majina kamili yanayolingana na NIDA","Namba ya NIDA yenye tarakimu 20","Namba ya SME na namba ya mawasiliano","Namba ya TIN (ikiwa unayo)","Vocha iliyowekwa ya angalau TSh 15,000"].map((item, index) => <div key={item} className="flex items-start gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-black text-red-700">{index + 1}</span><p className="pt-1 text-sm font-semibold leading-5 text-slate-700">{item}</p></div>)}
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-900"><b>Mchakato:</b> Tuma ombi, subiri kushughulikiwa, kisha fuata maelekezo ya malipo ya Control Number yatakayotolewa na Vodacom.</div>
             </div>
           </aside>
@@ -187,7 +187,7 @@ export default function SmeVodacomPage() {
                 <div><label htmlFor="sme-alternative" className="text-sm font-extrabold">Namba ya mawasiliano <span className="text-red-600">*</span></label><input id="sme-alternative" type="tel" value={form.contactPhone} onChange={(e) => update("contactPhone", e.target.value)} placeholder="0754 000 000" className={fieldClass("contactPhone")} aria-invalid={!!errors.contactPhone}/><FieldError field="contactPhone"/></div>
               </div>
               <div className="rounded-2xl border border-red-100 bg-red-50/70 p-4 sm:p-5">
-                <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-700 shadow-sm"><Wallet size={21}/></span><div className="flex-1"><label htmlFor="sme-voucher" className="text-sm font-black text-slate-900">Vocha imewekwa ya shilingi ngapi? <span className="text-red-600">*</span></label><p className="mt-1 text-xs leading-5 text-slate-600">Ingiza kiasi cha vocha kilichowekwa kwenye laini. Kiwango cha chini ni TSh 15,000.</p><div className="relative mt-3"><span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-black text-slate-500">TSh</span><input id="sme-voucher" type="number" min="10000" step="1000" inputMode="numeric" value={form.voucherAmount} onChange={(e) => update("voucherAmount", e.target.value)} placeholder="Mfano: 10000" className={`${fieldClass("voucherAmount")} pl-14`} aria-invalid={!!errors.voucherAmount}/></div><FieldError field="voucherAmount"/></div></div>
+                <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-700 shadow-sm"><Wallet size={21}/></span><div className="flex-1"><label htmlFor="sme-voucher" className="text-sm font-black text-slate-900">Vocha imewekwa ya shilingi ngapi? <span className="text-red-600">*</span></label><p className="mt-1 text-xs leading-5 text-slate-600">Ingiza kiasi cha vocha kilichowekwa kwenye laini. Kiwango cha chini ni TSh 15,000.</p><div className="relative mt-3"><span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-black text-slate-500">TSh</span><input id="sme-voucher" type="number" min="15000" step="1000" inputMode="numeric" value={form.voucherAmount} onChange={(e) => update("voucherAmount", e.target.value)} placeholder="Mfano: 15000" className={`${fieldClass("voucherAmount")} pl-14`} aria-invalid={!!errors.voucherAmount}/></div><FieldError field="voucherAmount"/></div></div>
               </div>
               <div className="rounded-2xl border border-slate-200 p-4 sm:p-5">
                 <label className="text-sm font-extrabold text-slate-900">Je, unayo namba ya TIN? <span className="text-red-600">*</span></label>
@@ -197,7 +197,7 @@ export default function SmeVodacomPage() {
                   <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm font-bold ${form.hasTin === "hana" ? "border-red-600 bg-red-50 text-red-700" : "border-slate-200"}`}><input type="radio" name="hasTin" value="hana" checked={form.hasTin === "hana"} onChange={() => { update("hasTin", "hana"); update("tinNumber", ""); }} className="accent-red-700"/> Sina TIN</label>
                 </div>
                 <FieldError field="hasTin"/>
-                {form.hasTin === "ndio" && <div className="mt-4"><label htmlFor="sme-tin-number" className="text-sm font-extrabold">Namba ya TIN <span className="text-red-600">*</span></label><input id="sme-tin-number" inputMode="numeric" value={form.tinNumber} onChange={(e) => update("tinNumber", e.target.value.replace(/\\D/g, "").slice(0,9))} placeholder="Tarakaimu 9 za TIN" className={fieldClass("tinNumber")} aria-invalid={!!errors.tinNumber}/><FieldError field="tinNumber"/></div>}
+                {form.hasTin === "ndio" && <div className="mt-4"><label htmlFor="sme-tin-number" className="text-sm font-extrabold">Namba ya TIN <span className="text-red-600">*</span></label><input id="sme-tin-number" inputMode="numeric" value={form.tinNumber} onChange={(e) => update("tinNumber", e.target.value.replace(/\D/g, "").slice(0,9))} placeholder="Tarakimu 9 za TIN" className={fieldClass("tinNumber")} aria-invalid={!!errors.tinNumber}/><FieldError field="tinNumber"/></div>}
               </div>
               <div className="grid gap-5 sm:grid-cols-2"><div><label htmlFor="sme-region" className="text-sm font-extrabold">Mkoa <span className="text-red-600">*</span></label><select id="sme-region" value={form.region} onChange={(e) => update("region", e.target.value)} className={fieldClass("region")} aria-invalid={!!errors.region}><option value="">Chagua mkoa</option>{REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}</select><FieldError field="region"/></div><div><label htmlFor="sme-district" className="text-sm font-extrabold">Wilaya <span className="text-red-600">*</span></label><input id="sme-district" value={form.district} onChange={(e) => update("district", e.target.value)} placeholder="Andika wilaya" className={fieldClass("district")} aria-invalid={!!errors.district}/><FieldError field="district"/></div></div>
               {message && <div role="status" aria-live="polite" className={`rounded-2xl border p-4 text-sm ${reference ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>{message}{reference && <p className="mt-1 font-black">Namba ya kumbukumbu: {reference}</p>}</div>}
