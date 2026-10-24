@@ -40,7 +40,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat"
   setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", replyToServiceApplication: "admin", listNidaRequests: "admin", setNidaRequestStatus: "admin", completeNidaRequest: "admin", submitNidaRequest: "applications", listMyNidaRequests: "read",
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
-  createServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
+  createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
   getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", createTokenPurchaseOrder: "payments",
   syncAuthClaims: "auth",
@@ -838,13 +838,14 @@ export const createServiceApplication = callable(async (request) => {
   if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new ApiError("invalid-argument", "Namba ya ombi si sahihi.");
   const serviceSnapshot = await db.collection("services").where("slug", "==", serviceSlug).limit(1).get();
   const seededAccessService = defaultAccessLipaServices.find((item) => item.slug === serviceSlug);
-  const seededSmeVodacom = serviceSlug === "sme-vodacom" ? defaultServices.find((item) => item.slug === serviceSlug) : undefined;
-  const service = serviceSnapshot.empty ? (seededAccessService ?? seededSmeVodacom) : serviceSnapshot.docs[0]?.data();
-  // Keep the dedicated SME Vodacom form schema in sync even when an older catalog document exists in Firestore.
-  if (serviceSlug === "sme-vodacom" && service && seededSmeVodacom) service.fields = seededSmeVodacom.fields;
+  const seededSme = ["sme-airtel", "sme-vodacom"].includes(serviceSlug) ? defaultServices.find((item) => item.slug === "sme-vodacom") : undefined;
+  const service = serviceSnapshot.empty ? (seededAccessService ?? seededSme) : serviceSnapshot.docs[0]?.data();
+  // The dedicated SME forms have their own fields and remain available even if an old catalog entry is hidden.
+  if (["sme-airtel", "sme-vodacom"].includes(serviceSlug) && service && seededSme) service.fields = seededSme.fields;
   if (!service) throw new ApiError("not-found", "Huduma haikupatikana.");
   const isAccessService = defaultAccessLipaServices.some((item) => item.slug === serviceSlug);
-  if (service.active === false || (!isAccessService && service.isVisible === false)) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
+  const isDedicatedSmeForm = ["sme-airtel", "sme-vodacom"].includes(serviceSlug);
+  if (!isDedicatedSmeForm && (service.active === false || (!isAccessService && service.isVisible === false))) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
   if (serviceSlug === "pata-lipa-namba" || serviceSlug === "leseni-biashara") throw new ApiError("failed-precondition", "Tumia fomu maalum ya huduma hii.");
   const fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
   const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId, "serviceUploads");
@@ -910,6 +911,43 @@ export const createServiceApplication = callable(async (request) => {
     await Promise.all(finalPaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
     throw error;
   }
+});
+
+export const updateServiceApplication = callable(async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii haiwezi kuhariri maombi.");
+  const data = objectValue(request.data, "Hariri ombi");
+  const applicationId = text(data.applicationId, 80);
+  const incoming = objectValue(data.values, "Taarifa za ombi");
+  const ref = db.collection("serviceApplications").doc(applicationId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
+    const application = snapshot.data()!;
+    if (String(application.userId ?? "") !== uid) throw new ApiError("permission-denied", "Huwezi kuhariri ombi la mtumiaji mwingine.");
+    if (String(application.status ?? "PENDING") !== "PENDING") throw new ApiError("failed-precondition", "Ombi haliwezi kuhaririwa kwa sababu tayari limeanza kushughulikiwa.");
+    const previous = application.applicantData && typeof application.applicantData === "object" ? application.applicantData as Record<string, unknown> : {};
+    const next: Record<string, unknown> = { ...previous };
+    for (const [key, value] of Object.entries(incoming)) {
+      if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)) continue;
+      if (typeof value === "string") {
+        if (value.length > 4000) throw new ApiError("invalid-argument", `Taarifa ya ${key} ni ndefu sana.`);
+        if (/^(serviceUploads|serviceApplications)\//.test(value)) {
+          if (value !== previous[key]) throw new ApiError("invalid-argument", "Huwezi kubadilisha kiambatisho kupitia sehemu hii; pakia faili upya.");
+          continue;
+        }
+        next[key] = value.trim();
+      } else if (typeof value === "number" && Number.isFinite(value)) next[key] = value;
+      else if (typeof value === "boolean" || value === null) next[key] = value;
+      else if (Array.isArray(value) && value.every((item) => typeof item === "string" && item.length <= 300)) next[key] = value;
+    }
+    const now = FieldValue.serverTimestamp();
+    transaction.update(ref, { applicantData: next, updatedAt: now, editedAt: now, editedBy: uid });
+    transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(application.serviceName ?? application.serviceSlug)} limehaririwa`, body: "Mabadiliko ya taarifa zako yamehifadhiwa. Ombi bado linasubiri kuanza kushughulikiwa.", type: "serviceApplicationEdited", applicationId, createdAt: now });
+    recordAudit(transaction, uid, String(profile.role ?? "user"), "SERVICE_APPLICATION_EDITED", "serviceApplication", applicationId, previous, next, {});
+    return { applicationId, status: "PENDING", updated: true };
+  });
 });
 
 export const setServiceApplicationStatus = callable(async (request) => {
