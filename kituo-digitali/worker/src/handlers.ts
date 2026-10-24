@@ -979,16 +979,16 @@ export const setServiceApplicationStatus = callable(async (request) => {
     if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
     if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid, rejectionReason: "" });
     if (status === "REJECTED") Object.assign(patch, { rejectedAt: now, rejectedBy: uid, rejectionReason });
+    const isFalseInfoRejection = status === "REJECTED" && /(fake|uongo|uwongo|taarifa za uongo|taarifa feki|udangany|forged|false information)/i.test(rejectionReason);
+    const userRef = db.collection("users").doc(String(application.userId));
+    const userSnapshot = isFalseInfoRejection ? await transaction.get(userRef) : null;
     transaction.update(ref, patch);
     if (["APPROVED", "REJECTED"].includes(status)) transaction.delete(db.collection("serviceOpenApplications").doc(`${application.userId}_${application.serviceSlug}`));
     const isAirtelSme = ["sme-airtel", "sme-airtel-lipa", "airtel-sme"].includes(String(application.serviceSlug ?? "").toLowerCase());
     const airtelInstructions = "MSISITIZO: Jiunge kifurushi siku hiyo hiyo. Piga *149*01*77# kisha fuata maelekezo. Kuchagua aina ya kifurushi, piga *149*91# kisha chagua 1 kwa Combo au 2 kwa Internet.";
     const body = status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? (isAirtelSme ? `Maombi yako ya SME Airtel yamekubaliwa.\n\n${airtelInstructions}` : "Maombi yako yamekubaliwa.") : status === "REJECTED" ? `Maombi yako yamekataliwa. Sababu: ${rejectionReason}` : `Hali ya ombi lako imebadilishwa kuwa ${status}.`;
     transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${application.serviceName}`, body, type: "serviceApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
-    if (status === "REJECTED" && /(fake|uongo|uwongo|taarifa za uongo|taarifa feki|udangany|forged|false information)/i.test(rejectionReason)) {
-      const userRef = db.collection("users").doc(String(application.userId));
-      const userSnapshot = await transaction.get(userRef);
-      if (userSnapshot.exists) {
+    if (isFalseInfoRejection && userSnapshot?.exists) {
         const userData = userSnapshot.data()!;
         const priorWarnings = Number(userData.falseInformationWarnings ?? 0);
         if (priorWarnings >= 5) {
