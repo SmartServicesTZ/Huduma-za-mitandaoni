@@ -429,9 +429,18 @@ export default function LipaNumberPage() {
   };
 
   const chooseFile = async (field: ServiceFormField, file: File | undefined) => {
-    if (!file || !firebaseAuth.currentUser) return;
-    const accepted = field.accept?.length ? field.accept : field.type === "IMAGE_UPLOAD" ? ["image/jpeg", "image/png", "image/webp"] : undefined;
-    if (accepted && !accepted.includes(file.type)) { toast.error(`${field.label}: aina ya faili hairuhusiwi.`); return; }
+    if (!file) return;
+    if (!firebaseAuth.currentUser) { toast.error("Ingia kwanza kabla ya kupakia picha."); return; }
+    const extension = String(file.name || "").toLowerCase().split(".").pop() || "";
+    const mimeByExtension: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf" };
+    const rawType = String(file.type || "").toLowerCase();
+    const normalizedType = (rawType || mimeByExtension[extension] || "").replace("image/jpg", "image/jpeg");
+    const acceptedRaw = field.accept?.length ? field.accept : field.type === "IMAGE_UPLOAD" ? ["image/jpeg", "image/png", "image/webp"] : undefined;
+    const accepted = acceptedRaw?.map((type) => String(type).toLowerCase().replace("image/jpg", "image/jpeg"));
+    if (accepted && (!normalizedType || !accepted.includes(normalizedType))) {
+      toast.error(`${field.label}: aina ya faili hairuhusiwi. Tumia ${field.type === "IMAGE_UPLOAD" ? "JPG, PNG au WebP" : accepted.join(", ")}.`);
+      return;
+    }
     const maxSize = Math.min(Math.max(Number(field.maxSizeMb ?? 5), 1), 10);
     if (file.size > maxSize * 1024 * 1024) { toast.error(`${field.label}: faili lisizidi MB ${maxSize}.`); return; }
     setUploading((current) => ({ ...current, [field.fieldName]: true }));
