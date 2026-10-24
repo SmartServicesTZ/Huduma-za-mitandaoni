@@ -838,10 +838,10 @@ export const createServiceApplication = callable(async (request) => {
   if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new ApiError("invalid-argument", "Namba ya ombi si sahihi.");
   const serviceSnapshot = await db.collection("services").where("slug", "==", serviceSlug).limit(1).get();
   const seededAccessService = defaultAccessLipaServices.find((item) => item.slug === serviceSlug);
-  const seededSme = ["sme-airtel", "sme-vodacom"].includes(serviceSlug) ? defaultServices.find((item) => item.slug === "sme-vodacom") : undefined;
-  const service = serviceSnapshot.empty ? (seededAccessService ?? seededSme) : serviceSnapshot.docs[0]?.data();
-  // The dedicated SME forms have their own fields and remain available even if an old catalog entry is hidden.
-  if (["sme-airtel", "sme-vodacom"].includes(serviceSlug) && service && seededSme) service.fields = seededSme.fields;
+  const seededSmeVodacom = serviceSlug === "sme-vodacom" ? defaultServices.find((item) => item.slug === serviceSlug) : undefined;
+  const service = serviceSnapshot.empty ? (seededAccessService ?? seededSmeVodacom) : serviceSnapshot.docs[0]?.data();
+  // Keep the dedicated SME Vodacom schema in sync with the built-in form schema.
+  if (serviceSlug === "sme-vodacom" && service && seededSmeVodacom) service.fields = seededSmeVodacom.fields;
   if (!service) throw new ApiError("not-found", "Huduma haikupatikana.");
   const isAccessService = defaultAccessLipaServices.some((item) => item.slug === serviceSlug);
   const isDedicatedSmeForm = ["sme-airtel", "sme-vodacom"].includes(serviceSlug);
