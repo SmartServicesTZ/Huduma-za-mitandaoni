@@ -295,15 +295,13 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   const selectedService = selected ? serviceForApplication(selected, services) : undefined;
   const selectedFields = selected ? configuredFields(selected, services) : [];
   const selectedData = selected?.applicantData ?? {};
-  const reference = selected ? String((selected as ServiceApplication & { reference?: string }).reference ?? selected.applicationId ?? selected.id) : "";
 
   return (
     <section className="service-app-admin-panel" data-admin-id={adminId} aria-labelledby="service-app-admin-title">
       <PanelStyles />
       <div className="service-app-admin-heading">
         <div>
-          <h2 id="service-app-admin-title">Service applications</h2>
-          <p>Review and process submitted applications using the configured service fields.</p>
+          <h2 id="service-app-admin-title">Maombi ya huduma</h2>
         </div>
         <span className="service-app-admin-pending" aria-label={`${counts.PENDING} pending applications`}>
           Pending <strong>{counts.PENDING}</strong>
@@ -311,7 +309,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
       </div>
 
       <div className="service-app-admin-stats" aria-label="Application totals">
-        {["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"].map((status) => <div className="service-app-admin-stat" key={status}><span>{status === "ALL" ? "TOTAL APPLICATIONS" : status}</span><strong>{counts[status] ?? 0}</strong></div>)}
+        {["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"].map((status) => <div className="service-app-admin-stat" key={status}><span>{status === "ALL" ? "JUMLA" : statusLabel(status)}</span><strong>{counts[status] ?? 0}</strong></div>)}
       </div>
 
       <nav className="service-app-admin-tabs" aria-label="Application status filters">
@@ -330,15 +328,15 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
 
       <div className="service-app-admin-card">
         {visibleApplications.length === 0 ? (
-          <div className="service-app-admin-empty">No applications in this status.</div>
+          <div className="service-app-admin-empty">Hakuna maombi katika hali hii.</div>
         ) : (
           <div className="service-app-admin-table-wrap">
             <table className="service-app-admin-table">
               <thead>
                 <tr>
-                  <th scope="col">Application / reference</th>
+                  <th scope="col">Mwombaji</th>
                   <th scope="col">Service</th>
-                  <th scope="col">User / account</th>
+                  <th scope="col">Jina la mwombaji</th>
                   <th scope="col">Date</th>
                   <th scope="col">Status</th>
                   <th scope="col"><span className="service-app-admin-muted">Open</span></th>
@@ -349,19 +347,14 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                   const service = serviceForApplication(application, services);
                   return (
                     <tr key={application.id || application.applicationId} onClick={() => openApplication(application)}>
-                      <td>
-                        <div className="service-app-admin-application">
-                          <strong>{application.applicationId || application.id}</strong>
-                          <small>Ref: {String((application as ServiceApplication & { reference?: string }).reference ?? application.applicationId ?? application.id)}</small>
-                        </div>
-                      </td>
+                      <td>{application.userName || "Jina halijawekwa"}</td>
                       <td>{service?.name ?? application.serviceName ?? "—"}</td>
-                      <td>{application.userName || application.userId || "—"}<small className="service-app-admin-muted">UID: {application.userId}</small></td>
+                      <td>{application.userName || "—"}</td>
                       <td>{dateText(application.submittedAt)}</td>
                       <td><StatusBadge status={application.status} /></td>
                       <td>
                         <button className="service-app-admin-open" type="button" onClick={(event) => { event.stopPropagation(); openApplication(application); }}>
-                          Open details
+                          Fungua
                         </button>
                       </td>
                     </tr>
@@ -378,24 +371,22 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
           <div className="service-app-admin-modal" role="dialog" aria-modal="true" aria-labelledby="service-app-admin-details-title">
             <div className="service-app-admin-modal-header">
               <div>
-                <h3 id="service-app-admin-details-title">Application details</h3>
-                <p>{reference} · {selectedService?.name ?? selected.serviceName ?? "—"}</p>
+                <h3 id="service-app-admin-details-title">Taarifa za ombi</h3>
+                <p>{selectedService?.name ?? selected.serviceName ?? "Huduma haijaainishwa"}</p>
               </div>
               <button className="service-app-admin-close" type="button" aria-label="Close details" onClick={closeApplication}>×</button>
             </div>
 
             <div className="service-app-admin-detail-grid">
-              <div className="service-app-admin-detail-item"><dt>Application</dt><dd>{selected.applicationId || selected.id}</dd></div>
-              <div className="service-app-admin-detail-item"><dt>Reference</dt><dd>{reference}</dd></div>
-              <div className="service-app-admin-detail-item"><dt>Service</dt><dd>{selectedService?.name ?? selected.serviceName ?? "—"}</dd></div>
-              <div className="service-app-admin-detail-item"><dt>User account</dt><dd>{selected.userName || selected.userId || "—"}<small className="service-app-admin-muted">ID: {selected.userId || "—"}</small></dd></div>
-              <div className="service-app-admin-detail-item"><dt>Submitted</dt><dd>{dateText(selected.submittedAt)}</dd></div>
-              <div className="service-app-admin-detail-item"><dt>Status</dt><dd><StatusBadge status={selected.status} /></dd></div>
+              <div className="service-app-admin-detail-item"><dt>Huduma</dt><dd>{selectedService?.name ?? selected.serviceName ?? "—"}</dd></div>
+              <div className="service-app-admin-detail-item"><dt>Mwombaji</dt><dd>{selected.userName || "—"}</dd></div>
+              <div className="service-app-admin-detail-item"><dt>Tarehe</dt><dd>{dateText(selected.submittedAt)}</dd></div>
+              <div className="service-app-admin-detail-item"><dt>Hali ya ombi</dt><dd><StatusBadge status={selected.status} /></dd></div>
             </div>
 
-            <h4 className="service-app-admin-section-title">Configured application fields</h4>
+            <h4 className="service-app-admin-section-title">Taarifa zilizojazwa</h4>
             {selectedFields.length === 0 ? (
-              <p className="service-app-admin-muted">No configured fields are available for this service.</p>
+              <p className="service-app-admin-muted">Hakuna taarifa za fomu zilizopatikana.</p>
             ) : (
               <div className="service-app-admin-detail-grid">
                 {selectedFields.map((field) => {
@@ -413,7 +404,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
 
             {selectedFields.some((field) => UPLOAD_FIELD_TYPES.has(field.type)) && (
               <>
-                <h4 className="service-app-admin-section-title">Private documents</h4>
+                <h4 className="service-app-admin-section-title">Picha na nyaraka</h4>
                 <div className="service-app-admin-form">
                   {selectedFields.filter((field) => UPLOAD_FIELD_TYPES.has(field.type)).map((field) => {
                     const hasDocument = Boolean(selectedData[field.fieldName]);
@@ -436,7 +427,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
               </>
             )}
 
-            <h4 className="service-app-admin-section-title">Mawasiliano na mtumiaji</h4>
+            <h4 className="service-app-admin-section-title">Mawasiliano na mwombaji</h4>
             <div className="service-app-admin-form">
               <div className="service-app-admin-reply-modes">
                 <button type="button" className={replyMode === "reply" ? "service-app-admin-mode-active" : "service-app-admin-mode"} onClick={() => setReplyMode("reply")}>Jibu ombi</button>
