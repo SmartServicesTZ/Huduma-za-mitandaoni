@@ -979,7 +979,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
     if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
     if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid, rejectionReason: "" });
     if (status === "REJECTED") Object.assign(patch, { rejectedAt: now, rejectedBy: uid, rejectionReason });
-    const isFalseInfoRejection = status === "REJECTED" && /(fake|uongo|uwongo|taarifa za uongo|taarifa feki|udangany|forged|false information)/i.test(rejectionReason);
+    const isFalseInfoRejection = status === "REJECTED" && /(fake|feki|uongo|uwongo|taarifa za uongo|taarifa feki|taarifa zisizo sahihi|si sahihi|sio kweli|si kweli|udangany|forged|false information)/i.test(rejectionReason);
     const userRef = db.collection("users").doc(String(application.userId));
     const userSnapshot = isFalseInfoRejection ? await transaction.get(userRef) : null;
     transaction.update(ref, patch);
