@@ -73,6 +73,25 @@ export default function AdminDashboard() {
   const panel = (nav.some(([key]) => key === rawPanel) ? rawPanel : "overview") as Panel;
   const visibleNav = nav.filter(([key]) => key === "overview" || (key === "health" ? (isSuper || isAdmin) : (key === "ordering" ? isSuper : !panelPermission[key] || hasPermission(panelPermission[key]!))));
 
+  // Keep the admin drawer transient on mobile and never let its open state
+  // survive navigation, Escape, or switching to the desktop layout.
+  useEffect(() => { setDrawer(false); }, [location]);
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDrawer(false);
+    };
+    const closeOnDesktop = () => {
+      if (window.innerWidth > 800) setDrawer(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", closeOnDesktop);
+    closeOnDesktop();
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", closeOnDesktop);
+    };
+  }, []);
+
   const refresh = async () => {
     if (!canManage) return;
     setLoadingData(true);
