@@ -1,34 +1,11 @@
 import { useState } from "react";
-import { ArrowLeft, Building2, LoaderCircle, ShieldCheck, Send, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Building2, LoaderCircle, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
-import { createServiceApplication } from "@/lib/firebase";
 
 const FORM_URL = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=JzfHFpyXgk2zp-tqL93-V0QxQ30RRhFApA9nMNcqKjJUMFg0Wkc0Mzg0NEw0VkFPTjhJS1dTTEhQRy4u&embed=true";
 
 export default function ChangeBusinessNameAirtelLipaPage() {
   const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({ applicantName: "", contactPhone: "", lipaNumber: "", oldBusinessName: "", newBusinessName: "", reason: "" });
-  const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
-  async function saveCopy(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true); setError(""); setSaved(false);
-    try {
-      const applicationId = globalThis.crypto?.randomUUID?.() ?? `CBNA-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      await createServiceApplication(applicationId, "change-business-name-airtel-lipa", {
-        ...form,
-        serviceName: "CHANGE BUSINESS NAME AIRTEL LIPA",
-        requestType: "CHANGE BUSINESS NAME AIRTEL LIPA",
-        submissionSource: "SmartServicesTZ internal copy",
-        note: "Nakala ya kufuatilia ombi. Mtumiaji lazima pia atume fomu rasmi ya Airtel iliyo chini.",
-      });
-      setSaved(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Imeshindikana kuhifadhi nakala. Hakikisha umeingia kisha jaribu tena.");
-    } finally { setSaving(false); }
-  }
   return <main className="portal-main change-business-name-page">
     <style>{`
       .change-business-name-page{max-width:1040px;margin:0 auto;padding:20px 14px 44px;color:var(--foreground,#e8edf7)}
@@ -61,31 +38,14 @@ export default function ChangeBusinessNameAirtelLipaPage() {
     <section className="change-business-name-hero">
       <span className="change-business-name-icon"><Building2 size={25}/></span>
       <h1>CHANGE BUSINESS NAME AIRTEL LIPA</h1>
-      <p>Weka nakala ya taarifa zako kwenye SmartServicesTZ ili ionekane kwenye admin, kisha tuma pia fomu rasmi ya Airtel hapa chini. Fomu rasmi inabaki ndani ya ukurasa huu.</p>
+      <p>Jaza na tuma taarifa zako moja kwa moja kwenye fomu rasmi ya Airtel hapa chini. Hakuna fomu ya pili ya kujaza.</p>
     </section>
-    <div className="change-business-name-safe"><ShieldCheck size={19}/><span><strong>Hatua mbili zinahitajika:</strong> hifadhi nakala hapa kwanza ili msimamizi wa SmartServicesTZ aone ombi, kisha jaza na utume fomu rasmi ya Airtel iliyo chini. Nakala hii haijitumi yenyewe kwa Airtel.</span></div>
-    <section className="change-business-name-copy">
-      <h2>1. HIFADHI NAKALA YA OMBI KWENYE SMARTSERVICESTZ</h2>
-      <p>Taarifa hizi zitaingia kwenye sehemu ya MAOMBI YA HUDUMA ya admin. Jaza taarifa sahihi kisha bonyeza HIFADHI NAKALA.</p>
-      <form onSubmit={saveCopy}>
-        <div className="change-business-name-grid">
-          <label>Jina lako kamili *<input required value={form.applicantName} onChange={e=>update("applicantName",e.target.value)} autoComplete="name" /></label>
-          <label>Namba ya simu ya mawasiliano *<input required inputMode="tel" value={form.contactPhone} onChange={e=>update("contactPhone",e.target.value)} placeholder="07XXXXXXXX" /></label>
-          <label>Namba ya Airtel Lipa *<input required value={form.lipaNumber} onChange={e=>update("lipaNumber",e.target.value)} /></label>
-          <label>Jina la biashara la zamani *<input required value={form.oldBusinessName} onChange={e=>update("oldBusinessName",e.target.value)} /></label>
-          <label className="wide">Jina jipya la biashara *<input required value={form.newBusinessName} onChange={e=>update("newBusinessName",e.target.value)} /></label>
-          <label className="wide">Maelezo ya ziada (si lazima)<textarea rows={3} value={form.reason} onChange={e=>update("reason",e.target.value)} /></label>
-        </div>
-        <button className="change-business-name-submit" type="submit" disabled={saving||saved}>{saving?<LoaderCircle size={17} className="animate-spin"/>:saved?<CheckCircle2 size={17}/>:<Send size={17}/>} {saving?"Inahifadhi…":saved?"Nakala imehifadhiwa":"HIFADHI NAKALA"}</button>
-        {saved&&<div className="change-business-name-result change-business-name-success" role="status"><strong>Nakala imehifadhiwa.</strong> Admin sasa anaweza kuiona chini ya MAOMBI YA HUDUMA. Endelea hatua ya 2 hapa chini ili kutuma fomu rasmi ya Airtel.</div>}
-        {error&&<div className="change-business-name-result change-business-name-error" role="alert">{error}</div>}
-      </form>
-    </section>
-    <h2 style={{fontSize:"1.12rem",margin:"24px 2px 10px"}}>2. JAZA NA TUMA FOMU RASMI YA AIRTEL</h2>
+    <div className="change-business-name-safe"><ShieldCheck size={19}/><span><strong>Fomu rasmi ya Airtel:</strong> jaza na utume taarifa zako kwenye fomu iliyo hapa chini. SmartServicesTZ haiwezi kusoma majibu ya Microsoft Forms moja kwa moja.</span></div>
+    <h2 style={{fontSize:"1.12rem",margin:"24px 2px 10px"}}>JAZA NA TUMA FOMU RASMI YA AIRTEL</h2>
     <section className="change-business-name-form" aria-label="Fomu rasmi ya kubadili jina la biashara Airtel Lipa">
       {!loaded&&<div className="change-business-name-loading"><LoaderCircle size={18}/> Inafungua fomu rasmi ya Airtel…</div>}
       <iframe className="change-business-name-frame" title="Fomu rasmi ya CHANGE BUSINESS NAME AIRTEL LIPA" src={FORM_URL} onLoad={()=>setLoaded(true)} allow="clipboard-read; clipboard-write" referrerPolicy="strict-origin-when-cross-origin"/>
     </section>
-    <p className="change-business-name-note">Fomu hii inamilikiwa na Airtel kupitia Microsoft Forms. SmartServicesTZ haiwezi kusoma majibu yaliyotumwa ndani ya fomu ya Microsoft moja kwa moja; nakala ya admin inahifadhi taarifa ulizoweka kwenye hatua ya 1.</p>
+    <p className="change-business-name-note">Fomu hii inafunguliwa ndani ya SmartServicesTZ bila kuhitaji kwenda kwenye tab tofauti ya Chrome.</p>
   </main>;
 }
