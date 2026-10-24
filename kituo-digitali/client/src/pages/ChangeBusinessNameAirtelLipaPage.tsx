@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Building2, ExternalLink, LoaderCircle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Building2, LoaderCircle, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 
 const FORM_URL = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=JzfHFpyXgk2zp-tqL93-V0QxQ30RRhFApA9nMNcqKjJUMFg0Wkc0Mzg0NEw0VkFPTjhJS1dTTEhQRy4u&embed=true";
@@ -14,7 +14,7 @@ export default function ChangeBusinessNameAirtelLipaPage() {
       .change-business-name-hero{padding:22px;border-radius:20px;background:linear-gradient(135deg,#991b1b,#dc2626 58%,#f87171);color:#fff;box-shadow:0 15px 35px #0002}
       .change-business-name-icon{display:inline-flex;width:48px;height:48px;align-items:center;justify-content:center;border-radius:15px;background:#ffffff24;margin-bottom:12px}
       .change-business-name-hero h1{font-size:clamp(1.35rem,4vw,2rem);line-height:1.15;margin:0 0 8px;font-weight:900}
-      .change-business-name-hero p{margin:0;max-width:720px;line-height:1.65;color:#fffde}
+      .change-business-name-hero p{margin:0;max-width:720px;line-height:1.65;color:#fffdfd}
       .change-business-name-safe{display:flex;align-items:flex-start;gap:9px;margin:14px 0;padding:12px 14px;border:1px solid #16a34a55;border-radius:12px;background:#16a34a12;font-size:.9rem;line-height:1.55}
       .change-business-name-form{position:relative;overflow:hidden;min-height:520px;border:1px solid var(--border,#334155);border-radius:16px;background:#fff}
       .change-business-name-frame{display:block;width:100%;height:min(78vh,980px);min-height:620px;border:0;background:#fff}
