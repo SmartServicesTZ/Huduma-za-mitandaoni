@@ -102,6 +102,10 @@ function PanelStyles() {
       .service-app-admin-table th, .service-app-admin-table td { border-bottom: 1px solid #edf1ee; padding: 12px 11px; vertical-align: top; }
       .service-app-admin-table tbody tr:last-child td { border-bottom: 0; }
       .service-app-admin-table tbody tr { cursor: pointer; transition: background .15s ease; }
+      .service-app-admin-table tbody tr.status-row-pending, .service-app-admin-mobile-item.status-row-pending { background: #fffaf0; border-left: 4px solid #d99b12; }
+      .service-app-admin-table tbody tr.status-row-processing, .service-app-admin-mobile-item.status-row-processing { background: #f2f8ff; border-left: 4px solid #3182ce; }
+      .service-app-admin-table tbody tr.status-row-approved, .service-app-admin-mobile-item.status-row-approved { background: #f0fbf4; border-left: 4px solid #16a34a; }
+      .service-app-admin-table tbody tr.status-row-rejected, .service-app-admin-mobile-item.status-row-rejected { background: #fff4f3; border-left: 4px solid #dc2626; }
       .service-app-admin-table tbody tr:hover, .service-app-admin-table tbody tr:focus-within { background: #f8fcf9; }
       .service-app-admin-table td { font-size: .84rem; }
       .service-app-admin-application { display: grid; gap: 3px; }
@@ -164,6 +168,7 @@ function StatusBadge({ status }: { status: ApplicationStatus }) {
 
 export function ServiceApplicationsPanel({ applications, services, onRun, adminId, busy }: ServiceApplicationsPanelProps) {
   const [tab, setTab] = useState<StatusTab>("ALL");
+  const [serviceFilter, setServiceFilter] = useState("ALL");
   const [selected, setSelected] = useState<ServiceApplication | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -178,8 +183,8 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   const counts = useMemo(() => Object.fromEntries(statusTabs.map((status) => [status, status === "ALL" ? applications.length : applications.filter((application) => application.status === status).length])) as Record<string, number>, [applications, statusTabs]);
 
   const visibleApplications = useMemo(
-    () => (tab === "ALL" ? applications : applications.filter((application) => application.status === tab)),
-    [applications, tab],
+    () => applications.filter((application) => (tab === "ALL" || application.status === tab) && (serviceFilter === "ALL" || (serviceFilter === "SME" ? /sme/i.test(String(application.serviceSlug) + " " + String(application.serviceName)) : serviceFilter === "LIPA" ? /lipa/i.test(String(application.serviceSlug) + " " + String(application.serviceName)) : application.serviceSlug === serviceFilter))),
+    [applications, tab, serviceFilter],
   );
 
   const openApplication = (application: ServiceApplication) => {
@@ -312,6 +317,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
         {["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"].map((status) => <div className="service-app-admin-stat" key={status}><span>{status === "ALL" ? "JUMLA" : statusLabel(status)}</span><strong>{counts[status] ?? 0}</strong></div>)}
       </div>
 
+      <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12,alignItems:"center"}}><label style={{display:"grid",gap:4,fontSize:".8rem",fontWeight:700,color:"#63716a"}}>Chuja kwa huduma<select value={serviceFilter} onChange={(event) => setServiceFilter(event.target.value)} style={{minWidth:190,border:"1px solid #cbd9d0",borderRadius:8,padding:"9px 10px",background:"#fff",color:"#17251f"}}><option value="ALL">Maombi yote</option><option value="LIPA">Maombi yote ya Lipa</option><option value="SME">Maombi yote ya SME</option>{services.filter((service) => !/sme|lipa/i.test(String(service.slug)+" "+String(service.name))).map((service) => <option key={service.slug} value={service.slug}>{service.name}</option>)}</select></label></div>
       <nav className="service-app-admin-tabs" aria-label="Application status filters">
         {statusTabs.map((status) => (
           <button
@@ -335,7 +341,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
             {visibleApplications.map((application) => {
               const service = serviceForApplication(application, services);
               return (
-                <article className="service-app-admin-mobile-item" key={application.id || application.applicationId}>
+                <article className={"service-app-admin-mobile-item status-row-" + String(application.status || "pending").toLowerCase()} key={application.id || application.applicationId}>
                   <div className="service-app-admin-mobile-top">
                     <div>
                       <div className="service-app-admin-mobile-name">{application.userName || "Jina halijawekwa"}</div>
@@ -364,7 +370,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                 {visibleApplications.map((application) => {
                   const service = serviceForApplication(application, services);
                   return (
-                    <tr key={application.id || application.applicationId} onClick={() => openApplication(application)}>
+                    <tr className={"status-row-" + String(application.status || "pending").toLowerCase()} key={application.id || application.applicationId} onClick={() => openApplication(application)}>
                       <td>{application.userName || "Jina halijawekwa"}</td>
                       <td>{service?.name ?? application.serviceName ?? "—"}</td>
                       <td>{dateText(application.submittedAt)}</td>
