@@ -2308,3 +2308,34 @@ html body .portal-shell .portal-content .portal-main .portal-service-grid > .por
 }
 @media(max-width:360px){.auth-modal .auth-form-content{padding:22px 16px!important}.auth-modal .auth-hero{padding-inline:17px!important}}
 @media(prefers-reduced-motion:reduce){.auth-modal,.auth-modal *,.auth-modal *:before,.auth-modal *:after{transition:none!important;animation:none!important}}
+
+
+/* Admin Control sidebar: in-flow on desktop, dismissible overlay drawer only on mobile. */
+@media (min-width: 801px) {
+  .admin-app { display: flex; align-items: flex-start; }
+  .admin-app > .admin-sidebar {
+    position: sticky;
+    top: 0;
+    left: auto;
+    flex: 0 0 270px;
+    width: 270px;
+    height: 100vh;
+    min-height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    transform: none;
+    z-index: 20;
+  }
+  .admin-app > .admin-content {
+    flex: 1 1 0%;
+    width: auto;
+    min-width: 0;
+    max-width: calc(100% - 270px);
+  }
+  .admin-app > .admin-drawer-backdrop { display: none !important; }
+}
+@media (max-width: 800px) {
+  .admin-app > .admin-sidebar { z-index: 81; height: 100dvh; max-height: 100dvh; overflow-y: auto; }
+  .admin-app > .admin-drawer-backdrop { z-index: 80; }
+  .admin-app > .admin-content { min-width: 0; }
+}
