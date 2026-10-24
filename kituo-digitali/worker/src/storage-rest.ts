@@ -93,6 +93,16 @@ async function storageFetch(url: string, init: RequestInit = {}) {
   return response;
 }
 
+export async function uploadStorageObject(objectPath: string, contentType: string, body: ArrayBuffer) {
+  const bucket = bucketName();
+  const url = `https://storage.googleapis.com/upload/storage/v1/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(objectPath)}`;
+  return storageFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": contentType, "Content-Length": String(body.byteLength) },
+    body,
+  });
+}
+
 export class StorageFile {
   constructor(readonly name: string) {}
 

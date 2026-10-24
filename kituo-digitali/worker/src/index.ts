@@ -44,7 +44,7 @@ import {
 } from "./handlers.js";
 import { ApiError, ApiHttpResponse, type CallableRoute, type HttpRoute } from "./api-adapter.js";
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
-import { signStorageUrl } from "./storage-rest.js";
+import { uploadStorageObject } from "./storage-rest.js";
 
 interface Env extends WorkerEnv {}
 
@@ -191,13 +191,7 @@ async function handleLipaDocumentUpload(request: Request, cors: Headers, env: En
   if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) return jsonResponse({ error: { code: "invalid-argument", message: "Picha lazima iwe JPG, PNG au WebP." } }, 400, cors);
   const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
   const path = `lipaUploads/${auth.uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`;
-  const signedUrl = await signStorageUrl("write", path, Date.now() + 10 * 60 * 1000);
-  const upload = await fetch(signedUrl, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
-  if (!upload.ok) {
-    const detail = (await upload.text().catch(() => "")).slice(0, 180);
-    console.error("Lipa document upload failed", { status: upload.status, detail });
-    return jsonResponse({ error: { code: "unavailable", message: "Picha haikuhifadhiwa kwenye hifadhi salama." } }, 503, cors);
-  }
+  await uploadStorageObject(path, contentType, await file.arrayBuffer());
   return jsonResponse({ data: { path, size: file.size, contentType } }, 200, cors);
 }
 
