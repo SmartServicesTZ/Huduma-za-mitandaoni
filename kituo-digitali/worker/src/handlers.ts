@@ -973,17 +973,34 @@ export const setServiceApplicationStatus = callable(async (request) => {
     if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
     const application = snapshot.data()!;
     const from = String(application.status ?? "PENDING");
-    const terminal = ["APPROVED", "REJECTED"].includes(from);
-    if (terminal || status === from) throw new ApiError("failed-precondition", `Mabadiliko ya ${from} kwenda ${status} hayaruhusiwi.`);
+    if (status === from) throw new ApiError("failed-precondition", `Ombi tayari lina hali ya ${status}.`);
     const now = FieldValue.serverTimestamp();
     const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
     if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
-    if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid });
+    if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid, rejectionReason: "" });
     if (status === "REJECTED") Object.assign(patch, { rejectedAt: now, rejectedBy: uid, rejectionReason });
     transaction.update(ref, patch);
     if (["APPROVED", "REJECTED"].includes(status)) transaction.delete(db.collection("serviceOpenApplications").doc(`${application.userId}_${application.serviceSlug}`));
-    const body = status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? "Maombi yako yamekubaliwa." : status === "REJECTED" ? `Maombi yako yamekataliwa. Sababu: ${rejectionReason}` : `Hali ya ombi lako imebadilishwa kuwa ${status}.`;
+    const isAirtelSme = ["sme-airtel", "sme-airtel-lipa", "airtel-sme"].includes(String(application.serviceSlug ?? "").toLowerCase());
+    const airtelInstructions = "MSISITIZO: Jiunge kifurushi siku hiyo hiyo. Piga *149*01*77# kisha fuata maelekezo. Kuchagua aina ya kifurushi, piga *149*91# kisha chagua 1 kwa Combo au 2 kwa Internet.";
+    const body = status === "PROCESSING" ? "Maombi yako yanafanyiwa kazi na Admin." : status === "APPROVED" ? (isAirtelSme ? `Maombi yako ya SME Airtel yamekubaliwa.\n\n${airtelInstructions}` : "Maombi yako yamekubaliwa.") : status === "REJECTED" ? `Maombi yako yamekataliwa. Sababu: ${rejectionReason}` : `Hali ya ombi lako imebadilishwa kuwa ${status}.`;
     transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Hali ya ombi la ${application.serviceName}`, body, type: "serviceApplicationStatus", applicationId, status, rejectionReason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
+    if (status === "REJECTED" && /(fake|uongo|uwongo|taarifa za uongo|taarifa feki|udangany|forged|false information)/i.test(rejectionReason)) {
+      const userRef = db.collection("users").doc(String(application.userId));
+      const userSnapshot = await transaction.get(userRef);
+      if (userSnapshot.exists) {
+        const userData = userSnapshot.data()!;
+        const priorWarnings = Number(userData.falseInformationWarnings ?? 0);
+        if (priorWarnings >= 5) {
+          transaction.update(userRef, { accountStatus: "blocked", falseInformationWarnings: priorWarnings + 1, restrictionReason: "Akaunti imezuiwa baada ya kuendelea kutuma taarifa za uongo baada ya maonyo 5.", restrictionUpdatedAt: now, restrictionUpdatedBy: uid });
+          transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: "Akaunti imezuiwa", body: "Akaunti yako imezuiwa kwa kuendelea kutuma taarifa za uongo baada ya maonyo 5.", type: "accountBlocked", applicationId, createdAt: now });
+        } else {
+          const warnings = priorWarnings + 1;
+          transaction.update(userRef, { falseInformationWarnings: warnings, lastFalseInformationWarningAt: now });
+          transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: `Onyo ${warnings}/5: taarifa za uongo`, body: `Tumegundua taarifa zisizo sahihi kwenye ombi lako. Hili ni onyo ${warnings} kati ya 5. Ukirudia baada ya maonyo 5, akaunti yako itazuiwa.`, type: "falseInformationWarning", applicationId, createdAt: now });
+        }
+      }
+    }
     const auditRef = db.collection("auditLogs").doc();
     transaction.create(auditRef, { action: `SERVICE_APPLICATION_${status}`, actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), reason: status === "REJECTED" ? rejectionReason : "", createdAt: now });
     recordAudit(transaction, uid, String(actor.role), `SERVICE_APPLICATION_${status}`, "serviceApplication", applicationId, { status: from }, { status }, { reason: status === "REJECTED" ? rejectionReason : "" });
