@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, CheckCircle2, FileText, LoaderCircle, Send, ShieldCheck, UploadCloud } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowLeft, CheckCircle2, ChevronDown, CircleCheck, FileText, LoaderCircle, Send, ShieldCheck, Smartphone, UploadCloud, Wallet, Wifi } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -8,43 +8,48 @@ import { formatNida } from "../../../shared/serviceForms";
 import type { ServiceFormValues } from "../../../shared/serviceForms";
 
 const REGIONS = [
-  "Arusha", "Dar es Salaam", "Dodoma", "Geita", "Iringa", "Kagera",
-  "Katavi", "Kigoma", "Kilimanjaro", "Lindi", "Manyara", "Mara",
-  "Mbeya", "Morogoro", "Mtwara", "Mwanza", "Njombe", "Pwani",
-  "Rukwa", "Ruvuma", "Shinyanga", "Simiyu", "Singida", "Songwe",
-  "Tabora", "Tanga", "Kaskazini Pemba", "Kaskazini Unguja",
-  "Kusini Pemba", "Kusini Unguja", "Mjini Magharibi",
+  "Arusha", "Dar es Salaam", "Dodoma", "Geita", "Iringa", "Kagera", "Katavi", "Kigoma",
+  "Kilimanjaro", "Lindi", "Manyara", "Mara", "Mbeya", "Morogoro", "Mtwara", "Mwanza",
+  "Njombe", "Pwani", "Rukwa", "Ruvuma", "Shinyanga", "Simiyu", "Singida", "Songwe",
+  "Tabora", "Tanga", "Kaskazini Pemba", "Kaskazini Unguja", "Kusini Pemba",
+  "Kusini Unguja", "Mjini Magharibi",
 ];
-
+const DATA_PLANS = [
+  { price: 15000, data: "10 GB" }, { price: 20000, data: "15 GB" },
+  { price: 30000, data: "30 GB" }, { price: 50000, data: "60 GB" },
+  { price: 60000, data: "75 GB" }, { price: 75000, data: "100 GB" },
+  { price: 100000, data: "150 GB" },
+];
+const COMBO_PLANS = [
+  { price: 15000, data: "7 GB", calls: "DKK 500", sms: "SMS 100" },
+  { price: 20000, data: "10 GB", calls: "DKK 1,000", sms: "SMS 100" },
+  { price: 30000, data: "20 GB", calls: "DKK 1,500", sms: "SMS 100" },
+  { price: 50000, data: "50 GB", calls: "DKK 2,000", sms: "SMS 100" },
+  { price: 60000, data: "60 GB", calls: "DKK 3,000", sms: "SMS 100" },
+  { price: 75000, data: "80 GB", calls: "DKK 5,000", sms: "SMS 100" },
+  { price: 100000, data: "120 GB", calls: "DKK 8,000", sms: "SMS 100" },
+];
+type PlanType = "data" | "combo";
 type FormState = {
-  fullName: string;
-  nidaNumber: string;
-  smePhone: string;
-  alternativePhone: string;
-  region: string;
-  district: string;
+  fullName: string; nidaNumber: string; smePhone: string; alternativePhone: string;
+  region: string; district: string; voucherAmount: string; planType: PlanType; selectedPlan: string;
 };
-
 const INITIAL: FormState = {
   fullName: "", nidaNumber: "", smePhone: "", alternativePhone: "", region: "", district: "",
+  voucherAmount: "", planType: "data", selectedPlan: "",
 };
-
 function newApplicationId() {
   return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `sme-vodacom-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    ? crypto.randomUUID() : `sme-vodacom-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
-
 function normalizePhone(value: string) {
   const digits = value.replace(/\D/g, "");
   if (digits.startsWith("255")) return digits;
   if (digits.startsWith("0")) return `255${digits.slice(1)}`;
   return digits;
 }
-
-function validPhone(value: string) {
-  return /^255[67]\d{8}$/.test(normalizePhone(value));
-}
+function validPhone(value: string) { return /^255[67]\d{8}$/.test(normalizePhone(value)); }
+function money(value: number) { return value.toLocaleString("en-TZ"); }
 
 export default function SmeVodacomPage() {
   const { firebaseUser, loading: authLoading } = useAuth();
@@ -57,200 +62,161 @@ export default function SmeVodacomPage() {
   const [message, setMessage] = useState("");
   const [reference, setReference] = useState("");
   const [applicationId, setApplicationId] = useState(newApplicationId);
+  const plans = form.planType === "data" ? DATA_PLANS : COMBO_PLANS;
+  const chosenPlan = useMemo(() => plans.find((plan) => String(plan.price) === form.selectedPlan), [plans, form.selectedPlan]);
 
   const update = (field: keyof FormState, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => ({ ...current, [field]: value, ...(field === "planType" ? { selectedPlan: "" } : {}) }));
     setErrors((current) => ({ ...current, [field]: "" }));
     setMessage("");
   };
-
   const uploadTin = async (file?: File) => {
     if (!file) return;
-    if (!firebaseUser?.uid) {
-      setErrors((current) => ({ ...current, tinCertificate: "Ingia kwanza ili kupakia cheti cha TIN." }));
-      return;
-    }
+    if (!firebaseUser?.uid) { setErrors((current) => ({ ...current, tinCertificate: "Ingia kwanza ili kupakia cheti cha TIN." })); return; }
     if (!["application/pdf", "image/jpeg", "image/png"].includes(file.type)) {
-      setErrors((current) => ({ ...current, tinCertificate: "Pakia PDF, JPG au PNG pekee." }));
-      return;
+      setErrors((current) => ({ ...current, tinCertificate: "Pakia PDF, JPG au PNG pekee." })); return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((current) => ({ ...current, tinCertificate: "Faili lisizidi MB 5." }));
-      return;
-    }
-    setUploading(true);
-    setErrors((current) => ({ ...current, tinCertificate: "" }));
-    setMessage("");
+    if (file.size > 5 * 1024 * 1024) { setErrors((current) => ({ ...current, tinCertificate: "Faili lisizidi MB 5." })); return; }
+    setUploading(true); setErrors((current) => ({ ...current, tinCertificate: "" })); setMessage("");
     try {
-      const path = await uploadServiceDocument(
-        firebaseUser.uid, applicationId, "tinCertificate", file, 5,
-        ["application/pdf", "image/jpeg", "image/png"],
-      );
-      setTinFile(file);
-      setTinPath(path);
+      const path = await uploadServiceDocument(firebaseUser.uid, applicationId, "tinCertificate", file, 5, ["application/pdf", "image/jpeg", "image/png"]);
+      setTinFile(file); setTinPath(path);
     } catch (error) {
-      setTinFile(null);
-      setTinPath("");
-      setErrors((current) => ({
-        ...current,
-        tinCertificate: error instanceof Error ? error.message : "Imeshindikana kupakia cheti.",
-      }));
-    } finally {
-      setUploading(false);
-    }
+      setTinFile(null); setTinPath("");
+      setErrors((current) => ({ ...current, tinCertificate: error instanceof Error ? error.message : "Imeshindikana kupakia cheti." }));
+    } finally { setUploading(false); }
   };
-
   const validate = () => {
     const next: Record<string, string> = {};
     if (form.fullName.trim().length < 3) next.fullName = "Jaza majina kamili.";
     if (!/^\d{20}$/.test(form.nidaNumber.replace(/\D/g, ""))) next.nidaNumber = "NIDA lazima iwe na tarakimu 20.";
     if (!validPhone(form.smePhone)) next.smePhone = "Weka namba halali ya Tanzania, mfano 0712000000.";
     if (!validPhone(form.alternativePhone)) next.alternativePhone = "Weka namba mbadala halali.";
-    if (validPhone(form.smePhone) && validPhone(form.alternativePhone) && normalizePhone(form.smePhone) === normalizePhone(form.alternativePhone)) {
-      next.alternativePhone = "Namba mbadala lazima iwe tofauti na namba ya SME.";
-    }
+    if (validPhone(form.smePhone) && validPhone(form.alternativePhone) && normalizePhone(form.smePhone) === normalizePhone(form.alternativePhone)) next.alternativePhone = "Namba mbadala lazima iwe tofauti na namba ya SME.";
     if (!tinPath) next.tinCertificate = "Pakia cheti cha TIN.";
     if (!form.region) next.region = "Chagua mkoa.";
     if (!form.district.trim()) next.district = "Jaza wilaya.";
+    const voucher = Number(form.voucherAmount);
+    if (!form.voucherAmount || !Number.isFinite(voucher) || voucher < 10000) next.voucherAmount = "Kiasi cha vocha lazima kiwe TSh 10,000 au zaidi.";
+    if (!form.selectedPlan) next.selectedPlan = "Chagua kifurushi unachotaka.";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
-
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setMessage("");
-    setReference("");
+    event.preventDefault(); setMessage(""); setReference("");
     if (authLoading) return;
-    if (!firebaseUser?.uid) {
-      setMessage("Ingia kwenye akaunti yako kwanza ili kutuma ombi.");
-      return;
-    }
+    if (!firebaseUser?.uid) { setMessage("Ingia kwenye akaunti yako kwanza ili kutuma ombi."); return; }
     if (!validate()) return;
-
     setSubmitting(true);
     try {
       const values: ServiceFormValues = {
-        fullName: form.fullName.trim(),
-        nidaNumber: formatNida(form.nidaNumber),
-        smePhone: normalizePhone(form.smePhone),
-        alternativePhone: normalizePhone(form.alternativePhone),
-        tinCertificate: tinPath,
-        region: form.region,
-        district: form.district.trim(),
+        fullName: form.fullName.trim(), nidaNumber: formatNida(form.nidaNumber),
+        smePhone: normalizePhone(form.smePhone), alternativePhone: normalizePhone(form.alternativePhone),
+        tinCertificate: tinPath, region: form.region, district: form.district.trim(),
+        voucherAmount: String(Number(form.voucherAmount)), planType: form.planType,
+        selectedPlan: form.selectedPlan, selectedPlanName: `${form.planType === "data" ? "Data Plan" : "Combo Plan"} — TSh ${money(Number(form.selectedPlan))}`,
       };
       const result = await createServiceApplication(applicationId, "sme-vodacom", values);
       const ref = String(result.reference ?? result.applicationId ?? applicationId);
-      setReference(ref);
-      setMessage("Ombi lako la SME VODACOM limetumwa kwa mafanikio.");
-      setForm(INITIAL);
-      setTinFile(null);
-      setTinPath("");
-      setApplicationId(newApplicationId());
+      setReference(ref); setMessage("Ombi lako la SME VODACOM limetumwa kwa mafanikio.");
+      setForm(INITIAL); setTinFile(null); setTinPath(""); setApplicationId(newApplicationId());
       toast.success("Ombi la SME VODACOM limetumwa kwa admin.");
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Imeshindikana kutuma ombi.";
-      setMessage(detail);
-      toast.error(detail);
-    } finally {
-      setSubmitting(false);
-    }
+      setMessage(detail); toast.error(detail);
+    } finally { setSubmitting(false); }
   };
-
   const fieldClass = (field: string) =>
-    `mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 ${errors[field] ? "border-red-500" : "border-slate-200"}`;
-
-  const FieldError = ({ field }: { field: string }) =>
-    errors[field] ? <p className="mt-1.5 text-xs font-medium text-red-600">{errors[field]}</p> : null;
+    `mt-2 w-full rounded-xl border bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 ${errors[field] ? "border-red-500" : "border-slate-200"}`;
+  const FieldError = ({ field }: { field: string }) => errors[field] ? <p className="mt-1.5 text-xs font-semibold text-red-600">{errors[field]}</p> : null;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-7 text-slate-800 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-5xl">
-        <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-red-600">
-          <ArrowLeft size={17} /> Rudi kwenye huduma
-        </Link>
-
-        <header className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-red-800 via-red-600 to-rose-500 p-6 text-white shadow-xl sm:p-10">
-          <div className="pointer-events-none absolute -right-10 -top-12 -z-10 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold tracking-widest">VODACOM BUSINESS</span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-400/20 px-3 py-1.5 text-sm font-bold ring-1 ring-white/20">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300" /> Active
-            </span>
+    <main className="min-h-screen bg-[#f5f6fa] px-3 py-5 text-slate-800 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-6xl">
+        <Link href="/" className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-red-700"><ArrowLeft size={17}/> Huduma zote</Link>
+        <header className="relative isolate overflow-hidden rounded-[2rem] bg-[#70000a] text-white shadow-xl">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#a80016] via-[#79000b] to-[#350006]"/>
+          <div className="pointer-events-none absolute -right-10 -top-14 -z-10 h-72 w-72 rounded-full border-[40px] border-white/5"/>
+          <div className="grid gap-6 p-6 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-center lg:p-11">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black tracking-[.18em]">VODACOM BUSINESS</span>
+                <span className="flex items-center gap-2 rounded-full bg-emerald-300/15 px-3 py-1.5 text-xs font-bold text-emerald-100"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300"/> Huduma inapatikana</span>
+              </div>
+              <h1 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">SME <span className="text-red-200">VODACOM</span></h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">Omba kuunganishwa kwenye vifurushi vya biashara vya siku 30. Linganisha Data Plan na Combo Plan, chagua kifurushi, kisha weka taarifa zako kwa usahihi.</p>
+              <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-white/85">
+                <span className="rounded-lg bg-white/10 px-3 py-2">✓ Vifurushi vya siku 30</span><span className="rounded-lg bg-white/10 px-3 py-2">✓ Cheti cha TIN kinahitajika</span><span className="rounded-lg bg-white/10 px-3 py-2">✓ Vocha kuanzia TSh 10,000</span>
+              </div>
+            </div>
+            <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white p-4 shadow-2xl ring-1 ring-white/40 sm:h-36 sm:w-36">
+              <img src="/Huduma-za-mitandaoni/vodacom-logo.png" alt="Vodacom" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.display = "none"; }}/>
+              <Wifi className="absolute h-10 w-10 text-red-700" aria-hidden="true"/>
+            </div>
           </div>
-          <h1 className="mt-7 text-3xl font-black tracking-tight sm:text-5xl">SME VODACOM</h1>
-          <p className="mt-3 text-xs font-bold tracking-[0.14em] text-red-100 sm:text-sm">SMALL AND MEDIUM-SIZED ENTERPRISES (SME)</p>
-          <p className="mt-5 max-w-3xl text-sm leading-7 text-white/90 sm:text-base">
-            Omba kuunganishwa SME Vodacom na uchague Data Plan inayokufaa. Jaza taarifa zinazohitajika na utume ombi lako la SME Vodacom. Baada ya ombi kushughulikiwa, utapokea maelekezo ya malipo pamoja na Control Number kutoka Vodacom. Ukishalipia kwa Control Number uliyotumiwa na Vodacom, utaunganishwa kwenye Data Plan uliyochagua.
-          </p>
         </header>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[.78fr_1.5fr]">
-          <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600"><ShieldCheck size={23} /></span>
-              <div><h2 className="font-extrabold">Mahitaji ya maombi</h2><p className="mt-1 text-xs text-slate-500">Kabla ya kuanza</p></div>
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div><span className="text-xs font-black tracking-[.18em] text-red-700">CHAGUA KIFURUSHI</span><h2 className="mt-1 text-xl font-black sm:text-2xl">Bei na vifurushi vya SME</h2><p className="mt-1 text-sm text-slate-500">Bei zote ni TSh, na vifurushi ni vya siku 30.</p></div>
+            <div className="inline-flex rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Aina ya kifurushi">
+              <button type="button" role="tab" aria-selected={form.planType === "data"} onClick={() => update("planType", "data")} className={`rounded-lg px-4 py-2.5 text-sm font-extrabold transition ${form.planType === "data" ? "bg-red-700 text-white shadow" : "text-slate-600 hover:bg-white"}`}> <Wifi size={15} className="mr-1 inline"/> Data</button>
+              <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={`rounded-lg px-4 py-2.5 text-sm font-extrabold transition ${form.planType === "combo" ? "bg-red-700 text-white shadow" : "text-slate-600 hover:bg-white"}`}><Smartphone size={15} className="mr-1 inline"/> Combo</button>
             </div>
-            <ul className="mt-6 space-y-4">
-              {["MAJINA KAMILI", "NAMBA YA NIDA", "NAMBA YA VODACOM INAYOUNGWA SME", "ALTERNATIVE NAMBA YA VODACOM", "TIN NUMBER CERTIFICATE"].map((item, index) => (
-                <li key={item} className="flex items-start gap-3 text-sm font-semibold leading-5 text-slate-700">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-black text-red-600">{index + 1}</span>{item}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6 rounded-xl bg-amber-50 p-4 text-xs leading-6 text-amber-900"><b>Kumbuka:</b> Taarifa zako lazima ziwe sahihi. Cheti cha TIN kinakubaliwa kama PDF, JPG au PNG hadi MB 5.</div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {plans.map((plan) => {
+              const selected = form.selectedPlan === String(plan.price);
+              const combo = "calls" in plan;
+              return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))} className={`group relative rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${selected ? "border-red-600 bg-red-50 ring-2 ring-red-600/15" : "border-slate-200 bg-white hover:border-red-300"}`}>
+                {selected && <span className="absolute right-3 top-3 text-red-700"><CircleCheck size={20}/></span>}
+                <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black tracking-wider text-slate-600">SIKU 30</span>
+                <p className="mt-3 text-2xl font-black tracking-tight text-slate-900">{plan.data}</p>
+                <p className="mt-1 text-sm font-bold text-red-700">TSh {money(plan.price)}</p>
+                {combo && <div className="mt-3 space-y-1 border-t border-slate-200 pt-3 text-xs font-semibold text-slate-600"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div>}
+                {!combo && <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">Data pekee · siku 30</p>}
+                <span className={`mt-3 inline-flex items-center gap-1 text-xs font-extrabold ${selected ? "text-red-700" : "text-slate-500 group-hover:text-red-700"}`}>{selected ? "Kimechaguliwa" : "Chagua kifurushi"} <ChevronDown size={14}/></span>
+              </button>;
+            })}
+          </div>
+          <FieldError field="selectedPlan"/>
+          <div className="mt-5 flex flex-col gap-3 rounded-2xl bg-slate-900 p-4 text-white sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div><p className="text-xs font-bold uppercase tracking-wider text-white/60">Kifurushi ulichochagua</p><p className="mt-1 text-lg font-black">{chosenPlan ? `${chosenPlan.data} · TSh ${money(chosenPlan.price)}` : "Bado hujachagua kifurushi"}</p></div>
+            <span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white/80 sm:self-auto"><CheckCircle2 size={15}/> Siku 30</span>
+          </div>
+        </section>
+
+        <div className="mt-6 grid items-start gap-6 lg:grid-cols-[.7fr_1.3fr]">
+          <aside className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white sm:p-6"><ShieldCheck size={25} className="text-red-300"/><h2 className="mt-3 text-xl font-black">Tayarisha maombi</h2><p className="mt-2 text-sm leading-6 text-white/70">Hakikisha una taarifa na nyaraka hizi kabla ya kutuma.</p></div>
+            <div className="space-y-4 p-5 sm:p-6">
+              {["Majina kamili yanayolingana na NIDA","Namba ya NIDA yenye tarakimu 20","Namba kuu na namba mbadala za Vodacom","Cheti cha TIN (PDF, JPG au PNG; hadi MB 5)","Vocha iliyowekwa ya angalau TSh 10,000"].map((item, index) => <div key={item} className="flex items-start gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-black text-red-700">{index + 1}</span><p className="pt-1 text-sm font-semibold leading-5 text-slate-700">{item}</p></div>)}
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-900"><b>Mchakato:</b> Tuma ombi, subiri kushughulikiwa, kisha fuata maelekezo ya malipo ya Control Number yatakayotolewa na Vodacom.</div>
+            </div>
           </aside>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-            <div className="border-b border-slate-100 pb-5">
-              <div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600"><FileText size={22} /></span><div><h2 className="text-xl font-black sm:text-2xl">Fomu ya maombi</h2><p className="mt-1 text-sm text-slate-500">Sehemu 7 zinahitajika (*)</p></div></div>
-              <div className="mt-5 h-1.5 w-20 rounded-full bg-red-600" />
-            </div>
-
-            {!firebaseUser && !authLoading && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Tafadhali ingia kwenye akaunti yako kabla ya kujaza na kutuma ombi.</div>}
-
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-5"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700"><FileText size={23}/></span><div><p className="text-xs font-black tracking-[.16em] text-red-700">HATUA YA 2</p><h2 className="text-xl font-black sm:text-2xl">Taarifa za mwombaji</h2><p className="mt-1 text-sm text-slate-500">Jaza sehemu zote zenye alama ya *</p></div></div>
+            {!firebaseUser && !authLoading && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Ingia kwenye akaunti yako kabla ya kujaza na kutuma ombi.</div>}
             <form onSubmit={submit} noValidate className="mt-6 space-y-5">
-              <div><label htmlFor="sme-full-name" className="text-sm font-bold">Full Name <span className="text-red-500">*</span></label>
-                <input id="sme-full-name" autoComplete="name" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} placeholder="e.g. Juma M. Mwakalinga" className={fieldClass("fullName")} aria-invalid={!!errors.fullName} />
-                <FieldError field="fullName" /></div>
-
-              <div><label htmlFor="sme-nida" className="text-sm font-bold">NIDA Number <span className="text-red-500">*</span></label>
-                <input id="sme-nida" inputMode="numeric" value={form.nidaNumber} onChange={(e) => update("nidaNumber", e.target.value.replace(/\D/g, "").slice(0, 20))} placeholder="20 digit NIDA number" className={fieldClass("nidaNumber")} aria-invalid={!!errors.nidaNumber} />
-                <FieldError field="nidaNumber" /></div>
-
-              <div><label htmlFor="sme-phone" className="text-sm font-bold">NAMBA YA VODACOM INAYOUNGWA SME <span className="text-red-500">*</span></label>
-                <input id="sme-phone" type="tel" autoComplete="tel" value={form.smePhone} onChange={(e) => update("smePhone", e.target.value)} placeholder="+255 712 000 000" className={fieldClass("smePhone")} aria-invalid={!!errors.smePhone} />
-                <FieldError field="smePhone" /></div>
-
-              <div><label htmlFor="sme-alternative" className="text-sm font-bold">NAMBA MBADALA YA VODACOM <span className="text-red-500">*</span></label>
-                <input id="sme-alternative" type="tel" value={form.alternativePhone} onChange={(e) => update("alternativePhone", e.target.value)} placeholder="+255 712 000 000" className={fieldClass("alternativePhone")} aria-invalid={!!errors.alternativePhone} />
-                <FieldError field="alternativePhone" /></div>
-
-              <div><label htmlFor="sme-tin" className="text-sm font-bold">TIN Number Certificate <span className="text-red-500">*</span></label>
-                <label htmlFor="sme-tin" className={`mt-2 flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed p-4 transition hover:border-red-400 hover:bg-red-50/40 ${errors.tinCertificate ? "border-red-400" : "border-slate-200"}`}>
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">{uploading ? <LoaderCircle className="animate-spin" size={22} /> : tinFile ? <CheckCircle2 size={22} /> : <UploadCloud size={22} />}</span>
-                  <span className="min-w-0"><span className="block break-all text-sm font-bold">{uploading ? "Inapakia cheti..." : tinFile?.name ?? "Choose file"}</span><span className="mt-1 block text-xs text-slate-500">PDF, JPG au PNG · Upeo MB 5</span></span>
-                </label>
-                <input id="sme-tin" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" disabled={uploading || submitting} onChange={(e) => void uploadTin(e.target.files?.[0])} aria-invalid={!!errors.tinCertificate} />
-                <FieldError field="tinCertificate" /></div>
-
               <div className="grid gap-5 sm:grid-cols-2">
-                <div><label htmlFor="sme-region" className="text-sm font-bold">Region <span className="text-red-500">*</span></label>
-                  <select id="sme-region" value={form.region} onChange={(e) => update("region", e.target.value)} className={fieldClass("region")} aria-invalid={!!errors.region}><option value="">Chagua mkoa</option>{REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}</select>
-                  <FieldError field="region" /></div>
-                <div><label htmlFor="sme-district" className="text-sm font-bold">District <span className="text-red-500">*</span></label>
-                  <input id="sme-district" value={form.district} onChange={(e) => update("district", e.target.value)} placeholder="Enter district" className={fieldClass("district")} aria-invalid={!!errors.district} />
-                  <FieldError field="district" /></div>
+                <div><label htmlFor="sme-full-name" className="text-sm font-extrabold">Majina kamili <span className="text-red-600">*</span></label><input id="sme-full-name" autoComplete="name" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} placeholder="Andika majina yako yote" className={fieldClass("fullName")} aria-invalid={!!errors.fullName}/><FieldError field="fullName"/></div>
+                <div><label htmlFor="sme-nida" className="text-sm font-extrabold">Namba ya NIDA <span className="text-red-600">*</span></label><input id="sme-nida" inputMode="numeric" value={form.nidaNumber} onChange={(e) => update("nidaNumber", e.target.value.replace(/\D/g, "").slice(0,20))} placeholder="Tarakimu 20" className={fieldClass("nidaNumber")} aria-invalid={!!errors.nidaNumber}/><FieldError field="nidaNumber"/></div>
+                <div><label htmlFor="sme-phone" className="text-sm font-extrabold">Namba ya Vodacom ya SME <span className="text-red-600">*</span></label><input id="sme-phone" type="tel" autoComplete="tel" value={form.smePhone} onChange={(e) => update("smePhone", e.target.value)} placeholder="0712 000 000" className={fieldClass("smePhone")} aria-invalid={!!errors.smePhone}/><FieldError field="smePhone"/></div>
+                <div><label htmlFor="sme-alternative" className="text-sm font-extrabold">Namba mbadala ya Vodacom <span className="text-red-600">*</span></label><input id="sme-alternative" type="tel" value={form.alternativePhone} onChange={(e) => update("alternativePhone", e.target.value)} placeholder="0754 000 000" className={fieldClass("alternativePhone")} aria-invalid={!!errors.alternativePhone}/><FieldError field="alternativePhone"/></div>
               </div>
-
-              {message && <div role="status" aria-live="polite" className={`rounded-xl border p-4 text-sm ${reference ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>{message}{reference && <p className="mt-1 font-bold">Namba ya kumbukumbu: {reference}</p>}</div>}
-
-              <button type="submit" disabled={submitting || uploading || authLoading} className="flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-red-700 to-rose-600 px-5 py-4 font-extrabold text-white shadow-lg shadow-red-600/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60">
-                {submitting ? <><LoaderCircle size={19} className="animate-spin" /> Inatuma ombi...</> : <><Send size={18} /> Submit application</>}
-              </button>
+              <div className="rounded-2xl border border-red-100 bg-red-50/70 p-4 sm:p-5">
+                <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-700 shadow-sm"><Wallet size={21}/></span><div className="flex-1"><label htmlFor="sme-voucher" className="text-sm font-black text-slate-900">Vocha imewekwa ya shilingi ngapi? <span className="text-red-600">*</span></label><p className="mt-1 text-xs leading-5 text-slate-600">Ingiza kiasi cha vocha kilichowekwa kwenye laini. Kiwango cha chini ni TSh 10,000.</p><div className="relative mt-3"><span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-black text-slate-500">TSh</span><input id="sme-voucher" type="number" min="10000" step="1000" inputMode="numeric" value={form.voucherAmount} onChange={(e) => update("voucherAmount", e.target.value)} placeholder="Mfano: 10000" className={`${fieldClass("voucherAmount")} pl-14`} aria-invalid={!!errors.voucherAmount}/></div><FieldError field="voucherAmount"/></div></div>
+              </div>
+              <div><label htmlFor="sme-tin" className="text-sm font-extrabold">Cheti cha TIN <span className="text-red-600">*</span></label><label htmlFor="sme-tin" className={`mt-2 flex cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed p-4 transition hover:border-red-400 hover:bg-red-50/40 ${errors.tinCertificate ? "border-red-400" : "border-slate-200"}`}><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700">{uploading ? <LoaderCircle className="animate-spin" size={22}/> : tinFile ? <CheckCircle2 size={22}/> : <UploadCloud size={22}/>}</span><span className="min-w-0"><span className="block break-all text-sm font-extrabold">{uploading ? "Inapakia cheti..." : tinFile?.name ?? "Gusa hapa kupakia cheti cha TIN"}</span><span className="mt-1 block text-xs text-slate-500">PDF, JPG au PNG · Upeo MB 5</span></span></label><input id="sme-tin" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" disabled={uploading || submitting} onChange={(e) => void uploadTin(e.target.files?.[0])} aria-invalid={!!errors.tinCertificate}/><FieldError field="tinCertificate"/></div>
+              <div className="grid gap-5 sm:grid-cols-2"><div><label htmlFor="sme-region" className="text-sm font-extrabold">Mkoa <span className="text-red-600">*</span></label><select id="sme-region" value={form.region} onChange={(e) => update("region", e.target.value)} className={fieldClass("region")} aria-invalid={!!errors.region}><option value="">Chagua mkoa</option>{REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}</select><FieldError field="region"/></div><div><label htmlFor="sme-district" className="text-sm font-extrabold">Wilaya <span className="text-red-600">*</span></label><input id="sme-district" value={form.district} onChange={(e) => update("district", e.target.value)} placeholder="Andika wilaya" className={fieldClass("district")} aria-invalid={!!errors.district}/><FieldError field="district"/></div></div>
+              {message && <div role="status" aria-live="polite" className={`rounded-2xl border p-4 text-sm ${reference ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>{message}{reference && <p className="mt-1 font-black">Namba ya kumbukumbu: {reference}</p>}</div>}
+              <button type="submit" disabled={submitting || uploading || authLoading} className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#a90017] to-[#d20b2c] px-5 py-4 font-black text-white shadow-lg shadow-red-700/20 transition hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? <><LoaderCircle size={19} className="animate-spin"/> Inatuma ombi...</> : <><Send size={18}/> TUMA OMBI LA SME VODACOM</>}</button>
               <p className="text-center text-xs leading-5 text-slate-500">Taarifa zako zitatumwa kwa ajili ya kushughulikia ombi la SME VODACOM.</p>
             </form>
           </section>
         </div>
+        <footer className="py-7 text-center text-xs font-semibold tracking-wide text-slate-400">VODACOM SME · Growth for your business, every step of the way.</footer>
       </div>
     </main>
   );
