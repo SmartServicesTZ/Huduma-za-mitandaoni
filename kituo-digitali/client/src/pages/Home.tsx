@@ -494,7 +494,10 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     } catch { toast.error("Imeshindikana kunakili namba ya NIDA."); }
   };
   const statusText: Record<string, string> = { PENDING: "INATAFUTA NIDA...", PROCESSING: "INAFANYIWA KAZI", APPROVED: "NIDA IMEPATIKANA", REJECTED: "NIN NOT FOUND" };
+  // Ombi linaloonyeshwa juu lisihesabiwe kwenye Historia mpaka muda wa dakika 1 uishe.
   const recentHistory = requests.filter((item) => {
+    const isActiveResult = item.id === activeRequestId || item.requestId === activeRequestId;
+    if (isActiveResult) return false;
     const value = item.submittedAt as any;
     const timestamp = value?.toDate ? value.toDate().getTime() : value ? new Date(value).getTime() : 0;
     return Number.isFinite(timestamp) && timestamp > 0 && Date.now() - timestamp <= 24 * 60 * 60 * 1000;
