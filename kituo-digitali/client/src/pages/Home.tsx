@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, updateNidaRequestPhone, type NidaRequest } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, updateNidaRequestPhone, type NidaRequest } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -343,6 +343,7 @@ function TutorialsSection() {
 function HistoryPage() {
   const { firebaseUser } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
+  const [serviceApplications, setServiceApplications] = useState<any[]>([]);
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
 
   const refreshDownloads = () => setDownloads(getDownloadHistory());
@@ -351,6 +352,14 @@ function HistoryPage() {
     if (!firebaseUser) { setRows([]); return; }
     return subscribeToTokenHistory(firebaseUser.uid, setRows);
   }, [firebaseUser]);
+
+  useEffect(() => {
+    if (!firebaseUser?.uid) { setServiceApplications([]); return; }
+    return subscribeUserServiceApplications(firebaseUser.uid, setServiceApplications, (error) => {
+      console.error("Imeshindikana kupakia historia ya maombi ya huduma", error);
+      toast.error("Historia ya maombi haijapakiwa. Jaribu kuingia tena.");
+    });
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     refreshDownloads();
@@ -389,6 +398,33 @@ function HistoryPage() {
               <button type="button" className="button button--small" onClick={() => { removeDownload(item.id); refreshDownloads(); }}>×</button>
             </div>
           </div>)
+        }
+      </div>
+    </section>
+
+    <section style={{marginBottom:24}}>
+      <div className="page-heading" style={{marginBottom:10}}><div><span className="overline">Ufuatiliaji</span><h2>MAOMBI YANGU YA HUDUMA</h2><p>Angalia hali ya maombi yako bila kuwasiliana na support.</p></div></div>
+      <div className="account-panel" style={{maxWidth:"none"}}>
+        {!firebaseUser ? <Notice tone="info">Ingia kwenye akaunti yako ili kuona maombi yako.</Notice> :
+          serviceApplications.length === 0 ? <Notice tone="info">Bado hujatuma ombi la huduma, au hakuna rekodi zinazopatikana.</Notice> :
+          <div style={{display:"grid",gap:10}}>
+            {serviceApplications.slice().sort((a,b)=>new Date(String(b.updatedAt ?? b.submittedAt ?? 0)).getTime()-new Date(String(a.updatedAt ?? a.submittedAt ?? 0)).getTime()).map((item) => {
+              const status = String(item.status ?? "PENDING").toUpperCase();
+              const statusLabel = status === "APPROVED" ? "Limekamilika / Limeidhinishwa" : status === "REJECTED" ? "Limekataliwa" : status === "PROCESSING" ? "Linafanyiwa kazi" : status === "PENDING" ? "Linasubiri kushughulikiwa" : status;
+              const dateValue = item.updatedAt ?? item.submittedAt;
+              let dateLabel = "Tarehe haipo";
+              try { const date = dateValue?.toDate ? dateValue.toDate() : new Date(String(dateValue)); if (!Number.isNaN(date.getTime())) dateLabel = date.toLocaleString("sw-TZ"); } catch { /* show fallback */ }
+              return <div key={item.id} style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap",padding:"14px",border:"1px solid #e2e8f0",borderRadius:12,background:"#f8fafc"}}>
+                <div style={{minWidth:0,flex:"1 1 220px"}}>
+                  <strong style={{display:"block",color:"#0f172a"}}>{String(item.serviceName ?? item.serviceSlug ?? "Huduma")}</strong>
+                  <small style={{display:"block",marginTop:5,color:"#64748b"}}>Rejea: {String(item.applicationId ?? item.id)} · Iliyosasishwa: {dateLabel}</small>
+                  {status === "REJECTED" && item.rejectionReason && <p style={{margin:"7px 0 0",fontSize:12,color:"#b91c1c"}}>Sababu: {String(item.rejectionReason)}</p>}
+                  {item.adminNote && <p style={{margin:"7px 0 0",fontSize:12,color:"#475569"}}>Ujumbe: {String(item.adminNote)}</p>}
+                </div>
+                <span className={status === "APPROVED" ? "verification verification--approved" : status === "REJECTED" ? "verification verification--rejected" : "verification verification--pending"}>{statusLabel}</span>
+              </div>;
+            })}
+          </div>
         }
       </div>
     </section>
