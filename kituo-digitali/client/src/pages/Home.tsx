@@ -403,14 +403,14 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const resultTimers = useRef<Record<string, number>>({});
   const formatPhone = (value: string) => value.replace(/\D/g, "").slice(0, 10);
 
-  // Matokeo ya ombi la sasa yaonekane kwa sekunde 30 tu, kisha yabaki Historia ya NIDA.
+  // NIDA ikipatikana au ombi likikamilika, onyesha matokeo juu kwa dakika 1 kisha ficha kwenye Historia.
   useEffect(() => {
     const active = requests.find((item) => item.id === activeRequestId || item.requestId === activeRequestId);
     if (!active || !["APPROVED", "REJECTED"].includes(active.status) || resultTimers.current[active.id]) return;
     resultTimers.current[active.id] = window.setTimeout(() => {
       setActiveRequestId((current) => current === active.id || current === active.requestId ? "" : current);
       delete resultTimers.current[active.id];
-    }, 30 * 1000);
+    }, 60 * 1000);
   }, [requests, activeRequestId]);
 
   useEffect(() => () => {
