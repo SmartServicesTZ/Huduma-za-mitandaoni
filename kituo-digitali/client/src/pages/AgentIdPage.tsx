@@ -3,6 +3,8 @@ import QRCode from "qrcode";
 import html2canvas from "html2canvas";
 import { Download, Upload, RotateCcw, LoaderCircle } from "lucide-react";
 import { triggerDownload } from "@/lib/downloadHistory";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { consumeFirebaseTokens } from "@/lib/firebase";
 
 type Network = "Airtel" | "Vodacom" | "Yas" | "Halotel" | "Mbeya One Company Limited" | "Huduma za Mtandaoni";
 type NetworkCfg = { logo: string; color: string; dark: string; accent: string; slogan: string; footer: string; pattern: string };
@@ -138,6 +140,8 @@ async function exportCard(source: HTMLElement, size: { w: number; h: number }, f
 }
 
 export default function AgentIdPage() {
+  const { user } = useAuth();
+  const selectionRequestIds = useRef<Record<string, string>>({});
   const [network, setNetwork] = useState<Network>("Airtel");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [name, setName] = useState("Steward Jackson Njiwa");
@@ -180,21 +184,28 @@ export default function AgentIdPage() {
     event.target.value = "";
   };
 
-  const downloadCards = async (side: "front" | "back" | "both") => {
-    const land = { size: LAND, label: "kulala", front: landFrontRef.current, back: landBackRef.current };
-    const port = { size: PORT, label: "kusimama", front: portFrontRef.current, back: portBackRef.current };
-    const sets = side === "both" ? [land, port] : [orientation === "landscape" ? land : port];
-    const jobs: { el: HTMLElement; size: { w: number; h: number }; filename: string }[] = [];
-    for (const set of sets) {
-      if (side !== "back" && set.front) jobs.push({ el: set.front, size: set.size, filename: `kitambulisho-${set.label}-mbele.png` });
-      if (side !== "front" && set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
-    }
-    if (!jobs.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+  const downloadCards = async (side: "front" | "back") => {
+    const selected = orientation === "landscape"
+      ? { size: LAND, label: "kulala", front: landFrontRef.current, back: landBackRef.current }
+      : { size: PORT, label: "kusimama", front: portFrontRef.current, back: portBackRef.current };
+    const element = side === "front" ? selected.front : selected.back;
+    if (!element) { window.alert("Kitambulisho bado hakijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+    if (!user?.uid) { window.alert("Ingia kwenye akaunti yako kwanza ili kulipia na kupakua kitambulisho."); return; }
+    const selectionKey = JSON.stringify([network, orientation, name, agentId, phone, type, region, district, area, issueDate, photo.length]);
+    const requestId = selectionRequestIds.current[selectionKey] ?? (selectionRequestIds.current[selectionKey] = `agentid_${crypto.randomUUID()}`);
     setBusy(true);
     try {
-      for (const job of jobs) await exportCard(job.el, job.size, job.filename);
+      // Rejea ileile kwa kitambulisho hiki huzuia kukatwa tena unapopakua mbele/nyuma.
+      await consumeFirebaseTokens(user.uid, {
+        slug: "kitambulisho-wakala",
+        name: "KITAMBULISHO CHA WAKALA",
+        tokenCost: 2,
+        kind: "paid",
+        tokenType: "huduma",
+      }, requestId);
+      await exportCard(element, selected.size, `kitambulisho-${network.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${selected.label}-${side === "front" ? "mbele" : "nyuma"}.png`);
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
+      window.alert(error instanceof Error ? error.message : "Imeshindikana kulipia au kupakua kitambulisho.");
     } finally { setBusy(false); }
   };
 
@@ -210,7 +221,7 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button>
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
-        <p className="aid-choice-note">Chagua aina unayotaka kupakua kwa vitufe vya "Mbele" na "Nyuma". Vyote viwili vinaonekana kwenye preview.</p>
+        <p className="aid-choice-note">Chagua mtandao mmoja na mkao mmoja (kulala au kusimama). Malipo ni mara moja kwa chaguo hilo; unaweza kupakua mbele na nyuma bila kukatwa tena. Ukibadilisha mtandao au mkao, utalipia chaguo jipya.</p>
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
@@ -223,7 +234,7 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-buttons"><button type="button" className="button button--green" disabled={busy} onClick={() => void downloadCards("front")}>{busy ? <LoaderCircle size={16} className="aid-spin" /> : <Download size={16} />} Pakua Mbele ({orientLabel})</button><button type="button" className="button button--green" disabled={busy} onClick={() => void downloadCards("back")}>{busy ? <LoaderCircle size={16} className="aid-spin" /> : <Download size={16} />} Pakua Nyuma ({orientLabel})</button></div>
-        <button type="button" className="button button--green button--wide" style={{ marginTop: 8 }} disabled={busy} onClick={() => void downloadCards("both")}>{busy ? <><LoaderCircle size={16} className="aid-spin" /> Inaandaa picha...</> : <><Download size={16} /> Pakua Vyote (Kulala na Kusimama, PNG)</>}</button>
+        <p className="aid-note">Malipo hutozwa mara moja kwa mtandao na mkao uliochagua. Pakua mbele na nyuma; mkao mwingine au mtandao mwingine unahitaji malipo mapya.</p>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
 

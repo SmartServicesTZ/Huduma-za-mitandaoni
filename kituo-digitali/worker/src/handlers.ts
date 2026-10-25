@@ -275,8 +275,12 @@ export const consumeTokens = callable(async (request) => {
     const serviceSnapshot = await transaction.get(db.collection("services").where("slug", "==", serviceId).limit(1));
     const service = serviceSnapshot.docs[0]?.data();
     if (!service || service.active === false || service.isVisible === false) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
-    if (service.isFree === true) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
-    const cost = Number(service.tokenCost);
+    // Kitambulisho cha wakala ni huduma ya kulipia hata kama rekodi ya zamani ina isFree=true/tokenCost=0.
+    // Tumia bei ya admin ikiwa ni chanya; vinginevyo tokeni 2 ndizo gharama ya msingi.
+    const isAgentId = serviceId === "kitambulisho-wakala";
+    if (service.isFree === true && !isAgentId) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
+    const configuredCost = Number(service.tokenCost);
+    const cost = isAgentId && (!Number.isSafeInteger(configuredCost) || configuredCost <= 0) ? 2 : configuredCost;
     if (!Number.isSafeInteger(cost) || cost <= 0 || cost > 100000) throw new ApiError("failed-precondition", "Gharama ya huduma haijawekwa sawa. Wasiliana na admin.");
     const serviceName = String(service.name ?? data.serviceName ?? serviceId).slice(0, 180);
     const userSnapshot = await transaction.get(userRef);
@@ -748,12 +752,7 @@ export const submitNidaRequest = callable(async (request) => {
   const ledgerRef = db.collection("tokenTransactions").doc(`nida_${requestRef.id}`);
   const serviceRef = db.collection("services").doc("utafutaji-nida");
   return db.runTransaction(async (transaction) => {
-    const open = await transaction.get(openRef);
-    if (open.exists && typeof open.data()?.requestId === "string") {
-      const priorRef = db.collection("nidaRequests").doc(String(open.data()!.requestId));
-      const prior = await transaction.get(priorRef);
-      if (prior.exists && ["PENDING", "PROCESSING"].includes(String(prior.data()?.status))) throw new ApiError("already-exists", "Tayari una ombi la NIDA linalosubiri au linalofanyiwa kazi.");
-    }
+    // Ruhusu maombi mengi ya NIDA hata kama maombi ya awali bado PENDING/PROCESSING.
     const userSnapshot = await transaction.get(userRef);
     const serviceSnapshot = await transaction.get(serviceRef);
     if (!userSnapshot.exists) throw new ApiError("not-found", "Akaunti haijapatikana.");
