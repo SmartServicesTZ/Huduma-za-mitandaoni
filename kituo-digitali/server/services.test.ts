@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { serviceCatalog } from "../shared/catalog";
 
 function createPublicContext(): TrpcContext {
   return {
@@ -14,8 +15,8 @@ describe("HUDUMA ZA MTANDAONI portal", () => {
   it("returns the full Kiswahili service catalog", async () => {
     const caller = appRouter.createCaller(createPublicContext());
     const services = await caller.portal.services();
-    expect(services.length).toBeGreaterThanOrEqual(20);
-    expect(services.find((service) => service.slug === "utafutaji-nida")?.kind).toBe("free");
+    expect(services.length).toBeGreaterThanOrEqual(serviceCatalog.length);
+    expect(services.find((service) => service.slug === "nakala-nida")?.kind).toBe("paid");
     expect(services.find((service) => service.slug === "cheti-tin")?.tokenCost).toBe(2);
   });
 

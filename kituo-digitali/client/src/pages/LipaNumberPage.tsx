@@ -270,7 +270,7 @@ function ApplicationModal({ application, onClose, onDocument }: { application: L
             <div><span>Hali ya vigezo</span><strong>{(application.qualificationStatus ?? "PENDING_CHECK") === "QUALIFIED" ? "Amefuzu" : (application.qualificationStatus ?? "PENDING_CHECK") === "NOT_QUALIFIED" ? "Hajafuzu" : "Inafuatiliwa"}</strong></div>
             <div><span>Hali ya malipo</span><strong>{(application.rewardStatus ?? "UNPAID") === "PAID" ? "Yamelipwa" : (application.rewardStatus ?? "UNPAID") === "NOT_ELIGIBLE" ? "Hastahili" : "Bado hayajalipwa"}</strong></div>
             {application.rewardStatus === "PAID" && application.rewardPaymentReference && <div><span>Rejea ya malipo</span><strong>{application.rewardPaymentReference}</strong></div>}
-            {application.rewardPaidAt && <div><span>Tarehe ya malipo</span><strong>{displayDate(application.rewardPaidAt)}</strong></div>}
+            {Boolean(application.rewardPaidAt) && <div><span>Tarehe ya malipo</span><strong>{displayDate(application.rewardPaidAt)}</strong></div>}
           </div>
           {application.rewardNote && <div className="lipa-rejection" style={{color:"#334155",borderLeftColor:"#64748b",background:"#f8fafc",marginTop:12}}><strong>Maelezo ya ufuatiliaji</strong><p>{application.rewardNote}</p></div>}
           <p style={{fontSize:12,color:"#64748b",marginTop:10}}>Hali hii husasishwa na admin baada ya kukagua taarifa na ripoti za miamala. Kuidhinishwa kwa ombi hakumaanishi kuwa zawadi tayari imelipwa.</p>

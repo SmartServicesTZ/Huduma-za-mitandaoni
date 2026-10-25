@@ -1,0 +1,746 @@
+/* SmartServicesTZ form system
+   Visual-only layer: service handlers, validation, Firebase calls and download flows remain untouched. */
+:root {
+  --form-ink: #14213d;
+  --form-muted: #667085;
+  --form-line: #dce5f0;
+  --form-surface: rgba(255, 255, 255, .94);
+  --form-soft: #f5f8fc;
+  --form-primary: #2457d6;
+  --form-primary-deep: #173b9c;
+  --form-teal: #0e8f83;
+  --form-shadow: 0 18px 55px rgba(16, 35, 68, .12);
+  --form-shadow-soft: 0 10px 30px rgba(16, 35, 68, .08);
+  --form-radius: 22px;
+  --form-ease: cubic-bezier(.23, 1, .32, 1);
+}
+
+/* Shared page framing */
+.lipa-page,
+.access-page,
+.dynamic-service-page,
+.verify-tin-page,
+.sme-page,
+.license-page,
+.tin-page,
+.agent-id-page,
+.letter-maker {
+  isolation: isolate;
+}
+
+.lipa-page::before,
+.access-page::before,
+.dynamic-service-page::before,
+.verify-tin-page::before,
+.sme-page::before,
+.license-page::before,
+.tin-page::before,
+.agent-id-page::before,
+.letter-maker::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 5% 5%, rgba(65, 105, 225, .13), transparent 28rem),
+    radial-gradient(circle at 94% 16%, rgba(34, 197, 151, .10), transparent 24rem);
+}
+
+/* Controls shared by native and Tailwind-backed forms */
+.lipa-page input:not([type="checkbox"]):not([type="radio"]),
+.lipa-page select,
+.lipa-page textarea,
+.access-page input:not([type="checkbox"]):not([type="radio"]),
+.access-page select,
+.access-page textarea,
+.dynamic-service-page input:not([type="checkbox"]):not([type="radio"]),
+.dynamic-service-page select,
+.dynamic-service-page textarea,
+.sme-page input:not([type="checkbox"]):not([type="radio"]),
+.sme-page select,
+.sme-page textarea,
+.license-page input:not([type="checkbox"]):not([type="radio"]),
+.license-page select,
+.license-page textarea,
+.tin-page input:not([type="checkbox"]):not([type="radio"]),
+.tin-page select,
+.tin-page textarea,
+.verify-tin-page input:not([type="checkbox"]):not([type="radio"]),
+.verify-tin-page select,
+.verify-tin-page textarea,
+.agent-id-page input:not([type="checkbox"]):not([type="radio"]),
+.agent-id-page select,
+.agent-id-page textarea,
+.lm-fields input,
+.sme-page .sme-field input,
+.sme-page .sme-field select,
+.sme-page .sme-field textarea {
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease, transform .18s var(--form-ease);
+}
+
+.lipa-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.lipa-page select:focus,
+.lipa-page textarea:focus,
+.access-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.access-page select:focus,
+.access-page textarea:focus,
+.dynamic-service-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.dynamic-service-page select:focus,
+.dynamic-service-page textarea:focus,
+.sme-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.sme-page select:focus,
+.sme-page textarea:focus,
+.license-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.license-page select:focus,
+.license-page textarea:focus,
+.tin-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.tin-page select:focus,
+.tin-page textarea:focus,
+.verify-tin-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.verify-tin-page select:focus,
+.verify-tin-page textarea:focus,
+.agent-id-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.agent-id-page select:focus,
+.agent-id-page textarea:focus,
+.lm-fields input:focus,
+.sme-page .sme-field input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--form-primary) 72%, white);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--form-primary) 13%, transparent), 0 8px 18px rgba(26, 62, 140, .08);
+  transform: translateY(-1px);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lipa-page button,
+.access-page button,
+.dynamic-service-page button,
+.sme-page button,
+.license-page button,
+.tin-page button,
+.verify-tin-page button,
+.agent-id-page button,
+.letter-maker button {
+  transition: transform .16s var(--form-ease), box-shadow .18s ease, filter .18s ease, border-color .18s ease;
+}
+
+.lipa-page button:not(:disabled):hover,
+.access-page button:not(:disabled):hover,
+.dynamic-service-page button:not(:disabled):hover,
+.sme-page button:not(:disabled):hover,
+.license-page button:not(:disabled):hover,
+.tin-page button:not(:disabled):hover,
+.verify-tin-page button:not(:disabled):hover,
+.agent-id-page button:not(:disabled):hover,
+.letter-maker button:not(:disabled):hover {
+  transform: translateY(-2px);
+  filter: saturate(1.08);
+}
+
+.lipa-page button:not(:disabled):active,
+.access-page button:not(:disabled):active,
+.dynamic-service-page button:not(:disabled):active,
+.sme-page button:not(:disabled):active,
+.license-page button:not(:disabled):active,
+.tin-page button:not(:disabled):active,
+.verify-tin-page button:not(:disabled):active,
+.agent-id-page button:not(:disabled):active,
+.letter-maker button:not(:disabled):active {
+  transform: translateY(0) scale(.975);
+}
+
+/* Pata Lipa Namba */
+.lipa-page {
+  background: linear-gradient(145deg, #f6f9ff 0%, #f8fbfc 48%, #f2f7ff 100%) !important;
+  color: var(--form-ink);
+}
+
+.lipa-page .lipa-layout {
+  animation: form-rise .48s var(--form-ease) both;
+}
+
+.lipa-page .lipa-panel,
+.lipa-page .lipa-history,
+.lipa-page .lipa-side-card {
+  border-color: rgba(180, 196, 221, .68) !important;
+  border-radius: var(--form-radius) !important;
+  box-shadow: var(--form-shadow-soft) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(247, 250, 255, .92)) !important;
+}
+
+.lipa-page .lipa-network-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbe5f1 !important;
+  border-radius: 17px !important;
+  background: rgba(255, 255, 255, .86) !important;
+  box-shadow: 0 7px 20px rgba(24, 50, 95, .055);
+}
+
+.lipa-page .lipa-network-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, #df1c2f, #2b6de7, #18b969);
+  opacity: .15;
+  transition: opacity .18s ease;
+}
+
+.lipa-page .lipa-network-card:hover,
+.lipa-page .lipa-network-card.is-selected {
+  border-color: #7597e9 !important;
+  box-shadow: 0 12px 26px rgba(36, 87, 214, .15) !important;
+}
+
+.lipa-page .lipa-network-card.is-selected::after,
+.lipa-page .lipa-network-card:hover::after {
+  opacity: 1;
+}
+
+.lipa-page .lipa-network-mark,
+.lipa-page .network-mark {
+  box-shadow: 0 5px 14px rgba(17, 39, 75, .12);
+}
+
+.lipa-page .lipa-form-section {
+  border-top-color: #e5ebf4 !important;
+  animation: form-rise .38s var(--form-ease) both;
+}
+
+.lipa-page .lipa-form-grid {
+  gap: 15px !important;
+}
+
+.lipa-page .lipa-field,
+.lipa-page .lipa-form-field {
+  min-width: 0;
+}
+
+.lipa-page .lipa-field label,
+.lipa-page .lipa-form-field label {
+  color: #253653;
+  font-weight: 800;
+}
+
+.lipa-page .lipa-actions,
+.lipa-page .lipa-submit-row {
+  border-top: 1px solid #e7edf6;
+  padding-top: 18px;
+}
+
+/* Access ya Lipa & Usajili */
+.access-page {
+  background: linear-gradient(145deg, #f7fbff 0%, #fff 42%, #f4f8ff 100%) !important;
+}
+
+.access-page .access-shell,
+.access-page .access-card,
+.access-page .access-form-card {
+  animation: form-rise .48s var(--form-ease) both;
+}
+
+.access-page .access-card,
+.access-page .access-panel,
+.access-page .access-form {
+  border-color: #dfe8f3 !important;
+  box-shadow: var(--form-shadow-soft) !important;
+  border-radius: var(--form-radius) !important;
+}
+
+.access-page .access-network-card,
+.access-page .access-network,
+.access-page .network-option {
+  border-radius: 16px !important;
+  border-color: #dbe5f1 !important;
+  background: rgba(255, 255, 255, .9) !important;
+}
+
+.access-page .access-network-card:hover,
+.access-page .access-network-card.active,
+.access-page .access-network.active,
+.access-page .network-option:hover,
+.access-page .network-option.active {
+  box-shadow: 0 12px 28px rgba(36, 87, 214, .14) !important;
+  transform: translateY(-2px);
+}
+
+.access-page .access-brand img,
+.access-page .network-logo,
+.access-page .access-network-card img {
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(21, 42, 77, .12));
+}
+
+/* Dynamic Firestore service forms */
+.dynamic-service-page {
+  background: linear-gradient(145deg, #f7faff, #f4fbf9) !important;
+}
+
+.dynamic-service-page .dynamic-service-card,
+.dynamic-service-page .service-form-card,
+.dynamic-service-page .service-workspace,
+.dynamic-service-page form {
+  border: 1px solid rgba(191, 207, 229, .74);
+  border-radius: var(--form-radius);
+  box-shadow: var(--form-shadow-soft);
+  background: rgba(255, 255, 255, .95);
+}
+
+.dynamic-service-page .dynamic-service-card,
+.dynamic-service-page .service-form-card,
+.dynamic-service-page form {
+  animation: form-rise .44s var(--form-ease) both;
+}
+
+.dynamic-service-page .form-section,
+.dynamic-service-page .dynamic-section,
+.dynamic-service-page fieldset {
+  border-color: #e2eaf4 !important;
+  border-radius: 17px !important;
+  background: linear-gradient(145deg, #fff, #f8fbff) !important;
+}
+
+.dynamic-service-page label,
+.dynamic-service-page .control-field > span {
+  color: #233653;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.dynamic-service-page input[type="file"],
+.lipa-page input[type="file"],
+.access-page input[type="file"] {
+  border: 1px dashed #a9bddb;
+  background: #f7faff;
+  padding: 10px;
+  cursor: pointer;
+}
+
+/* Airtel SME contract */
+.sme-page {
+  background: radial-gradient(circle at 7% 2%, rgba(230, 0, 18, .08), transparent 24rem), linear-gradient(135deg, #fffafa, #f4f7fb) !important;
+}
+
+.sme-page .sme-top {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .28);
+  box-shadow: 0 18px 40px rgba(181, 0, 18, .18) !important;
+}
+
+.sme-page .sme-top::after {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -110px;
+  width: 240px;
+  height: 240px;
+  border: 26px solid rgba(255, 255, 255, .12);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.sme-page .sme-card {
+  border-color: #e2e9f2 !important;
+  border-radius: var(--form-radius) !important;
+  box-shadow: var(--form-shadow-soft) !important;
+}
+
+.sme-page .sme-form {
+  animation: form-rise .42s var(--form-ease) both;
+}
+
+.sme-page .sme-preview {
+  background: linear-gradient(145deg, #263143, #111827) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 14px 35px rgba(16, 24, 40, .16);
+}
+
+.sme-page .sme-field input {
+  min-height: 46px;
+  border-color: #d5dfeb !important;
+  background: #fbfdff !important;
+  text-transform: none;
+}
+
+.sme-page .sme-field input:not([type="email"]):not([type="tel"]) {
+  text-transform: uppercase;
+}
+
+.sme-page .sme-signature-box,
+.sme-page .sme-check,
+.sme-page .sme-ink {
+  border-color: #e1e8f1 !important;
+  background: #f8fbff !important;
+  border-radius: 14px !important;
+}
+
+.sme-page .sme-button,
+.sme-page .sme-ink-option {
+  border-radius: 12px !important;
+}
+
+/* Vodacom SME — preserve Tailwind logic, add visual depth and file affordance */
+main.min-h-screen.bg-slate-50:has(#sme-full-name) {
+  background: radial-gradient(circle at 5% 3%, rgba(239, 68, 68, .12), transparent 23rem), #f7f9fc !important;
+}
+
+main.min-h-screen.bg-slate-50:has(#sme-full-name) > div > header {
+  box-shadow: 0 20px 46px rgba(190, 24, 24, .18);
+}
+
+main.min-h-screen.bg-slate-50:has(#sme-full-name) section {
+  border-color: #e0e8f2 !important;
+  box-shadow: 0 14px 38px rgba(23, 42, 75, .08) !important;
+}
+
+main.min-h-screen.bg-slate-50:has(#sme-full-name) input:not([type="file"]),
+main.min-h-screen.bg-slate-50:has(#sme-full-name) select {
+  min-height: 48px;
+  border-color: #d8e2ee !important;
+  background: #fbfdff !important;
+}
+
+main.min-h-screen.bg-slate-50:has(#sme-full-name) input:not([type="file"]):focus,
+main.min-h-screen.bg-slate-50:has(#sme-full-name) select:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, .12) !important;
+}
+
+main.min-h-screen.bg-slate-50:has(#sme-full-name) form > div {
+  animation: form-rise .35s var(--form-ease) both;
+}
+
+main.min-h-screen.bg-slate-50:has(#sme-full-name) form > div:nth-child(2) { animation-delay: 25ms; }
+main.min-h-screen.bg-slate-50:has(#sme-full-name) form > div:nth-child(3) { animation-delay: 50ms; }
+main.min-h-screen.bg-slate-50:has(#sme-full-name) form > div:nth-child(4) { animation-delay: 75ms; }
+main.min-h-screen.bg-slate-50:has(#sme-full-name) form > div:nth-child(5) { animation-delay: 100ms; }
+main.min-h-screen.bg-slate-50:has(#sme-full-name) form > div:nth-child(6) { animation-delay: 125ms; }
+
+/* Business license and TIN certificate forms */
+.license-page,
+.tin-page {
+  background: linear-gradient(145deg, #f7faff, #f5fbfa) !important;
+}
+
+.license-page .license-form-card,
+.license-page .license-preview-card,
+.tin-page .license-form-card,
+.tin-page .license-preview-card {
+  border-color: #dfe8f2 !important;
+  border-radius: var(--form-radius) !important;
+  box-shadow: var(--form-shadow-soft) !important;
+  background: rgba(255, 255, 255, .96) !important;
+  animation: form-rise .46s var(--form-ease) both;
+}
+
+.license-page .license-form-section,
+.tin-page .license-form-section {
+  border-color: #e5ecf4 !important;
+}
+
+.license-page .license-form-section h3,
+.tin-page .license-form-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #1e4ba7;
+}
+
+.license-page .license-form-section h3::before,
+.tin-page .license-form-section h3::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2f6ee8, #18b969);
+  box-shadow: 0 0 0 5px rgba(47, 110, 232, .10);
+}
+
+.license-page .license-field input,
+.license-page .license-field select,
+.license-page .license-field textarea,
+.tin-page .license-field input,
+.tin-page .license-field select,
+.tin-page .license-field textarea {
+  min-height: 46px;
+  border-color: #d7e1ed !important;
+  background: #fbfdff !important;
+  border-radius: 12px !important;
+}
+
+.license-page .license-preview-wrap,
+.tin-page .license-preview-wrap {
+  border-radius: 17px !important;
+  background: linear-gradient(145deg, #eaf0f8, #f8fbff) !important;
+  box-shadow: inset 0 0 0 1px rgba(72, 103, 150, .10);
+}
+
+/* Verify TIN */
+.verify-tin-page {
+  background: linear-gradient(145deg, #f7faff, #f5fbfb) !important;
+}
+
+.verify-tin-page .verify-tin-header,
+.verify-tin-page .verify-tin-form,
+.verify-tin-page .verify-tin-preview {
+  border: 1px solid #dfe8f3;
+  border-radius: var(--form-radius);
+  box-shadow: var(--form-shadow-soft);
+  animation: form-rise .44s var(--form-ease) both;
+}
+
+.verify-tin-page .verify-tin-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #173b9c, #2e6fe7) !important;
+  color: #fff;
+}
+
+.verify-tin-page .verify-tin-header p {
+  color: rgba(255, 255, 255, .78) !important;
+}
+
+.verify-tin-page .verify-tin-form {
+  background: rgba(255, 255, 255, .96) !important;
+}
+
+.verify-tin-page .verify-tin-input {
+  min-height: 50px;
+  border-color: #d7e1ed !important;
+  background: #fbfdff;
+}
+
+.verify-tin-page .verify-tin-wrapper {
+  background: linear-gradient(145deg, #edf3fb, #fff) !important;
+  border: 1px solid #e0e8f3;
+}
+
+/* Agent ID and photo upload */
+.agent-id-page .agent-id-form,
+.agent-id-page .agent-preview-column {
+  border-color: rgba(148, 163, 184, .25) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .14) !important;
+  backdrop-filter: blur(14px);
+}
+
+.agent-id-page .agent-id-form {
+  animation: form-rise .44s var(--form-ease) both;
+}
+
+.agent-id-page .agent-field input:not([type="file"]),
+.agent-id-page .agent-field select {
+  min-height: 46px;
+  border-color: rgba(148, 163, 184, .28) !important;
+  background: rgba(2, 10, 24, .34) !important;
+}
+
+.agent-id-page .agent-field input[type="file"] {
+  width: 100%;
+  min-height: 74px;
+  padding: 16px 12px;
+  border: 1px dashed rgba(124, 245, 220, .48);
+  border-radius: 14px;
+  background: rgba(34, 199, 168, .08);
+  color: #d8fdf1;
+  cursor: pointer;
+}
+
+.agent-id-page .agent-network button,
+.agent-id-page .agent-template-choice button {
+  min-height: 43px;
+  border-color: rgba(124, 245, 220, .24) !important;
+}
+
+.agent-id-page .agent-preview-intro {
+  box-shadow: 0 12px 30px rgba(14, 116, 144, .10);
+}
+
+/* html2canvas export: keep the landscape card at template dimensions even
+   when the preview is currently displayed through the mobile media query. */
+.agent-card[data-exporting="true"] {
+  width: 560px !important;
+  max-width: none !important;
+  height: 350px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-top {
+  height: 88px !important;
+  padding: 14px 20px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-title {
+  font-size: 18px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-body {
+  grid-template-columns: 100px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  padding: 16px 18px 12px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-photo {
+  width: 94px !important;
+  height: 124px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-name {
+  font-size: 18px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-row {
+  padding: 4px 0 !important;
+  gap: 8px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-row b {
+  width: 86px !important;
+  font-size: 7px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-row span {
+  font-size: 10px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-bottom {
+  height: 39px !important;
+  padding: 0 18px !important;
+}
+
+.agent-card[data-exporting="true"] .agent-sign {
+  width: 155px !important;
+  max-width: 45% !important;
+  font-size: 8px !important;
+  letter-spacing: .02em;
+  word-spacing: .16em;
+}
+
+/* Contract Maker */
+.letter-maker {
+  background: radial-gradient(circle at 8% 5%, rgba(37, 99, 235, .20), transparent 25rem), #08101f !important;
+}
+
+.letter-maker .lm-form,
+.letter-maker .lm-preview {
+  border-color: rgba(118, 145, 186, .35) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .22) !important;
+}
+
+.letter-maker .lm-form {
+  animation: form-rise .42s var(--form-ease) both;
+}
+
+.letter-maker .lm-fields input {
+  min-height: 44px;
+  border-color: #3b4e6b !important;
+  background: #0a1425 !important;
+}
+
+.letter-maker .lm-fields input:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, .14) !important;
+}
+
+.letter-maker .lm-paper {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .35) !important;
+}
+
+/* Safe mobile defaults: no horizontal clipping and comfortable touch targets. */
+@media (max-width: 720px) {
+  .lipa-page,
+  .access-page,
+  .dynamic-service-page,
+  .verify-tin-page,
+  .sme-page,
+  .license-page,
+  .tin-page,
+  .agent-id-page,
+  .letter-maker {
+    overflow-x: hidden;
+  }
+
+  .lipa-page .lipa-panel,
+  .lipa-page .lipa-history,
+  .access-page .access-card,
+  .access-page .access-panel,
+  .dynamic-service-page .dynamic-service-card,
+  .dynamic-service-page .service-form-card,
+  .dynamic-service-page .service-workspace,
+  .sme-page .sme-card,
+  .license-page .license-form-card,
+  .license-page .license-preview-card,
+  .tin-page .license-form-card,
+  .tin-page .license-preview-card,
+  .verify-tin-page .verify-tin-header,
+  .verify-tin-page .verify-tin-form,
+  .verify-tin-page .verify-tin-preview,
+  .letter-maker .lm-form {
+    border-radius: 17px !important;
+  }
+
+  .lipa-page .lipa-network-grid,
+  .access-page .access-network-grid,
+  .agent-id-page .agent-network {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .lipa-page input,
+  .lipa-page select,
+  .lipa-page textarea,
+  .access-page input,
+  .access-page select,
+  .access-page textarea,
+  .dynamic-service-page input,
+  .dynamic-service-page select,
+  .dynamic-service-page textarea,
+  .sme-page input,
+  .sme-page select,
+  .sme-page textarea,
+  .license-page input,
+  .license-page select,
+  .license-page textarea,
+  .tin-page input,
+  .tin-page select,
+  .tin-page textarea,
+  .verify-tin-page input,
+  .verify-tin-page select,
+  .verify-tin-page textarea,
+  .agent-id-page input,
+  .agent-id-page select,
+  .agent-id-page textarea,
+  .lm-fields input {
+    max-width: 100%;
+  }
+
+  main.min-h-screen.bg-slate-50:has(#sme-full-name) {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+@keyframes form-rise {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lipa-page *,
+  .access-page *,
+  .dynamic-service-page *,
+  .verify-tin-page *,
+  .sme-page *,
+  .license-page *,
+  .tin-page *,
+  .agent-id-page *,
+  .letter-maker * {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

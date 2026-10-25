@@ -84,11 +84,18 @@ export const activitySeed: ActivityItem[] = [
 
 export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], initialized: boolean): ServiceCatalogItem[] {
   const defaults = new Map(serviceCatalog.map((service) => [service.slug, service]));
-  const merged = new Map(serviceCatalog.map((service) => [service.slug, service]));
+  // Before the Firestore catalog is initialized, keep the local catalog as a
+  // safe fallback. Once initialization is complete, Firestore is authoritative
+  // so deleted defaults must not be resurrected on the user portal.
+  const merged = new Map<string, ServiceCatalogItem>(initialized ? [] : serviceCatalog.map((service) => [service.slug, service]));
   configured.forEach((service) => {
     const fallback = defaults.get(service.slug);
-    // Ignore legacy Firestore-only services that are no longer in the public catalog.
-    if (!fallback) return;
+    // Keep newly configured Firestore services even when they do not exist in
+    // the legacy local fallback catalog.
+    if (!fallback) {
+      merged.set(service.slug, service);
+      return;
+    }
     // Preserve admin configuration while restoring defaults missing from older seeds.
     merged.set(service.slug, fallback?.actionUrl
       ? { ...fallback, ...service, kind: service.isLocked === true ? "locked" : fallback.kind, actionUrl: service.actionUrl || fallback.actionUrl, name: service.name || fallback.name, description: service.description || fallback.description, category: service.category || fallback.category }

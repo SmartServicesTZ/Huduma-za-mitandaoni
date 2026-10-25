@@ -195,6 +195,7 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
 }
 
 function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: string; setSearch: (value: string) => void }) {
+  const [, navigate] = useLocation();
   const { isAuthenticated, user } = useAuth();
   const [, navigate] = useLocation();
   const [authOpen, setAuthOpen] = useState(false);
@@ -306,10 +307,11 @@ function ServiceGrid({ title, services, onUse }: { title: string; services: Serv
 function SpecialSection() {
   const open = (item: typeof specialServices[number]) => {
     if ("url" in item && item.url) { window.open(item.url, "_blank", "noopener,noreferrer"); return; }
-    if (item.action === "whatsapp") { window.open(whatsappUrl, "_blank", "noopener,noreferrer"); return; }
+    const action = (item as unknown as { action?: string }).action;
+    if (action === "whatsapp") { window.open(whatsappUrl, "_blank", "noopener,noreferrer"); return; }
     toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => window.open(whatsappUrl, "_blank") } });
   };
-  return <div className="special-grid">{specialServices.map((item) => <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : item.action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>)}</div>;
+  return <div className="special-grid">{specialServices.map((item) => { const action = (item as unknown as { action?: string }).action; return <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>; })}</div>;
 }
 
 function TopQuickServices({ services, onUse }: { services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {

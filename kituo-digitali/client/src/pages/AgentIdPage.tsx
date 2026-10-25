@@ -89,6 +89,11 @@ export default function AgentIdPage() {
     }));
 
     try {
+      // The preview is responsive, but the downloaded identity card must use
+      // the fixed 560x350 landscape template. Without this flag html2canvas
+      // captures the mobile media-query size (for example 413x258), which
+      // compresses the footer labels and other card text.
+      element.setAttribute("data-exporting", "true");
       await document.fonts.ready;
       await Promise.all(images.map((image) => {
         if (typeof image.decode === "function") return image.decode().catch(() => undefined);
@@ -105,6 +110,7 @@ export default function AgentIdPage() {
       const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi picha ya kitambulisho.")), "image/png"));
       triggerDownload(blob, filename, "PNG");
     } finally {
+      element.removeAttribute("data-exporting");
       imageStates.forEach(({ image, src, srcset, crossorigin }) => {
         if (src === null) image.removeAttribute("src"); else image.setAttribute("src", src);
         if (srcset === null) image.removeAttribute("srcset"); else image.setAttribute("srcset", srcset);

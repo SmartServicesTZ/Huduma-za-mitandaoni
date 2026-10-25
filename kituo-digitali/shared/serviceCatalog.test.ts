@@ -12,7 +12,7 @@ describe("legacy service catalogue migration fallback", () => {
 
   it("uses Firestore records to override defaults and keeps newly configured services", () => {
     const configured = [
-      { ...serviceCatalog[0], name: "TIN iliyosanidiwa", tokenCost: 4 },
+      { ...serviceCatalog.find((service) => service.slug === "cheti-tin")!, name: "TIN iliyosanidiwa", tokenCost: 4 },
       { slug: "huduma-mpya", name: "Huduma mpya", description: "", icon: "sparkles", tokenCost: 1, kind: "paid" as const, category: "Huduma kuu" },
     ];
     const services = mergeServiceCatalogDefaults(configured, false);

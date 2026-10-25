@@ -352,7 +352,7 @@ function licensePdfBlob(bytes: Uint8Array) {
 export async function generateBusinessLicense(payload: BusinessLicensePayload): Promise<GeneratedBusinessLicense> {
   const preparation = await invokeWorker<PreparedBusinessLicense>("generateBusinessLicense", payload);
   if (!preparation.requestId || !preparation.applicationId || !preparation.licenseNumber) throw new Error("Taarifa za ombi la leseni hazijakamilika.");
-  const form = preparation.form ?? payload;
+  const form: BrowserLicenseForm = preparation.form ?? { ...payload, issuingOffice: "" };
   const issueDate = preparation.issueDate ?? "";
   const expiryDate = preparation.expiryDate ?? "";
   const documents = await renderBusinessLicenseDocuments(form, preparation.licenseNumber, issueDate, expiryDate);

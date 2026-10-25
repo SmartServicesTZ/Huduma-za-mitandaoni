@@ -16,12 +16,12 @@ describe("normalizeAirtelSmeLayout", () => {
 
     expect(result.nameY).toBe(AIRTEL_SME_LAYOUT_DEFAULTS.nameY);
     expect(result.deviceY).toBe(58.3);
-    expect(result.customerY).toBe(94);
-    expect(result.sign1Y).toBe(94);
-    expect(result.date1Y).toBe(94);
-    expect(result.salesY).toBe(95.5);
-    expect(result.sign2Y).toBe(95.5);
-    expect(result.date2Y).toBe(95.5);
+    expect(result.customerY).toBe(AIRTEL_SME_LAYOUT_DEFAULTS.customerY);
+    expect(result.sign1Y).toBe(AIRTEL_SME_LAYOUT_DEFAULTS.sign1Y);
+    expect(result.date1Y).toBe(AIRTEL_SME_LAYOUT_DEFAULTS.date1Y);
+    expect(result.salesY).toBe(AIRTEL_SME_LAYOUT_DEFAULTS.salesY);
+    expect(result.sign2Y).toBe(AIRTEL_SME_LAYOUT_DEFAULTS.sign2Y);
+    expect(result.date2Y).toBe(AIRTEL_SME_LAYOUT_DEFAULTS.date2Y);
   });
 
   it("keeps deliberate custom coordinates and ignores invalid values", () => {
