@@ -257,3 +257,24 @@
  .chat-theme-options button{font-size:9px}
  .chat-settings-modal{padding:20px!important}
 }
+
+
+.chat-mobile-back{display:none;align-items:center;justify-content:center;width:35px;height:35px;min-width:35px;border:0;border-radius:50%;background:#edf6f0;color:#267052;cursor:pointer;margin-right:7px}
+@media(max-width:760px){
+ .chat-room-head{display:flex!important;align-items:center!important;gap:5px!important}
+ .chat-mobile-back{display:none}
+ .chat-page[data-chat-view="private"][data-chat-selected="yes"] .chat-sidebar,
+ .chat-page[data-chat-view="groups"][data-chat-selected="yes"] .chat-sidebar{display:none!important}
+ .chat-page[data-chat-view="private"][data-chat-selected="yes"] .chat-workspace,
+ .chat-page[data-chat-view="groups"][data-chat-selected="yes"] .chat-workspace{grid-template-columns:minmax(0,1fr)!important;height:calc(100dvh - 160px)!important;min-height:440px!important}
+ .chat-page[data-chat-view="private"][data-chat-selected="yes"] .chat-main,
+ .chat-page[data-chat-view="groups"][data-chat-selected="yes"] .chat-main{display:flex!important}
+ .chat-page[data-chat-view="private"][data-chat-selected="yes"] .chat-mobile-back,
+ .chat-page[data-chat-view="groups"][data-chat-selected="yes"] .chat-mobile-back{display:inline-flex!important}
+ .chat-page[data-chat-view="private"][data-chat-selected="no"] .chat-main,
+ .chat-page[data-chat-view="groups"][data-chat-selected="no"] .chat-main{display:none!important}
+ .chat-page[data-chat-view="private"][data-chat-selected="no"] .chat-workspace,
+ .chat-page[data-chat-view="groups"][data-chat-selected="no"] .chat-workspace{grid-template-columns:minmax(0,1fr)!important;height:calc(100dvh - 160px)!important;min-height:440px!important}
+ .chat-page[data-chat-view="private"][data-chat-selected="no"] .chat-sidebar,
+ .chat-page[data-chat-view="groups"][data-chat-selected="no"] .chat-sidebar{display:flex!important;max-height:100%!important;min-height:0!important;border-bottom:0!important}
+}
