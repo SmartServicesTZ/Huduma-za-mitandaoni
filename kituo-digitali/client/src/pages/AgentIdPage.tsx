@@ -466,5 +466,49 @@ const AGENT_ID_CSS = `
 @media(max-width:1100px){.aid-previews{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:900px){.aid-layout{grid-template-columns:minmax(0,1fr)}.aid-form{position:static}}
 @media(max-width:520px){.aid-network{grid-template-columns:repeat(3,1fr)}.aid-col{padding:9px}}
+/* ===== Premium visual refinement: keep text/data logic unchanged ===== */
+.idl{border-radius:16px;border:1px solid rgba(15,23,42,.16);background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.16)}
+.idl::before{opacity:.22;background:linear-gradient(135deg,transparent 0 52%,rgba(255,255,255,.72) 52% 53%,transparent 53%),radial-gradient(circle at 94% 10%,var(--c) 0 1px,transparent 2px);background-size:100% 100%,16px 16px}
+.idl-top{flex-basis:82px;padding:0 20px 0 22px}
+.idl-back-top{flex-basis:68px}
+.idl-brand{font-size:8.5px;letter-spacing:.14em}
+.idl-title{font-size:18px;letter-spacing:.015em}
+.idl-logo-wrap{width:118px;height:52px;padding:5px 8px;box-sizing:border-box;border-radius:10px;background:rgba(255,255,255,.96)}
+.net-mbeya .idl-logo-wrap{width:142px;height:52px}
+.idl-body{grid-template-columns:108px minmax(0,1fr);gap:17px;padding:13px 20px 9px}
+.idl-photo{width:108px;height:136px;border:3px solid #fff;outline:2px solid var(--c);border-radius:9px;box-shadow:0 5px 14px rgba(15,23,42,.16)}
+.idl-name{margin:0 0 8px;padding:0 0 6px;border-bottom:2px solid var(--c);line-height:1.16}
+.idl-row{gap:10px;padding:3.5px 0;border-bottom:1px solid rgba(100,116,139,.18)}
+.idl-row b{flex-basis:76px;font-size:7.5px;letter-spacing:.07em}
+.idl-row span{font-size:10.5px;line-height:1.28}
+.idl-bottom{flex-basis:36px;border-top:3px solid var(--c)}
+.idl-sign{font-size:7.5px;letter-spacing:.08em}
+.idl-back-body{grid-template-columns:minmax(0,1fr) 112px;gap:16px;padding:12px 20px 5px}
+.idl-rules{font-size:8.2px;line-height:1.35}
+.idl-rule{margin:6px 0;gap:7px}
+.idl-rule i{background:var(--c);box-shadow:0 2px 4px rgba(15,23,42,.12)}
+.idl-qr{width:100px;height:100px;border:4px solid #fff;box-shadow:0 3px 10px rgba(15,23,42,.12)}
+.idl-info{margin:0 20px 8px;padding:7px 10px;border-left:3px solid var(--c);border-radius:7px;background:rgba(255,255,255,.88);box-shadow:0 2px 7px rgba(15,23,42,.05)}
+.idl-foot{flex-basis:23px;font-size:7.2px;letter-spacing:.045em}
+.net-airtel .idl-top{background:linear-gradient(115deg,#a90000 0%,#e60000 62%,#ff3434 100%)}
+.net-vodacom .idl-top{background:linear-gradient(115deg,#9d0000 0%,#e60000 62%,#ff4545 100%)}
+.net-yas .idl-top{background:linear-gradient(115deg,#082b5c 0%,#1261a0 68%,#e4b900 100%)}
+.net-halotel .idl-top{background:linear-gradient(115deg,#c74600 0%,#ff6900 70%,#ff9a45 100%)}
+.net-mbeya .idl-top{background:linear-gradient(115deg,#800008 0%,#e30613 70%,#ff4550 100%)}
+.net-huduma .idl-top{background:linear-gradient(115deg,#123b5d 0%,#0e7490 68%,#22c7a8 100%)}
+.idp{border-radius:18px;background:linear-gradient(160deg,#fff 0%,#f7fbff 58%,var(--accent) 100%);box-shadow:0 12px 28px rgba(15,23,42,.16)}
+.idp-head{flex-basis:96px;padding:16px 18px;background:linear-gradient(120deg,var(--d),var(--c) 72%,#f4c842)}
+.idp-title{font-size:19px;letter-spacing:-.015em}
+.idp-logobar{flex-basis:43px;border-bottom:2px solid var(--c);font-size:9px}
+.idp-photo{width:124px;height:136px;margin:12px auto 7px;border:3px solid #fff;outline:2px solid var(--c);border-radius:12px}
+.idp-name{flex-basis:48px;padding:0 18px;border-bottom:2px solid var(--c);margin:0 18px}
+.idp-fields{margin:10px 18px 0;gap:8px 13px}
+.idp-fields>div{padding-bottom:5px;border-bottom:1px solid rgba(100,116,139,.2)}
+.idp-fields b{font-size:7px;letter-spacing:.08em}
+.idp-fields span{font-size:10px;line-height:1.28}
+.idp-foot{flex-basis:31px;font-size:7.5px;letter-spacing:.04em}
+.idp-qr-box img,.idp-qr-empty{width:124px;height:124px;border:5px solid #fff;box-shadow:0 3px 12px rgba(15,23,42,.12)}
+.idp-verify{border-left:3px solid var(--c);border-radius:8px;background:rgba(255,255,255,.9)}
+@media(max-width:520px){.aid-form{padding:14px}.aid-head h1{font-size:25px}.aid-col{padding:8px}}
 @media(prefers-reduced-motion:reduce){.aid-spin{animation:none}}
 `;
