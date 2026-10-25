@@ -511,8 +511,8 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   };
   // Ombi linaloonyeshwa juu lisihesabiwe kwenye Historia mpaka muda wa dakika 1 uishe.
   const recentHistory = requests.filter((item) => {
-    const isActiveResult = item.id === activeRequestId || item.requestId === activeRequestId;
-    if (isActiveResult) return false;
+    const isActiveResult = (item.id === activeRequestId || item.requestId === activeRequestId) && ["APPROVED", "REJECTED"].includes(item.status);
+    if (isActiveResult || ["PENDING", "PROCESSING"].includes(item.status)) return false;
     const value = item.submittedAt as any;
     const timestamp = value?.toDate ? value.toDate().getTime() : value ? new Date(value).getTime() : 0;
     return Number.isFinite(timestamp) && timestamp > 0 && Date.now() - timestamp <= 24 * 60 * 60 * 1000;
@@ -532,8 +532,8 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       <button type="button" className="button button--green" onClick={() => void run()} disabled={busy}><Search size={16}/> {busy ? "Inatuma..." : "Tafuta NIDA"}</button>
     </div>}
     {!nidaSearchLocked && !isAuthenticated && <div className="notice notice--info"><LogIn size={16}/><span>Ingia kwenye akaunti yako ili kutuma ombi na kuona matokeo.</span></div>}
-    {isAuthenticated && requests.some((item) => item.id === activeRequestId || item.requestId === activeRequestId) && <div className="quick-nida-request-list">
-      {requests.filter((item) => item.id === activeRequestId || item.requestId === activeRequestId).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
+    {isAuthenticated && requests.some((item) => ["PENDING", "PROCESSING"].includes(item.status) || ((item.id === activeRequestId || item.requestId === activeRequestId) && ["APPROVED", "REJECTED"].includes(item.status))) && <div className="quick-nida-request-list">
+      {requests.filter((item) => ["PENDING", "PROCESSING"].includes(item.status) || ((item.id === activeRequestId || item.requestId === activeRequestId) && ["APPROVED", "REJECTED"].includes(item.status))).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
         <div className="quick-nida-request__details">
           <div className="quick-nida-request__labels"><span>Phone number</span>{item.status === "PENDING" ? <><input inputMode="numeric" autoComplete="tel" maxLength={10} value={editPhones[item.id] ?? item.phone} onChange={(e) => setEditPhones((current) => ({ ...current, [item.id]: formatPhone(e.target.value) }))} aria-label="Edit pending NIDA phone number" /><button type="button" className="button button--small" disabled={savingPhone === item.id || !/^\d{9,10}$/.test(formatPhone(editPhones[item.id] ?? item.phone)) || formatPhone(editPhones[item.id] ?? item.phone) === item.phone} onClick={() => void saveEditedPhone(item)}>{savingPhone === item.id ? "Saving..." : "Save phone"}</button></> : <strong>{item.phone}</strong>}</div>
           <div className="quick-nida-request__status"><strong>{(item.status === "PENDING" || item.status === "PROCESSING") && <LoaderCircle size={15} className="quick-nida-spinner" aria-label="Inatafuta NIDA"/>} {item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
