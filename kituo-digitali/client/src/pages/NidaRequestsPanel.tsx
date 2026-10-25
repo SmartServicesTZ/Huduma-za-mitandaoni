@@ -50,6 +50,16 @@ export default function NidaRequestsPanel() {
     return () => window.clearInterval(timer);
   }, []);
 
+  const saveWorkingHours = async () => {
+    if (!user?.uid) { toast.error("Akaunti ya admin haijathibitishwa."); return; }
+    const validTime = (value: string) => value.length === 5 && value[2] === ":" && Number(value.slice(0, 2)) < 24 && Number(value.slice(3)) < 60;
+    if (!validTime(workingHours.start) || !validTime(workingHours.end) || workingHours.start === workingHours.end) { toast.error("Weka muda sahihi wa kuanza na kufunga."); return; }
+    setSavingHours(true);
+    try { await adminSaveSiteSettings(user.uid, { nidaWorkingHours: workingHours }); toast.success("Muda wa kazi wa CHEKI NIDA umehifadhiwa."); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Imeshindikana kuhifadhi muda wa kazi."); }
+    finally { setSavingHours(false); }
+  };
+
   const start = async (item: NidaRequest) => {
     setWorking(item.id);
     try {
