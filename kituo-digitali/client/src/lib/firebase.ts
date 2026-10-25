@@ -491,10 +491,20 @@ export async function adminUpdateUser(adminId: string, userId: string, values: P
 export async function uploadProfileImage(uid: string, file: File) {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error("Chagua picha ya JPG, PNG au WebP.");
   if (file.size > 2 * 1024 * 1024) throw new Error("Picha isizidi MB 2.");
-  const objectRef = storageRef(firebaseStorage, `users/${uid}/profile/avatar`);
-  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "public,max-age=3600" });
+
+  // Tumia jina la kipekee ili browser/CDN isirudishe avatar ya zamani kutoka cache.
+  const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const objectRef = storageRef(firebaseStorage, `users/${uid}/profile/avatar-${Date.now()}-${crypto.randomUUID()}.${extension}`);
+  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "private,max-age=300" });
   const url = await getDownloadURL(objectRef);
+
+  // Hifadhi URL kwenye hati ya mtumiaji na ithibitishe imesalia Firestore server.
   await saveFirebaseProfile(uid, { profileImageUrl: url });
+  const savedProfile = await getDocFromServer(doc(firestore, "users", uid));
+  const savedUrl = savedProfile.exists() ? savedProfile.data().profileImageUrl : undefined;
+  if (typeof savedUrl !== "string" || savedUrl !== url) {
+    throw new Error("Picha imepakiwa lakini haikuthibitishwa kwenye wasifu. Jaribu tena.");
+  }
   return url;
 }
 
