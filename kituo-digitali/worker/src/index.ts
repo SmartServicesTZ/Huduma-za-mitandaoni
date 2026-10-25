@@ -150,7 +150,12 @@ async function handleCallable(request: Request, name: string, cors: Headers, env
   } catch (error) {
     if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message, ...(error.details === undefined ? {} : { details: error.details }) } }, statusForError(error.code), cors);
     const code = error instanceof Error ? error.name : "unknown";
-    console.error("Worker callable failed", { name, code });
+    const diagnostic = error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300);
+    const firestoreError = error && typeof error === "object" && "status" in error
+      ? { status: Number((error as { status?: unknown }).status), statusCode: String((error as { statusCode?: unknown }).statusCode ?? "UNKNOWN") }
+      : {};
+    // Keep provider diagnostics in private Worker logs; never expose them to the client.
+    console.error("Worker callable failed", { name, code, diagnostic, ...firestoreError });
     return jsonResponse({ error: { code: "internal", message: "Ombi halijakamilika kwa sasa. Jaribu tena baadaye." } }, 500, cors);
   }
 }
