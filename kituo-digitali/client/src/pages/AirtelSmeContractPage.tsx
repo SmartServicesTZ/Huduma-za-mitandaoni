@@ -257,7 +257,9 @@ export default function AirtelSmeContractPage() {
           const embedded = await pdf.embedJpg(imageBytes);
           const page = pdf.addPage([612, 918]);
           page.drawImage(embedded, { x: 0, y: 0, width: 612, height: 918 });
-          outputBlob = new Blob([await pdf.save()], { type: "application/pdf" });
+          const pdfBytes = await pdf.save();
+          const pdfBuffer = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
+          outputBlob = new Blob([pdfBuffer], { type: "application/pdf" });
           extension = "pdf";
         }
         triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase());

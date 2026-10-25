@@ -73,7 +73,7 @@ export const downloadFromHistory = (item: DownloadHistoryItem) => {
       for (let offset = 0; offset < bytes.length; offset += 96 * 1024) {
         let chunkBinary = "";
         const chunk = bytes.subarray(offset, Math.min(offset + 96 * 1024, bytes.length));
-        for (let index = 0; index < chunk.length; index += 0x8000) chunkBinary += String.fromCharCode(...chunk.subarray(index, index + 0x8000));
+        for (let index = 0; index < chunk.length; index += 0x8000) chunkBinary += String.fromCharCode(...Array.from(chunk.subarray(index, index + 0x8000)));
         nativeDownload.appendFileChunk(btoa(chunkBinary));
       }
       nativeDownload.finishFile();
@@ -130,7 +130,7 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
       for (let offset = 0, chunkIndex = 0; offset < bytes.length; offset += chunkSize, chunkIndex++) {
         let binary = "";
         const chunk = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
-        for (let index = 0; index < chunk.length; index += 0x4000) binary += String.fromCharCode(...chunk.subarray(index, index + 0x4000));
+        for (let index = 0; index < chunk.length; index += 0x4000) binary += String.fromCharCode(...Array.from(chunk.subarray(index, index + 0x4000)));
         if (!nativeDownload.appendFileChunk(btoa(binary))) throw new Error("Android imeshindwa kuandika sehemu ya faili.");
         const progress = Math.min(95, Math.round(((chunkIndex + 1) / totalChunks) * 95));
         window.dispatchEvent(new CustomEvent("smartservicestz-download-progress", { detail: { name, progress } }));
@@ -172,7 +172,7 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
     void blob.arrayBuffer().then((buffer) => {
       const bytes = new Uint8Array(buffer);
       let binary = "";
-      for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...Array.from(bytes.subarray(i, i + 0x8000)));
       const dataUrl = `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
       const items = read();
       const match = items.find((item) => item.name === name && item.type === type);

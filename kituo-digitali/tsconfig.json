@@ -13,6 +13,7 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
+    "target": "ES2020",
     "baseUrl": ".",
     "types": ["node", "vite/client"],
     "paths": {

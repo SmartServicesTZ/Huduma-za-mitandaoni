@@ -315,55 +315,48 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
   return (
     <main className="dynamic-service-page">
       <style>{`
-        .dynamic-service-page { min-height: 100vh; padding: 42px 20px 72px; background: #f5f8fb; color: #13283b; }
-        .dynamic-service-shell { width: min(980px, 100%); margin: 0 auto; }
-        .dynamic-service-header, .dynamic-service-card { background: #fff; border: 1px solid #dbe5ed; border-radius: 18px; box-shadow: 0 14px 34px rgba(24, 53, 76, .08); }
-        .dynamic-service-header { padding: clamp(24px, 5vw, 48px); margin-bottom: 18px; }
-        .dynamic-service-category { display: inline-block; margin-bottom: 10px; color: #19736c; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-        .dynamic-service-title { margin: 0; font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1.05; }
-        .dynamic-service-description { margin: 14px 0 0; color: #557083; font-size: 1rem; line-height: 1.65; }
-        .dynamic-service-instructions { margin-top: 22px; padding: 16px 18px; border-left: 4px solid #ecaa4c; background: #fff8ed; border-radius: 8px; color: #5d482b; line-height: 1.6; white-space: pre-line; }
-        .dynamic-service-card { padding: clamp(20px, 4vw, 34px); }
-        .dynamic-service-card-heading { margin: 0 0 24px; font-size: 1.25rem; }
-        .dynamic-service-form { display: grid; gap: 20px; }
-        .dynamic-service-field { display: grid; gap: 8px; }
-        .dynamic-service-label { font-weight: 750; color: #1a3549; }
-        .dynamic-service-field input, .dynamic-service-field textarea, .dynamic-service-field select { width: 100%; box-sizing: border-box; border: 1px solid #c8d6e0; border-radius: 9px; padding: 12px 13px; background: #fff; color: #13283b; font: inherit; outline: none; transition: border-color .18s, box-shadow .18s; }
-        .dynamic-service-field textarea { resize: vertical; min-height: 105px; }
-        .dynamic-service-field input:focus, .dynamic-service-field textarea:focus, .dynamic-service-field select:focus { border-color: #19736c; box-shadow: 0 0 0 3px rgba(25, 115, 108, .13); }
-        .dynamic-service-field input[aria-invalid="true"], .dynamic-service-field textarea[aria-invalid="true"], .dynamic-service-field select[aria-invalid="true"] { border-color: #c54c4c; }
-        .dynamic-service-help, .dynamic-service-upload-note { color: #637b8a; line-height: 1.45; }
-        .dynamic-service-field-error { margin: 0; color: #b53d3d; font-size: .9rem; }
-        .dynamic-service-upload { display: grid; gap: 10px; padding: 15px; border: 1px dashed #aec3d0; border-radius: 12px; background: #f9fbfc; }
-        .dynamic-service-upload-preview { width: min(100%, 250px); max-height: 180px; object-fit: contain; border-radius: 8px; background: #e9f0f4; }
-        .dynamic-service-upload-meta { display: grid; gap: 2px; min-width: 0; }
-        .dynamic-service-upload-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .dynamic-service-upload-meta span { color: #19736c; font-size: .88rem; }
-        .dynamic-service-upload-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .dynamic-service-upload-button, .dynamic-service-remove-button, .dynamic-service-submit { border: 0; border-radius: 8px; padding: 11px 15px; font: inherit; font-weight: 750; cursor: pointer; }
-        .dynamic-service-upload-button { display: inline-block; background: #e7f2f1; color: #125c57; }
-        .dynamic-service-remove-button { background: #fff0f0; color: #ad3f3f; }
-        .dynamic-service-file-input { display: none !important; }
-        .dynamic-service-upload-button:has(.dynamic-service-file-input:disabled), .dynamic-service-remove-button:disabled, .dynamic-service-submit:disabled { opacity: .6; cursor: not-allowed; }
-        .dynamic-service-alert { margin: 0 0 18px; padding: 13px 15px; border-radius: 9px; line-height: 1.5; }
-        .dynamic-service-alert-error { border: 1px solid #ebbbbb; background: #fff1f1; color: #9f3535; }
-        .dynamic-service-alert-success { border: 1px solid #a9d8ca; background: #effaf6; color: #176b59; }
-        .dynamic-service-draft-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 4px; }
-        .dynamic-service-draft-tools span { flex: 1 1 100%; color: #637b8a; font-size: .85rem; }
-        .dynamic-service-draft-tools button { border: 1px solid #c8d6e0; border-radius: 8px; padding: 9px 12px; background: #f8fbfd; color: #24465b; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; }
-        .dynamic-service-draft-tools button:hover { background: #eaf2f6; }
-        .dynamic-service-submit-row { display: flex; justify-content: flex-end; margin-top: 4px; }
-        .dynamic-service-submit { min-width: 170px; background: #19736c; color: #fff; }
-        .dynamic-service-submit:hover:not(:disabled) { background: #125c57; }
-        .dynamic-service-empty { color: #637b8a; }
-        .dynamic-service-history { margin-top: 22px; }
-        .dynamic-service-history-row { border: 1px solid #dbe5ed; border-radius: 10px; background: white; padding: 13px 15px; margin-top: 8px; }
-        .dynamic-service-history-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .dynamic-service-history-meta strong { overflow-wrap: anywhere; }
-        .dynamic-service-status { display: inline-block; border-radius: 99px; padding: 4px 9px; background: #eef3f7; color: #425d72; font-size: .75rem; font-weight: 800; }
-        .dynamic-service-history-row small { display: block; margin-top: 5px; color: #637b8a; }
-        .dynamic-service-rejection { margin-top: 8px; padding: 9px 11px; border-radius: 7px; color: #953939; background: #fff1f1; font-size: .88rem; }
-        @media (max-width: 600px) { .dynamic-service-page { padding: 20px 12px 44px; } .dynamic-service-header, .dynamic-service-card { border-radius: 13px; } .dynamic-service-submit-row { display: block; } .dynamic-service-submit { width: 100%; } }
+        .dynamic-service-page{min-height:100vh;padding:clamp(18px,4vw,46px) 16px 76px;color:#10233f;background:radial-gradient(circle at 8% 0%,#d9f3ec 0,transparent 28%),radial-gradient(circle at 95% 10%,#e8e2ff 0,transparent 30%),#f7f8f3}
+        .dynamic-service-shell{width:min(1120px,100%);margin:0 auto}
+        .dynamic-service-header,.dynamic-service-card{border:1px solid #dfe8e4;border-radius:24px;background:rgba(255,255,255,.94);box-shadow:0 18px 50px rgba(16,35,63,.09);backdrop-filter:blur(14px)}
+        .dynamic-service-header{position:relative;overflow:hidden;margin-bottom:18px;padding:clamp(24px,5vw,48px);color:#fff;background:linear-gradient(122deg,#10233f 0%,#075b67 62%,#0c8d83 100%);isolation:isolate;animation:dynamicRise .5s cubic-bezier(.2,.75,.25,1) both}
+        .dynamic-service-header:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(circle at 88% 18%,rgba(217,243,236,.25),transparent 28%),linear-gradient(90deg,transparent 50%,rgba(239,106,82,.13))}
+        .dynamic-service-header:after{content:"";position:absolute;right:-80px;top:-140px;width:280px;height:280px;border:1px solid rgba(255,255,255,.2);border-radius:50%;box-shadow:0 0 0 38px rgba(255,255,255,.05),0 0 0 76px rgba(255,255,255,.035)}
+        .dynamic-service-category{display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;color:#c7f8e8;font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+        .dynamic-service-category:before{content:"✦";display:grid;place-items:center;width:21px;height:21px;border:1px solid rgba(199,248,232,.35);border-radius:7px;background:rgba(199,248,232,.12)}
+        .dynamic-service-title{position:relative;z-index:1;margin:0;max-width:780px;color:#fff;font-size:clamp(28px,5vw,54px);line-height:1.02;letter-spacing:-.065em}
+        .dynamic-service-description{position:relative;z-index:1;max-width:710px;margin:15px 0 0;color:#d9e9e8;font-size:14px;line-height:1.75}
+        .dynamic-service-instructions{position:relative;z-index:1;margin-top:22px;padding:14px 16px;border:1px solid rgba(255,255,255,.2);border-left:4px solid #9de9d1;border-radius:12px;color:#e7fff7;background:rgba(255,255,255,.1);font-size:12px;line-height:1.65;white-space:pre-line}
+        .dynamic-service-instructions strong{display:inline-block;margin-bottom:3px;color:#9de9d1;font-size:10px;letter-spacing:.13em;text-transform:uppercase}
+        .dynamic-service-card{padding:clamp(20px,4vw,34px);animation:dynamicRise .5s .06s cubic-bezier(.2,.75,.25,1) both}
+        .dynamic-service-card-heading{display:flex;align-items:center;gap:10px;margin:0 0 22px;color:#10233f;font-size:clamp(19px,2vw,25px);letter-spacing:-.04em}
+        .dynamic-service-card-heading:before{content:"01";display:grid;place-items:center;width:31px;height:31px;border-radius:10px;color:#075b67;background:#d9f3ec;font-size:10px;letter-spacing:.08em}
+        .dynamic-service-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+        .dynamic-service-field{display:grid;align-content:start;gap:8px;min-width:0;animation:dynamicField .35s ease both}
+        .dynamic-service-field:nth-child(2n){animation-delay:.03s}
+        .dynamic-service-field:nth-child(3n){animation-delay:.06s}
+        .dynamic-service-label{display:flex;align-items:center;gap:4px;color:#35516a;font-size:11px;font-weight:900;line-height:1.35}
+        .dynamic-service-label span{color:#ef6a52}
+        .dynamic-service-field input,.dynamic-service-field textarea,.dynamic-service-field select{width:100%;box-sizing:border-box;border:1px solid #d5e1dc;border-radius:13px;padding:13px 14px;outline:0;color:#10233f;background:#fbfdfb;font:inherit;font-size:13px;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+        .dynamic-service-field textarea{min-height:112px;resize:vertical;line-height:1.55}
+        .dynamic-service-field input:hover,.dynamic-service-field textarea:hover,.dynamic-service-field select:hover{border-color:#9edfd0}
+        .dynamic-service-field input:focus,.dynamic-service-field textarea:focus,.dynamic-service-field select:focus{border-color:#087f80;box-shadow:0 0 0 4px rgba(8,127,128,.12);transform:translateY(-1px)}
+        .dynamic-service-field input[aria-invalid=true],.dynamic-service-field textarea[aria-invalid=true],.dynamic-service-field select[aria-invalid=true]{border-color:#dc5960;background:#fff9f8;box-shadow:0 0 0 3px rgba(220,89,96,.1)}
+        .dynamic-service-help,.dynamic-service-upload-note{color:#71847f;font-size:10px;line-height:1.5}
+        .dynamic-service-field-error{margin:0;color:#b43b45;font-size:10px;font-weight:800;line-height:1.45}
+        .dynamic-service-upload{display:grid;grid-template-columns:auto minmax(0,1fr);gap:11px;align-items:center;min-width:0;padding:14px;border:1px dashed #a9cfc4;border-radius:15px;background:linear-gradient(135deg,#f4fbf8,#f8fbff)}
+        .dynamic-service-upload-preview{grid-row:span 2;width:58px;height:58px;object-fit:cover;border:1px solid #d8eae2;border-radius:12px;background:#eaf4ef}
+        .dynamic-service-upload-meta{display:grid;gap:3px;min-width:0}.dynamic-service-upload-meta strong{overflow:hidden;color:#18374b;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.dynamic-service-upload-meta span{color:#16814a;font-size:10px;font-weight:800}
+        .dynamic-service-upload-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;grid-column:1/-1}
+        .dynamic-service-upload-button,.dynamic-service-remove-button,.dynamic-service-submit{border:0;border-radius:11px;padding:10px 14px;font:inherit;font-size:11px;font-weight:900;cursor:pointer;transition:transform .16s ease,filter .16s ease,background .16s ease}
+        .dynamic-service-upload-button{display:inline-flex;align-items:center;background:#d9f3ec;color:#075b67}.dynamic-service-remove-button{background:#fff0ed;color:#b84e3e}.dynamic-service-upload-button:hover,.dynamic-service-remove-button:hover,.dynamic-service-submit:hover:not(:disabled){filter:brightness(.97);transform:translateY(-1px)}
+        .dynamic-service-file-input{display:none!important}.dynamic-service-upload-button:has(.dynamic-service-file-input:disabled),.dynamic-service-remove-button:disabled,.dynamic-service-submit:disabled{cursor:not-allowed;opacity:.6}
+        .dynamic-service-alert{grid-column:1/-1;margin:0;padding:13px 15px;border-radius:13px;font-size:12px;line-height:1.55}.dynamic-service-alert-error{border:1px solid #f0c1c0;color:#9d3d45;background:#fff5f3}.dynamic-service-alert-success{border:1px solid #b8dfcf;color:#176b59;background:#effaf6}
+        .dynamic-service-draft-tools{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-top:4px;border-top:1px solid #edf2ee}.dynamic-service-draft-tools span{flex:1 1 100%;color:#7a8980;font-size:10px}.dynamic-service-draft-tools button{border:1px solid #d5e1dc;border-radius:10px;padding:9px 12px;color:#35516a;background:#fff;font:inherit;font-size:10px;font-weight:800;cursor:pointer}.dynamic-service-draft-tools button:hover{border-color:#9edfd0;background:#f3faf6}
+        .dynamic-service-submit-row{grid-column:1/-1;display:flex;justify-content:flex-end;margin-top:2px}.dynamic-service-submit{min-width:190px;min-height:47px;color:#07383f;background:linear-gradient(110deg,#9de9d1,#71dec2);box-shadow:0 10px 22px rgba(8,127,128,.16)}
+        .dynamic-service-empty{color:#71847f;font-size:13px}.dynamic-service-history{margin-top:18px!important}.dynamic-service-history-row{margin-top:9px;padding:14px 15px;border:1px solid #dfe8e4;border-radius:14px;background:#fff}.dynamic-service-history-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}.dynamic-service-history-meta strong{overflow-wrap:anywhere;color:#18374b;font-size:12px}.dynamic-service-status{display:inline-block;border-radius:99px;padding:5px 9px;color:#176b59;background:#e5f6ed;font-size:9px;font-weight:900}.dynamic-service-history-row small{display:block;margin-top:5px;color:#7a8980;font-size:10px}.dynamic-service-rejection{margin-top:9px;padding:10px 11px;border-left:3px solid #ef6a52;border-radius:8px;color:#953939;background:#fff4f1;font-size:10px;line-height:1.5}
+        @keyframes dynamicRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes dynamicField{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+        @media(max-width:700px){.dynamic-service-page{padding:16px 10px 58px}.dynamic-service-header{border-radius:20px;padding:24px 19px}.dynamic-service-title{font-size:34px}.dynamic-service-description{font-size:12px;line-height:1.6}.dynamic-service-card{border-radius:18px;padding:17px}.dynamic-service-form{grid-template-columns:1fr;gap:14px}.dynamic-service-alert,.dynamic-service-draft-tools,.dynamic-service-submit-row{grid-column:auto}.dynamic-service-submit-row{display:block}.dynamic-service-submit{width:100%}.dynamic-service-history-meta{align-items:flex-start;flex-direction:column}.dynamic-service-status{align-self:flex-start}.dynamic-service-upload{grid-template-columns:1fr}.dynamic-service-upload-preview{grid-row:auto}.dynamic-service-upload-actions{grid-column:auto}}
+        @media(prefers-reduced-motion:reduce){.dynamic-service-header,.dynamic-service-card,.dynamic-service-field{animation:none!important}.dynamic-service-field input,.dynamic-service-field textarea,.dynamic-service-field select,.dynamic-service-submit{transition:none!important}}
       `}</style>
       <div className="dynamic-service-shell">
         <header className="dynamic-service-header">

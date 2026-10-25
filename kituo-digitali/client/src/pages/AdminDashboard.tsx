@@ -399,7 +399,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   // Firestore inaweza kuwa na config chache tu; control panel lazima ionyeshe catalog nzima, pamoja na ZANA ZA ZIADA.
   const configuredServices = mergeServiceCatalogDefaults(services as any[], true);
   const rows = configuredServices.map((item) => {
-    const slug = String(item.slug ?? item.id);
+    const slug = String(item.slug);
     const storedLock = lockBySlug.get(slug);
     const isLocked = isServiceLocked(slug, storedLock, item.isLocked === true || item.kind === "locked");
     return { ...item, slug, isLocked };
