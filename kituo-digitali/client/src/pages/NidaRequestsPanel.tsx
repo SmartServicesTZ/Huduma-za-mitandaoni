@@ -53,9 +53,17 @@ export default function NidaRequestsPanel() {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Imeshindikana kuanza kushughulikia ombi."); }
     finally { setWorking(null); }
   };
-  const copyPhone = async (phone: string) => {
-    try { await navigator.clipboard.writeText(phone); toast.success("Namba ya simu imenakiliwa."); }
-    catch { toast.error("Imeshindikana kunakili namba ya simu."); }
+  const copyPhone = async (item: NidaRequest) => {
+    try {
+      await navigator.clipboard.writeText(item.phone);
+      if (item.status === "PENDING") {
+        await setNidaRequestStatus(item.requestId || item.id, "PROCESSING");
+        toast.success("Phone copied. NIDA request is now IN PROCESS.");
+        await refresh(true);
+      } else {
+        toast.success("Phone number copied.");
+      }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Could not copy phone or update request status."); }
   };
   const send = async (item: NidaRequest) => {
     const number = (numbers[item.id] ?? "").trim();
@@ -128,7 +136,7 @@ export default function NidaRequestsPanel() {
     {error && <div className="admin-loading admin-loading--error">{error}</div>}
     {loading && requests.length === 0 ? <div className="admin-loading"><LoaderCircle size={16}/> Inapakia maombi ya NIDA...</div> : visible.length === 0 ? <section className="admin-card"><div className="admin-empty">{requests.length === 0 ? "Bado hakuna ombi la NIDA." : "Hakuna ombi linalolingana na utafutaji huu."}</div></section> :
       <div className="nida-admin-list">{visible.map((item) => <article className="admin-card nida-admin-item" key={item.id}>
-        <div className="nida-admin-item-head"><div className="nida-admin-person"><span className="admin-kicker">OMBI #{(item.requestId || item.id).slice(0, 10)}</span><h3>{item.userName || "Mtumiaji"}</h3><p><strong>Simu:</strong> <span className="nida-phone-value">{item.phone}</span> <button type="button" className="nida-icon-action" title="Nakili namba ya simu" onClick={() => void copyPhone(item.phone)}><Copy size={14}/></button></p><small>Limetumwa: {when(item.submittedAt)}</small></div><span className={`nida-admin-status nida-admin-status--${item.status.toLowerCase()}`}>{item.status === "REJECTED" && String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "NIN NOT FOUND" : (labels[item.status] ?? item.status)}</span></div>
+        <div className="nida-admin-item-head"><div className="nida-admin-person"><span className="admin-kicker">OMBI #{(item.requestId || item.id).slice(0, 10)}</span><h3>{item.userName || "Mtumiaji"}</h3><p><strong>Simu:</strong> <span className="nida-phone-value">{item.phone}</span> <button type="button" className="nida-icon-action" title="Nakili namba ya simu" onClick={() => void copyPhone(item)}><Copy size={14}/></button></p><small>Limetumwa: {when(item.submittedAt)}</small></div><span className={`nida-admin-status nida-admin-status--${item.status.toLowerCase()}`}>{item.status === "REJECTED" && String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "NIN NOT FOUND" : (labels[item.status] ?? item.status)}</span></div>
         {item.status === "APPROVED" && item.nidaNumber && <div className="nida-admin-result nida-admin-result--success"><span><CheckCircle2 size={15}/> NIDA imetumwa kwa mtumiaji</span><code>{item.nidaNumber}</code></div>}
         {item.status === "REJECTED" && <div className="nida-admin-result nida-admin-result--error"><span><XCircle size={15}/> Jibu lililotumwa</span><strong>{item.rejectionReason || NOT_FOUND_REASON}</strong></div>}
         {!["APPROVED", "REJECTED"].includes(item.status) && <>
