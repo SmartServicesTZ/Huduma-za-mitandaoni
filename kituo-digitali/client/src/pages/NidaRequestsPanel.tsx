@@ -44,6 +44,7 @@ export default function NidaRequestsPanel() {
     } finally { if (!silent) setLoading(false); }
   };
   useEffect(() => {
+    void adminGetSiteSettings().then((settings) => { const hours = settings?.nidaWorkingHours as { start?: unknown; end?: unknown } | undefined; if (hours && typeof hours.start === "string" && typeof hours.end === "string") setWorkingHours({ start: hours.start, end: hours.end }); }).catch(() => undefined);
     void refresh();
     const timer = window.setInterval(() => void refresh(true), 10000);
     return () => window.clearInterval(timer);
