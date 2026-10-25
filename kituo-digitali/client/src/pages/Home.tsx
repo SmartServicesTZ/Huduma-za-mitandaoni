@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserMessages, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, type NidaRequest } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserMessages, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, updateNidaRequestPhone, type NidaRequest } from "@/lib/firebase";
 import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -394,6 +394,8 @@ function AccountPage() { return <AccountSettingsPage />; }
 function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [phone, setPhone] = useState("");
   const [requests, setRequests] = useState<NidaRequest[]>([]);
+  const [editPhones, setEditPhones] = useState<Record<string, string>>({});
+  const [savingPhone, setSavingPhone] = useState<string | null>(null);
   const [activeRequestId, setActiveRequestId] = useState("");
   const [showNidaHistory, setShowNidaHistory] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -493,7 +495,19 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       toast.success("Namba ya NIDA imenakiliwa. Itaondolewa kwenye mwonekano baada ya dakika 10.");
     } catch { toast.error("Imeshindikana kunakili namba ya NIDA."); }
   };
-  const statusText: Record<string, string> = { PENDING: "INATAFUTA NIDA...", PROCESSING: "INAFANYIWA KAZI", APPROVED: "NIDA IMEPATIKANA", REJECTED: "NIN NOT FOUND" };
+  const statusText: Record<string, string> = { PENDING: "LOADING...", PROCESSING: "IN PROCESS", APPROVED: "FOUND", REJECTED: "NIN NOT FOUND" };
+  const saveEditedPhone = async (item: NidaRequest) => {
+    const nextPhone = formatPhone(editPhones[item.id] ?? item.phone);
+    if (!/^\\d{9,10}$/.test(nextPhone)) { toast.error("Weka namba sahihi ya simu yenye tarakimu 9 au 10."); return; }
+    setSavingPhone(item.id);
+    try {
+      await updateNidaRequestPhone(item.requestId || item.id, nextPhone);
+      setRequests((current) => current.map((row) => row.id === item.id ? { ...row, phone: nextPhone } : row));
+      setEditPhones((current) => { const next = { ...current }; delete next[item.id]; return next; });
+      toast.success("Phone number updated.");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update phone number."); }
+    finally { setSavingPhone(null); }
+  };
   // Ombi linaloonyeshwa juu lisihesabiwe kwenye Historia mpaka muda wa dakika 1 uishe.
   const recentHistory = requests.filter((item) => {
     const isActiveResult = item.id === activeRequestId || item.requestId === activeRequestId;
@@ -520,10 +534,10 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     {isAuthenticated && requests.some((item) => item.id === activeRequestId || item.requestId === activeRequestId) && <div className="quick-nida-request-list">
       {requests.filter((item) => item.id === activeRequestId || item.requestId === activeRequestId).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
         <div className="quick-nida-request__details">
-          <div className="quick-nida-request__labels"><span>Namba</span><strong>{item.phone}</strong></div>
+          <div className="quick-nida-request__labels"><span>Phone number</span>{item.status === "PENDING" ? <><input inputMode="numeric" autoComplete="tel" maxLength={10} value={editPhones[item.id] ?? item.phone} onChange={(e) => setEditPhones((current) => ({ ...current, [item.id]: formatPhone(e.target.value) }))} aria-label="Edit pending NIDA phone number" /><button type="button" className="button button--small" disabled={savingPhone === item.id || !/^\\d{9,10}$/.test(formatPhone(editPhones[item.id] ?? item.phone)) || formatPhone(editPhones[item.id] ?? item.phone) === item.phone} onClick={() => void saveEditedPhone(item)}>{savingPhone === item.id ? "Saving..." : "Save phone"}</button></> : <strong>{item.phone}</strong>}</div>
           <div className="quick-nida-request__status"><strong>{(item.status === "PENDING" || item.status === "PROCESSING") && <LoaderCircle size={15} className="quick-nida-spinner" aria-label="Inatafuta NIDA"/>} {item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
-            {item.status === "PENDING" && <span>Subiri kidogo, mfumo unatafuta taarifa za NIDA...</span>}
-            {item.status === "PROCESSING" && <span>Mfumo unaendelea kutafuta taarifa za NIDA. Matokeo yataonekana hapa.</span>}
+            {item.status === "PENDING" && <span>Loading... Your request is waiting to be processed.</span>}
+            {item.status === "PROCESSING" && <span>Your NIDA request is in process. We will show the result here.</span>}
             {item.status === "REJECTED" && <span>{String(item.rejectionReason || "NIN NOT FOUND").toUpperCase().includes("NIN NOT FOUND") ? "NIN NOT FOUND" : item.rejectionReason}</span>}
           </div>
           {item.status === "APPROVED" && item.nidaNumber && <div className="quick-nida-result">
