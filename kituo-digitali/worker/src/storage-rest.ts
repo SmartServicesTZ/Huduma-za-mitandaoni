@@ -23,8 +23,8 @@ function bucketName() {
 
 function r2BucketForPath(objectPath: string) {
   const isLipaPath = objectPath.startsWith("lipaUploads/") || objectPath.startsWith("lipaApplications/");
-  const isServiceUploadPath = objectPath.startsWith("serviceUploads/");
-  return isLipaPath || isServiceUploadPath ? getWorkerEnv().LIPA_DOCUMENTS : undefined;
+  const isServiceDocumentPath = objectPath.startsWith("serviceUploads/") || objectPath.startsWith("serviceApplications/");
+  return isLipaPath || isServiceDocumentPath ? getWorkerEnv().LIPA_DOCUMENTS : undefined;
 }
 
 function objectApiUrl(bucket: string, objectPath: string) {
