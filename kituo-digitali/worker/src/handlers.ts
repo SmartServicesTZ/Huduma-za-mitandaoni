@@ -1139,7 +1139,14 @@ export const getServiceApplicationDocument = callable(async (request) => {
     await db.collection("auditLogs").add({ action: "SERVICE_APPLICATION_DOCUMENT_VIEWED", actorId: uid, actorRole: String(actor.role), applicationId, targetUserId: String(application.userId), fieldName, createdAt: FieldValue.serverTimestamp() });
   }
   const storagePath = String((application.applicantData as Record<string, unknown> | undefined)?.[fieldName] ?? "");
-  if (!storagePath.startsWith(`serviceApplications/${applicationId}/documents/`)) throw new ApiError("not-found", "Faili halikupatikana.");
+  const isLegacyServiceDocument = storagePath.startsWith(`serviceApplications/${applicationId}/documents/`);
+  const isR2ServiceUpload = storagePath.startsWith(`serviceUploads/${String(application.userId ?? "")}/${applicationId}/`);
+  if (!isLegacyServiceDocument && !isR2ServiceUpload) throw new ApiError("not-found", "Faili halikupatikana.");
+  const env = getWorkerEnv();
+  if (isR2ServiceUpload && env.LIPA_DOCUMENTS) {
+    const workerUrl = String(env.WORKER_PUBLIC_URL ?? "https://huduma-za-mtandao-api.stewardjackson999.workers.dev").replace(/\\/+$/, "");
+    return { url: `${workerUrl}/download/service-document?applicationId=${encodeURIComponent(applicationId)}&fieldName=${encodeURIComponent(fieldName)}`, expiresAt: Date.now() + 5 * 60 * 1000 };
+  }
   const [url] = await bucket.file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60 * 1000 });
   return { url, expiresAt: Date.now() + 5 * 60 * 1000 };
 });
