@@ -808,6 +808,11 @@ export async function submitNidaRequest(phone: string) {
   return (await callable({ phone })).data;
 }
 
+export async function updateNidaRequestPhone(requestId: string, phone: string) {
+  const callable = createWorkerCall<{ requestId: string; phone: string }, { requestId: string; status: string; phone: string }>("updateNidaRequestPhone");
+  return (await callable({ requestId, phone })).data;
+}
+
 export async function listMyNidaRequests() {
   const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listMyNidaRequests");
   return (await callable({})).data.requests ?? [];
