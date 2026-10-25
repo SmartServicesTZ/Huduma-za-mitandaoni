@@ -129,6 +129,7 @@ export default function NidaRequestsPanel() {
   }), [requests, query, filter]);
 
   return <div className="nida-admin-panel">
+    <section className="admin-card"><h3>Muda wa kazi wa CHEKI NIDA</h3><label>Inafunguliwa <input type="time" value={workingHours.start} onChange={e=>setWorkingHours({...workingHours,start:e.target.value})}/></label><label>Inafungwa <input type="time" value={workingHours.end} onChange={e=>setWorkingHours({...workingHours,end:e.target.value})}/></label><button type="button" disabled={savingHours} onClick={()=>void saveWorkingHours()}>Hifadhi ratiba ya NIDA</button></section>
     <section className="admin-card nida-admin-overview">
       <div className="admin-card-heading"><div><span className="admin-kicker">NIDA • FAST DESK</span><h2>Kituo cha maombi ya NIDA</h2><p>Chagua ombi, nakili simu, weka NIDA au tumia jibu la haraka.</p></div><button className="button button--small" type="button" onClick={() => void refresh()} disabled={loading}><RefreshCw size={15}/> Sasisha</button></div>
       <div className="admin-stat-grid"><div className="admin-stat-card"><span>Maombi yote</span><strong>{requests.length}</strong></div><div className="admin-stat-card"><span>Mapya</span><strong>{pending}</strong></div><div className="admin-stat-card"><span>Yanafanyiwa kazi</span><strong>{processing}</strong></div><div className="admin-stat-card"><span>Yamefungwa</span><strong>{done}</strong></div></div>
