@@ -914,7 +914,8 @@ export function subscribeUserServiceApplications(uid: string, callback: (rows: S
 
 export async function markUserMessageRead(messageId: string, uid: string) {
   if (!messageId || !uid || uid !== firebaseAuth.currentUser?.uid) throw new Error("Akaunti haijathibitishwa.");
-  await updateDoc(doc(firestore, "messages", messageId), { readBy: arrayUnion(uid), readAt: serverTimestamp() });
+  const callable = createWorkerCall<{ messageId: string }, { ok: boolean }>("markUserMessageRead");
+  return (await callable({ messageId })).data;
 }
 
 export function subscribeUserMessages(uid: string, callback: (rows: Array<Record<string, unknown> & { id: string }>) => void, onError?: (error: unknown) => void) {
