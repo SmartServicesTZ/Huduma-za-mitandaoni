@@ -269,7 +269,7 @@ async function handleServiceDocumentDownload(request: Request, cors: Headers, en
   const headers = new Headers(cors);
   headers.set("Cache-Control", "private, no-store");
   headers.set("Content-Disposition", "inline");
-  if (env.LIPA_DOCUMENTS && path.startsWith("serviceUploads/")) {
+  if (env.LIPA_DOCUMENTS && (path.startsWith("serviceUploads/") || path.startsWith("serviceApplications/"))) {
     const object = await env.LIPA_DOCUMENTS.get(path);
     if (object) {
       headers.set("Content-Type", object.httpMetadata?.contentType ?? "application/octet-stream");
