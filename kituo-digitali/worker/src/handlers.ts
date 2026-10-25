@@ -1143,7 +1143,7 @@ export const getServiceApplicationDocument = callable(async (request) => {
   const isR2ServiceUpload = storagePath.startsWith(`serviceUploads/${String(application.userId ?? "")}/${applicationId}/`);
   if (!isLegacyServiceDocument && !isR2ServiceUpload) throw new ApiError("not-found", "Faili halikupatikana.");
   const env = getWorkerEnv();
-  if (isR2ServiceUpload && env.LIPA_DOCUMENTS) {
+  if (env.LIPA_DOCUMENTS && (isR2ServiceUpload || isLegacyServiceDocument)) {
     const workerUrl = String(env.WORKER_PUBLIC_URL ?? "https://huduma-za-mtandao-api.stewardjackson999.workers.dev").replace(/\\/+$/, "");
     return { url: `${workerUrl}/download/service-document?applicationId=${encodeURIComponent(applicationId)}&fieldName=${encodeURIComponent(fieldName)}`, expiresAt: Date.now() + 5 * 60 * 1000 };
   }
