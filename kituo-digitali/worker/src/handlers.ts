@@ -746,9 +746,16 @@ export const submitNidaRequest = callable(async (request) => {
   const data = objectValue(request.data, "Ombi la NIDA");
   const phone = text(data.phone, 20).replace(/\D/g, "");
   if (!/^\d{9,10}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya simu lazima iwe na tarakimu 9 au 10.");
-  // CHEKI NIDA inapatikana saa 08:00 hadi 19:00 kwa saa za Tanzania (Africa/Dar_es_Salaam).
-  const localHour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Dar_es_Salaam", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
-  if (localHour < 8 || localHour >= 19) throw new ApiError("failed-precondition", "CHEKI NIDA imefungwa kwa sasa. Huduma inapatikana kuanzia saa 2:00 asubuhi hadi saa 1:00 usiku (08:00–19:00). Tafadhali jaribu tena ndani ya muda wa huduma.");
+  const settingsSnapshot = await db.collection("siteSettings").doc("public").get();
+  const hours = (settingsSnapshot.data()?.nidaWorkingHours ?? { start: "08:00", end: "19:00" }) as { start?: string; end?: string };
+  const startParts = String(hours.start ?? "08:00").split(":").map(Number);
+  const endParts = String(hours.end ?? "19:00").split(":").map(Number);
+  const startMinutes = startParts[0] * 60 + startParts[1];
+  const endMinutes = endParts[0] * 60 + endParts[1];
+  const localTime = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Dar_es_Salaam", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date()).split(":").map(Number);
+  const nowMinutes = localTime[0] * 60 + localTime[1];
+  const isOpen = startMinutes < endMinutes ? nowMinutes >= startMinutes && nowMinutes < endMinutes : nowMinutes >= startMinutes || nowMinutes < endMinutes;
+  if (!isOpen) throw new ApiError("failed-precondition", `CHEKI NIDA imefungwa kwa sasa. Huduma inapatikana kuanzia ${hours.start ?? "08:00"} hadi ${hours.end ?? "19:00"} kwa saa za Tanzania. Tafadhali jaribu tena ndani ya muda wa huduma.`);
   const userRef = db.collection("users").doc(uid);
   const openRef = db.collection("nidaOpenRequests").doc(uid);
   const requestRef = db.collection("nidaRequests").doc(randomUUID());
