@@ -705,6 +705,7 @@ export default function Home() {
   const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [serviceNotice, setServiceNotice] = useState("");
   const { isAuthenticated, firebaseUser, user, profile, logout } = useAuth();
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
