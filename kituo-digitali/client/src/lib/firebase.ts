@@ -912,6 +912,11 @@ export function subscribeUserServiceApplications(uid: string, callback: (rows: S
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
 }
 
+export async function markUserMessageRead(messageId: string, uid: string) {
+  if (!messageId || !uid || uid !== firebaseAuth.currentUser?.uid) throw new Error("Akaunti haijathibitishwa.");
+  await updateDoc(doc(firestore, "messages", messageId), { readBy: arrayUnion(uid), readAt: serverTimestamp() });
+}
+
 export function subscribeUserMessages(uid: string, callback: (rows: Array<Record<string, unknown> & { id: string }>) => void, onError?: (error: unknown) => void) {
   const messages = collection(firestore, "messages");
   const personalQuery = query(messages, where("recipientId", "==", uid));
