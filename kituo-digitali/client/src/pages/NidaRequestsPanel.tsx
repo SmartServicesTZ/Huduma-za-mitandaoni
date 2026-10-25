@@ -18,6 +18,9 @@ const NOT_FOUND_REASON = "NIN NOT FOUND";
 // Ratiba ya NIDA inaweza kusanidiwa na admin.
 
 export default function NidaRequestsPanel() {
+  const { user } = useAuth();
+  const [workingHours, setWorkingHours] = useState({ start: "08:00", end: "19:00" });
+  const [savingHours, setSavingHours] = useState(false);
   const [requests, setRequests] = useState<NidaRequest[]>([]);
   const [numbers, setNumbers] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
