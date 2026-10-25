@@ -499,7 +499,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const statusText: Record<string, string> = { PENDING: "INASUBIRI", PROCESSING: "INAFANYIWA KAZI", APPROVED: "NIDA IMEPATIKANA", REJECTED: "NIN NOT FOUND" };
   const saveEditedPhone = async (item: NidaRequest) => {
     const nextPhone = formatPhone(editPhones[item.id] ?? item.phone);
-    if (!/^\\d{9,10}$/.test(nextPhone)) { toast.error("Weka namba sahihi ya simu yenye tarakimu 9 au 10."); return; }
+    if (!/^\d{9,10}$/.test(nextPhone)) { toast.error("Weka namba sahihi ya simu yenye tarakimu 9 au 10."); return; }
     setSavingPhone(item.id);
     try {
       await updateNidaRequestPhone(item.requestId || item.id, nextPhone);
@@ -535,7 +535,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     {isAuthenticated && requests.some((item) => item.id === activeRequestId || item.requestId === activeRequestId) && <div className="quick-nida-request-list">
       {requests.filter((item) => item.id === activeRequestId || item.requestId === activeRequestId).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
         <div className="quick-nida-request__details">
-          <div className="quick-nida-request__labels"><span>Phone number</span>{item.status === "PENDING" ? <><input inputMode="numeric" autoComplete="tel" maxLength={10} value={editPhones[item.id] ?? item.phone} onChange={(e) => setEditPhones((current) => ({ ...current, [item.id]: formatPhone(e.target.value) }))} aria-label="Edit pending NIDA phone number" /><button type="button" className="button button--small" disabled={savingPhone === item.id || !/^\\d{9,10}$/.test(formatPhone(editPhones[item.id] ?? item.phone)) || formatPhone(editPhones[item.id] ?? item.phone) === item.phone} onClick={() => void saveEditedPhone(item)}>{savingPhone === item.id ? "Saving..." : "Save phone"}</button></> : <strong>{item.phone}</strong>}</div>
+          <div className="quick-nida-request__labels"><span>Phone number</span>{item.status === "PENDING" ? <><input inputMode="numeric" autoComplete="tel" maxLength={10} value={editPhones[item.id] ?? item.phone} onChange={(e) => setEditPhones((current) => ({ ...current, [item.id]: formatPhone(e.target.value) }))} aria-label="Edit pending NIDA phone number" /><button type="button" className="button button--small" disabled={savingPhone === item.id || !/^\d{9,10}$/.test(formatPhone(editPhones[item.id] ?? item.phone)) || formatPhone(editPhones[item.id] ?? item.phone) === item.phone} onClick={() => void saveEditedPhone(item)}>{savingPhone === item.id ? "Saving..." : "Save phone"}</button></> : <strong>{item.phone}</strong>}</div>
           <div className="quick-nida-request__status"><strong>{(item.status === "PENDING" || item.status === "PROCESSING") && <LoaderCircle size={15} className="quick-nida-spinner" aria-label="Inatafuta NIDA"/>} {item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
             {item.status === "PENDING" && <span>Loading... Your request is waiting to be processed.</span>}
             {item.status === "PROCESSING" && <span>Your NIDA request is in process. We will show the result here.</span>}
