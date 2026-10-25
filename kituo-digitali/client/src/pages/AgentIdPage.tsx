@@ -222,7 +222,7 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
         <p className="aid-choice-note">Chagua mtandao mmoja na mkao mmoja (kulala au kusimama). Malipo ni mara moja kwa chaguo hilo; unaweza kupakua mbele na nyuma bila kukatwa tena. Ukibadilisha mtandao au mkao, utalipia chaguo jipya.</p>
-        <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</button>)}</div>
+        <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} aria-pressed={network === n} onClick={() => setNetwork(n)}><img className="aid-network-logo" src={NETWORKS[n].logo} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
         <label className="aid-field"><span>Agent ID / Code</span><input value={agentId} maxLength={20} onChange={(e) => setAgentId(e.target.value)} /></label>
@@ -235,6 +235,7 @@ export default function AgentIdPage() {
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-buttons"><button type="button" className="button button--green" disabled={busy} onClick={() => void downloadCards("front")}>{busy ? <LoaderCircle size={16} className="aid-spin" /> : <Download size={16} />} Pakua Mbele ({orientLabel})</button><button type="button" className="button button--green" disabled={busy} onClick={() => void downloadCards("back")}>{busy ? <LoaderCircle size={16} className="aid-spin" /> : <Download size={16} />} Pakua Nyuma ({orientLabel})</button></div>
         <p className="aid-note">Malipo hutozwa mara moja kwa mtandao na mkao uliochagua. Pakua mbele na nyuma; mkao mwingine au mtandao mwingine unahitaji malipo mapya.</p>
+        <p className="aid-note aid-signature-note"><strong>MUHIMU KABLA YA KUCHAPISHA:</strong> Hakikisha kitambulisho kimekaguliwa na kupata saini ya kiongozi anayehusika kabla ya kuchapishwa au kutumika rasmi.</p>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
 
@@ -374,6 +375,7 @@ const AGENT_ID_CSS = `
 .aid-choice button.active{background:#18b969;border-color:#18b969;color:#fff}
 .aid-choice-note{margin:0 0 12px;font-size:11px;line-height:1.5;color:#64748b}
 .aid-network{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
+.aid-network-logo{width:24px;height:24px;object-fit:contain;flex:0 0 24px;background:#fff;border-radius:6px;padding:2px}.aid-network button{display:inline-flex;align-items:center;justify-content:center;gap:8px}.aid-signature-note{border:1px solid #f59e0b;background:#fffbeb;color:#78350f;padding:12px;border-radius:10px}
 .aid-network button{border:1px solid #d6e0ec;border-radius:10px;background:#f4f7fb;color:#334155;padding:9px 3px;font-size:10px;font-weight:800;cursor:pointer;transition:background .18s,color .18s}
 .aid-network button.active{background:#172443;border-color:#172443;color:#fff}
 .aid-note{margin:14px 0 0;font-size:11px;line-height:1.5;color:#64748b}
