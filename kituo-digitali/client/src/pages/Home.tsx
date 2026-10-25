@@ -397,6 +397,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [activeRequestId, setActiveRequestId] = useState("");
   const [showNidaHistory, setShowNidaHistory] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [nidaSearchLocked, setNidaSearchLocked] = useState(false);
   const [copiedResults, setCopiedResults] = useState<Record<string, boolean>>({});
   const hideTimers = useRef<Record<string, number>>({});
   const resultTimers = useRef<Record<string, number>>({});
@@ -416,6 +417,11 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     Object.values(resultTimers.current).forEach((timer) => window.clearTimeout(timer));
     Object.values(hideTimers.current).forEach((timer) => window.clearTimeout(timer));
   }, []);
+
+  useEffect(() => subscribeToCollection("serviceLocks", (rows) => {
+    const setting = rows.find((item) => String(item.slug ?? item.id) === "utafutaji-nida");
+    setNidaSearchLocked(setting?.isLocked === true);
+  }), []);
 
   useEffect(() => {
     if (!isAuthenticated) { setRequests([]); return; }
@@ -458,6 +464,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   }, []);
 
   const run = async () => {
+    if (nidaSearchLocked) { toast.error("Kipengele cha kutafuta NIDA kimefungwa na admin."); return; }
     if (!isAuthenticated) { toast.error("Ingia kwenye akaunti yako kabla ya kutuma ombi la NIDA."); return; }
     if (!/^\d{9,10}$/.test(phone)) { toast.error("Weka namba ya simu yenye tarakimu 9 au 10."); return; }
     setBusy(true);
@@ -502,11 +509,11 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       <div className="quick-nida-search__icon"><Search size={20}/></div>
       <div><span className="overline">HUDUMA KUU • NIDA</span><h3>TAFUTA NAMBA YA NIDA</h3></div>
     </div>
-    <div className="quick-nida-form">
+    {nidaSearchLocked ? <div className="notice notice--warning"><LockKeyhole size={16}/><span>Kipengele cha kutafuta NIDA kimefungwa kwa muda na admin.</span></div> : <div className="quick-nida-form">
       <label className="quick-nida-phone-field"><span>Namba ya simu</span><input inputMode="numeric" autoComplete="tel" maxLength={10} value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Ingiza tarakimu 9 au 10" aria-label="Namba ya simu ya mteja"/></label>
       <button type="button" className="button button--green" onClick={() => void run()} disabled={busy}><Search size={16}/> {busy ? "Inatuma..." : "Tafuta NIDA"}</button>
-    </div>
-    {!isAuthenticated && <div className="notice notice--info"><LogIn size={16}/><span>Ingia kwenye akaunti yako ili kutuma ombi na kuona matokeo.</span></div>}
+    </div>}
+    {!nidaSearchLocked && !isAuthenticated && <div className="notice notice--info"><LogIn size={16}/><span>Ingia kwenye akaunti yako ili kutuma ombi na kuona matokeo.</span></div>}
     {isAuthenticated && requests.some((item) => item.id === activeRequestId || item.requestId === activeRequestId) && <div className="quick-nida-request-list">
       {requests.filter((item) => item.id === activeRequestId || item.requestId === activeRequestId).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
         <div className="quick-nida-request__details">
