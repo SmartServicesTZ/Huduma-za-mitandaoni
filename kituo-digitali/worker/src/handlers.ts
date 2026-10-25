@@ -43,7 +43,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat"
   createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
   getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", createTokenPurchaseOrder: "payments",
-  syncAuthClaims: "auth",
+  markUserMessageRead: "read", syncAuthClaims: "auth",
 };
 
 export async function enforceAccountRestriction(uid: string, callableName: string) {
@@ -782,6 +782,20 @@ export const submitNidaRequest = callable(async (request) => {
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: "Ombi la kutafuta namba ya NIDA limepokelewa", body: "Ombi lako limepokelewa na linasubiri kushughulikiwa na Admin.", type: "nidaRequest", requestId: requestRef.id, createdAt: now });
     return { requestId: requestRef.id, status: "PENDING", tokenBalanceNida: balanceAfter };
   });
+});
+
+export const markUserMessageRead = callable(async (request) => {
+  const uid = authUid(request);
+  const data = objectValue(request.data, "Soma arifa");
+  const messageId = text(data.messageId, 160);
+  const ref = db.collection("messages").doc(messageId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) throw new ApiError("not-found", "Arifa haipatikani.");
+  const message = snapshot.data()!;
+  if (String(message.recipientId ?? "") !== uid && message.broadcast !== true) throw new ApiError("permission-denied", "Huna ruhusa ya kusoma arifa hii.");
+  const readBy = Array.isArray(message.readBy) ? message.readBy.filter((item): item is string => typeof item === "string") : [];
+  if (!readBy.includes(uid)) await ref.set({ readBy: [...readBy, uid], readAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { ok: true };
 });
 
 export const updateNidaRequestPhone = callable(async (request) => {
