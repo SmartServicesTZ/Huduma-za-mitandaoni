@@ -192,14 +192,14 @@ function PortraitBackCard({ cfg, network, qr, name, agentId, phone, region, dist
 }
 function FrontCard({ cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate }: any) {
   const companyLabels: Record<Network, string> = {
-    Airtel: "AIRTEL\\u00A0TANZANIA",
-    Vodacom: "VODACOM\\u00A0TANZANIA",
-    Yas: "YAS\\u00A0TANZANIA",
-    Halotel: "HALOTEL\\u00A0TANZANIA",
-    "Mbeya One Company Limited": "MBEYA\\u00A0ONE\\u00A0COMPANY\\u00A0LIMITED",
-    "Huduma za Mtandaoni": "HUDUMA\\u00A0ZA\\u00A0MTANDAONI",
+    Airtel: "AIRTEL\u00A0TANZANIA",
+    Vodacom: "VODACOM\u00A0TANZANIA",
+    Yas: "YAS\u00A0TANZANIA",
+    Halotel: "HALOTEL\u00A0TANZANIA",
+    "Mbeya One Company Limited": "MBEYA\u00A0ONE\u00A0COMPANY\u00A0LIMITED",
+    "Huduma za Mtandaoni": "HUDUMA\u00A0ZA\u00A0MTANDAONI",
   };
-  const companyName = companyLabels[network] || String(network).replace(/\\s+/g, "\\u00A0").toUpperCase();
+  const companyName = companyLabels[network] || String(network).replace(/\s+/g, "\u00A0").toUpperCase();
   return <div className={`agent-card network-${cfg.pattern}`} style={{"--c":cfg.color,"--d":cfg.dark} as React.CSSProperties}>
     {cfg.logo && <img className="agent-watermark-logo" src={cfg.logo} alt="" aria-hidden="true"/>}
     <div className="agent-top">
