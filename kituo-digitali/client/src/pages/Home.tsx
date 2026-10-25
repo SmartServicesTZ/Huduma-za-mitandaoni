@@ -411,6 +411,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [showNidaHistory, setShowNidaHistory] = useState(false);
   const [busy, setBusy] = useState(false);
   const [nidaSearchLocked, setNidaSearchLocked] = useState(false);
+  const [inlineError, setInlineError] = useState("");
   const [copiedResults, setCopiedResults] = useState<Record<string, boolean>>({});
   const hideTimers = useRef<Record<string, number>>({});
   const resultTimers = useRef<Record<string, number>>({});
@@ -489,7 +490,9 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       setRequests(rows);
       setActiveRequestId(submitted.requestId);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena.");
+      const message = error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena.";
+      setInlineError(message);
+      toast.error(message);
     } finally { setBusy(false); }
   };
   const copyResult = async (requestId: string, result: string) => {
@@ -537,6 +540,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       <div className="quick-nida-search__icon"><Search size={20}/></div>
       <div><span className="overline">HUDUMA KUU • NIDA</span><h3>TAFUTA NAMBA YA NIDA</h3></div>
     </div>
+    {inlineError && <div className="notice notice--warning" role="alert" style={{margin:"12px 0",padding:"14px",fontSize:"14px",lineHeight:1.6,overflowWrap:"anywhere",whiteSpace:"normal"}}><CircleAlert size={18}/><span>{inlineError}</span></div>}
     {nidaSearchLocked ? <div className="notice notice--warning"><LockKeyhole size={16}/><span>Kipengele cha kutafuta NIDA kimefungwa kwa muda na admin.</span></div> : <div className="quick-nida-form">
       <label className="quick-nida-phone-field"><span>Namba ya simu</span><input inputMode="numeric" autoComplete="tel" maxLength={10} value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Ingiza tarakimu 9 au 10" aria-label="Namba ya simu ya mteja"/></label>
       <button type="button" className="button button--green" onClick={() => void run()} disabled={busy}><Search size={16}/> {busy ? "Inatuma..." : "Tafuta NIDA"}</button>
