@@ -197,7 +197,6 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
 function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: string; setSearch: (value: string) => void }) {
   const [, navigate] = useLocation();
   const { isAuthenticated, user } = useAuth();
-  const [, navigate] = useLocation();
   const [authOpen, setAuthOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<Record<string, unknown> & { id: string }>>([]);

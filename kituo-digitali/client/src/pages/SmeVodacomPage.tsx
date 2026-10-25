@@ -25,6 +25,7 @@ const COMBO_PLANS = [
   { price: 75000, data: "80 GB", calls: "DKK 5,000", sms: "SMS 100" },
   { price: 100000, data: "120 GB", calls: "DKK 8,000", sms: "SMS 100" },
 ];
+type PlanOption = { price: number; data: string; calls?: string; sms?: string };
 type PlanType = "data" | "combo";
 type FormState = {
   fullName: string; nidaNumber: string; smePhone: string; contactPhone: string;
@@ -99,7 +100,7 @@ export default function SmeVodacomPage() {
     return subscribeUserServiceApplications(firebaseUser.uid, (rows) => setMyApplications(rows.filter((row) => row.serviceSlug === "sme-vodacom")));
   }, [firebaseUser?.uid]);
 
-  const plans = form.planType === "data" ? DATA_PLANS : COMBO_PLANS;
+  const plans: PlanOption[] = form.planType === "data" ? DATA_PLANS : COMBO_PLANS;
   const chosenPlan = useMemo(() => plans.find((plan) => String(plan.price) === form.selectedPlan), [plans, form.selectedPlan]);
 
   const progress = useMemo(() => {

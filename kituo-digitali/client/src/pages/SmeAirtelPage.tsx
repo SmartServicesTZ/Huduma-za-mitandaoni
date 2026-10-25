@@ -25,6 +25,7 @@ const COMBO_PLANS = [
   { price: 75000, data: "80 GB", calls: "DAK 5,000", sms: "SMS 100" },
   { price: 100000, data: "120 GB", calls: "DAK 8,000", sms: "SMS 100" },
 ];
+type PlanOption = { price: number; data: string; calls?: string; sms?: string };
 type PlanType = "data" | "combo";
 type FormState = { phone: string; fullName: string; nidaNumber: string; contactPhone: string; hasTin: "" | "ndio" | "hana"; tinNumber: string; voucherConfirmed: boolean; planType: PlanType; selectedPlan: string };
 const INITIAL: FormState = { phone: "", fullName: "", nidaNumber: "", contactPhone: "", hasTin: "", tinNumber: "", voucherConfirmed: false, planType: "data", selectedPlan: "" };
@@ -80,7 +81,7 @@ export default function SmeAirtelPage() {
     return subscribeUserServiceApplications(firebaseUser.uid, (rows) => setMyApplications(rows.filter((row) => row.serviceSlug === "sme-airtel")));
   }, [firebaseUser?.uid]);
 
-  const plans = form.planType === "data" ? DATA_PLANS : COMBO_PLANS;
+  const plans: PlanOption[] = form.planType === "data" ? DATA_PLANS : COMBO_PLANS;
   const chosenPlan = useMemo(() => plans.find((p) => String(p.price) === form.selectedPlan), [plans, form.selectedPlan]);
 
   const progress = useMemo(() => {

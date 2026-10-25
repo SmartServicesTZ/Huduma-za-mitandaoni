@@ -97,6 +97,27 @@ export default function AccessLipaNumberPage() {
     finally { setUploading(false); }
   };
 
+  const editApplication = (item: ServiceApplication) => {
+    const data = (item.applicantData ?? {}) as Record<string, unknown>;
+    const slug = String(item.serviceSlug ?? "");
+    const nextNetwork: NetworkId = slug.endsWith("-yas") ? "yas" : slug.endsWith("-vodacom") ? "vodacom" : "airtel";
+    const nextId = String(item.applicationId || item.id);
+    setSelected(nextNetwork);
+    setApplicationId(nextId);
+    setEditingApplicationId(nextId);
+    setPhone(String(data.phone ?? ""));
+    setFullName(String(data.fullName ?? ""));
+    setContact(String(data.contact ?? ""));
+    setNida(String(data.nidaNumber ?? ""));
+    setEmail(String(data.email ?? ""));
+    setPassportPath(String(data.passportPhoto ?? ""));
+    setPassportName("");
+    setPassportPreview("");
+    setSubmittedRef("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.info("Ombi la PENDING limefunguliwa kwa ajili ya marekebisho.");
+  };
+
   const submit = async () => {
     if (!firebaseUser?.uid) { toast.error("Ingia kwanza ili kutuma ombi."); return; }
     if (!phone.trim()) { toast.error("Namba ya simu inahitajika."); return; }
