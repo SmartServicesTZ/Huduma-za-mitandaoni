@@ -14,6 +14,7 @@ function when(value: unknown) {
 }
 const labels: Record<string, string> = { PENDING: "JIPYA", PROCESSING: "INAFANYIWA KAZI", APPROVED: "IMEPATIKANA", REJECTED: "HAIJAWEZA KUKAMILIKA" };
 const NOT_FOUND_REASON = "NIN NOT FOUND";
+// Ratiba ya NIDA inaweza kusanidiwa na admin.
 
 export default function NidaRequestsPanel() {
   const [requests, setRequests] = useState<NidaRequest[]>([]);
