@@ -607,6 +607,15 @@ main.min-h-screen.bg-slate-50:has(#sme-full-name) form > div:nth-child(6) { anim
   font-size: 10px !important;
 }
 
+.agent-card .agent-company-value {
+  white-space: normal;
+  word-spacing: .12em;
+}
+
+.agent-card[data-exporting="true"] .agent-company-value {
+  word-spacing: .18em;
+}
+
 .agent-card[data-exporting="true"] .agent-bottom {
   height: 39px !important;
   padding: 0 18px !important;

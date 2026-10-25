@@ -191,6 +191,7 @@ function PortraitBackCard({ cfg, network, qr, name, agentId, phone, region, dist
   </div>;
 }
 function FrontCard({ cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate }: any) {
+  const companyName = String(cfg.slogan).split("•").pop()?.trim() || String(cfg.slogan);
   return <div className={`agent-card network-${cfg.pattern}`} style={{"--c":cfg.color,"--d":cfg.dark} as React.CSSProperties}>
     {cfg.logo && <img className="agent-watermark-logo" src={cfg.logo} alt="" aria-hidden="true"/>}
     <div className="agent-top">
@@ -203,7 +204,7 @@ function FrontCard({ cfg, network, photo, name, agentId, phone, type, region, di
         <div className="agent-name">{renderWords(name, "JINA LA WAKALA")}</div>
         <div className="agent-row"><b>Agent ID</b><span>{agentId||"—"}</span></div>
         <div className="agent-row"><b>Phone</b><span>{phone||"—"}</span></div>
-        <div className="agent-row"><b>Company</b><span>{network==="Mbeya One Company Limited"?"Mbeya One Company Limited":cfg.slogan}</span></div>
+        <div className="agent-row"><b>Company</b><span className="agent-company-value">{companyName}</span></div>
         <div className="agent-row"><b>Type</b><span>{type}</span></div>
         <div className="agent-row"><b>Region</b><span>{region}</span></div>
         <div className="agent-row"><b>Area</b><span>{district} / {area}</span></div>
