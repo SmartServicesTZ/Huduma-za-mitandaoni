@@ -850,18 +850,43 @@ export async function setServiceApplicationStatus(applicationId: string, status:
 
 export async function uploadServiceDocument(uid: string, applicationId: string, fieldName: string, file: File, maxSizeMb = 5, accept = ["image/jpeg", "image/png", "image/webp"]) {
   if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new Error("Jina la field si sahihi.");
+  if (firebaseAuth.currentUser?.uid !== uid) throw new Error("Akaunti haijathibitishwa. Ingia tena.");
   if (!accept.includes(file.type)) throw new Error("Aina ya faili hairuhusiwi.");
-  const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 10);
-  if (file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili lisizidi ${sizeLimit} MB.`);
-  const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
-  const objectRef = storageRef(firebaseStorage, `serviceUploads/${uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`);
-  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "private,no-store,max-age=0" });
-  return objectRef.fullPath;
+  const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 5);
+  if (file.size < 1 || file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili liwe chini ya ${sizeLimit} MB.`);
+  const user = firebaseAuth.currentUser;
+  if (!user) throw new Error("Ingia kwanza.");
+  const token = await user.getIdToken();
+  const form = new FormData();
+  form.append("applicationId", applicationId);
+  form.append("fieldName", fieldName);
+  form.append("file", file, file.name || "document");
+  const response = await fetch(`${workerBaseUrl()}/upload/service-document`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    body: form,
+    signal: AbortSignal.timeout(45000),
+  });
+  const result = await response.json().catch(() => null) as { data?: { path?: string }; error?: { message?: string } } | null;
+  if (!response.ok || !result?.data?.path) throw new Error(result?.error?.message || `Imeshindikana kuhifadhi picha (HTTP ${response.status}).`);
+  return result.data.path;
 }
 
 export async function removeServiceUpload(storagePath: string) {
   if (!storagePath.startsWith("serviceUploads/")) return;
-  await deleteObject(storageRef(firebaseStorage, storagePath));
+  const user = firebaseAuth.currentUser;
+  if (!user) return;
+  const token = await user.getIdToken();
+  const response = await fetch(`${workerBaseUrl()}/delete/service-document`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ path: storagePath }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) {
+    const result = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+    throw new Error(result?.error?.message || "Imeshindikana kufuta picha ya zamani.");
+  }
 }
 
 export async function adminListServiceApplications() {
