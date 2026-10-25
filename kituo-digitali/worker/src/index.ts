@@ -208,6 +208,82 @@ async function handleLipaDocumentUpload(request: Request, cors: Headers, env: En
   return jsonResponse({ data: { path, size: file.size, contentType } }, 200, cors);
 }
 
+async function handleServiceDocumentUpload(request: Request, cors: Headers, env: Env) {
+  if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+  const contentLength = Number(request.headers.get("Content-Length") ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > 6 * 1024 * 1024) return jsonResponse({ error: { code: "invalid-argument", message: "Picha imezidi MB 5." } }, 413, cors);
+  const auth = await verifyFirebaseIdToken(request, env);
+  await enforceAccountRestriction(auth.uid, "createServiceApplication");
+  if (!env.LIPA_DOCUMENTS) return jsonResponse({ error: { code: "unavailable", message: "Hifadhi ya picha haijasanidiwa." } }, 503, cors);
+  let form: FormData;
+  try { form = await request.formData(); } catch { return jsonResponse({ error: { code: "invalid-argument", message: "Muundo wa picha si sahihi." } }, 400, cors); }
+  const applicationId = String(form.get("applicationId") ?? "").trim();
+  const fieldName = String(form.get("fieldName") ?? "").trim();
+  const file = form.get("file");
+  if (!/^[A-Za-z0-9_-]{8,80}$/.test(applicationId)) return jsonResponse({ error: { code: "invalid-argument", message: "Namba ya ombi si sahihi." } }, 400, cors);
+  if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) return jsonResponse({ error: { code: "invalid-argument", message: "Field ya picha si sahihi." } }, 400, cors);
+  if (!(file instanceof File)) return jsonResponse({ error: { code: "invalid-argument", message: "Chagua picha kwanza." } }, 400, cors);
+  if (file.size < 1 || file.size > 5 * 1024 * 1024) return jsonResponse({ error: { code: "invalid-argument", message: "Picha lazima iwe kati ya byte 1 na MB 5." } }, 400, cors);
+  const contentType = file.type.toLowerCase() === "image/jpg" ? "image/jpeg" : file.type.toLowerCase();
+  if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) return jsonResponse({ error: { code: "invalid-argument", message: "Picha lazima iwe JPG, PNG au WebP." } }, 400, cors);
+  const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_").slice(-90) || "document";
+  const path = `serviceUploads/${auth.uid}/${applicationId}/${fieldName}-${crypto.randomUUID()}-${safeName}`;
+  try { await uploadStorageObject(path, contentType, await file.arrayBuffer()); }
+  catch (error) {
+    const detail = String(error instanceof Error ? error.message : "Unknown storage error").replace(/[\\r\\n]+/g, " ").slice(0, 240);
+    console.error("Service document upload failed", { detail });
+    return jsonResponse({ error: { code: "unavailable", message: `Picha haikuhifadhiwa: ${detail}` } }, 503, cors);
+  }
+  return jsonResponse({ data: { path, size: file.size, contentType } }, 200, cors);
+}
+
+async function handleServiceDocumentDelete(request: Request, cors: Headers, env: Env) {
+  if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+  const auth = await verifyFirebaseIdToken(request, env);
+  if (!env.LIPA_DOCUMENTS) return jsonResponse({ data: { ok: true } }, 200, cors);
+  const body = await request.json().catch(() => null) as { path?: unknown } | null;
+  const path = String(body?.path ?? "");
+  if (!path.startsWith(`serviceUploads/${auth.uid}/`) || path.includes("..")) throw new ApiError("permission-denied", "Huna ruhusa ya kufuta picha hii.");
+  await env.LIPA_DOCUMENTS.delete(path);
+  return jsonResponse({ data: { ok: true } }, 200, cors);
+}
+
+async function handleServiceDocumentDownload(request: Request, cors: Headers, env: Env) {
+  if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
+  const auth = await verifyFirebaseIdToken(request, env);
+  const query = new URL(request.url).searchParams;
+  const applicationId = query.get("applicationId")?.trim() ?? "";
+  const fieldName = query.get("fieldName")?.trim() ?? "";
+  if (!/^[A-Za-z0-9_-]{8,80}$/.test(applicationId) || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new ApiError("invalid-argument", "Taarifa za faili si sahihi.");
+  const snapshot = await getFirestore().collection("serviceApplications").doc(applicationId).get();
+  if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
+  const application = snapshot.data() as { userId?: unknown; applicantData?: Record<string, unknown> };
+  const profile = await getFirestore().collection("users").doc(auth.uid).get();
+  const actor = profile.data() as { role?: unknown; permissions?: Record<string, unknown> } | undefined;
+  const isOwner = String(application.userId ?? "") === auth.uid;
+  const isAdmin = actor?.role === "super_admin" || actor?.role === "admin" || actor?.permissions?.manageServices === true;
+  if (!isOwner && !isAdmin) throw new ApiError("permission-denied", "Huna ruhusa ya kuona picha hii.");
+  const path = String(application.applicantData?.[fieldName] ?? "");
+  const allowed = path.startsWith(`serviceUploads/${String(application.userId ?? "")}/${applicationId}/`) || path.startsWith(`serviceApplications/${applicationId}/documents/`);
+  if (!allowed) throw new ApiError("not-found", "Faili halikupatikana.");
+  const headers = new Headers(cors);
+  headers.set("Cache-Control", "private, no-store");
+  headers.set("Content-Disposition", "inline");
+  if (env.LIPA_DOCUMENTS && path.startsWith("serviceUploads/")) {
+    const object = await env.LIPA_DOCUMENTS.get(path);
+    if (object) {
+      headers.set("Content-Type", object.httpMetadata?.contentType ?? "application/octet-stream");
+      return new Response(object.body, { status: 200, headers });
+    }
+  }
+  try {
+    const [legacyUrl] = await getStorage().bucket().file(path).getSignedUrl({ action: "read", expires: Date.now() + 60_000 });
+    return Response.redirect(legacyUrl, 302);
+  } catch {
+    throw new ApiError("not-found", "Faili halikupatikana kwenye hifadhi.");
+  }
+}
+
 async function handleLipaDocumentDownload(request: Request, cors: Headers, env: Env) {
   if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
   const auth = await verifyFirebaseIdToken(request, env);
@@ -267,6 +343,27 @@ const worker = {
         ...(!validServiceAccount ? ["FIREBASE_SERVICE_ACCOUNT_JSON"] : []),
       ];
       return jsonResponse({ ready: missing.length === 0, missing }, missing.length === 0 ? 200 : 503, cors);
+    }
+    if (url.pathname === "/upload/service-document") {
+      return withWorkerEnv(env, () => handleServiceDocumentUpload(request, cors, env).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("Service upload proxy failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Picha haikupakiwa kwa sasa. Jaribu tena." } }, 500, cors);
+      }));
+    }
+    if (url.pathname === "/delete/service-document") {
+      return withWorkerEnv(env, () => handleServiceDocumentDelete(request, cors, env).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("Service upload delete failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Picha haikufutwa." } }, 500, cors);
+      }));
+    }
+    if (url.pathname === "/download/service-document") {
+      return withWorkerEnv(env, () => handleServiceDocumentDownload(request, cors, env).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("Service download proxy failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Picha haikupatikana kwa sasa." } }, 500, cors);
+      }));
     }
     if (url.pathname === "/upload/lipa") {
       return withWorkerEnv(env, () => handleLipaDocumentUpload(request, cors, env).catch((error) => {
