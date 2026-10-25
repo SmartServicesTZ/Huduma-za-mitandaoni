@@ -1144,7 +1144,7 @@ export const getServiceApplicationDocument = callable(async (request) => {
   if (!isLegacyServiceDocument && !isR2ServiceUpload) throw new ApiError("not-found", "Faili halikupatikana.");
   const env = getWorkerEnv();
   if (env.LIPA_DOCUMENTS && (isR2ServiceUpload || isLegacyServiceDocument)) {
-    const workerUrl = String(env.WORKER_PUBLIC_URL ?? "https://huduma-za-mtandao-api.stewardjackson999.workers.dev").replace(/\\/+$/, "");
+    const workerUrl = String(env.WORKER_PUBLIC_URL ?? "https://huduma-za-mtandao-api.stewardjackson999.workers.dev").replace(/\/+$/, "");
     return { url: `${workerUrl}/download/service-document?applicationId=${encodeURIComponent(applicationId)}&fieldName=${encodeURIComponent(fieldName)}`, expiresAt: Date.now() + 5 * 60 * 1000 };
   }
   const [url] = await bucket.file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60 * 1000 });
