@@ -742,8 +742,10 @@ export const submitNidaRequest = callable(async (request) => {
   const data = objectValue(request.data, "Ombi la NIDA");
   const phone = text(data.phone, 20).replace(/\D/g, "");
   if (!/^\d{9,10}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya simu lazima iwe na tarakimu 9 au 10.");
+  const userRef = db.collection("users").doc(uid);
   const openRef = db.collection("nidaOpenRequests").doc(uid);
   const requestRef = db.collection("nidaRequests").doc(randomUUID());
+  const ledgerRef = db.collection("tokenTransactions").doc(`nida_${requestRef.id}`);
   return db.runTransaction(async (transaction) => {
     const open = await transaction.get(openRef);
     if (open.exists && typeof open.data()?.requestId === "string") {
@@ -751,11 +753,19 @@ export const submitNidaRequest = callable(async (request) => {
       const prior = await transaction.get(priorRef);
       if (prior.exists && ["PENDING", "PROCESSING"].includes(String(prior.data()?.status))) throw new ApiError("already-exists", "Tayari una ombi la NIDA linalosubiri au linalofanyiwa kazi.");
     }
+    const userSnapshot = await transaction.get(userRef);
+    if (!userSnapshot.exists) throw new ApiError("not-found", "Akaunti haijapatikana.");
+    const user = userSnapshot.data() as Profile;
+    const balanceBefore = Math.max(0, Number(user.tokenBalanceNida ?? 0));
+    if (balanceBefore < 1) throw new ApiError("failed-precondition", "Tokeni za NIDA hazitoshi. Ongeza angalau tokeni 1 ya NIDA (TZS 100) kisha ujaribu tena.");
+    const balanceAfter = balanceBefore - 1;
     const now = FieldValue.serverTimestamp();
-    transaction.create(requestRef, { requestId: requestRef.id, userId: uid, userName: String(profile.name ?? ""), phone, status: "PENDING", submittedAt: now, updatedAt: now });
+    transaction.update(userRef, { tokenBalanceNida: balanceAfter, updatedAt: now });
+    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "nida", type: "service_usage", amount: -1, balanceBefore, balanceAfter, reason: "Matumizi ya CHEKI NIDA", serviceId: "utafutaji-nida", serviceName: "CHEKI NIDA", reference: requestRef.id, createdAt: now, status: "completed" });
+    transaction.create(requestRef, { requestId: requestRef.id, userId: uid, userName: String(user.name ?? profile.name ?? ""), phone, status: "PENDING", submittedAt: now, updatedAt: now });
     transaction.set(openRef, { requestId: requestRef.id, userId: uid, createdAt: now, updatedAt: now });
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: "Ombi la kutafuta namba ya NIDA limepokelewa", body: "Ombi lako limepokelewa na linasubiri kushughulikiwa na Admin.", type: "nidaRequest", requestId: requestRef.id, createdAt: now });
-    return { requestId: requestRef.id, status: "PENDING" };
+    return { requestId: requestRef.id, status: "PENDING", tokenBalanceNida: balanceAfter };
   });
 });
 
