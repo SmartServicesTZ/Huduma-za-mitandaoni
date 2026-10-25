@@ -13,9 +13,9 @@ import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels
 import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
 import NidaRequestsPanel from "./NidaRequestsPanel";
 
-type Panel = "overview" | "health" | "users" | "tokens" | "services" | "serviceControl" | "applications" | "nida" | "lipa" | "lipaReport" | "ordering" | "videos" | "transactions" | "announcements" | "cms" | "security" | "messages" | "licenses";
+type Panel = "overview" | "health" | "users" | "tokens" | "services" | "serviceControl" | "applications" | "nida" | "lipa" | "lipaReport" | "ordering" | "videos" | "transactions" | "reports" | "announcements" | "cms" | "security" | "messages" | "licenses";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
-  ["overview", "Muhtasari", LayoutDashboard], ["health", "Mlinzi wa Hitilafu", ShieldCheck], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["nida", "MAOMBI YA NIDA", Search], ["lipaReport", "Ripoti za Lipa", BarChart3], ["ordering", "Mpangilio wa vipengele", SlidersHorizontal], ["videos", "Video", PlaySquare], ["transactions", "Transactions", BarChart3], ["announcements", "Matangazo", Bell], ["cms", "Muonekano & CMS", Palette], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["licenses", "Leseni", FileKey2],
+  ["overview", "Muhtasari", LayoutDashboard], ["health", "Mlinzi wa Hitilafu", ShieldCheck], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["nida", "MAOMBI YA NIDA", Search], ["lipaReport", "Ripoti za Lipa", BarChart3], ["ordering", "Mpangilio wa vipengele", SlidersHorizontal], ["videos", "Video", PlaySquare], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["announcements", "Matangazo", Bell], ["cms", "Muonekano & CMS", Palette], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["licenses", "Leseni", FileKey2],
 ];
 const emptyService = { id: "", name: "", slug: "", description: "", icon: "sparkles", tokenCost: 2, reward: 0, isFree: false, isVisible: true, active: true, isLocked: false, maintenanceMessage: "", category: "Huduma kuu", actionUrl: "", instructions: "", buttonText: "TUMA OMBI", statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], adminWorkflow: true, order: 0, fields: [] as ServiceFormField[] };
 const emptyVideo = { id: "", title: "", videoUrl: "", category: "Mafunzo", enabled: true, order: 0 };
@@ -245,6 +245,7 @@ export default function AdminDashboard() {
       {panel === "ordering" && isSuper && <ServiceOrderingPanel services={services} serviceOrder={serviceOrder} setServiceOrder={setServiceOrder} sectionOrder={homepageSectionOrder} setSectionOrder={setHomepageSectionOrder} onSave={() => run(() => setHomepageServiceOrder(serviceOrder, homepageSectionOrder), "Mpangilio wa huduma umehifadhiwa.")} busy={busy} />}
       {panel === "videos" && <CollectionPanel title="Video za Mafunzo" collectionName="tutorialVideos" rows={videos} form={video} setForm={setVideo} fields={[["title", "Title"], ["videoUrl", "Video URL"], ["category", "Category"], ["order", "Order"]]} onRun={run} adminId={firebaseUser!.uid} />}
       {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2></div><button type="button" className="button button--green button--small" onClick={() => exportTransactionsCsv(transactions)} disabled={!transactions.length}>Pakua ripoti CSV</button></div><TransactionTable rows={transactions} /></section>}
+      {panel === "reports" && <BusinessReport transactions={transactions} users={users} serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} />}
       {panel === "announcements" && <CollectionPanel title="Matangazo" collectionName="announcements" rows={announcements} form={announcement} setForm={setAnnouncement} fields={[["title", "Kichwa"], ["body", "Ujumbe"]]} onRun={run} adminId={firebaseUser!.uid} />}
       {panel === "cms" && <><CmsPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} /><TemplateEditorPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} /></>}
       {panel === "security" && <SecurityPanel isSuper={isSuper} users={users} audit={audit} />}
@@ -267,7 +268,61 @@ const permissionOptions = [
   ["viewAuditLogs", "Audit logs: kuona historia ya actions"],
 ] as const;
 
-const panelPermission: Partial<Record<Panel, string>> = { lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", nida: "manageServices", lipa: "manageLipaApplications", videos: "manageContent", transactions: "manageReports", announcements: "manageContent", cms: "manageSettings", security: "viewAuditLogs", messages: "manageMessages", licenses: "manageLicenses" };
+const panelPermission: Partial<Record<Panel, string>> = { lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", nida: "manageServices", lipa: "manageLipaApplications", videos: "manageContent", transactions: "manageReports", reports: "manageReports", announcements: "manageContent", cms: "manageSettings", security: "viewAuditLogs", messages: "manageMessages", licenses: "manageLicenses" };
+
+function BusinessReport({ transactions, users, serviceApplications, lipaApplications, services }: { transactions: any[]; users: any[]; serviceApplications: ServiceApplication[]; lipaApplications: LipaApplication[]; services: any[] }) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const dateOf = (value: any): Date | null => {
+    try {
+      const date = value && typeof value.toDate === "function" ? value.toDate() : value?.seconds ? new Date(value.seconds * 1000) : value ? new Date(value) : null;
+      return date && !Number.isNaN(date.getTime()) ? date : null;
+    } catch { return null; }
+  };
+  const inRange = (value: any) => {
+    const date = dateOf(value);
+    if (!date) return !from && !to;
+    const day = date.toLocaleDateString("en-CA");
+    return (!from || day >= from) && (!to || day <= to);
+  };
+  const filteredTransactions = transactions.filter((item) => inRange(item.createdAt));
+  const filteredServices = serviceApplications.filter((item: any) => inRange(item.submittedAt ?? item.createdAt ?? item.updatedAt));
+  const filteredLipa = lipaApplications.filter((item: any) => inRange(item.submittedAt ?? item.createdAt ?? item.updatedAt));
+  const credits = filteredTransactions.reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
+  const debits = filteredTransactions.reduce((sum, item) => sum + Math.abs(Math.min(0, Number(item.amount) || 0)), 0);
+  const pendingServices = filteredServices.filter((item: any) => ["PENDING", "PROCESSING"].includes(String(item.status ?? "PENDING").toUpperCase())).length;
+  const pendingLipa = filteredLipa.filter((item: any) => ["PENDING", "PROCESSING"].includes(String(item.status ?? "PENDING").toUpperCase())).length;
+  const serviceCounts = filteredServices.reduce((acc: Record<string, number>, item: any) => {
+    const name = String(item.serviceName ?? item.serviceSlug ?? "Huduma nyingine");
+    acc[name] = (acc[name] ?? 0) + 1;
+    return acc;
+  }, {});
+  const topServices = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const cards: Array<[string, number, string]> = [
+    ["Miamala ya tokeni", filteredTransactions.length, "Miamala iliyo kwenye kipindi"],
+    ["Tokeni zilizoongezwa", credits, "CREDIT; si mapato ya fedha"],
+    ["Tokeni zilizotumika", debits, "Jumla ya matumizi ya tokeni"],
+    ["Maombi ya huduma", filteredServices.length, "Maombi ndani ya kipindi"],
+    ["Maombi yanayosubiri", pendingServices, "Huduma zinazosubiri"],
+    ["Pata Lipa Namba", filteredLipa.length, "Maombi ya Lipa ndani ya kipindi"],
+  ];
+  return <div className="admin-report-page">
+    <section className="admin-card">
+      <div className="admin-card-heading"><div><span className="admin-kicker">TAKWIMU ZA MFUMO</span><h2>Ripoti za biashara</h2></div><BarChart3 size={22}/></div>
+      <p>Chuja kipindi ili kuona matumizi ya tokeni, mwenendo wa maombi na shughuli za huduma. Tokeni si sawa na mapato ya fedha; mapato halisi yatahitaji rekodi za malipo.</p>
+      <div className="form-grid"><Field label="Kuanzia tarehe" value={from} type="date" onChange={setFrom}/><Field label="Mpaka tarehe" value={to} type="date" onChange={setTo}/></div>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:12}}>
+        <button type="button" className="admin-primary" onClick={() => exportTransactionsCsv(filteredTransactions)} disabled={!filteredTransactions.length}>Pakua CSV ya miamala</button>
+        <button type="button" className="admin-secondary" onClick={() => {setFrom("");setTo("");}}>Ondoa kichujio</button>
+      </div>
+    </section>
+    <div className="admin-stat-grid">{cards.map(([label,value,note]) => <div className="admin-stat-card" key={label}><div className="admin-stat-icon"><BarChart3 size={18}/></div><span>{label}</span><strong>{Number(value).toLocaleString("sw-TZ")}</strong><small>{note}</small></div>)}</div>
+    <div className="admin-two-col">
+      <section className="admin-card"><h2>Muhtasari wa huduma</h2><p>Watumiaji wote: <strong>{users.length.toLocaleString("sw-TZ")}</strong></p><p>Huduma zinazopatikana: <strong>{services.filter((item: any) => item.active !== false && item.isVisible !== false).length.toLocaleString("sw-TZ")}</strong></p><p>Maombi ya Lipa yanayosubiri: <strong>{pendingLipa.toLocaleString("sw-TZ")}</strong></p><p>Maombi ya huduma yaliyokamilika: <strong>{filteredServices.filter((item: any) => ["APPROVED", "COMPLETED", "DONE"].includes(String(item.status ?? "").toUpperCase())).length.toLocaleString("sw-TZ")}</strong></p></section>
+      <section className="admin-card"><h2>Huduma zinazotumiwa zaidi</h2>{topServices.length ? topServices.map(([name,count]) => <p key={name} style={{display:"flex",justifyContent:"space-between",gap:12,borderBottom:"1px solid var(--border,#e2e8f0)",padding:"8px 0",margin:0}}><span>{name}</span><strong>{count}</strong></p>) : <Empty text="Hakuna maombi kwenye kipindi hiki"/>}</section>
+    </div>
+  </div>;
+}
 
 function WebsiteHealthPanel() {
   const [reports, setReports] = useState<WebsiteHealthReport[]>([]);
