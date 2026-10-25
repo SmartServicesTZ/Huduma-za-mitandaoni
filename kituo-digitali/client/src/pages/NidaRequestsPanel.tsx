@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clipboard, Copy, LoaderCircle, RefreshCw, Search, Send, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { completeNidaRequest, listNidaRequests, setNidaRequestStatus, type NidaRequest } from "@/lib/firebase";
+import { adminGetSiteSettings, adminSaveSiteSettings, completeNidaRequest, listNidaRequests, setNidaRequestStatus, type NidaRequest } from "@/lib/firebase";
 
 function when(value: unknown) {
   if (!value) return "—";
