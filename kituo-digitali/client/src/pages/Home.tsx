@@ -399,20 +399,21 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [busy, setBusy] = useState(false);
   const [copiedResults, setCopiedResults] = useState<Record<string, boolean>>({});
   const hideTimers = useRef<Record<string, number>>({});
-  const notFoundTimers = useRef<Record<string, number>>({});
+  const resultTimers = useRef<Record<string, number>>({});
   const formatPhone = (value: string) => value.replace(/\D/g, "").slice(0, 10);
 
+  // Matokeo ya ombi la sasa yaonekane kwa sekunde 30 tu, kisha yabaki Historia ya NIDA.
   useEffect(() => {
-    const active = requests.find((item) => (item.id === activeRequestId || item.requestId === activeRequestId) && item.status === "REJECTED" && String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND"));
-    if (!active || notFoundTimers.current[active.id]) return;
-    notFoundTimers.current[active.id] = window.setTimeout(() => {
+    const active = requests.find((item) => item.id === activeRequestId || item.requestId === activeRequestId);
+    if (!active || !["APPROVED", "REJECTED"].includes(active.status) || resultTimers.current[active.id]) return;
+    resultTimers.current[active.id] = window.setTimeout(() => {
       setActiveRequestId((current) => current === active.id || current === active.requestId ? "" : current);
-      delete notFoundTimers.current[active.id];
-    }, 90 * 1000);
+      delete resultTimers.current[active.id];
+    }, 30 * 1000);
   }, [requests, activeRequestId]);
 
   useEffect(() => () => {
-    Object.values(notFoundTimers.current).forEach((timer) => window.clearTimeout(timer));
+    Object.values(resultTimers.current).forEach((timer) => window.clearTimeout(timer));
     Object.values(hideTimers.current).forEach((timer) => window.clearTimeout(timer));
   }, []);
 
@@ -424,7 +425,6 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
         const rows = await listMyNidaRequests();
         if (!stopped) {
           setRequests(rows);
-          setActiveRequestId((current) => current || rows[0]?.requestId || rows[0]?.id || "");
         }
       } catch {
         if (!stopped) setRequests([]);
