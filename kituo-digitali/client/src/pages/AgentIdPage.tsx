@@ -38,7 +38,7 @@ type AgentData = { name: string; agentId: string; phone: string; type: string; r
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
 const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", Supervisor: "SV", "Authorized Agent": "AA" };
-const regionCodeFor = (value: string) => { const normalized = value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().trim(); return regionCodes[normalized] ?? normalized.replace(/[^a-z]/g, "").slice(0, 3).toUpperCase().padEnd(3, "X"); };
+const regionCodeFor = (value: string) => { const normalized = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); return regionCodes[normalized] ?? normalized.replace(/[^a-z]/g, "").slice(0, 3).toUpperCase().padEnd(3, "X"); };
 const makeAgentId = (network: Network, region: string, _district: string, type: string) =>
   `T-${regionCodeFor(region)}-${networkCode[network]}-${roleCode[type] ?? "AG"}-000`;
 
@@ -182,7 +182,8 @@ export default function AgentIdPage() {
   const [issueDate, setIssueDate] = useState(today());
   const [photo, setPhoto] = useState("");
   const [qr, setQr] = useState("");
-  const [busy, setBusy] = useState(false);\n  const [savedRecordId, setSavedRecordId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const landFrontRef = useRef<HTMLDivElement>(null);
   const landBackRef = useRef<HTMLDivElement>(null);
@@ -196,7 +197,9 @@ export default function AgentIdPage() {
   useEffect(() => {
     setPaid(false);
     setRequestId(crypto.randomUUID());
-  }, [network, orientation, name, phone, type, region, district, area, issueDate, photo]);\n\n  useEffect(() => { setSavedRecordId(""); }, [network, name, phone, type, region, district, area, issueDate]);
+  }, [network, orientation, name, phone, type, region, district, area, issueDate, photo]);
+
+  useEffect(() => { setSavedRecordId(""); }, [network, name, phone, type, region, district, area, issueDate]);
 
   useEffect(() => {
     setAgentId(makeAgentId(network, region, district, type));
