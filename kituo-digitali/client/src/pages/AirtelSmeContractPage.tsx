@@ -49,7 +49,7 @@ const formatTin = (value: string) => {
 const initialForm = (): FormState => ({
   customerName: "",
   phone: "",
-  tin: "",
+  tin: "215153210",
   idType: "NIDA",
   idNumber: "20060505175200000312",
   street: "TEGETA",
@@ -207,7 +207,7 @@ export default function AirtelSmeContractPage() {
       <image href="${templateHref}" x="0" y="0" width="1024" height="1536" preserveAspectRatio="none"/>
       ${text(form.customerName,layout.nameX,layout.nameY,layout.nameSize,73)}
       ${text(form.phone,layout.phoneX,layout.phoneY,layout.phoneSize,39)}
-      ${text(form.tin,layout.tinX,layout.tinY,layout.tinSize,20)}
+      ${text(formatTin(form.tin),layout.tinX,layout.tinY,layout.tinSize,20)}
       ${text(form.idType.toUpperCase(),layout.idTypeX,layout.idTypeY,layout.idTypeSize,28)}
       ${text(form.idNumber,layout.idX,layout.idY,layout.idSize,27)}
       ${text(form.street.toUpperCase(),layout.streetX,layout.streetY,layout.streetSize,36)}
