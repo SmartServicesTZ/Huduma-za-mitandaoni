@@ -427,7 +427,7 @@ const agentRoleCodes: Record<string, string> = {
   "Freelancer": "FR", "Team Leader": "TL", "Supervisor": "SV", "Authorized Agent": "AA"
 };
 const agentCode = (value: string) => {
-  const normalized = value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().trim();
+  const normalized = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   return agentRegionCodes[normalized] ?? normalized.replace(/[^a-z]/g, "").slice(0, 3).toUpperCase().padEnd(3, "X");
 };
 
@@ -447,7 +447,7 @@ export async function createAgentRecord(input: Omit<AgentRecord, "id" | "agentId
     const now = serverTimestamp();
     transaction.set(counterRef, { lastSerial: next, regionCode, networkCode, typeCode, updatedAt: now });
     transaction.set(recordRef, {
-      ...input, agentId, regionCode, status: "created",
+      ...input, agentId, regionCode, networkCode, typeCode, status: "created",
       createdAt: now, updatedAt: now, lastUpdatedBy: user.uid,
       history: [{ action: "created", by: user.uid, at: new Date().toISOString(), details: "Taarifa za wakala zimesajiliwa." }]
     });
