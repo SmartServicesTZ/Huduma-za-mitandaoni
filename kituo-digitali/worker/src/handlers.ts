@@ -273,7 +273,10 @@ export const consumeTokens = callable(async (request) => {
     }
     if (await serviceIsLocked(transaction, serviceId)) throw new ApiError("failed-precondition", "Huduma hii imefungwa kwa sasa.");
     const serviceSnapshot = await transaction.get(db.collection("services").where("slug", "==", serviceId).limit(1));
-    const service = serviceSnapshot.docs[0]?.data();
+    // Use the built-in catalog only when a known default service has not yet been
+    // seeded into Firestore. The portal can show local fallback services while
+    // the worker previously rejected them all as "haipatikani".
+    const service = serviceSnapshot.docs[0]?.data() ?? defaultServices.find((item) => item.slug === serviceId);
     if (!service || service.active === false || service.isVisible === false) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
     // Kitambulisho cha wakala ni huduma ya kulipia hata kama rekodi ya zamani ina isFree=true/tokenCost=0.
     // Tumia bei ya admin ikiwa ni chanya; vinginevyo tokeni 2 ndizo gharama ya msingi.
