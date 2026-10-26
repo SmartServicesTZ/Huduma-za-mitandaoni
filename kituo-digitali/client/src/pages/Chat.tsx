@@ -266,10 +266,15 @@ export default function ChatPage() {
   };
   const setTypingDraft = (value: string) => {
     setDraft(value);
-    if (view !== "private" || !firebaseUser || !roomId) return;
-    void setChatTyping(roomId, firebaseUser.uid, true).catch(() => undefined);
+    if (!firebaseUser) return;
+    if (view === "private" && roomId) void setChatTyping(roomId, firebaseUser.uid, true).catch(() => undefined);
+    else if (view === "groups" && groupId) void setChatGroupTyping(groupId, firebaseUser.uid, true).catch(() => undefined);
+    else return;
     window.clearTimeout(typingTimer.current);
-    typingTimer.current = window.setTimeout(() => void setChatTyping(roomId, firebaseUser.uid, false).catch(() => undefined), 1500);
+    typingTimer.current = window.setTimeout(() => {
+      if (view === "private") void setChatTyping(roomId, firebaseUser.uid, false).catch(() => undefined);
+      else if (view === "groups") void setChatGroupTyping(groupId, firebaseUser.uid, false).catch(() => undefined);
+    }, 1500);
   };
   const openGroupSettings = () => { if (!currentGroup) return; setGroupSettingsName(currentGroup.name); setGroupSettingsDescription(currentGroup.description ?? ""); setGroupSettingsVisibility(currentGroup.visibility); setGroupInfoTab("members"); setGroupMemberSearch(""); setGroupSettingsOpen(true); };
   const saveGroupSettings = async (event: React.FormEvent) => { event.preventDefault(); if (!firebaseUser || !currentGroup) return; try { await updateChatGroupSettings(currentGroup.id, firebaseUser.uid, { name: groupSettingsName, description: groupSettingsDescription, visibility: groupSettingsVisibility }); toast.success("Mipangilio ya group imehifadhiwa."); setGroupSettingsOpen(false); } catch (error: any) { toast.error(errorMessage(error, "Mipangilio haikuhifadhiwa.")); } };
