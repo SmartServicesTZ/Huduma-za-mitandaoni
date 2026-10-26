@@ -448,7 +448,9 @@ export default function ChatPage() {
       if (localVideoRef.current && type === "video") localVideoRef.current.srcObject = stream;
       const callRef = await addDoc(collection(firestore, "callSessions"), { callerId: firebaseUser.uid, calleeId: targetOtherUid, participants: [firebaseUser.uid, targetOtherUid], callType: type, status: "ringing", createdAt: serverTimestamp() });
       callSessionRef.current = callRef.id;
-      const pc = makePeerConnection(callRef.id, firebaseUser.uid, stream, type);
+      const ice = await loadCallIceServers();
+      if (!ice.turnAvailable) toast.warning("TURN relay haijasanidiwa. Simu inaweza kushindwa kwenye baadhi ya mitandao.");
+      const pc = makePeerConnection(callRef.id, firebaseUser.uid, stream, type, ice.iceServers);
       attachCallDocument(callRef.id, true);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -473,7 +475,9 @@ export default function ChatPage() {
       localCallStreamRef.current = stream;
       if (localVideoRef.current && call.callType === "video") localVideoRef.current.srcObject = stream;
       callSessionRef.current = call.id;
-      const pc = makePeerConnection(call.id, firebaseUser.uid, stream, call.callType === "video" ? "video" : "voice");
+      const ice = await loadCallIceServers();
+      if (!ice.turnAvailable) toast.warning("TURN relay haijasanidiwa. Simu inaweza kushindwa kwenye baadhi ya mitandao.");
+      const pc = makePeerConnection(call.id, firebaseUser.uid, stream, call.callType === "video" ? "video" : "voice", ice.iceServers);
       await pc.setRemoteDescription(new RTCSessionDescription(call.offer));
       for (const candidate of pendingCandidatesRef.current.splice(0)) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => undefined);
       const answer = await pc.createAnswer();
