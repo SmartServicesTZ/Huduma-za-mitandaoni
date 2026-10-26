@@ -2500,3 +2500,51 @@ form,
   .token-card .token-choice-modal { align-items: end !important; padding: 10px !important; }
   .token-card .token-choice-card { width: 100%; max-height: calc(100dvh - 20px); padding: 17px; border-radius: 20px; }
 }
+
+
+/* Add Tokens modal now renders at document level: compact and fully scrollable on phones. */
+.token-choice-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+  padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  background: rgba(2, 8, 23, .78) !important;
+}
+.token-choice-card {
+  box-sizing: border-box !important;
+  width: min(440px, 100%) !important;
+  max-height: calc(100dvh - 20px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  margin: auto !important;
+  padding: 16px !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  color: #142238 !important;
+}
+.token-choice-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.token-choice-fields label, .token-choice-phone { display: grid; min-width: 0; gap: 6px; margin: 8px 0; color: #24354b; font-size: 13px; }
+.token-choice-fields label span { color: #64748b; font-size: 11px; }
+.token-choice-fields input, .token-choice-phone input {
+  box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 10px;
+  border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; color: #10213b; font-size: 16px;
+}
+.token-choice-total { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin: 10px 0; padding: 12px; border-radius: 11px; background: #eff6ff; }
+.token-choice-total strong { color: #0756b5; font-size: 19px; }
+.token-choice-total small { flex-basis: 100%; color: #b91c1c; }
+.token-choice-payto { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; margin-top: 8px; padding: 11px; border: 1px solid #dbe4ef; border-radius: 10px; font-size: 12px; }
+.token-choice-payto span { color: #64748b; }
+.token-choice-help { margin: 10px 0 0 !important; text-align: left !important; font-size: 11px !important; line-height: 1.4 !important; }
+@media (max-width: 520px) {
+  .token-choice-modal { align-items: flex-end !important; padding: 8px !important; }
+  .token-choice-card { width: 100% !important; max-height: calc(100dvh - 16px) !important; padding: 14px !important; border-radius: 18px !important; }
+  .token-choice-head { margin-bottom: 8px !important; }
+  .token-choice-head h3 { font-size: 20px !important; }
+  .token-choice-fields { gap: 8px; }
+}
