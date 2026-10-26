@@ -390,6 +390,80 @@ function timestampValue(value: unknown) {
   return value ?? null;
 }
 
+
+export type AgentRecord = {
+  id: string;
+  agentId: string;
+  userId: string;
+  name: string;
+  phone: string;
+  network: string;
+  type: string;
+  region: string;
+  regionCode: string;
+  district: string;
+  area: string;
+  issueDate: string;
+  expiryDate: string;
+  status: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+const agentRegionCodes: Record<string, string> = {
+  "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ",
+  "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM",
+  "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM",
+  "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN",
+  "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET",
+  "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV",
+  "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ"
+};
+const agentNetworkCodes: Record<string, string> = {
+  "Airtel": "AIR", "Vodacom": "VOD", "Yas": "YAS", "Halotel": "HAL",
+  "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT"
+};
+const agentRoleCodes: Record<string, string> = {
+  "Freelancer": "FR", "Team Leader": "TL", "Supervisor": "SV", "Authorized Agent": "AA"
+};
+const agentCode = (value: string) => {
+  const normalized = value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().trim();
+  return agentRegionCodes[normalized] ?? normalized.replace(/[^a-z]/g, "").slice(0, 3).toUpperCase().padEnd(3, "X");
+};
+
+export async function createAgentRecord(input: Omit<AgentRecord, "id" | "agentId" | "createdAt" | "updatedAt" | "regionCode" | "status">) {
+  const user = firebaseAuth.currentUser;
+  if (!user || user.uid !== input.userId) throw Object.assign(new Error("Ingia tena kabla ya kuhifadhi taarifa za wakala."), { code: "unauthenticated" });
+  const regionCode = agentCode(input.region);
+  const networkCode = agentNetworkCodes[input.network] ?? "OTH";
+  const typeCode = agentRoleCodes[input.type] ?? "AG";
+  const groupKey = `${regionCode}-${networkCode}-${typeCode}`;
+  const counterRef = doc(firestore, "agentIdCounters", groupKey);
+  const recordRef = doc(collection(firestore, "agentRecords"));
+  const created = await runTransaction(firestore, async (transaction) => {
+    const counter = await transaction.get(counterRef);
+    const next = Number(counter.data()?.lastSerial ?? 0) + 1;
+    const agentId = `T-${regionCode}-${networkCode}-${typeCode}-${String(next).padStart(3, "0")}`;
+    const now = serverTimestamp();
+    transaction.set(counterRef, { lastSerial: next, regionCode, networkCode, typeCode, updatedAt: now });
+    transaction.set(recordRef, {
+      ...input, agentId, regionCode, status: "created",
+      createdAt: now, updatedAt: now, lastUpdatedBy: user.uid,
+      history: [{ action: "created", by: user.uid, at: new Date().toISOString(), details: "Taarifa za wakala zimesajiliwa." }]
+    });
+    return { id: recordRef.id, agentId };
+  });
+  return created;
+}
+
+export async function adminListAgentRecords() {
+  const snapshot = await getDocs(collection(firestore, "agentRecords"));
+  return snapshot.docs.map((item) => {
+    const data = item.data();
+    return { id: item.id, ...data, createdAt: timestampValue(data.createdAt), updatedAt: timestampValue(data.updatedAt) } as AgentRecord;
+  }).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+}
+
 export async function adminListUsers() {
   const snapshot = await getDocs(collection(firestore, "users"));
   return snapshot.docs.map((item) => {
