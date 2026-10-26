@@ -222,7 +222,7 @@ export default function AdminDashboard() {
       }
     } finally { setLoadingData(false); }
   };
-  useEffect(() => { void refresh(); }, [canManage]);
+  useEffect(() => { void refresh(); }, [canManage, panel]);
   useEffect(() => {
     if (!canManageLipaApplications) { setLipaApplications([]); return; }
     return subscribeToAdminLipaApplications(setLipaApplications, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
