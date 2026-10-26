@@ -55,7 +55,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   adminDelete, adminWrite, adjustTokens, claimDailyTokenBonus, changeOwnPassword, claimRegistrationPhone, completeBusinessLicense, consumeTokens,
   createPocketWifiOrder, createServiceApplication, updateServiceApplication, createLipaDocumentUploadUrl, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser, listChatMembers,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
-  listServiceApplications, replyToServiceApplication,
+  listServiceApplications, replyToServiceApplication, registerFcmToken, sendPushNotification,
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, updateLipaRewardTracking, verifyUser,
