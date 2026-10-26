@@ -975,6 +975,22 @@ export function subscribeUserMessages(uid: string, callback: (rows: Array<Record
 }
 
 export type ChatUser = { uid: string; name: string; phone: string; profileImageUrl?: string; verificationStatus?: "pending" | "approved" | "rejected" };
+export type ChatPreferences = { theme?: "green" | "light" | "dark"; lastSeen?: boolean; readReceipts?: boolean; sound?: boolean; desktop?: boolean; reduceMotion?: boolean; disappearing?: boolean; chatLock?: boolean };
+
+export function subscribeChatPreferences(uid: string, callback: (preferences: ChatPreferences) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(doc(firestore, "users", uid), (snapshot) => {
+    const settings = snapshot.data()?.settings;
+    callback((settings && typeof settings === "object" ? settings.chatPreferences : {}) || {});
+  }, (error) => onError?.(error));
+}
+
+export async function saveChatPreferences(uid: string, preferences: Partial<ChatPreferences>) {
+  const ref = doc(firestore, "users", uid);
+  const updates: Record<string, unknown> = { updatedAt: serverTimestamp() };
+  for (const [key, value] of Object.entries(preferences)) updates[`settings.chatPreferences.${key}`] = value;
+  await updateDoc(ref, updates);
+}
+
 export type ChatMessage = { id: string; senderId: string; senderName?: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; editedAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
 export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; profileImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
 export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; visibility: "private" | "public"; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; avatarUrl?: string; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };
