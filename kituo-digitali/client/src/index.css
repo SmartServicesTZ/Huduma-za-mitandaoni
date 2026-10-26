@@ -2469,3 +2469,34 @@ form,
   .portal-service-card .service-card-icon,
   .portal-service-card .service-card-icon::before { transition: none; }
 }
+
+
+/* FIX: token-choice-modal ni mtoto wa .token-card; usiruhusu kanuni ya .token-card>* kuibadilisha kuwa position:relative. */
+.token-card .token-choice-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+  overflow-y: auto !important;
+  background: rgba(2, 8, 23, .78) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.token-card .token-choice-card {
+  position: relative;
+  z-index: 10000;
+  box-sizing: border-box;
+  width: min(500px, 100%);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: auto;
+  color: #0b1830;
+  background: linear-gradient(180deg, #fff, #f6f9fd);
+}
+@media (max-width: 520px) {
+  .token-card .token-choice-modal { align-items: end !important; padding: 10px !important; }
+  .token-card .token-choice-card { width: 100%; max-height: calc(100dvh - 20px); padding: 17px; border-radius: 20px; }
+}
