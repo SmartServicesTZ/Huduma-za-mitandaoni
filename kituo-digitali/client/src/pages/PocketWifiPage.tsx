@@ -64,7 +64,7 @@ export default function PocketWifiPage() {
     const name = fullName.trim();
     const mobile = phone.trim();
     const villageName = village.trim();
-    const digits = mobile.replace(/\\D/g, "");
+    const digits = mobile.replace(/\D/g, "");
     if (!firebaseUser) {
       toast.error("Ingia kwenye akaunti yako kwanza ili oda ihifadhiwe na ufuatilie hali yake.");
       return;
@@ -95,7 +95,7 @@ export default function PocketWifiPage() {
       "Bei ya bando: " + money(plan.price),
       "JUMLA KUU: " + money(total),
       deliveryRule,
-    ].join("\\n");
+    ].join("\n");
     const message = [
       "HABARI, NAOMBA KUAGIZA POCKET WIFI / ROUTER.",
       "",
