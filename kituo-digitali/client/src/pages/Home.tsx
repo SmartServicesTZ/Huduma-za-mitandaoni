@@ -284,10 +284,34 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
 function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (service: ServiceCatalogItem) => void }) {
   const locked = service.kind === "locked";
   const external = Boolean(service.actionUrl);
-  const iconPalette: Record<string, string> = { "store": "#059669", "file-badge": "#7c3aed", "car-front": "#ea580c", "badge-check": "#16a34a", "contact": "#4f46e5", "vote": "#0891b2", "qr-code": "#db2777", "ticket": "#d97706", "landmark": "#2563eb", "wallet-cards": "#0d9488", "smartphone": "#8b5cf6", "copy": "#475569", "baby": "#ec4899", "trophy": "#ca8a04", "star": "#e11d48", "tv": "#6366f1", "image-search": "#0f766e", "radio": "#c026d3", "plane": "#0284c7", "heart-handshake": "#059669", "file-warning": "#c2410c", "music-2": "#9333ea", "palette": "#be185d", "scan-face": "#0f766e", "user-round-pen": "#7c3aed", "search": "#0284c7" };
-  const palette = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#db2777", "#4f46e5", "#0d9488", "#ea580c", "#9333ea"];
+  // Assign color by service feature (slug), not by icon name. This prevents
+  // multiple services that reuse one icon from all appearing blue.
+  const serviceColors: Record<string, string> = {
+    "leseni-biashara": "#059669",
+    "cheti-tin": "#7c3aed",
+    "leseni-udereva": "#ea580c",
+    "verify-tin": "#16a34a",
+    "nakala-nida": "#4f46e5",
+    "mpiga-kura": "#0891b2",
+    "stika-lipa": "#db2777",
+    "stika-mawakala": "#d97706",
+    "pata-lipa-namba": "#0d9488",
+    "access-lipa-number": "#8b5cf6",
+    "kitambulisho-wakala": "#e11d48",
+    "sme-airtel-mkataba": "#475569",
+    "sme-vodacom": "#e60000",
+    "sme-airtel": "#ed1c24",
+    "change-business-name-airtel-lipa": "#9333ea",
+    "tengeneza-mkataba": "#be185d",
+    "brela": "#2563eb",
+    "cheti-kuzaliwa": "#ec4899",
+    "simba-sc": "#ca8a04",
+    "yanga-africans": "#16a34a",
+    "azam-tv": "#6366f1",
+  };
+  const palette = ["#0f766e", "#c2410c", "#7e22ce", "#be123c", "#047857", "#b45309", "#4338ca", "#0e7490", "#a21caf", "#4d7c0f"];
   const colorIndex = [...service.slug].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
-  const accent = locked ? "#dc2626" : (iconPalette[service.icon] ?? palette[colorIndex]);
+  const accent = locked ? "#dc2626" : (serviceColors[service.slug] ?? palette[colorIndex]);
   return <div className="portal-service-card-wrap">
     <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)} style={{ background: `linear-gradient(145deg, ${accent}18 0%, #ffffff 78%)`, borderColor: `${accent}55`, boxShadow: `0 5px 18px ${accent}12` }}>
       <div className="service-card-icon" style={{ background: `${accent}16`, color: accent, border: `1px solid ${accent}55`, boxShadow: `0 5px 12px ${accent}18` }}><Icon name={service.icon} /></div>
