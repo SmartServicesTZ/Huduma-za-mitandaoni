@@ -843,6 +843,11 @@ export async function completeNidaRequest(requestId: string, nidaNumber: string)
   return (await callable({ requestId, nidaNumber })).data;
 }
 
+export async function createPocketWifiOrder(applicationId: string, details: string, phone: string) {
+  const callable = createWorkerCall<{ applicationId: string; details: string; phone: string }, { applicationId: string; status: string; duplicate: boolean }>("createPocketWifiOrder");
+  return (await callable({ applicationId, details, phone })).data;
+}
+
 export async function createServiceApplication(applicationId: string, serviceSlug: string, values: ServiceFormValues) {
   const callable = createWorkerCall("createServiceApplication");
   return (await callable({ applicationId, serviceSlug, values })).data as { applicationId: string; status: string; duplicate: boolean; balanceAfter: number | null; reference: string };
