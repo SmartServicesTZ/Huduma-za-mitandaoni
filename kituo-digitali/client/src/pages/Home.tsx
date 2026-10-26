@@ -643,6 +643,18 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
 }
 function PortalHome({ search, onUse, services, userName, isAuthenticated, allServicesPage }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[]; userName?: string; isAuthenticated: boolean; allServicesPage: boolean }) {
   const [category, setCategory] = useState("Zote");
+  const [showAppDownload, setShowAppDownload] = useState(false);
+  useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    let showTimer: ReturnType<typeof setTimeout> | undefined;
+    const isNativeApp = /SmartServicesTZApp/i.test(navigator.userAgent) || window.matchMedia("(display-mode: standalone)").matches;
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem("stz-app-download-dismissed") === "1"; } catch {}
+    if (isNativeApp || dismissed) return;
+    showTimer = setTimeout(() => setShowAppDownload(true), 3500);
+    hideTimer = setTimeout(() => setShowAppDownload(false), 14000);
+    return () => { if (showTimer) clearTimeout(showTimer); if (hideTimer) clearTimeout(hideTimer); };
+  }, []);
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]"); } catch { return []; }
   });
@@ -703,13 +715,11 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
-    <section className="account-panel" style={{ margin: "0 auto 22px", maxWidth: 1180, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, border: "1px solid rgba(59,130,246,.35)", background: "linear-gradient(120deg, rgba(37,99,235,.16), rgba(16,185,129,.10))" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, flex: "1 1 240px" }}>
-        <span style={{ width: 52, height: 52, display: "grid", placeItems: "center", borderRadius: 16, background: "rgba(59,130,246,.16)", color: "#3b82f6", flexShrink: 0 }}><Smartphone size={28} /></span>
-        <div><span className="overline">SMARTSERVICESTZ APP</span><h2 style={{ margin: "4px 0" }}>Pakua App ya SmartServicesTZ</h2><p style={{ margin: 0 }}>Sakinisha App kwenye simu yako ya Android na ufikie huduma kwa urahisi.</p></div>
-      </div>
-      <a className="button button--green" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", whiteSpace: "nowrap" }}><Smartphone size={18} /> PAKUA APP (APK)</a>
-    </section>
+    {showAppDownload && <aside role="complementary" aria-label="Pakua SmartServicesTZ App" style={{ position: "fixed", right: 14, bottom: "calc(82px + env(safe-area-inset-bottom))", zIndex: 80, width: "min(330px, calc(100vw - 28px))", padding: "11px 12px", borderRadius: 16, border: "1px solid rgba(59,130,246,.38)", background: "var(--navy, #071a36)", color: "#fff", boxShadow: "0 10px 35px rgba(0,0,0,.28)", display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 12, background: "rgba(59,130,246,.18)", color: "#60a5fa", flexShrink: 0 }}><Smartphone size={21} /></span>
+      <div style={{ flex: 1, minWidth: 0 }}><strong style={{ display: "block", fontSize: 13 }}>SmartServicesTZ App</strong><a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" style={{ display: "inline-block", marginTop: 3, color: "#86efac", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Pakua App <ExternalLink size={12} style={{ display: "inline", verticalAlign: "middle" }} /></a></div>
+      <button type="button" aria-label="Funga tangazo la App" onClick={() => { setShowAppDownload(false); try { sessionStorage.setItem("stz-app-download-dismissed", "1"); } catch {} }} style={{ border: 0, background: "transparent", color: "#cbd5e1", padding: 4, cursor: "pointer" }}><X size={17} /></button>
+    </aside>}
     <QuickNidaSearch isAuthenticated={isAuthenticated} />
     <section className="service-discovery"><div><span className="overline">{allServicesPage ? "TAFUTA NA CHUJA" : "SMART SERVICES"}</span><h2>{allServicesPage ? "HUDUMA ZOTE" : "Chagua huduma"}</h2><p>{allServicesPage ? `${matches.length} kati ya ${displayedServices.length} huduma zinaonekana. Tumia utafutaji au makundi kuchuja.` : "Anza hapa — huduma zako zote sehemu moja."}</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
