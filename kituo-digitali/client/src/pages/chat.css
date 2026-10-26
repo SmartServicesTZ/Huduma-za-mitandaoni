@@ -344,3 +344,41 @@
 .chat-member-directory .chat-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .chat-members-footer{padding:12px 16px;border-top:1px solid #e8efea;background:#fbfdfb}
 @media(max-width:600px){.chat-wa-settings{max-height:92dvh!important}.chat-wa-setting-item{padding:9px 6px}.chat-wa-setting-icon{width:34px;height:34px}.chat-wa-account-center{padding:13px}.chat-wa-subpage{padding:16px}.chat-top-menu-wrap{gap:4px}.chat-plus-trigger{font-size:11px}.chat-plus-trigger span{display:none}}
+
+
+/* Chat mobile refresh: readable vertical conversation list */
+.chat-group-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 13px;border-bottom:1px solid #edf2ee;background:#f8fcf9}
+.chat-group-tools small{color:#708477;font-size:10px;line-height:1.4}
+.chat-page .chat-contact-search{flex:none}
+.chat-page .chat-contacts{display:flex;flex-direction:column;gap:2px}
+.chat-page .chat-contact{width:100%;min-width:0;flex:none}
+@media(max-width:760px){
+ .chat-page-head{padding:0 2px;margin-bottom:12px}
+ .chat-workspace{height:auto!important;min-height:0!important;max-height:none!important;display:flex!important;flex-direction:column!important;overflow:visible!important;border-radius:16px!important}
+ .chat-sidebar{width:100%;min-height:0!important;max-height:none!important;display:flex!important;overflow:visible!important;border-right:0!important;border-bottom:1px solid #e4eee7!important;border-radius:16px 16px 0 0}
+ .chat-sidebar-heading{height:58px!important;padding:0 14px!important}
+ .chat-tabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px!important;padding:8px!important;background:#fff}
+ .chat-tabs button{min-width:0!important;min-height:39px!important;flex-direction:column!important;gap:3px!important;padding:5px 2px!important;border-radius:10px!important;font-size:10px!important;white-space:nowrap}
+ .chat-tabs button svg{width:15px!important;height:15px!important}
+ .chat-group-tools{padding:9px 12px!important}
+ .chat-group-tools .button{min-height:36px}
+ .chat-contact-search{margin:9px 10px 6px!important;padding:10px 12px!important}
+ .chat-contacts{display:flex!important;flex-direction:column!important;gap:2px!important;max-height:clamp(210px,38dvh,360px)!important;overflow-y:auto!important;overflow-x:hidden!important;padding:4px 8px 10px!important}
+ .chat-contact{width:100%!important;min-height:64px!important;padding:9px 8px!important;border-radius:12px!important}
+ .chat-avatar{width:42px!important;height:42px!important;min-width:42px!important}
+ .chat-contact-copy{gap:5px!important}
+ .chat-contact-copy strong{font-size:13px!important}
+ .chat-contact-copy small{max-width:calc(100vw - 105px)!important;font-size:11px!important}
+ .chat-main{width:100%;min-height:390px!important;border-radius:0 0 16px 16px;overflow:hidden}
+ .chat-room-head{min-height:64px!important}
+ .chat-message-list{min-height:290px!important}
+ .chat-empty{margin:8px 4px;padding:20px 12px!important;text-align:center;background:#f7fbf8;border-radius:12px}
+ .chat-list-hint{padding:18px 12px!important}
+}
+@media(max-width:420px){
+ .chat-tabs button{font-size:9px!important}
+ .chat-sidebar-heading strong{font-size:16px!important}
+ .chat-contacts{max-height:42dvh!important}
+ .chat-contact{min-height:61px!important}
+ .chat-main{min-height:360px!important}
+}
