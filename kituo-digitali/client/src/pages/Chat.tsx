@@ -413,22 +413,25 @@ export default function ChatPage() {
 
   const acceptCall = async () => {
     const call = incomingCall;
-    if (!call || !call.offer || !firebaseUser || !navigator.mediaDevices?.getUserMedia) { toast.error("Taarifa za simu hazijakamilika. Subiri sekunde chache kisha ujaribu tena."); return; }
-    setCallBusy(true); setCallMode(call.callType === "video" ? "video" : "voice"); setCallStatus("Inaunganisha…");
+    if (!call || !call.offer || !firebaseUser) { toast.error("Taarifa za simu hazijakamilika. Subiri sekunde chache kisha ujaribu tena."); return; }
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) { toast.error("Kivinjari hakiruhusu kamera/maikrofoni. Fungua SmartServicesTZ kupitia HTTPS na ruhusu Camera pamoja na Microphone."); return; }
+    if (!window.RTCPeerConnection) { toast.error("Kivinjari hiki hakiungi mkono simu za sauti/video. Sasisha kivinjari kisha jaribu tena."); return; }
+    setCallBusy(true); setCallMode(call.callType === "video" ? "video" : "voice"); setCallStatus("Inaomba ruhusa ya kamera/maikrofoni…");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.callType === "video" });
       localCallStreamRef.current = stream;
       if (localVideoRef.current && call.callType === "video") localVideoRef.current.srcObject = stream;
-      callSessionRef.current = call.id; setIncomingCall(null);
+      callSessionRef.current = call.id;
       const pc = makePeerConnection(call.id, firebaseUser.uid, stream, call.callType === "video" ? "video" : "voice");
       await pc.setRemoteDescription(new RTCSessionDescription(call.offer));
       for (const candidate of pendingCandidatesRef.current.splice(0)) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => undefined);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       await updateDoc(doc(firestore, "callSessions", call.id), { answer: { type: answer.type, sdp: answer.sdp }, status: "accepted", updatedAt: serverTimestamp() });
-      attachCallDocument(call.id, false); setCallStatus("Imeunganishwa"); setCallBusy(false);
+      attachCallDocument(call.id, false); setIncomingCall(null); setCallStatus("Jibu limetumwa; inaunganisha…"); setCallBusy(false);
     } catch (error: any) {
-      console.error(error); setCallBusy(false); stopCallMedia();
+      console.error("SmartServicesTZ acceptCall failed:", { name: error?.name, code: error?.code, message: error?.message, callId: call?.id, callType: call?.callType });
+      setCallBusy(false); stopCallMedia();
       toast.error(callMediaErrorMessage(error, call.callType === "video" ? "video" : "voice"));
     }
   };
