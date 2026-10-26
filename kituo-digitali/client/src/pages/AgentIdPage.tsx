@@ -7,6 +7,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { consumeFirebaseTokens, createAgentRecord } from "@/lib/firebase";
 import { serviceCatalog } from "../../../shared/catalog";
+import tanzaniaLocations from "@/data/tanzaniaLocations.json";
 
 type Network = "Airtel" | "Vodacom" | "Yas" | "Halotel" | "Mbeya One Company Limited" | "Huduma za Mtandaoni";
 /** color/dark = rangi kuu na ya giza, hl = rangi ya mwangaza (highlight), accent = rangi nyepesi ya mandharinyuma ya chips. */
@@ -38,6 +39,9 @@ type AgentData = { name: string; agentId: string; phone: string; type: string; r
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
 const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", Supervisor: "SV", "Authorized Agent": "AA" };
+const locationData = tanzaniaLocations as unknown as { regions: Record<string, { districts: Record<string, string[]> }> };
+const tanzaniaRegions = Object.keys(locationData.regions).sort((a, b) => a.localeCompare(b));
+const districtsForRegion = (selectedRegion: string) => Object.keys(locationData.regions[selectedRegion]?.districts ?? {}).sort((a, b) => a.localeCompare(b));
 const regionCodeFor = (value: string) => { const normalized = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); return regionCodes[normalized] ?? normalized.replace(/[^a-z]/g, "").slice(0, 3).toUpperCase().padEnd(3, "X"); };
 const makeAgentId = (network: Network, region: string, _district: string, type: string) =>
   `T-${regionCodeFor(region)}-${networkCode[network]}-${roleCode[type] ?? "AG"}-000`;
@@ -280,11 +284,11 @@ export default function AgentIdPage() {
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="aid-field"><span>Agent ID (hutengenezwa na mfumo)</span><input value={agentId} readOnly aria-readonly="true" /></label><small className="aid-help">Msimbo unaonyesha nchi, mkoa, mtandao, aina ya wakala na namba ya kipekee. Taarifa za wilaya na kata huhifadhiwa kwenye mfumo.</small>
-        <label className="aid-field"><span>Namba ya Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
+        <label className="aid-field"><span>Agent ID</span><input value={agentId} readOnly aria-readonly="true" /></label>
+        <label className="aid-field"><span>Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
         <label className="aid-field"><span>Agent Type</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Supervisor</option><option>Authorized Agent</option></select></label>
-        <label className="aid-field"><span>Mkoa</span><input value={region} maxLength={30} onChange={(e) => setRegion(e.target.value)} /></label>
-        <label className="aid-field"><span>Wilaya</span><input value={district} maxLength={30} onChange={(e) => setDistrict(e.target.value)} /></label>
+        <label className="aid-field"><span>Mkoa</span><select value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} required><option value="">Chagua mkoa</option>{tanzaniaRegions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+        <label className="aid-field"><span>Wilaya</span><select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!region} required><option value="">Chagua wilaya</option>{districtsForRegion(region).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Kata / Eneo</span><input value={area} maxLength={30} onChange={(e) => setArea(e.target.value)} /></label>
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
@@ -512,7 +516,7 @@ const AGENT_ID_CSS = `
 /* ===== KITAMBULISHO CHA KULALA (560x350) ===== */
 .idl{width:560px;height:350px;box-sizing:border-box;position:relative;overflow:hidden;border-radius:22px;background:#fff;color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 18px 40px rgba(15,23,42,.22)}
 .idl small{display:block;font-size:7.5px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
-.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.07}
+.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.15;filter:contrast(1.18) saturate(1.12)}
 .idl-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
 
 /* mbele: safu mbili */
@@ -553,7 +557,7 @@ const AGENT_ID_CSS = `
 .idl-brand{font-size:8px;font-weight:800;letter-spacing:.14em;line-height:1.35;opacity:.9}
 .idl-title{margin-top:4px;font-size:15px;font-weight:900;line-height:1.15}
 .idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
-.idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.06}
+.idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.12;filter:contrast(1.18) saturate(1.12)}
 .idl-rules{position:relative;flex:1;min-width:0}
 .idl-rules h4{margin:2px 0 10px;font-size:10px;font-weight:900;letter-spacing:.04em;color:var(--d)}
 .idl-rl{display:flex;align-items:flex-start;gap:8px;margin:0 0 9px;font-size:9.4px;line-height:1.38;color:#475569}
