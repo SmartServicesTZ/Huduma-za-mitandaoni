@@ -197,6 +197,39 @@ service cloud.firestore {
           && request.auth.uid in request.resource.data.readBy));
       allow delete: if accountMay('chat') && (resource.data.senderId == request.auth.uid || canManageMessages());
     }
+    match /callSessions/{callId} {
+      allow read: if accountMayRead() && request.auth.uid in resource.data.participants;
+      allow create: if accountMay('chat')
+        && request.resource.data.keys().hasOnly(['callerId','calleeId','participants','callType','status','createdAt'])
+        && request.resource.data.callerId == request.auth.uid
+        && request.resource.data.participants is list
+        && request.resource.data.participants.size() == 2
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.calleeId in request.resource.data.participants
+        && request.resource.data.calleeId != request.auth.uid
+        && request.resource.data.callType in ['voice','video']
+        && request.resource.data.status == 'ringing'
+        && request.resource.data.createdAt == request.time;
+      allow update: if accountMay('chat')
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offer','answer','status','updatedAt'])
+        && request.resource.data.status in ['ringing','accepted','rejected','ended']
+        && request.resource.data.updatedAt == request.time
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['offer']) || request.auth.uid == resource.data.callerId)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['answer']) || request.auth.uid == resource.data.calleeId)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) || request.resource.data.status == 'ended' || request.resource.data.status == 'rejected' || (request.resource.data.status == 'accepted' && request.auth.uid == resource.data.calleeId));
+      allow delete: if false;
+      match /candidates/{candidateId} {
+        allow read: if accountMayRead() && request.auth.uid in get(/databases/$(database)/documents/callSessions/$(callId)).data.participants;
+        allow create: if accountMay('chat')
+          && request.auth.uid in get(/databases/$(database)/documents/callSessions/$(callId)).data.participants
+          && request.resource.data.keys().hasOnly(['senderId','candidate','createdAt'])
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.candidate is map
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
     match /conversations/{roomId} {
       allow get: if accountMayRead() && (isConversationParticipant(roomId)
         || canManageMessages()
