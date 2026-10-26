@@ -390,6 +390,33 @@ const worker = {
         return jsonResponse({ error: { code: "internal", message: "Webhook haijakamilika." } }, 500, cors);
       }));
     }
+    if (url.pathname === "/turn/credentials") {
+      if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
+      return withWorkerEnv(env, async () => {
+        try {
+          await verifyFirebaseIdToken(request, env);
+          const keyId = typeof env.CLOUDFLARE_TURN_KEY_ID === "string" ? env.CLOUDFLARE_TURN_KEY_ID.trim() : "";
+          const keySecret = typeof env.CLOUDFLARE_TURN_KEY_SECRET === "string" ? env.CLOUDFLARE_TURN_KEY_SECRET.trim() : "";
+          if (!keyId || !keySecret) return jsonResponse({ error: { code: "failed-precondition", message: "TURN relay bado haijasanidiwa kwenye seva." } }, 412, cors);
+          const upstream = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(keyId)}/credentials/generate-ice-servers`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${keySecret}`, "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ ttl: 3600 }),
+            signal: AbortSignal.timeout(12000),
+          });
+          const payload = await upstream.json().catch(() => null) as { iceServers?: unknown } | null;
+          if (!upstream.ok || !Array.isArray(payload?.iceServers) || payload.iceServers.length === 0) {
+            console.error("Cloudflare TURN credential generation failed", { status: upstream.status });
+            return jsonResponse({ error: { code: "unavailable", message: "TURN relay haikupatikana kwa sasa." } }, 503, cors);
+          }
+          return jsonResponse({ iceServers: payload.iceServers, expiresIn: 3600 }, 200, cors);
+        } catch (error) {
+          if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+          console.error("TURN credentials endpoint failed", { code: error instanceof Error ? error.name : "unknown" });
+          return jsonResponse({ error: { code: "unavailable", message: "Imeshindwa kupata TURN relay kwa sasa." } }, 503, cors);
+        }
+      });
+    }
     const match = /^\/call\/([A-Za-z][A-Za-z0-9]*)$/.exec(url.pathname);
     if (match) {
       if (match[1] === "createTokenPurchaseOrder" && !paymentFlowsEnabled(env)) {
