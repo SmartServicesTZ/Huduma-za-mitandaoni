@@ -57,6 +57,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA USAJILI & LIPA", "Tengeneza kitambulisho cha kisasa cha wakala wa usajili na Lipa.", "badge-check", "HUDUMA ZA WAKALA"),
   paid("sme-airtel-mkataba", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "HUDUMA ZA WAKALA"),
   free("sme-vodacom", "SME VODACOM", "Omba kuunganishwa SME Vodacom na uwasilishe cheti cha TIN.", "smartphone", "HUDUMA ZA WAKALA"),
+  free("pata-pocket-wifi-mabando", "PATA POCKET WIFI & MABANDO", "Chagua router na bando la Vodacom Unlimited M2M, kisha tuma oda yako.", "wifi", "HUDUMA ZA WAKALA"),
   { ...free("sme-airtel", "SME AIRTEL", "Sajili laini mpya au ya zamani kwenye SME Airtel. Vocha kuanzia TSh 10,000; zawadi ya TSh 2,000 kwa SME iliyothibitishwa.", "smartphone", "HUDUMA ZA WAKALA"), reward: 2000 },
   free("change-business-name-airtel-lipa", "CHANGE BUSINESS NAME AIRTEL LIPA", "Jaza fomu rasmi ya kubadili jina la biashara kwenye Airtel Lipa bila kuondoka kwenye website au app.", "file-pen", "HUDUMA ZA WAKALA"),
   free("tengeneza-mkataba", "TENGENEZA MKATABA", "Tengeneza mkataba unaoweza kuhariri, kuona na kuhifadhi kama PDF.", "file-badge", "HUDUMA ZA WAKALA"),
@@ -102,8 +103,11 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
       : { ...fallback, ...service });
   });
   if (initialized) {
-    const access = defaults.get("access-lipa-number");
-    if (access && !configured.some((service) => service.slug === access.slug)) merged.set(access.slug, access);
+    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando"];
+    alwaysAvailableDefaults.forEach((slug) => {
+      const fallback = defaults.get(slug);
+      if (fallback && !configured.some((service) => service.slug === slug)) merged.set(slug, fallback);
+    });
   }
   return Array.from(merged.values());
 }
