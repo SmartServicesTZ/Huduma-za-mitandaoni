@@ -2399,3 +2399,73 @@ form,
 .license-page .license-layout { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 18px !important; }
 .license-page .license-form-card { order: 1; width: 100%; }
 .license-page .license-preview-column { order: 2; min-width: 0; width: 100%; }
+
+
+/* PREMIUM SERVICE ICONS — distinct glyphs, layered badge depth, and responsive clarity */
+.portal-service-card .service-card-icon {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+  border-radius: 15px !important;
+  display: grid;
+  place-items: center;
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.portal-service-card .service-card-icon::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid currentColor;
+  border-radius: 11px;
+  opacity: .2;
+  transform: rotate(-8deg);
+  transition: transform .22s ease, opacity .22s ease;
+}
+.portal-service-card .service-card-icon::after {
+  content: "";
+  position: absolute;
+  right: -12px;
+  bottom: -14px;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .08;
+}
+.portal-service-card .service-card-icon > svg {
+  position: relative;
+  z-index: 2;
+  stroke-width: 2.25;
+  filter: drop-shadow(0 2px 2px rgba(16,35,63,.12));
+}
+.portal-service-card .service-card-icon__ring {
+  position: absolute;
+  z-index: 1;
+  inset: 9px;
+  border: 1px dashed currentColor;
+  border-radius: 50%;
+  opacity: .22;
+  transform: rotate(22deg);
+}
+.portal-service-card:not(.service-locked):hover .service-card-icon {
+  transform: translateY(-3px) rotate(-2deg) scale(1.06);
+}
+.portal-service-card:not(.service-locked):hover .service-card-icon::before {
+  opacity: .38;
+  transform: rotate(8deg) scale(1.04);
+}
+.portal-service-card.service-locked .service-card-icon {
+  filter: grayscale(.12);
+}
+@media (max-width: 520px) {
+  .portal-service-card .service-card-icon { width: 40px; height: 40px; flex-basis: 40px; border-radius: 12px !important; }
+  .portal-service-card .service-card-icon > svg { width: 20px; height: 20px; }
+  .portal-service-card .service-card-icon__ring { inset: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-service-card .service-card-icon,
+  .portal-service-card .service-card-icon::before { transition: none; }
+}
