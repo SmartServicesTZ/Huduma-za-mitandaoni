@@ -59,7 +59,13 @@ export default function ChatPage() {
   const [groupName, setGroupName] = useState("");
   const [groupPhones, setGroupPhones] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
-  const [groupModalOpen, setGroupModalOpen] = useState(false);\n  const [groupSettingsOpen, setGroupSettingsOpen] = useState(false);\n  const [groupSettingsName, setGroupSettingsName] = useState("");\n  const [groupSettingsDescription, setGroupSettingsDescription] = useState("");\n  const [groupSettingsVisibility, setGroupSettingsVisibility] = useState<"private" | "public">("private");\n  const [groupAvatarBusy, setGroupAvatarBusy] = useState(false);\n  const groupAvatarRef = useRef<HTMLInputElement>(null);
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [groupSettingsOpen, setGroupSettingsOpen] = useState(false);
+  const [groupSettingsName, setGroupSettingsName] = useState("");
+  const [groupSettingsDescription, setGroupSettingsDescription] = useState("");
+  const [groupSettingsVisibility, setGroupSettingsVisibility] = useState<"private" | "public">("private");
+  const [groupAvatarBusy, setGroupAvatarBusy] = useState(false);
+  const groupAvatarRef = useRef<HTMLInputElement>(null);
   const [moderationConversations, setModerationConversations] = useState<PrivateConversation[]>([]);
   const [privateMessages, setPrivateMessages] = useState<ChatMessage[]>([]);
   const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
@@ -251,7 +257,11 @@ export default function ChatPage() {
     window.clearTimeout(typingTimer.current);
     typingTimer.current = window.setTimeout(() => void setChatTyping(roomId, firebaseUser.uid, false).catch(() => undefined), 1500);
   };
-  const openGroupSettings = () => { if (!currentGroup) return; setGroupSettingsName(currentGroup.name); setGroupSettingsDescription(currentGroup.description ?? ""); setGroupSettingsVisibility(currentGroup.visibility); setGroupSettingsOpen(true); };\n  const saveGroupSettings = async (event: React.FormEvent) => { event.preventDefault(); if (!firebaseUser || !currentGroup) return; try { await updateChatGroupSettings(currentGroup.id, firebaseUser.uid, { name: groupSettingsName, description: groupSettingsDescription, visibility: groupSettingsVisibility }); toast.success("Mipangilio ya group imehifadhiwa."); setGroupSettingsOpen(false); } catch (error: any) { toast.error(errorMessage(error, "Mipangilio haikuhifadhiwa.")); } };\n  const onGroupAvatar = async (file?: File) => { if (!file || !firebaseUser || !currentGroup) return; setGroupAvatarBusy(true); try { await uploadChatGroupAvatar(currentGroup.id, firebaseUser.uid, file); toast.success("Picha ya group imebadilishwa."); } catch (error: any) { toast.error(errorMessage(error, "Picha ya group haikupakiwa.")); } finally { setGroupAvatarBusy(false); if (groupAvatarRef.current) groupAvatarRef.current.value = ""; } };\n\n  const createGroup = async (event: React.FormEvent) => {
+  const openGroupSettings = () => { if (!currentGroup) return; setGroupSettingsName(currentGroup.name); setGroupSettingsDescription(currentGroup.description ?? ""); setGroupSettingsVisibility(currentGroup.visibility); setGroupSettingsOpen(true); };
+  const saveGroupSettings = async (event: React.FormEvent) => { event.preventDefault(); if (!firebaseUser || !currentGroup) return; try { await updateChatGroupSettings(currentGroup.id, firebaseUser.uid, { name: groupSettingsName, description: groupSettingsDescription, visibility: groupSettingsVisibility }); toast.success("Mipangilio ya group imehifadhiwa."); setGroupSettingsOpen(false); } catch (error: any) { toast.error(errorMessage(error, "Mipangilio haikuhifadhiwa.")); } };
+  const onGroupAvatar = async (file?: File) => { if (!file || !firebaseUser || !currentGroup) return; setGroupAvatarBusy(true); try { await uploadChatGroupAvatar(currentGroup.id, firebaseUser.uid, file); toast.success("Picha ya group imebadilishwa."); } catch (error: any) { toast.error(errorMessage(error, "Picha ya group haikupakiwa.")); } finally { setGroupAvatarBusy(false); if (groupAvatarRef.current) groupAvatarRef.current.value = ""; } };
+
+  const createGroup = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!self) return;
     const phones = groupPhones.split(/[,\s]+/).map((value) => value.trim()).filter(Boolean);
