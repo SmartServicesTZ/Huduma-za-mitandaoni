@@ -278,3 +278,23 @@
  .chat-page[data-chat-view="private"][data-chat-selected="no"] .chat-sidebar,
  .chat-page[data-chat-view="groups"][data-chat-selected="no"] .chat-sidebar{display:flex!important;max-height:100%!important;min-height:0!important;border-bottom:0!important}
 }
+
+
+/* Advanced WhatsApp-like settings and conversation filters */
+.chat-filter-pills{display:flex;gap:7px;padding:0 13px 10px;background:#fff}
+.chat-filter-pills button{display:inline-flex;align-items:center;gap:6px;border:1px solid #e0ebe4;border-radius:999px;background:#f5f8f6;color:#5e7468;padding:7px 12px;font-size:10px;font-weight:750;cursor:pointer}
+.chat-filter-pills button.active{background:#dff5e9;color:#087b55;border-color:#b9e3cc}
+.chat-filter-pills b{display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:#15966a;color:#fff;font-size:9px}
+.chat-call-action{display:grid!important;place-items:center;width:34px;height:34px;border:0;border-radius:50%;background:#eff8f2;color:#16865d;cursor:pointer}
+.chat-settings-section>strong{display:flex;align-items:center;gap:8px}
+.chat-settings-section>strong svg{color:#16865d}
+.chat-storage-stats{display:grid;gap:8px;margin:12px 0}
+.chat-storage-stats span{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;border:1px solid #e4ede7;border-radius:10px;background:#f8fbf9;color:#5b7165;font-size:11px}
+.chat-storage-stats b{color:#164b35;font-size:13px}
+.chat-cache-clear{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;border:1px solid #f0d7d7;border-radius:10px;background:#fff8f8;color:#a43e3e;padding:10px 12px;font-size:11px;font-weight:750;cursor:pointer}
+.chat-settings-help{font-size:11px;line-height:1.6;color:#6c8076;margin:10px 0 2px}
+.chat-page[data-chat-theme="dark"] .chat-filter-pills{background:#172b25}
+.chat-page[data-chat-theme="dark"] .chat-filter-pills button{background:#203a30;border-color:#36574a;color:#b4cfc0}
+.chat-page[data-chat-theme="dark"] .chat-filter-pills button.active{background:#075e4b;border-color:#08745a;color:#effff6}
+.chat-page[data-chat-theme="dark"] .chat-call-action{background:#254538;color:#c7ead7}
+@media(max-width:760px){.chat-filter-pills{padding:0 9px 7px}.chat-filter-pills button{padding:6px 10px}.chat-call-action{width:30px;height:30px}}
