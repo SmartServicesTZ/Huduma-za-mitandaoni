@@ -134,7 +134,7 @@ export const registerFcmToken = callable(async (request) => {
   const uid = authUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
   const token = typeof data.token === "string" ? data.token.trim() : "";
-  if (token.length < 20 || token.length > 4096 || /\\s/.test(token)) {
+  if (token.length < 20 || token.length > 4096 || /\s/.test(token)) {
     throw new ApiError("invalid-argument", "Token ya arifa si sahihi.");
   }
   const existing = await db.collection("fcmTokens").where("token", "==", token).limit(1).get();
