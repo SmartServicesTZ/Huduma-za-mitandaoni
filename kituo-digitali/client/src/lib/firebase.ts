@@ -981,12 +981,13 @@ export type ChatGroup = { id: string; name: string; description?: string; ownerI
 export type ChatGroupJoinRequest = { id: string; groupId: string; userId: string; userName: string; userPhone: string; userImage?: string; status: "pending" | "approved" | "rejected"; createdAt?: unknown };
 
 export function subscribeChatMembers(callback: (rows: ChatUser[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "users"), orderBy("name", "asc")), (snapshot) => {
-    callback(snapshot.docs.map((item) => {
-      const data = item.data();
-      return { uid: item.id, name: String(data.name ?? [data.firstName, data.lastName].filter(Boolean).join(" ") ?? "Mwanachama"), phone: String(data.phone ?? ""), profileImageUrl: typeof data.profileImageUrl === "string" ? data.profileImageUrl : "", verificationStatus: data.verificationStatus } as ChatUser;
-    }));
-  }, onError);
+  let active = true;
+  void invokeWorker<ChatUser[]>("listChatMembers", {}).then((rows) => {
+    if (active) callback(rows);
+  }).catch((error) => {
+    if (active) onError?.(error);
+  });
+  return () => { active = false; };
 }
 
 export async function findChatUser(phone: string) {
