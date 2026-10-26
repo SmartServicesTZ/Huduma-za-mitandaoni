@@ -298,9 +298,10 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
     window.dispatchEvent(new CustomEvent("smartservicestz-favorites-changed", { detail: favorites }));
     toast.success(favorite ? "Huduma imeondolewa kwenye unazopenda." : "Huduma imehifadhiwa kwenye unazopenda.");
   };
-  const palette = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#db2777", "#4f46e5", "#0d9488"];
+  const iconPalette: Record<string, string> = { "store": "#059669", "file-badge": "#7c3aed", "car-front": "#ea580c", "badge-check": "#16a34a", "contact": "#4f46e5", "vote": "#0891b2", "qr-code": "#db2777", "ticket": "#d97706", "landmark": "#2563eb", "wallet-cards": "#0d9488", "smartphone": "#8b5cf6", "copy": "#475569", "baby": "#ec4899", "trophy": "#ca8a04", "star": "#e11d48", "tv": "#6366f1", "image-search": "#0f766e", "radio": "#c026d3", "plane": "#0284c7", "heart-handshake": "#059669", "file-warning": "#c2410c", "music-2": "#9333ea", "palette": "#be185d", "scan-face": "#0f766e", "user-round-pen": "#7c3aed", "search": "#0284c7" };
+  const palette = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#db2777", "#4f46e5", "#0d9488", "#ea580c", "#9333ea"];
   const colorIndex = [...service.slug].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
-  const accent = locked ? "#dc2626" : palette[colorIndex];
+  const accent = locked ? "#dc2626" : (iconPalette[service.icon] ?? palette[colorIndex]);
   return <div className="portal-service-card-wrap">
     <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)} style={{ background: `linear-gradient(145deg, ${accent}18 0%, #ffffff 78%)`, borderColor: `${accent}55`, boxShadow: `0 5px 18px ${accent}12` }}>
       <div className="service-card-icon" style={{ background: `linear-gradient(135deg, ${accent}, ${accent}bb)`, color: "#ffffff", boxShadow: `0 5px 12px ${accent}35` }}><Icon name={service.icon} /></div>
