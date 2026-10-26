@@ -19,7 +19,7 @@ import {
   generateBusinessLicense,
   getLipaApplicationDocument,
   getServiceApplicationDocument,
-  listServiceApplications, replyToServiceApplication,
+  listServiceApplications, listChatMembers, replyToServiceApplication,
   listLipaApplications,
   markLipaApplicationViewed,
   markServiceApplicationViewed,
@@ -52,7 +52,7 @@ interface Env extends WorkerEnv {}
 
 const callableRoutes: Record<string, CallableRoute> = {
   adminDelete, adminWrite, adjustTokens, claimDailyTokenBonus, changeOwnPassword, claimRegistrationPhone, completeBusinessLicense, consumeTokens,
-  createServiceApplication, updateServiceApplication, createLipaDocumentUploadUrl, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser,
+  createServiceApplication, updateServiceApplication, createLipaDocumentUploadUrl, createTokenPurchaseOrder, ensureDefaultServiceCatalog, findChatUser, listChatMembers,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   listServiceApplications, replyToServiceApplication,
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
