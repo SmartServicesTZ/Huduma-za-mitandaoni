@@ -37,7 +37,7 @@ export default function ContractMakerPage(){
      <div className="lm-field lm-director">{data.directorName}</div>
      <div className="lm-field lm-institution">{data.institution}</div>
      <div className="lm-field lm-director-date">{fmt(data.directorDate)}</div>
-     {!paid && <div className="lm-sample">PREVIEW • HAJALIPIWA</div>}
+     {!paid && <div className="lm-sample">BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</div>}
     </article>
    </section>
   </div>
