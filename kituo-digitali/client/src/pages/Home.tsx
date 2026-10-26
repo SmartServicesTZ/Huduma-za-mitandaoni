@@ -824,7 +824,7 @@ export default function Home() {
         <AppHeader onMenu={() => setMenuOpen(true)} search={search} setSearch={setSearch} />
         {serviceNotice && <div className="portal-main"><Notice>{serviceNotice}</Notice><button type="button" onClick={() => setServiceNotice("")}>Funga ujumbe</button></div>}
         {restrictionNotice && <div className="portal-main"><Notice tone="info">{restrictionNotice}{user?.restrictionMessage?.trim() && <><br /><strong>{user.restrictionMessage}</strong></>}</Notice></div>}
-        <Suspense fallback={<main className="portal-main page-loading-state"><span className="loading-orbit" aria-hidden="true"></span><strong>Inapakia sehemu hii...</strong><small>Subiri kidogo, tafadhali.</small></main>}>{page}</Suspense>
+        <Suspense fallback={<main className="portal-main page-loading-state" style={{ minHeight: "65vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}><span className="loading-orbit" aria-hidden="true"></span><strong style={{ fontSize: 22 }}>SmartServicesTZ</strong><span>Tunafungua huduma zako…</span><small>Ikiwa ukurasa hautafunguka, gusa kitufe hapa chini.</small><button type="button" onClick={() => window.location.reload()} style={{ marginTop: 6, padding: "10px 22px", borderRadius: 10, border: 0, background: "#1677ff", color: "#fff", fontWeight: 700 }}>Jaribu tena</button></main>}>{page}</Suspense>
         <footer className="portal-footer">SmartServicesTZ — Huduma za Mtandaoni <span>© Haki zote zimehifadhiwa 2026</span></footer>
       </div>
       <BottomNav />
