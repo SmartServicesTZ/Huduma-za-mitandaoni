@@ -50,6 +50,9 @@ export default function ChatPage() {
   const [callStatus, setCallStatus] = useState("Tayari kupiga simu");
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [callBusy, setCallBusy] = useState(false);
+  const [callConnectedAt, setCallConnectedAt] = useState<number | null>(null);
+  const [callElapsed, setCallElapsed] = useState(0);
+  const notificationCallIdRef = useRef("");
   const [callHistory, setCallHistory] = useState<any[]>([]);
   const [callHistoryOpen, setCallHistoryOpen] = useState(false);
   const [callHistoryFilter, setCallHistoryFilter] = useState<"all" | "incoming" | "outgoing" | "missed">("all");
@@ -308,6 +311,15 @@ export default function ChatPage() {
       recorder.start(); mediaRecorder.current = recorder; setRecording(true);
     } catch { toast.error("Ruhusu matumizi ya microphone ili kurekodi ujumbe wa sauti."); }
   };
+  useEffect(() => {
+    if (callConnectedAt === null) { setCallElapsed(0); return; }
+    const updateElapsed = () => setCallElapsed(Math.max(0, Math.floor((Date.now() - callConnectedAt) / 1000)));
+    updateElapsed();
+    const interval = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(interval);
+  }, [callConnectedAt]);
+  const callDurationLabel = `${String(Math.floor(callElapsed / 60)).padStart(2, "0")}:${String(callElapsed % 60).padStart(2, "0")}`;
+
   const stopCallMedia = () => {
     candidateUnsubscribeRef.current?.(); candidateUnsubscribeRef.current = null;
     callUnsubscribeRef.current?.(); callUnsubscribeRef.current = null;
@@ -318,7 +330,7 @@ export default function ChatPage() {
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
     candidateIdsRef.current.clear(); pendingCandidatesRef.current = [];
     if (callTimeoutRef.current !== null) { window.clearTimeout(callTimeoutRef.current); callTimeoutRef.current = null; }
-    callSessionRef.current = ""; setCallMode(null); setCallBusy(false);
+    callSessionRef.current = ""; setCallMode(null); setCallBusy(false); setCallConnectedAt(null); setCallElapsed(0);
   };
 
   const attachCallCandidates = (callId: string, uid: string) => {
@@ -349,11 +361,11 @@ export default function ChatPage() {
         else if (data.status === "ended") toast.info("Simu imekatwa.");
         stopCallMedia(); setIncomingCall(null); return;
       }
-      if (data.status === "accepted") { setCallStatus("Imeunganishwa"); if (callTimeoutRef.current !== null) { window.clearTimeout(callTimeoutRef.current); callTimeoutRef.current = null; } }
+      if (data.status === "accepted") { setCallStatus("Mpokeaji amepokea; inaunganisha sauti…"); if (callTimeoutRef.current !== null) { window.clearTimeout(callTimeoutRef.current); callTimeoutRef.current = null; } }
       if (isCaller && data.answer && peerConnectionRef.current?.signalingState === "have-local-offer") {
         try {
           await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
-          setCallStatus("Imeunganishwa");
+          setCallStatus("Jibu limepokelewa; inaunganisha sauti…");
           for (const candidate of pendingCandidatesRef.current.splice(0)) await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => undefined);
         } catch (error) { console.error(error); toast.error("Imeshindwa kukamilisha muunganisho wa simu."); }
       }
@@ -364,10 +376,15 @@ export default function ChatPage() {
     const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] });
     peerConnectionRef.current = pc;
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-    pc.onconnectionstatechange = () => { if (pc.connectionState === "connected") setCallStatus("Imeunganishwa"); else if (pc.connectionState === "connecting") setCallStatus("Inaunganisha sauti/video…"); else if (pc.connectionState === "disconnected") setCallStatus("Mtandao umekatika kwa muda; inajaribu kuunganisha tena…"); else if (pc.connectionState === "failed") setCallStatus("Muunganisho umeshindwa. Mtandao huu unaweza kuhitaji TURN relay."); };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "connected") { setCallStatus("Imeunganishwa"); setCallConnectedAt((current) => current ?? Date.now()); }
+      else if (pc.connectionState === "connecting") setCallStatus("Inaunganisha sauti/video…");
+      else if (pc.connectionState === "disconnected") setCallStatus("Mtandao umekatika kwa muda; inajaribu kuunganisha tena…");
+      else if (pc.connectionState === "failed") setCallStatus("Sauti haijaunganishwa. Mtandao huu unaweza kuhitaji TURN relay.");
+    };
     pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === "failed") { setCallStatus("Muunganisho wa mtandao umeshindwa; jaribu kubadili Wi-Fi/data."); try { pc.restartIce(); } catch {} } };
     pc.ontrack = (event) => {
-      const remote = event.streams[0];
+      const remote = event.streams[0] ?? new MediaStream([event.track]);
       if (type === "video" && remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remote;
         void remoteVideoRef.current.play().catch(() => undefined);
@@ -375,9 +392,11 @@ export default function ChatPage() {
       // Keep audio on a dedicated element for iOS/Android; video element is muted to avoid echo.
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = remote;
+        remoteAudioRef.current.volume = 1;
         void remoteAudioRef.current.play().catch(() => setCallStatus("Gusa skrini ya simu ili kuruhusu sauti."));
       }
       setCallStatus("Imeunganishwa");
+      setCallConnectedAt((current) => current ?? Date.now());
     };
     pc.onicecandidate = (event) => {
       if (event.candidate) void addDoc(collection(firestore, "callSessions", callId, "candidates"), { senderId: uid, candidate: event.candidate.toJSON(), createdAt: serverTimestamp() }).catch((error) => console.warn("ICE candidate haikutumwa", error));
@@ -469,6 +488,13 @@ export default function ChatPage() {
     let stopped = false;
     let intervalId: number | undefined;
     let audioContext: AudioContext | null = null;
+    if (typeof Notification !== "undefined" && Notification.permission === "granted" && document.visibilityState !== "visible" && notificationCallIdRef.current !== incomingCall.id) {
+      notificationCallIdRef.current = incomingCall.id;
+      try {
+        const notice = new Notification("Simu inayoingia — SmartServicesTZ", { body: incomingCall.callType === "video" ? "Una simu ya video. Fungua Chat ili kupokea." : "Una simu ya sauti. Fungua Chat ili kupokea.", tag: `sstz-call-${incomingCall.id}`, requireInteraction: true });
+        notice.onclick = () => { window.focus(); notice.close(); };
+      } catch (error) { console.warn("Arifa ya simu haikuonyeshwa", error); }
+    }
     const ring = () => {
       if (stopped) return;
       try {
@@ -638,7 +664,7 @@ export default function ChatPage() {
     </section>
     {lightboxUrl && <div className="chat-lightbox" role="dialog" aria-modal="true" aria-label="Picha kubwa" onClick={() => setLightboxUrl("")}><button type="button" className="chat-lightbox-close" onClick={() => setLightboxUrl("")} aria-label="Funga picha"><X size={24}/></button><a className="chat-lightbox-download" href={lightboxUrl} download="smartservicestz-chat-image" onClick={(event) => event.stopPropagation()}>Pakua picha</a><img src={lightboxUrl} alt="Picha ya mazungumzo" onClick={(event) => event.stopPropagation()}/></div>}
     {callHistoryOpen && <div className="portal-modal-backdrop" onClick={() => setCallHistoryOpen(false)}><section className="chat-call-history-modal" role="dialog" aria-modal="true" aria-label="Historia ya simu" onClick={(event) => event.stopPropagation()}><header><div><span className="overline">CALL LOG</span><h2>Historia ya simu</h2><p>Simu zako zinahifadhiwa kwenye Firestore kwa usalama.</p></div><button type="button" className="modal-close" onClick={() => setCallHistoryOpen(false)} aria-label="Funga"><X size={19}/></button></header><div className="chat-call-history-filters">{(["all", "incoming", "outgoing", "missed"] as const).map((filter) => <button type="button" key={filter} className={callHistoryFilter === filter ? "active" : ""} onClick={() => setCallHistoryFilter(filter)}>{filter === "all" ? "All Calls" : filter === "incoming" ? "Incoming Calls" : filter === "outgoing" ? "Outgoing Calls" : "Missed Calls"}</button>)}</div><div className="chat-call-history-list">{callHistory.filter((call) => { const incoming = call.calleeId === firebaseUser.uid; return callHistoryFilter === "all" || (callHistoryFilter === "incoming" && incoming) || (callHistoryFilter === "outgoing" && !incoming) || (callHistoryFilter === "missed" && call.status === "missed"); }).map((call) => { const incoming = call.calleeId === firebaseUser.uid; const known = conversations.find((conversation) => conversation.id === call.participants?.slice().sort().join("__")); const name = incoming ? known?.names?.[call.callerId] || "Mwanachama" : known?.names?.[call.calleeId] || "Mwanachama"; const status = call.status === "missed" ? "Haikupokelewa" : call.status === "rejected" ? "Imekataliwa" : call.status === "accepted" ? "Imeunganishwa" : call.status === "ended" ? "Imemalizika" : "Inaita"; return <div className="chat-call-history-row" key={call.id}><span className={`chat-call-history-icon ${call.status === "missed" ? "is-missed" : ""}`}>{call.status === "missed" ? <PhoneMissed size={18}/> : incoming ? <PhoneIncoming size={18}/> : <PhoneOutgoing size={18}/>}</span><span className="chat-call-history-copy"><strong>{name} · {call.callType === "video" ? "Video" : "Sauti"}</strong><small>{incoming ? "Incoming" : "Outgoing"} · {status} · {callDateLabel(call.createdAt)}</small></span></div>; })}{callHistory.length === 0 && <p className="chat-empty">Bado hakuna historia ya simu.</p>}</div></section></div>}
-    {incomingCall?.offer && !callMode && <div className="chat-call-overlay" role="dialog" aria-modal="true" aria-label="Simu inayoingia"><section className="chat-call-modal"><div className="chat-call-avatar">{incomingCall.callType === "video" ? <Video size={34}/> : <Phone size={34}/>}</div><h2>Simu kutoka {conversations.find((conversation) => conversation.id === incomingCall.participants?.slice().sort().join("__"))?.names?.[incomingCall.callerId] || "Mwanachama"}</h2><p className="chat-call-status">{incomingCall.callType === "video" ? "Video call" : "Simu ya sauti"}</p><div className="chat-call-incoming-actions"><button type="button" onClick={() => void rejectCall()}><PhoneOff size={18}/> Kataa</button><button type="button" onClick={() => void acceptCall()} disabled={callBusy}><Phone size={18}/> {callBusy ? "Inaunganisha…" : "Pokea"}</button></div></section></div>}{callMode && <div className="chat-call-overlay" role="dialog" aria-modal="true" aria-label={callMode === "video" ? "Video call" : "Simu ya sauti"}><section className={`chat-call-modal ${callMode === "video" ? "is-video" : ""}`}><button type="button" className="chat-call-close" onClick={() => void endCall()} aria-label="Funga"><X size={20}/></button><div className="chat-call-avatar">{callMode === "video" ? <Video size={34}/> : <Phone size={34}/>}</div><h2>{otherUser?.name || "Mwanachama"}</h2><p className="chat-call-status">{callStatus}</p>{callMode === "video" && <div className="chat-call-video-grid"><video ref={remoteVideoRef} autoPlay playsInline muted className="chat-call-remote-video"/><video ref={localVideoRef} autoPlay playsInline muted className="chat-call-local-video"/></div>}<audio ref={remoteAudioRef} autoPlay />{callMode === "voice" && <p className="chat-call-disclaimer">Simu ya sauti inatumia maikrofoni na spika ya kifaa chako.</p>}<button type="button" className="chat-call-hangup" onClick={() => void endCall()} aria-label="Kata simu"><PhoneOff size={22}/><span>Kata simu</span></button></section></div>}
+    {incomingCall?.offer && !callMode && <div className="chat-call-overlay" role="dialog" aria-modal="true" aria-label="Simu inayoingia"><section className="chat-call-modal"><div className="chat-call-avatar">{incomingCall.callType === "video" ? <Video size={34}/> : <Phone size={34}/>}</div><h2>Simu kutoka {conversations.find((conversation) => conversation.id === incomingCall.participants?.slice().sort().join("__"))?.names?.[incomingCall.callerId] || "Mwanachama"}</h2><p className="chat-call-status">{incomingCall.callType === "video" ? "Video call" : "Simu ya sauti"}</p><div className="chat-call-incoming-actions"><button type="button" onClick={() => void rejectCall()}><PhoneOff size={18}/> Kataa</button><button type="button" onClick={() => void acceptCall()} disabled={callBusy}><Phone size={18}/> {callBusy ? "Inaunganisha…" : "Pokea"}</button></div></section></div>}{callMode && <div className="chat-call-overlay" role="dialog" aria-modal="true" aria-label={callMode === "video" ? "Video call" : "Simu ya sauti"}><section className={`chat-call-modal ${callMode === "video" ? "is-video" : ""}`}><button type="button" className="chat-call-close" onClick={() => void endCall()} aria-label="Funga"><X size={20}/></button><div className="chat-call-avatar">{callMode === "video" ? <Video size={34}/> : <Phone size={34}/>}</div><h2>{otherUser?.name || "Mwanachama"}</h2><p className="chat-call-status">{callStatus}</p>{callConnectedAt !== null && <p className="chat-call-duration" role="timer" aria-label="Muda wa mazungumzo">{callDurationLabel}</p>}{callMode === "video" && <div className="chat-call-video-grid"><video ref={remoteVideoRef} autoPlay playsInline muted className="chat-call-remote-video"/><video ref={localVideoRef} autoPlay playsInline muted className="chat-call-local-video"/></div>}<audio ref={remoteAudioRef} autoPlay />{callMode === "voice" && <p className="chat-call-disclaimer">Simu ya sauti inatumia maikrofoni na spika ya kifaa chako.</p>}<button type="button" className="chat-call-hangup" onClick={() => void endCall()} aria-label="Kata simu"><PhoneOff size={22}/><span>Kata simu</span></button></section></div>}
     {contactsOpen && <div className="portal-modal-backdrop chat-contacts-backdrop" onClick={() => setContactsOpen(false)}><section className="portal-modal chat-members-modal" role="dialog" aria-modal="true" aria-labelledby="chat-members-title" onClick={(event) => event.stopPropagation()}><header><div><span className="overline">SMARTSERVICESTZ</span><h3 id="chat-members-title">Chagua mwanachama</h3><p>Wanachama wa mfumo wako kama mawasiliano yaliyohifadhiwa.</p></div><button type="button" className="modal-close" onClick={() => setContactsOpen(false)} aria-label="Funga"><X size={19}/></button></header><label className="chat-contact-search"><Search size={16}/><input value={memberSearch} onChange={(event) => setMemberSearch(event.target.value)} placeholder="Tafuta jina au namba ya simu"/></label><div className="chat-member-directory">{members.filter((member) => `${member.name} ${member.phone}`.toLowerCase().includes(memberSearch.toLowerCase())).map((member) => <button type="button" className="chat-contact" key={member.uid} onClick={async () => { if (!self) return; try { const id = await openPrivateConversation(self, member); setRoomId(id); setGroupId(""); setView("private"); setContactsOpen(false); setMessageError(""); } catch (error:any) { toast.error(errorMessage(error,"Imeshindikana kufungua chat.")); } }}><span className="chat-avatar">{member.profileImageUrl ? <img src={member.profileImageUrl} alt=""/> : initials(member.name)}</span><span className="chat-contact-copy"><strong>{member.name}</strong><small>{member.phone || "Mwanachama wa SmartServicesTZ"}</small></span><MessageCircle size={17}/></button>)}{members.length===0 && <p className="chat-empty">Orodha ya wanachama haijapatikana. Huenda Firestore Rules haziruhusu kusoma orodha ya watumiaji.</p>}</div><div className="chat-members-footer"><button type="button" className="button button--green" onClick={() => {setContactsOpen(false);setGroupModalOpen(true);setGroupVisibility("private")}}><Users size={16}/> Tengeneza group</button></div></section></div>}
     {settingsOpen && <ChatSettings uid={firebaseUser?.uid} onClose={() => setSettingsOpen(false)} profileName={self?.name || "$teward Tz"} username={profile?.username ? "@" + profile.username : "@Steward.tz"} />}{false && <div className="portal-modal-backdrop chat-settings-backdrop" onClick={() => setSettingsOpen(false)}><motion.section initial={{opacity:0,y:14,scale:.98}} animate={{opacity:1,y:0,scale:1}} transition={{duration:.18}} className="portal-modal chat-settings-modal" role="dialog" aria-modal="true" aria-labelledby="chat-settings-title" onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setSettingsOpen(false)} aria-label="Funga mipangilio"><X size={19}/></button><span className="overline">SMARTSERVICESTZ CHAT</span><h3 id="chat-settings-title">Mipangilio ya mazungumzo</h3><p>Badilisha muonekano, arifa na faragha. Chaguo hizi zinahifadhiwa kwenye kifaa hiki.</p>
       <div className="chat-settings-section"><strong>Muonekano</strong><div className="chat-theme-options"><button type="button" className={chatTheme === "green" ? "selected" : ""} onClick={() => setChatTheme("green")}><i className="theme-dot theme-dot--green"/> WhatsApp Green</button><button type="button" className={chatTheme === "light" ? "selected" : ""} onClick={() => setChatTheme("light")}><i className="theme-dot theme-dot--light"/> Mwanga</button><button type="button" className={chatTheme === "dark" ? "selected" : ""} onClick={() => setChatTheme("dark")}><i className="theme-dot theme-dot--dark"/> Giza</button></div></div>
