@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import { triggerDownload } from "@/lib/downloadHistory";
-import { firebaseAuth, getPublicSiteSettings, onAuthStateChanged, subscribeToProfile } from "@/lib/firebase";
+import { firebaseAuth, getPublicSiteSettings, onAuthStateChanged, subscribeToProfile, consumeFirebaseTokens } from "@/lib/firebase";
+import { serviceCatalog } from "../../../shared/catalog";
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 
 type FormState = {
@@ -70,6 +71,8 @@ const initialForm = (): FormState => ({
 export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
+  const [paid, setPaid] = useState(false);
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
 
   // Jaza Sales Executive Name kutoka kwenye akaunti ya mtumiaji aliyeingia.
@@ -156,6 +159,8 @@ export default function AirtelSmeContractPage() {
       return next;
     });
     setStatus("");
+    setPaid(false);
+    setRequestId(crypto.randomUUID());
   };
 
   const errors = useMemo(() => {
