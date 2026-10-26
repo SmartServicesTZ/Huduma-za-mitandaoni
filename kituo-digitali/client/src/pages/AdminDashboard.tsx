@@ -601,12 +601,10 @@ function exportTransactionsCsv(rows: any[]) {
   ];
   const escapeCell = (value: unknown) => {
     const raw = String(value ?? "");
-    return '"' + raw.replace(/"/g, '""').replace(/\r?
-/g, " ") + '"';
+    return '"' + raw.replaceAll('"', '""').replaceAll("\\r", " ").replaceAll("\\n", " ") + '"';
   };
-  const csv = "\uFEFF" + [columns.map(([label]) => escapeCell(label)).join(","), ...rows.map((item) => columns.map(([, read]) => escapeCell(read(item))).join(","))].join("\r
-");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+  const csv = "\\uFEFF" + [columns.map(([label]) => escapeCell(label)).join(","), ...rows.map((item) => columns.map(([, read]) => escapeCell(read(item))).join(","))].join("\\r\\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
   const link = document.createElement("a");
   link.href = url;
   link.download = `steward-tz-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
