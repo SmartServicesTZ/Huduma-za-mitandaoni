@@ -373,7 +373,7 @@ export default function AirtelSmeContractPage() {
                 <img src={imageSrc} alt="Airtel SME Contract Template" onError={() => setStatus("⚠️ contact.png haijapatikana. Iweke ndani ya client/public/contact.png.")} />
                 <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),color:inkHex}}>{form.customerName}</div>
                 <div className="sme-overlay" style={{...ov("phoneX","phoneY","phoneSize","39%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div>
-                <div className="sme-overlay" style={{...ov("tinX","tinY","tinSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.tin}</div>
+                <div className="sme-overlay" style={{...ov("tinX","tinY","tinSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{formatTin(form.tin)}</div>
                 <div className="sme-overlay" style={{...ov("idTypeX","idTypeY","idTypeSize","28%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idType.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("idX","idY","idSize","27%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idNumber}</div>
                 <div className="sme-overlay" style={{...ov("streetX","streetY","streetSize","36%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.street.toUpperCase()}</div>
