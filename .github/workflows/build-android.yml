@@ -286,7 +286,7 @@ jobs:
                       @Override public void onPermissionRequest(PermissionRequest request) {
                           runOnUiThread(() -> {
                               if (request == null || request.getOrigin() == null
-                                      || !request.getOrigin().toString().startsWith("https://smartservicestz.github.io/")) {
+                                      || !(request.getOrigin().toString().equals("https://smartservicestz.github.io") || request.getOrigin().toString().startsWith("https://smartservicestz.github.io/"))) {
                                   if (request != null) request.deny();
                                   return;
                               }
