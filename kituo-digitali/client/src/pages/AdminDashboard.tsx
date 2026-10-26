@@ -179,8 +179,24 @@ export default function AdminDashboard() {
     setLoadingData(true);
     setDataError("");
     try {
+      // Pakia data ya panel inayotazamwa tu. Hapo awali kila refresh ilisoma
+      // makusanyo mengi ya Firestore hata kama admin alikuwa kwenye panel moja tu.
+      const needs = (...panels: Panel[]) => panels.includes(panel);
       const results = await Promise.allSettled([
-        hasPermission("viewUsers") ? adminListUsers() : Promise.resolve([]), hasPermission("manageServices") ? adminListServices() : Promise.resolve([]), hasPermission("manageReports") ? adminListTransactions() : Promise.resolve([]), hasPermission("manageContent") ? adminListCollection("tutorialVideos") : Promise.resolve([]), hasPermission("manageContent") ? adminListCollection("announcements") : Promise.resolve([]), hasPermission("manageMessages") ? adminListCollection("messages") : Promise.resolve([]), hasPermission("manageLicenses") ? adminListCollection("licenseTemplates") : Promise.resolve([]), hasPermission("viewAuditLogs") ? adminListCollection("adminActions") : Promise.resolve([]), hasPermission("manageSettings") ? adminGetSiteSettings() : Promise.resolve(null), hasPermission("manageServices") ? adminListCollection("serviceLocks") : Promise.resolve([]), hasPermission("manageServices") ? adminListCollection("lipaServices") : Promise.resolve([]), hasPermission("manageLipaApplications") ? adminListLipaApplications() : Promise.resolve([]), hasPermission("manageServices") ? adminListServiceApplications() : Promise.resolve([]), hasPermission("manageUsers") ? adminListAgentRecords() : Promise.resolve([]),
+        hasPermission("viewUsers") && needs("overview", "users", "tokens") ? adminListUsers() : Promise.resolve([]),
+        hasPermission("manageServices") && needs("services", "serviceControl") ? adminListServices() : Promise.resolve([]),
+        hasPermission("manageReports") && needs("overview", "transactions", "reports") ? adminListTransactions() : Promise.resolve([]),
+        hasPermission("manageContent") && needs("videos") ? adminListCollection("tutorialVideos") : Promise.resolve([]),
+        hasPermission("manageContent") && needs("overview", "announcements") ? adminListCollection("announcements") : Promise.resolve([]),
+        hasPermission("manageMessages") && needs("messages") ? adminListCollection("messages") : Promise.resolve([]),
+        hasPermission("manageLicenses") && needs("licenses") ? adminListCollection("licenseTemplates") : Promise.resolve([]),
+        hasPermission("viewAuditLogs") && needs("security") ? adminListCollection("adminActions") : Promise.resolve([]),
+        hasPermission("manageSettings") && needs("cms", "ordering", "services", "serviceControl") ? adminGetSiteSettings() : Promise.resolve(null),
+        hasPermission("manageServices") && needs("services", "serviceControl") ? adminListCollection("serviceLocks") : Promise.resolve([]),
+        hasPermission("manageServices") && needs("applications", "lipa") ? adminListCollection("lipaServices") : Promise.resolve([]),
+        hasPermission("manageLipaApplications") && needs("applications", "lipa") ? adminListLipaApplications() : Promise.resolve([]),
+        hasPermission("manageServices") && needs("applications") ? adminListServiceApplications() : Promise.resolve([]),
+        hasPermission("manageUsers") && needs("agents") ? adminListAgentRecords() : Promise.resolve([]),
       ]);
       const [u, s, t, v, a, m, l, logs, settings, locks, networkConfigs, applications, genericApplications, agentRows] = results;
       if (u.status === "fulfilled") setUsers(u.value); else setDataError("Watumiaji: " + safeError(u.reason));
