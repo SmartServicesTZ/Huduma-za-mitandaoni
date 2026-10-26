@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { generateBusinessLicense, reserveBusinessLicenseNumber, subscribeToCollection } from "@/lib/firebase";
 import { triggerDownload } from "@/lib/downloadHistory";
-import locations from "@/data/tanzaniaLocations.json";
 import LicenseTemplatePreview from "./LicenseTemplatePreview";
 
 type FormState = {
@@ -51,7 +50,6 @@ const businessTypes = [
   "GROCERY SHOP", "PHARMACY", "COMPUTER SERVICES", "REPAIR SERVICES", "TRANSPORT SERVICES",
   "AGRICULTURAL INPUTS", "POULTRY BUSINESS", "HOTEL", "LODGE", "SUPERMARKET", "INTERNET CAFE", "OTHER",
 ];
-const regions = Object.keys(locations.regions);
 
 function createRequestId() {
   const next = crypto.randomUUID();
@@ -285,9 +283,7 @@ export default function BusinessLicensePage() {
               </SelectField>
             </Field>
             <Field label="Mkoa" english="Region" required>
-              <SelectField value={form.region} onChange={(value) => set("region", value)} placeholder="Chagua Mkoa">
-                {regions.map((region) => <option key={region} value={region}>{region}</option>)}
-              </SelectField>
+              <input value={form.region} onChange={(event) => set("region", titleCase(event.target.value))} placeholder="Andika mkoa wa biashara" autoComplete="address-level1" />
             </Field>
             <Field label="Kata" english="Ward" required><input value={form.ward} onChange={(event) => set("ward", titleCase(event.target.value))} /></Field>
             <Field label="Mtaa / Kijiji" english="Street / Village" required><input value={form.street} onChange={(event) => set("street", titleCase(event.target.value))} /></Field>
