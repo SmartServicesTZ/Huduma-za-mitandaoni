@@ -106,7 +106,7 @@ export async function renderBusinessLicenseCanvas(
 
   drawText(ctx, { x: center, y: pxY(15.15), size: 62, align: "center", maxWidth: pxX(78) }, "THE UNITED REPUBLIC OF TANZANIA");
   drawText(ctx, { x: center, y: pxY(18.75), size: 55, align: "center" }, "BUSINESS LICENSE");
-  drawText(ctx, { x: center, y: pxY(22.0), size: 46, weight: 400, color: "#69AFB9", align: "center", maxWidth: pxX(72) }, `B.L. NO: ${licenseNumber || "Namba inatolewa..."}`);
+  drawText(ctx, { x: center, y: pxY(22.0), size: 46, weight: 400, color: "#3A7A8C", align: "center", maxWidth: pxX(72) }, `B.L. NO: ${licenseNumber || "Namba inatolewa..."}`);
   drawText(ctx, { x: center, y: pxY(25.0), size: 38, align: "center", maxWidth: pxX(80) }, "The Business Licensing Act (Act No. 25 of 1972)");
 
   sectionHeading("License Details", 27.7);
