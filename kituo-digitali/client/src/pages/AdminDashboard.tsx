@@ -460,7 +460,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   const configuredServices = mergeServiceCatalogDefaults(services as any[], true);
   // Dedupe kwa slug: TAFUTA NIDA ilikuwa inaonekana mara mbili ndani ya Funga/Fungua Huduma.
   const uniqueServices = new Map<string, any>();
-  for (const item of configuredServices) uniqueServices.set(String(item.slug ?? item.id), item);
+  for (const item of configuredServices) uniqueServices.set(String(item.slug), item);
   if (!uniqueServices.has("utafutaji-nida")) {
     uniqueServices.set("utafutaji-nida", { slug: "utafutaji-nida", name: "TAFUTA NIDA (DASHBOARD)", description: "Kipengele cha kutafuta NIDA kwenye dashboard ya mtumiaji.", icon: "search", category: "HUDUMA ZA WAKALA", tokenCost: 0, isFree: true, active: true, isVisible: true, order: -1, kind: "free" } as any);
   }
