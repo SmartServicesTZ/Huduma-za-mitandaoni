@@ -3,6 +3,10 @@ import QRCode from "qrcode";
 import html2canvas from "html2canvas";
 import { Download, Upload, RotateCcw, LoaderCircle } from "lucide-react";
 import { triggerDownload } from "@/lib/downloadHistory";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
+import { consumeFirebaseTokens } from "@/lib/firebase";
+import { serviceCatalog } from "../../../shared/catalog";
 
 type Network = "Airtel" | "Vodacom" | "Yas" | "Halotel" | "Mbeya One Company Limited" | "Huduma za Mtandaoni";
 /** color/dark = rangi kuu na ya giza, hl = rangi ya mwangaza (highlight), accent = rangi nyepesi ya mandharinyuma ya chips. */
@@ -154,7 +158,10 @@ async function exportCard(source: HTMLElement, size: { w: number; h: number }, f
 }
 
 export default function AgentIdPage() {
-  const [network, setNetwork] = useState<Network>("Airtel");
+  const { firebaseUser } = useAuth();
+  const [paid, setPaid] = useState(false);
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+  const [network, setNetwork = useState<Network>("Airtel");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [name, setName] = useState("Steward Jackson Njiwa");
   const [agentId, setAgentId] = useState("T63663");
