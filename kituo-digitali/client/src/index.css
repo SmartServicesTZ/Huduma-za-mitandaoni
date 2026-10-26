@@ -2395,7 +2395,7 @@ form,
 }
 
 
-/* Business license: show the form first and the live template below it on all screen sizes. */
-.license-page .license-layout { grid-template-columns: minmax(0, 1fr) !important; }
-.license-page .license-form-card { order: 1; }
+/* Business license: always place the form first and the template preview below it. */
+.license-page .license-layout { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 18px !important; }
+.license-page .license-form-card { order: 1; width: 100%; }
 .license-page .license-preview-column { order: 2; min-width: 0; width: 100%; }
