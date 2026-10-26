@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Ban, Bell, Check, CheckCheck, ChevronDown, Eye, File, HardDrive, LoaderCircle, MessageCircle, Mic, Paperclip, Pencil, Reply, Search, Send, Settings, ShieldAlert, Smile, StopCircle, Trash2, Users, Video, Volume2, X } from "lucide-react";
+import { ArrowLeft, Ban, Check, CheckCheck, ChevronDown, Eye, File, HardDrive, LoaderCircle, MessageCircle, Mic, Paperclip, Pencil, Reply, Search, Send, Settings, ShieldAlert, Smile, StopCircle, Trash2, Users, Video, Volume2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { blockChatUser, createChatGroup, deleteChatMessage, editChatMessage, findChatUser, loadChatAttachment, markChatMessageRead, openPrivateConversation, reportChatUser, sendChatMessage, sendGroupChatMessage, setChatTyping, subscribeAllConversations, subscribeChatGroups, subscribeGroupChat, subscribePublicChatGroups, subscribeGroupJoinRequests, requestToJoinChatGroup, approveChatGroupJoinRequest, subscribeConversations, subscribePresence, subscribePrivateChat, subscribePublicChat, subscribeTyping, updatePresence, uploadChatFile, type ChatGroup, type ChatGroupJoinRequest, type ChatMessage, type ChatUser, type PrivateConversation } from "@/lib/firebase";
@@ -38,16 +38,7 @@ export default function ChatPage() {
   useEffect(() => { try { localStorage.setItem("sstz-chat-desktop-alerts", String(desktopAlerts)); } catch {} }, [desktopAlerts]);
   useEffect(() => { try { localStorage.setItem("sstz-chat-last-seen", String(showLastSeen)); } catch {} }, [showLastSeen]);
   useEffect(() => { try { localStorage.setItem("sstz-chat-read-receipts", String(readReceipts)); } catch {} }, [readReceipts]);
-  useEffect(() => {
-    if (previousMessageCount.current && activeMessages.length > previousMessageCount.current) {
-      const latest = activeMessages[activeMessages.length - 1];
-      if (latest && latest.senderId !== firebaseUser?.uid) {
-        if (soundEnabled) { try { const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext; if (AudioContextClass) { const ctx = new AudioContextClass(); const oscillator = ctx.createOscillator(); const gain = ctx.createGain(); oscillator.frequency.value = 740; gain.gain.value = 0.035; oscillator.connect(gain); gain.connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + 0.09); oscillator.onended = () => void ctx.close(); } } catch {} }
-        if (desktopAlerts && document.visibilityState !== "visible" && "Notification" in window && Notification.permission === "granted") new Notification(latest.senderName || "Ujumbe mpya", { body: latest.text || "Ametuma kiambatisho kipya." });
-      }
-    }
-    previousMessageCount.current = activeMessages.length;
-  }, [activeMessages, soundEnabled, desktopAlerts, firebaseUser?.uid]);
+
 
   useEffect(() => { try { localStorage.setItem("sstz-chat-theme", chatTheme); } catch {} }, [chatTheme]);
   useEffect(() => { try { localStorage.setItem("sstz-chat-compact", String(compactChat)); } catch {} }, [compactChat]);
@@ -103,6 +94,16 @@ export default function ChatPage() {
   const otherUid = view === "private" ? currentConversation?.participants.find((uid) => uid !== firebaseUser?.uid) ?? "" : "";
   const otherUser = currentConversation && otherUid ? { uid: otherUid, name: currentConversation.names?.[otherUid] ?? "Mwanachama", phone: currentConversation.phones?.[otherUid] ?? "", profileImageUrl: currentConversation.profileImages?.[otherUid] } : null;
   const activeMessages = view === "public" ? publicMessages : view === "groups" ? groupMessages : privateMessages;
+  useEffect(() => {
+    if (previousMessageCount.current && activeMessages.length > previousMessageCount.current) {
+      const latest = activeMessages[activeMessages.length - 1];
+      if (latest && latest.senderId !== firebaseUser?.uid) {
+        if (soundEnabled) { try { const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext; if (AudioContextClass) { const ctx = new AudioContextClass(); const oscillator = ctx.createOscillator(); const gain = ctx.createGain(); oscillator.frequency.value = 740; gain.gain.value = 0.035; oscillator.connect(gain); gain.connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + 0.09); oscillator.onended = () => void ctx.close(); } } catch {} }
+        if (desktopAlerts && document.visibilityState !== "visible" && "Notification" in window && Notification.permission === "granted") new Notification(latest.senderName || "Ujumbe mpya", { body: latest.text || "Ametuma kiambatisho kipya." });
+      }
+    }
+    previousMessageCount.current = activeMessages.length;
+  }, [activeMessages, soundEnabled, desktopAlerts, firebaseUser?.uid]);
   const filteredMessages = useMemo(() => {
     const needle = messageSearch.trim().toLocaleLowerCase();
     if (!needle) return activeMessages;
