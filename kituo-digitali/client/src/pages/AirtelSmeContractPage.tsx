@@ -103,6 +103,11 @@ export default function AirtelSmeContractPage() {
   }, []);
   const inkHex = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
 
+  useEffect(() => {
+    setPaid(false);
+    setRequestId(crypto.randomUUID());
+  }, [inkColor]);
+
   const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...AIRTEL_SME_LAYOUT_DEFAULTS }));
 
   useEffect(() => {
