@@ -141,6 +141,10 @@ export default function ChatPage() {
     return subscribeConversations(firebaseUser.uid, (rows) => { setConversations(rows); setLoadingConversations(false); }, (error) => { setConversationError(errorMessage(error, "Imeshindikana kupakia mazungumzo.")); setLoadingConversations(false); });
   }, [firebaseUser]);
   useEffect(() => {
+    if (!firebaseUser) { setMembers([]); return; }
+    return subscribeChatMembers((rows) => setMembers(rows.filter((member) => member.uid !== firebaseUser.uid)), () => setMembers([]));
+  }, [firebaseUser]);
+  useEffect(() => {
     if (!firebaseUser) { setGroups([]); return; }
     return subscribeChatGroups(firebaseUser.uid, setGroups, (error) => setConversationError(errorMessage(error, "Imeshindikana kupakia magroup.")));
   }, [firebaseUser]);
