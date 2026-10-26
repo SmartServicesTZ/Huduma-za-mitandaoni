@@ -307,7 +307,7 @@ const cardVars = (cfg: NetworkCfg) => ({ "--c": cfg.color, "--d": cfg.dark, "--h
 
 /** Nembo ndani ya kisanduku cheupe, ili ionekane vizuri juu ya rangi yoyote ya mtandao. */
 function LogoChip({ cfg, network, className = "" }: { cfg: NetworkCfg; network: Network; className?: string }) {
-  return <div className={`idx-logochip ${className}`}>{cfg.logo ? <img src={cfg.logo} alt={network} /> : <strong>HM</strong>}</div>;
+  return <div className={`idx-logochip ${className}`} style={{ position: "relative", zIndex: 5, opacity: 1, background: "#fff", isolation: "isolate" }}>{cfg.logo ? <img src={cfg.logo} alt={network} /> : <strong>HM</strong>}</div>;
 }
 
 function CardWatermark({ paid }: { paid: boolean }) {
