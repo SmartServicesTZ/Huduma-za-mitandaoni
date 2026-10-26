@@ -235,7 +235,8 @@ export default function ChatPage() {
       if (view === "groups") await sendGroupChatMessage(groupId, firebaseUser.uid, draft, reply ?? undefined, attachment, self?.name);
       else await sendChatMessage(view === "public" ? null : roomId, firebaseUser.uid, draft, reply ?? undefined, view === "public", attachment, self?.name);
       setDraft(""); setReply(null);
-      if (view === "private") void setChatTyping(roomId, firebaseUser.uid, false).catch(() => undefined);\n      if (view === "groups") void setChatGroupTyping(groupId, firebaseUser.uid, false).catch(() => undefined);
+      if (view === "private") void setChatTyping(roomId, firebaseUser.uid, false).catch(() => undefined);
+      if (view === "groups") void setChatGroupTyping(groupId, firebaseUser.uid, false).catch(() => undefined);
     } catch (error: any) { toast.error(errorMessage(error, "Ujumbe haukutumwa.")); }
     finally { setSending(false); }
   };
