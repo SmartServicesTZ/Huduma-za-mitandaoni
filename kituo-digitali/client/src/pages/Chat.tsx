@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { firestore } from "@/lib/firebase";
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, Ban, Check, CheckCheck, ChevronDown, Eye, File, HardDrive, LoaderCircle, MessageCircle, Mic, Paperclip, Pencil, Reply, Search, Send, Settings, ShieldAlert, Smile, StopCircle, Trash2, Users, Video, Volume2, X, Camera, UserRound, Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +30,19 @@ export default function ChatPage() {
   const [listCategory, setListCategory] = useState<"all" | "public" | "private" | "groups" | "moderation">("all");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [callMode, setCallMode] = useState<null | "voice" | "video">(null);
+  const [callStatus, setCallStatus] = useState("Tayari kupiga simu");
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [callBusy, setCallBusy] = useState(false);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const localCallStreamRef = useRef<MediaStream | null>(null);
+  const callSessionRef = useRef("");
+  const callUnsubscribeRef = useRef<(() => void) | null>(null);
+  const candidateUnsubscribeRef = useRef<(() => void) | null>(null);
+  const candidateIdsRef = useRef<Set<string>>(new Set());
+  const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const [lightboxUrl, setLightboxUrl] = useState("");
   const [hiddenMessageIds, setHiddenMessageIds] = useState<string[]>([]);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -272,6 +287,144 @@ export default function ChatPage() {
       recorder.start(); mediaRecorder.current = recorder; setRecording(true);
     } catch { toast.error("Ruhusu matumizi ya microphone ili kurekodi ujumbe wa sauti."); }
   };
+  const stopCallMedia = () => {
+    candidateUnsubscribeRef.current?.(); candidateUnsubscribeRef.current = null;
+    callUnsubscribeRef.current?.(); callUnsubscribeRef.current = null;
+    peerConnectionRef.current?.close(); peerConnectionRef.current = null;
+    localCallStreamRef.current?.getTracks().forEach((track) => track.stop()); localCallStreamRef.current = null;
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    candidateIdsRef.current.clear(); pendingCandidatesRef.current = [];
+    callSessionRef.current = ""; setCallMode(null); setCallBusy(false);
+  };
+
+  const attachCallCandidates = (callId: string, uid: string) => {
+    candidateIdsRef.current.clear(); pendingCandidatesRef.current = [];
+    candidateUnsubscribeRef.current?.();
+    candidateUnsubscribeRef.current = onSnapshot(collection(firestore, "callSessions", callId, "candidates"), (snapshot) => {
+      const pc = peerConnectionRef.current;
+      if (!pc) return;
+      snapshot.docChanges().forEach((change) => {
+        if (change.type !== "added" || candidateIdsRef.current.has(change.doc.id)) return;
+        candidateIdsRef.current.add(change.doc.id);
+        const data = change.doc.data();
+        if (data.senderId === uid || !data.candidate) return;
+        const candidate = data.candidate as RTCIceCandidateInit;
+        if (pc.remoteDescription) void pc.addIceCandidate(new RTCIceCandidate(candidate)).catch((error) => console.warn("ICE candidate haikuongezwa", error));
+        else pendingCandidatesRef.current.push(candidate);
+      });
+    }, (error) => toast.error(errorMessage(error, "Muunganisho wa simu umeshindikana.")));
+  };
+
+  const attachCallDocument = (callId: string, isCaller: boolean) => {
+    callUnsubscribeRef.current?.();
+    callUnsubscribeRef.current = onSnapshot(doc(firestore, "callSessions", callId), async (snapshot) => {
+      if (!snapshot.exists()) return;
+      const data = snapshot.data();
+      if (data.status === "ended" || data.status === "rejected" || data.status === "missed") {
+        if (data.status === "rejected") toast.info("Mpokeaji amekataa simu.");
+        else if (data.status === "ended") toast.info("Simu imekatwa.");
+        stopCallMedia(); setIncomingCall(null); return;
+      }
+      if (data.status === "accepted") setCallStatus("Imeunganishwa");
+      if (isCaller && data.answer && peerConnectionRef.current?.signalingState === "have-local-offer") {
+        try {
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+          setCallStatus("Imeunganishwa");
+          for (const candidate of pendingCandidatesRef.current.splice(0)) await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => undefined);
+        } catch (error) { console.error(error); toast.error("Imeshindwa kukamilisha muunganisho wa simu."); }
+      }
+    }, (error) => toast.error(errorMessage(error, "Hali ya simu haijasomeka.")));
+  };
+
+  const makePeerConnection = (callId: string, uid: string, stream: MediaStream) => {
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] });
+    peerConnectionRef.current = pc;
+    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+    pc.ontrack = (event) => {
+      const remote = event.streams[0];
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+      if (remoteAudioRef.current) remoteAudioRef.current.srcObject = remote;
+      setCallStatus("Imeunganishwa");
+    };
+    pc.onicecandidate = (event) => {
+      if (event.candidate) void addDoc(collection(firestore, "callSessions", callId, "candidates"), { senderId: uid, candidate: event.candidate.toJSON(), createdAt: serverTimestamp() }).catch((error) => console.warn("ICE candidate haikutumwa", error));
+    };
+    attachCallCandidates(callId, uid);
+    return pc;
+  };
+
+  const startCall = async (type: "voice" | "video") => {
+    if (!firebaseUser || !roomId || !otherUid || view !== "private") { toast.error("Chagua mazungumzo binafsi kwanza."); return; }
+    if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection) { toast.error("Kivinjari hiki hakiwezi kupiga simu. Tumia HTTPS na kivinjari cha kisasa."); return; }
+    if (callBusy || callMode) return;
+    setCallBusy(true); setCallMode(type); setCallStatus("Inaomba ruhusa ya maikrofoni/kamera…");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === "video" });
+      localCallStreamRef.current = stream;
+      if (localVideoRef.current && type === "video") localVideoRef.current.srcObject = stream;
+      const callRef = await addDoc(collection(firestore, "callSessions"), { callerId: firebaseUser.uid, calleeId: otherUid, participants: [firebaseUser.uid, otherUid], callType: type, status: "ringing", createdAt: serverTimestamp() });
+      callSessionRef.current = callRef.id;
+      const pc = makePeerConnection(callRef.id, firebaseUser.uid, stream);
+      attachCallDocument(callRef.id, true);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await updateDoc(callRef, { offer: { type: offer.type, sdp: offer.sdp }, updatedAt: serverTimestamp() });
+      setCallStatus("Inaita mpokeaji…"); setCallBusy(false);
+    } catch (error: any) {
+      console.error(error); stopCallMedia();
+      toast.error(error?.code === "permission-denied" ? "Ruhusa ya simu imekataliwa. Firestore Rules za callSessions zinahitaji kuchapishwa." : "Imeshindwa kuanzisha simu. Ruhusu maikrofoni/kamera kisha jaribu tena.");
+    }
+  };
+
+  const acceptCall = async () => {
+    const call = incomingCall;
+    if (!call || !firebaseUser || !navigator.mediaDevices?.getUserMedia) return;
+    setCallBusy(true); setCallMode(call.callType === "video" ? "video" : "voice"); setCallStatus("Inaunganisha…");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.callType === "video" });
+      localCallStreamRef.current = stream;
+      if (localVideoRef.current && call.callType === "video") localVideoRef.current.srcObject = stream;
+      callSessionRef.current = call.id; setIncomingCall(null);
+      const pc = makePeerConnection(call.id, firebaseUser.uid, stream);
+      await pc.setRemoteDescription(new RTCSessionDescription(call.offer));
+      for (const candidate of pendingCandidatesRef.current.splice(0)) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => undefined);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await updateDoc(doc(firestore, "callSessions", call.id), { answer: { type: answer.type, sdp: answer.sdp }, status: "accepted", updatedAt: serverTimestamp() });
+      attachCallDocument(call.id, false); setCallStatus("Imeunganishwa"); setCallBusy(false);
+    } catch (error: any) {
+      console.error(error); setCallBusy(false); stopCallMedia();
+      toast.error(error?.code === "permission-denied" ? "Ruhusa ya simu imekataliwa na Firestore Rules." : "Imeshindwa kupokea simu. Kagua ruhusa ya kamera/maikrofoni.");
+    }
+  };
+
+  const rejectCall = async () => {
+    if (!incomingCall) return;
+    try { await updateDoc(doc(firestore, "callSessions", incomingCall.id), { status: "rejected", updatedAt: serverTimestamp() }); }
+    catch (error) { toast.error(errorMessage(error, "Imeshindwa kukataa simu.")); }
+    setIncomingCall(null);
+  };
+
+  const endCall = async () => {
+    const id = callSessionRef.current;
+    if (id) {
+      try { await updateDoc(doc(firestore, "callSessions", id), { status: "ended", updatedAt: serverTimestamp() }); }
+      catch (error) { console.warn("Hali ya kukata simu haikusasishwa", error); }
+    }
+    stopCallMedia();
+  };
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+    return onSnapshot(query(collection(firestore, "callSessions"), where("participants", "array-contains", firebaseUser.uid)), (snapshot) => {
+      const active = snapshot.docs.find((item) => item.data().calleeId === firebaseUser.uid && item.data().status === "ringing");
+      if (active && !callSessionRef.current) setIncomingCall({ id: active.id, ...active.data() });
+      if (incomingCall && snapshot.docs.some((item) => item.id === incomingCall.id && item.data().status !== "ringing")) setIncomingCall(null);
+    }, (error) => console.warn("Ufuatiliaji wa simu zinazoingia haupatikani", error));
+  }, [firebaseUser?.uid, incomingCall?.id]);
+
   const setTypingDraft = (value: string) => {
     setDraft(value);
     if (!firebaseUser) return;
@@ -371,7 +524,7 @@ export default function ChatPage() {
         {listCategory === "moderation" && <div className="chat-moderation-note"><ShieldAlert size={15}/> Ufikiaji wa moderation umewekewa role yenye ruhusa ya kusimamia ujumbe.</div>}
       </aside>
       <section className="chat-main">
-        <header className="chat-room-head"><button type="button" className="chat-mobile-back" aria-label="Rudi kwenye orodha ya mazungumzo" onClick={() => { setRoomId(""); setGroupId(""); setView("all"); setMessageSearchOpen(false); setMessageSearch(""); setGroupSettingsOpen(false); setMoreMenuOpen(false); }}><ArrowLeft size={19}/></button><div className="chat-room-title"><button type="button" className="chat-avatar chat-room-profile-trigger" title={view === "groups" ? "Fungua mipangilio ya group hili" : "Fungua mipangilio ya chat hii"} aria-label={view === "groups" ? "Mipangilio ya group hili" : "Mipangilio ya chat hii"} onClick={() => { if (view === "groups" && currentGroup) openGroupSettings(); else setSettingsOpen(true); }}>{view === "groups" && currentGroup?.avatarUrl ? <img src={currentGroup.avatarUrl} alt="Picha ya group"/> : view === "public" || view === "groups" ? <Users size={18}/> : otherUser?.profileImageUrl ? <img src={otherUser.profileImageUrl} alt="" /> : initials(roomTitle)}</button><div><button type="button" className="chat-room-name-trigger" onClick={() => { if (view === "groups" && currentGroup) { openGroupSettings(); } else if (view === "private" && currentConversation) { setSettingsOpen(false); toast.info("Mipangilio ya mazungumzo binafsi itafunguliwa kupitia taarifa za mawasiliano."); } else if (view === "public") { setSettingsOpen(false); toast.info("Hili ni jumuiya ya jumla ya SmartServicesTZ, si group binafsi lenye mipangilio ya group."); } }}><strong>{roomTitle}</strong><small>{roomSubtitle}</small></button>{view === "groups" && currentGroup && <span className="chat-group-link" onClick={() => { const link = `${window.location.origin}${import.meta.env.BASE_URL}chat?group=${currentGroup.id}`; void navigator.clipboard?.writeText(link).then(() => toast.success("Link ya group imenakiliwa.")); }}>{currentGroup.visibility === "public" ? "🌐 Public" : "🔒 Private"} · Nakili link</span>}</div></div><div className="chat-room-tools">{view === "private" && <><button type="button" className="chat-call-action" title="Simu ya sauti" aria-label="Simu ya sauti" onClick={() => setCallMode("voice")}><Phone size={16}/></button><button type="button" className="chat-call-action" title="Video call" aria-label="Video call" onClick={() => setCallMode("video")}><Video size={16}/></button></>}<button type="button" title="Tafuta ujumbe" aria-label="Tafuta ujumbe" className={messageSearchOpen ? "active" : ""} onClick={() => { setMessageSearchOpen((value) => !value); if (messageSearchOpen) setMessageSearch(""); }}><Search size={17}/></button><button type="button" title="Nenda mwisho wa mazungumzo" aria-label="Nenda mwisho wa mazungumzo" onClick={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })}><ChevronDown size={18}/></button>{view === "private" && otherUid && <div className="chat-safety-actions"><button title="Ripoti" onClick={() => void report()}><ShieldAlert size={17}/></button><button title="Zuia" onClick={() => void block()}><Ban size={17}/></button></div>}{view === "moderation" && <span className="chat-admin-badge">MODERATION</span>}{view === "groups" && currentGroup && <button type="button" className="chat-call-action" title="Mipangilio ya group na wanachama" aria-label="Mipangilio ya group" onClick={openGroupSettings}><Settings size={17}/></button>}{view === "groups" && currentGroup?.ownerId === firebaseUser.uid && groupJoinRequests.length > 0 && <div className="chat-join-requests"><strong>Maombi {groupJoinRequests.length}</strong>{groupJoinRequests.map((request) => <button key={request.id} onClick={() => void approveChatGroupJoinRequest(currentGroup.id, request).then(() => toast.success(`${request.userName} ameongezwa kwenye group.`)).catch((error) => toast.error(errorMessage(error, "Ombi halikukubaliwa.")))}>{request.userName} · Kubali</button>)}</div>}</div></header>
+        <header className="chat-room-head"><button type="button" className="chat-mobile-back" aria-label="Rudi kwenye orodha ya mazungumzo" onClick={() => { setRoomId(""); setGroupId(""); setView("all"); setMessageSearchOpen(false); setMessageSearch(""); setGroupSettingsOpen(false); setMoreMenuOpen(false); }}><ArrowLeft size={19}/></button><div className="chat-room-title"><button type="button" className="chat-avatar chat-room-profile-trigger" title={view === "groups" ? "Fungua mipangilio ya group hili" : "Fungua mipangilio ya chat hii"} aria-label={view === "groups" ? "Mipangilio ya group hili" : "Mipangilio ya chat hii"} onClick={() => { if (view === "groups" && currentGroup) openGroupSettings(); else setSettingsOpen(true); }}>{view === "groups" && currentGroup?.avatarUrl ? <img src={currentGroup.avatarUrl} alt="Picha ya group"/> : view === "public" || view === "groups" ? <Users size={18}/> : otherUser?.profileImageUrl ? <img src={otherUser.profileImageUrl} alt="" /> : initials(roomTitle)}</button><div><button type="button" className="chat-room-name-trigger" onClick={() => { if (view === "groups" && currentGroup) { openGroupSettings(); } else if (view === "private" && currentConversation) { setSettingsOpen(false); toast.info("Mipangilio ya mazungumzo binafsi itafunguliwa kupitia taarifa za mawasiliano."); } else if (view === "public") { setSettingsOpen(false); toast.info("Hili ni jumuiya ya jumla ya SmartServicesTZ, si group binafsi lenye mipangilio ya group."); } }}><strong>{roomTitle}</strong><small>{roomSubtitle}</small></button>{view === "groups" && currentGroup && <span className="chat-group-link" onClick={() => { const link = `${window.location.origin}${import.meta.env.BASE_URL}chat?group=${currentGroup.id}`; void navigator.clipboard?.writeText(link).then(() => toast.success("Link ya group imenakiliwa.")); }}>{currentGroup.visibility === "public" ? "🌐 Public" : "🔒 Private"} · Nakili link</span>}</div></div><div className="chat-room-tools">{view === "private" && <><button type="button" className="chat-call-action" title="Simu ya sauti" aria-label="Simu ya sauti" onClick={() => void startCall("voice")}><Phone size={16}/></button><button type="button" className="chat-call-action" title="Video call" aria-label="Video call" onClick={() => void startCall("video")}><Video size={16}/></button></>}<button type="button" title="Tafuta ujumbe" aria-label="Tafuta ujumbe" className={messageSearchOpen ? "active" : ""} onClick={() => { setMessageSearchOpen((value) => !value); if (messageSearchOpen) setMessageSearch(""); }}><Search size={17}/></button><button type="button" title="Nenda mwisho wa mazungumzo" aria-label="Nenda mwisho wa mazungumzo" onClick={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })}><ChevronDown size={18}/></button>{view === "private" && otherUid && <div className="chat-safety-actions"><button title="Ripoti" onClick={() => void report()}><ShieldAlert size={17}/></button><button title="Zuia" onClick={() => void block()}><Ban size={17}/></button></div>}{view === "moderation" && <span className="chat-admin-badge">MODERATION</span>}{view === "groups" && currentGroup && <button type="button" className="chat-call-action" title="Mipangilio ya group na wanachama" aria-label="Mipangilio ya group" onClick={openGroupSettings}><Settings size={17}/></button>}{view === "groups" && currentGroup?.ownerId === firebaseUser.uid && groupJoinRequests.length > 0 && <div className="chat-join-requests"><strong>Maombi {groupJoinRequests.length}</strong>{groupJoinRequests.map((request) => <button key={request.id} onClick={() => void approveChatGroupJoinRequest(currentGroup.id, request).then(() => toast.success(`${request.userName} ameongezwa kwenye group.`)).catch((error) => toast.error(errorMessage(error, "Ombi halikukubaliwa.")))}>{request.userName} · Kubali</button>)}</div>}</div></header>
         {messageSearchOpen && <div className="chat-message-search"><Search size={15}/><input autoFocus value={messageSearch} onChange={(event) => setMessageSearch(event.target.value)} placeholder="Tafuta ndani ya ujumbe..." /><button type="button" onClick={() => setMessageSearch("")}>×</button></div>}<div className="chat-message-list" ref={scrollRef}>
           {((view === "private" || view === "moderation") && !roomId) || (view === "groups" && !groupId) ? <div className="chat-empty-state"><span className="chat-section-mark"><MessageCircle size={22}/></span><strong>{view === "moderation" ? "Chagua mazungumzo" : view === "groups" ? "Chagua group" : "Anza mazungumzo binafsi"}</strong><span>{view === "moderation" ? "Chagua mazungumzo ili kuona na kusimamia ujumbe." : view === "groups" ? "Chagua group au tengeneza group jipya." : "Tafuta kwa namba ya simu au chagua mazungumzo yaliyopo."}</span></div> : loading ? <div className="chat-empty-state"><LoaderCircle className="chat-spin" size={25}/><span>Inapakia ujumbe…</span></div> : roomError ? <div className="chat-empty-state chat-empty-state--error"><ShieldAlert size={28}/><strong>Chat haikupakia</strong><span>{roomError}</span></div> : activeMessages.length === 0 ? <div className="chat-empty-state"><span className="chat-section-mark"><MessageCircle size={22}/></span><strong>Hakuna ujumbe bado</strong><span>Anza mazungumzo kwa kutuma ujumbe wa kwanza.</span></div> : filteredMessages.map((message) => {
             const own = message.senderId === firebaseUser.uid;
@@ -413,7 +566,7 @@ export default function ChatPage() {
       </section>
     </section>
     {lightboxUrl && <div className="chat-lightbox" role="dialog" aria-modal="true" aria-label="Picha kubwa" onClick={() => setLightboxUrl("")}><button type="button" className="chat-lightbox-close" onClick={() => setLightboxUrl("")} aria-label="Funga picha"><X size={24}/></button><a className="chat-lightbox-download" href={lightboxUrl} download="smartservicestz-chat-image" onClick={(event) => event.stopPropagation()}>Pakua picha</a><img src={lightboxUrl} alt="Picha ya mazungumzo" onClick={(event) => event.stopPropagation()}/></div>}
-    {callMode && <div className="chat-call-overlay" role="dialog" aria-modal="true" aria-label={callMode === "video" ? "Video call" : "Simu ya sauti"}><section className={`chat-call-modal ${callMode === "video" ? "is-video" : ""}`}><button type="button" className="chat-call-close" onClick={() => setCallMode(null)} aria-label="Funga"><X size={20}/></button><div className="chat-call-avatar">{callMode === "video" ? <Video size={34}/> : <Phone size={34}/>}</div><h2>{otherUser?.name || "Mwanachama"}</h2><p className="chat-call-status">Inaita…</p>{callMode === "video" && <div className="chat-call-video-placeholder"><Video size={30}/><span>Hakuna video iliyounganishwa bado</span></div>}<p className="chat-call-disclaimer">Kiolesura cha simu kiko tayari kwa majaribio, lakini mawasiliano ya moja kwa moja hayajaanzishwa. Mpokeaji hatapokea simu hadi WebRTC na Firebase signaling viunganishwe.</p><button type="button" className="chat-call-hangup" onClick={() => setCallMode(null)} aria-label="Kata simu"><PhoneOff size={22}/><span>Kata simu</span></button></section></div>}
+    {incomingCall && !callMode && <div className="chat-call-overlay" role="dialog" aria-modal="true" aria-label="Simu inayoingia"><section className="chat-call-modal"><div className="chat-call-avatar">{incomingCall.callType === "video" ? <Video size={34}/> : <Phone size={34}/>}</div><h2>Simu inayoingia</h2><p className="chat-call-status">{incomingCall.callType === "video" ? "Video call" : "Simu ya sauti"}</p><div className="chat-call-incoming-actions"><button type="button" onClick={() => void rejectCall()}><PhoneOff size={18}/> Kataa</button><button type="button" onClick={() => void acceptCall()} disabled={callBusy}><Phone size={18}/> {callBusy ? "Inaunganisha…" : "Pokea"}</button></div></section></div>}{callMode && <div className="chat-call-overlay" role="dialog" aria-modal="true" aria-label={callMode === "video" ? "Video call" : "Simu ya sauti"}><section className={`chat-call-modal ${callMode === "video" ? "is-video" : ""}`}><button type="button" className="chat-call-close" onClick={() => void endCall()} aria-label="Funga"><X size={20}/></button><div className="chat-call-avatar">{callMode === "video" ? <Video size={34}/> : <Phone size={34}/>}</div><h2>{otherUser?.name || "Mwanachama"}</h2><p className="chat-call-status">{callStatus}</p>{callMode === "video" && <div className="chat-call-video-grid"><video ref={remoteVideoRef} autoPlay playsInline className="chat-call-remote-video"/><video ref={localVideoRef} autoPlay playsInline muted className="chat-call-local-video"/></div>}<audio ref={remoteAudioRef} autoPlay />{callMode === "voice" && <p className="chat-call-disclaimer">Simu ya sauti inatumia maikrofoni na spika ya kifaa chako.</p>}<button type="button" className="chat-call-hangup" onClick={() => void endCall()} aria-label="Kata simu"><PhoneOff size={22}/><span>Kata simu</span></button></section></div>}
     {contactsOpen && <div className="portal-modal-backdrop chat-contacts-backdrop" onClick={() => setContactsOpen(false)}><section className="portal-modal chat-members-modal" role="dialog" aria-modal="true" aria-labelledby="chat-members-title" onClick={(event) => event.stopPropagation()}><header><div><span className="overline">SMARTSERVICESTZ</span><h3 id="chat-members-title">Chagua mwanachama</h3><p>Wanachama wa mfumo wako kama mawasiliano yaliyohifadhiwa.</p></div><button type="button" className="modal-close" onClick={() => setContactsOpen(false)} aria-label="Funga"><X size={19}/></button></header><label className="chat-contact-search"><Search size={16}/><input value={memberSearch} onChange={(event) => setMemberSearch(event.target.value)} placeholder="Tafuta jina au namba ya simu"/></label><div className="chat-member-directory">{members.filter((member) => `${member.name} ${member.phone}`.toLowerCase().includes(memberSearch.toLowerCase())).map((member) => <button type="button" className="chat-contact" key={member.uid} onClick={async () => { if (!self) return; try { const id = await openPrivateConversation(self, member); setRoomId(id); setGroupId(""); setView("private"); setContactsOpen(false); setMessageError(""); } catch (error:any) { toast.error(errorMessage(error,"Imeshindikana kufungua chat.")); } }}><span className="chat-avatar">{member.profileImageUrl ? <img src={member.profileImageUrl} alt=""/> : initials(member.name)}</span><span className="chat-contact-copy"><strong>{member.name}</strong><small>{member.phone || "Mwanachama wa SmartServicesTZ"}</small></span><MessageCircle size={17}/></button>)}{members.length===0 && <p className="chat-empty">Orodha ya wanachama haijapatikana. Huenda Firestore Rules haziruhusu kusoma orodha ya watumiaji.</p>}</div><div className="chat-members-footer"><button type="button" className="button button--green" onClick={() => {setContactsOpen(false);setGroupModalOpen(true);setGroupVisibility("private")}}><Users size={16}/> Tengeneza group</button></div></section></div>}
     {settingsOpen && <ChatSettings uid={firebaseUser?.uid} onClose={() => setSettingsOpen(false)} profileName={self?.name || "$teward Tz"} username={profile?.username ? "@" + profile.username : "@Steward.tz"} />}{false && <div className="portal-modal-backdrop chat-settings-backdrop" onClick={() => setSettingsOpen(false)}><motion.section initial={{opacity:0,y:14,scale:.98}} animate={{opacity:1,y:0,scale:1}} transition={{duration:.18}} className="portal-modal chat-settings-modal" role="dialog" aria-modal="true" aria-labelledby="chat-settings-title" onClick={(event) => event.stopPropagation()}><button type="button" className="modal-close" onClick={() => setSettingsOpen(false)} aria-label="Funga mipangilio"><X size={19}/></button><span className="overline">SMARTSERVICESTZ CHAT</span><h3 id="chat-settings-title">Mipangilio ya mazungumzo</h3><p>Badilisha muonekano, arifa na faragha. Chaguo hizi zinahifadhiwa kwenye kifaa hiki.</p>
       <div className="chat-settings-section"><strong>Muonekano</strong><div className="chat-theme-options"><button type="button" className={chatTheme === "green" ? "selected" : ""} onClick={() => setChatTheme("green")}><i className="theme-dot theme-dot--green"/> WhatsApp Green</button><button type="button" className={chatTheme === "light" ? "selected" : ""} onClick={() => setChatTheme("light")}><i className="theme-dot theme-dot--light"/> Mwanga</button><button type="button" className={chatTheme === "dark" ? "selected" : ""} onClick={() => setChatTheme("dark")}><i className="theme-dot theme-dot--dark"/> Giza</button></div></div>
