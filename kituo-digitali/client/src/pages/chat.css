@@ -420,3 +420,11 @@
 .chat-group-role.admin{background:#e3f5e9;color:#0b7c49}
 .chat-group-settings-note,.chat-group-description{margin:12px 0 0;padding:10px;border-radius:10px;background:#f5faf6;color:#6c8173;font-size:10px;line-height:1.5}
 @media(max-width:760px){.chat-group-settings-head{padding:14px}.chat-group-settings-body{padding:12px 14px 18px}.chat-group-member-row{gap:8px}.chat-group-role{font-size:8px;padding:5px 6px}}
+
+
+/* Ensure the active room avatar is a reliable settings button. */
+.chat-room-profile-trigger{display:grid;place-items:center;flex:none;padding:0;border:0;cursor:pointer;color:inherit;background:transparent;overflow:hidden}
+.chat-room-profile-trigger:focus-visible{outline:3px solid #78b6f1;outline-offset:3px}
+.chat-room-profile-trigger img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.chat-page[data-chat-selected="yes"] .chat-mobile-back{display:inline-flex!important;align-items:center;justify-content:center;flex:none;min-width:40px;min-height:40px;border:0;border-radius:12px;background:#eaf5ee;color:#176b43;cursor:pointer}
+.chat-page[data-chat-selected="yes"] .chat-mobile-back:active{transform:scale(.96)}
