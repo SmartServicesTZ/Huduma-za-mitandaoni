@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, Check, ChevronDown, CheckCircle2, MapPin, MessageCircle, Package, Radio, Router, ShieldCheck, ShoppingBag, Wifi, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { createPocketWifiOrder } from "@/lib/firebase";
 import tanzaniaLocations from "@/data/tanzaniaLocations.json";
 
 type DeviceId = "wireless-300" | "olax-mt30" | "zte-k12";
@@ -39,6 +41,9 @@ function SelectField({ label, value, onChange, placeholder, options, disabled = 
 }
 
 export default function PocketWifiPage() {
+  const { firebaseUser } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [lastOrderId, setLastOrderId] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<DeviceId>("wireless-300");
   const [selectedPlan, setSelectedPlan] = useState<PlanId>("none");
   const [fullName, setFullName] = useState("");
@@ -54,12 +59,16 @@ export default function PocketWifiPage() {
   const plan = plans.find((item) => item.id === selectedPlan) ?? plans[0];
   const total = device.price + plan.price;
 
-  const submitOrder = (event: FormEvent<HTMLFormElement>) => {
+  const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const name = fullName.trim();
     const mobile = phone.trim();
     const villageName = village.trim();
-    const digits = mobile.replace(/\D/g, "");
+    const digits = mobile.replace(/\\D/g, "");
+    if (!firebaseUser) {
+      toast.error("Ingia kwenye akaunti yako kwanza ili oda ihifadhiwe na ufuatilie hali yake.");
+      return;
+    }
     if (!name || !mobile || !region || !district || !ward || !villageName) {
       toast.error("Tafadhali jaza taarifa zote, ikiwemo Mkoa, Wilaya, Kata na Kijiji/Mtaa.");
       return;
@@ -68,28 +77,47 @@ export default function PocketWifiPage() {
       toast.error("Tafadhali weka namba sahihi ya simu au WhatsApp.");
       return;
     }
-    const message = [
-      "HABARI, NAOMBA KUAGIZA POCKET WIFI / ROUTER.",
-      "",
+    const isCoreRegion = ["Dar es Salaam", "Pwani", "Morogoro"].includes(region);
+    const deliveryRule = isCoreRegion
+      ? "ENEO LA UTOAJI: Dar es Salaam/Pwani/Morogoro. Thibitisha utaratibu wa malipo na kuwasilisha na admin."
+      : "MALIPO KABLA YA USAFIRISHAJI: Kwa kuwa mteja yuko nje ya Dar es Salaam, Pwani na Morogoro, oda itatumwa kwenye usafiri baada ya malipo kuthibitishwa.";
+    const orderDetails = [
+      "ODA YA POCKET WIFI & MABANDO",
       "Jina kamili: " + name,
       "Namba ya mawasiliano: " + mobile,
       "Mkoa: " + region,
       "Wilaya: " + district,
       "Kata: " + ward,
       "Kijiji/Mtaa: " + villageName,
-      "",
       "Kifaa: " + device.name,
       "Bei ya kifaa: " + money(device.price),
       "Bando: " + plan.speed + (selectedPlan === "none" ? "" : " - Vodacom Unlimited M2M"),
       "Bei ya bando: " + money(plan.price),
       "JUMLA KUU: " + money(total),
+      deliveryRule,
+    ].join("\\n");
+    const message = [
+      "HABARI, NAOMBA KUAGIZA POCKET WIFI / ROUTER.",
       "",
-      "Naomba kuthibitishiwa upatikanaji, malipo na usafirishaji."
-    ].join("\n");
-    const whatsappUrl = "https://wa.me/255698232313?text=" + encodeURIComponent(message);
-    const popup = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-    if (popup) toast.success("Oda imeandaliwa. Kagua WhatsApp kisha bonyeza Tuma.");
-    else toast.error("WhatsApp haikufunguka. Ruhusu kufunguliwa kwa dirisha jipya kisha jaribu tena.");
+      orderDetails,
+      "",
+      "Naomba kuthibitishiwa oda, malipo na usafirishaji."
+    ].join("\\n");
+    const popup = window.open("about:blank", "_blank");
+    setBusy(true);
+    try {
+      const applicationId = crypto.randomUUID().replace(/-/g, "");
+      await createPocketWifiOrder(applicationId, orderDetails, mobile);
+      setLastOrderId(applicationId);
+      toast.success("Oda imehifadhiwa. Unaweza kuifuatilia kwenye Historia > Maombi yangu ya huduma.");
+      if (popup) popup.location.href = "https://wa.me/255698232313?text=" + encodeURIComponent(message);
+      else toast.error("Oda imehifadhiwa, lakini WhatsApp haikufunguka. Fungua WhatsApp uwasiliane na support.");
+    } catch (error: any) {
+      if (popup) popup.close();
+      toast.error(error?.message ?? "Imeshindikana kuhifadhi oda. Tafadhali jaribu tena.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return <main className="min-h-screen bg-[#f4f7fb] text-slate-900">
@@ -156,8 +184,8 @@ export default function PocketWifiPage() {
             <SelectField label="Kata" value={ward} onChange={setWard} placeholder={district ? "Chagua kata" : "Anza kwa kuchagua wilaya"} options={wardNames} disabled={!district} />
             <label className="block min-w-0 space-y-1.5"><span className="text-sm font-semibold text-slate-700">Kijiji / Mtaa <span className="text-rose-500">*</span></span><input required value={village} onChange={e => setVillage(e.target.value)} placeholder="Andika kijiji au mtaa" className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
           </div><p className="mt-2 text-[11px] leading-5 text-slate-500">Wilaya na kata huonekana baada ya kuchagua eneo lililotangulia. Kama jina la kata halipo kwenye orodha, tafadhali chagua lililo karibu na ulitaje kijiji/mtaa kwa usahihi.</p></div>
-          <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-700/15 transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-600/20"><MessageCircle size={18} /> Tuma oda WhatsApp</button>
-          <p className="flex items-start gap-2 text-[11px] leading-5 text-slate-500"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-emerald-700" /> WhatsApp itafunguka ikiwa na taarifa zako na jumla ya oda. Kagua ujumbe, kisha bonyeza Tuma.</p>
+          <button type="submit" disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-700/15 transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60 focus:outline-none focus:ring-4 focus:ring-emerald-600/20"><MessageCircle size={18} /> {busy ? "INAHIFADHI ODA..." : "Hifadhi oda na tuma WhatsApp"}</button>
+          <p className="flex items-start gap-2 text-[11px] leading-5 text-slate-500"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-emerald-700" /> Oda itahifadhiwa kwenye akaunti yako na kufika kwenye dashboard ya admin; WhatsApp itafunguka kwa ajili ya kuituma pia. Kagua ujumbe, kisha bonyeza Tuma.</p>{lastOrderId && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Oda yako imehifadhiwa. Rejea: {lastOrderId}. Fuata hali yake kupitia Historia → Maombi yangu ya huduma.</p>}
         </form>
       </aside>
     </div>
