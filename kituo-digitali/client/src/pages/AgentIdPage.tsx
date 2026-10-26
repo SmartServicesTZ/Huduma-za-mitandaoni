@@ -218,8 +218,15 @@ export default function AgentIdPage() {
       if (side !== "front" && set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
     }
     if (!jobs.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+    if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
     setBusy(true);
     try {
+      if (!paid) {
+        const service = serviceCatalog.find((item) => item.slug === "kitambulisho-wakala") ?? { slug: "kitambulisho-wakala", name: "KITAMBULISHO CHA WAKALA", tokenCost: 2, kind: "paid" as const };
+        await consumeFirebaseTokens(firebaseUser.uid, service, requestId);
+        setPaid(true);
+        toast.success("Tokeni zimekatwa. Watermark imeondolewa; kitambulisho kiko tayari.");
+      }
       for (const job of jobs) await exportCard(job.el, job.size, job.filename);
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
