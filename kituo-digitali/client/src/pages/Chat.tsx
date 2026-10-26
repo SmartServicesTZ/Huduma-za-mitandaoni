@@ -49,6 +49,10 @@ export default function ChatPage() {
   useEffect(() => { try { localStorage.setItem("sstz-chat-theme", chatTheme); } catch {} }, [chatTheme]);
   useEffect(() => { try { localStorage.setItem("sstz-chat-compact", String(compactChat)); } catch {} }, [compactChat]);
   useEffect(() => { try { localStorage.setItem("sstz-chat-preview", String(showMessagePreview)); } catch {} }, [showMessagePreview]);
+  useEffect(() => { try { localStorage.setItem("sstz-group-notifications", String(groupNotifications)); } catch {} }, [groupNotifications]);
+  useEffect(() => { try { localStorage.setItem("sstz-group-auto-download", String(groupAutoDownload)); } catch {} }, [groupAutoDownload]);
+  useEffect(() => { try { localStorage.setItem("sstz-group-disappearing", String(groupDisappearing)); } catch {} }, [groupDisappearing]);
+  useEffect(() => { try { localStorage.setItem("sstz-group-lock-preference", String(groupLockEnabled)); } catch {} }, [groupLockEnabled]);
   const [publicMessages, setPublicMessages] = useState<ChatMessage[]>([]);
   const [conversations, setConversations] = useState<PrivateConversation[]>([]);
   const [groups, setGroups] = useState<ChatGroup[]>([]);
@@ -66,10 +70,10 @@ export default function ChatPage() {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [addMemberSearch, setAddMemberSearch] = useState("");
   const [addingMemberUid, setAddingMemberUid] = useState("");
-  const [groupNotifications, setGroupNotifications] = useState(true);
-  const [groupAutoDownload, setGroupAutoDownload] = useState(false);
-  const [groupDisappearing, setGroupDisappearing] = useState(false);
-  const [groupLockEnabled, setGroupLockEnabled] = useState(false);
+  const [groupNotifications, setGroupNotifications] = useState(() => { try { return localStorage.getItem("sstz-group-notifications") !== "false"; } catch { return true; } });
+  const [groupAutoDownload, setGroupAutoDownload] = useState(() => { try { return localStorage.getItem("sstz-group-auto-download") === "true"; } catch { return false; } });
+  const [groupDisappearing, setGroupDisappearing] = useState(() => { try { return localStorage.getItem("sstz-group-disappearing") === "true"; } catch { return false; } });
+  const [groupLockEnabled, setGroupLockEnabled] = useState(() => { try { return localStorage.getItem("sstz-group-lock-preference") === "true"; } catch { return false; } });
   const [groupSettingsName, setGroupSettingsName] = useState("");
   const [groupSettingsDescription, setGroupSettingsDescription] = useState("");
   const [groupSettingsVisibility, setGroupSettingsVisibility] = useState<"private" | "public">("private");
@@ -236,7 +240,7 @@ export default function ChatPage() {
     finally { setSending(false); }
   };
   const onFile = async (file?: File) => {
-    if (!file || !firebaseUser || (view !== "public" && !roomId)) return;
+    if (!file || !firebaseUser || (view === "groups" ? !groupId : view !== "public" && !roomId)) return;
     setFileBusy(true);
     try { const attachment = await uploadChatFile(view === "public" ? null : (view === "groups" ? groupId : roomId), firebaseUser.uid, file, view === "public", view === "groups"); await send(attachment); }
     catch (error: any) { toast.error(errorMessage(error, "Faili haikutumwa.")); }
