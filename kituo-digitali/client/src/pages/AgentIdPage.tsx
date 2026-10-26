@@ -283,27 +283,24 @@ export default function AgentIdPage() {
         <div className="aid-previews" style={{ position: "relative" }}>
           <div className={`aid-col ${orientation === "landscape" ? "is-active" : ""}`}>
             <p className="aid-side">01 · STYLE YA KULALA</p>
-            <ScaledCard width={LAND.w} height={LAND.h}><LandscapeFront innerRef={landFrontRef} cfg={cfg} network={network} photo={photo} {...data} /></ScaledCard>
+            <ScaledCard width={LAND.w} height={LAND.h}><LandscapeFront innerRef={landFrontRef} cfg={cfg} network={network} photo={photo} paid={paid} {...data} /></ScaledCard>
             <p className="aid-side aid-side--back">UPANDE WA NYUMA</p>
-            <ScaledCard width={LAND.w} height={LAND.h}><LandscapeBack innerRef={landBackRef} cfg={cfg} network={network} qr={qr} {...data} /></ScaledCard>
+            <ScaledCard width={LAND.w} height={LAND.h}><LandscapeBack innerRef={landBackRef} cfg={cfg} network={network} qr={qr} paid={paid} {...data} /></ScaledCard>
           </div>
           <div className={`aid-col ${orientation === "portrait" ? "is-active" : ""}`}>
             <p className="aid-side">02 · STYLE YA KUSIMAMA</p>
-            <ScaledCard width={PORT.w} height={PORT.h}><PortraitFront innerRef={portFrontRef} cfg={cfg} network={network} photo={photo} {...data} /></ScaledCard>
+            <ScaledCard width={PORT.w} height={PORT.h}><PortraitFront innerRef={portFrontRef} cfg={cfg} network={network} photo={photo} paid={paid} {...data} /></ScaledCard>
             <p className="aid-side aid-side--back">UPANDE WA NYUMA</p>
-            <ScaledCard width={PORT.w} height={PORT.h}><PortraitBack innerRef={portBackRef} cfg={cfg} network={network} qr={qr} {...data} /></ScaledCard>
+            <ScaledCard width={PORT.w} height={PORT.h}><PortraitBack innerRef={portBackRef} cfg={cfg} network={network} qr={qr} paid={paid} {...data} /></ScaledCard>
           </div>
-          {!paid && <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none", zIndex: 10 }}>
-            <div style={{ transform: "rotate(-28deg)", border: "1px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.16)", padding: "4px 8px", fontSize: "clamp(10px, 1.8vw, 18px)", fontWeight: 900, letterSpacing: "1px", textAlign: "center", lineHeight: 1.4, maxWidth: "95%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</div>
-          </div>}
         </div>
       </section>
     </div>
   </main>;
 }
 
-type FrontProps = AgentData & { cfg: NetworkCfg; network: Network; photo: string; innerRef?: React.Ref<HTMLDivElement> };
-type BackProps = AgentData & { cfg: NetworkCfg; network: Network; qr: string; innerRef?: React.Ref<HTMLDivElement> };
+type FrontProps = AgentData & { cfg: NetworkCfg; network: Network; photo: string; paid: boolean; innerRef?: React.Ref<HTMLDivElement> };
+type BackProps = AgentData & { cfg: NetworkCfg; network: Network; qr: string; paid: boolean; innerRef?: React.Ref<HTMLDivElement> };
 const cardVars = (cfg: NetworkCfg) => ({ "--c": cfg.color, "--d": cfg.dark, "--h": cfg.hl, "--accent": cfg.accent }) as React.CSSProperties;
 
 /** Nembo ndani ya kisanduku cheupe, ili ionekane vizuri juu ya rangi yoyote ya mtandao. */
@@ -311,11 +308,19 @@ function LogoChip({ cfg, network, className = "" }: { cfg: NetworkCfg; network: 
   return <div className={`idx-logochip ${className}`}>{cfg.logo ? <img src={cfg.logo} alt={network} /> : <strong>HM</strong>}</div>;
 }
 
+function CardWatermark({ paid }: { paid: boolean }) {
+  if (paid) return null;
+  return <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, zIndex: 50, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none" }}>
+    <span style={{ transform: "rotate(-28deg)", border: "1px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.25)", padding: "4px 7px", fontSize: "clamp(8px, 2.1vw, 13px)", fontWeight: 900, letterSpacing: ".4px", lineHeight: 1.3, textAlign: "center", maxWidth: "92%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</span>
+  </div>;
+}
+
 /* ============================ KULALA · MBELE ============================ */
-function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate }: FrontProps) {
+function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
-  return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={cardVars(cfg)}>
+  return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     <div className="idl-side">
       <LogoChip cfg={cfg} network={network} />
       <div className="idl-photo">{photo ? <img src={photo} alt="Wakala" /> : <PhotoPlaceholder />}</div>
@@ -345,10 +350,11 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
 }
 
 /* ============================ KULALA · NYUMA ============================ */
-function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, issueDate }: BackProps) {
+function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, issueDate, paid }: BackProps) {
   const title = network === "Mbeya One Company Limited" ? "KITAMBULISHO CHA LIPA KWA SIMU" : cfg.pattern === "huduma" ? "KITAMBULISHO CHA HUDUMA ZA MTANDAONI" : "KITAMBULISHO CHA WAKALA";
   const footer = network === "Mbeya One Company Limited" ? "MBEYA ONE COMPANY LIMITED • LIPA KWA SIMU AIRTEL • AUTHORIZED AGENT" : cfg.footer;
-  return <div ref={innerRef} className={`idl idl-b net-${cfg.pattern}`} style={cardVars(cfg)}>
+  return <div ref={innerRef} className={`idl idl-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     <div className="idl-head">
       <div><div className="idl-brand"><Words text={`HUDUMA ZA MTANDAONI • ${cfg.slogan}`} /></div><div className="idl-title"><Words text={title} /></div></div>
       <LogoChip cfg={cfg} network={network} />
@@ -380,9 +386,10 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
 }
 
 /* ============================ KUSIMAMA · MBELE ============================ */
-function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate }: FrontProps) {
+function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
-  return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={cardVars(cfg)}>
+  return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     <div className="idp-hero">
       <div className="idp-ring" />
       <div className="idp-top">
@@ -415,8 +422,9 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
 }
 
 /* ============================ KUSIMAMA · NYUMA ============================ */
-function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area }: BackProps) {
-  return <div ref={innerRef} className={`idp idp-b net-${cfg.pattern}`} style={cardVars(cfg)}>
+function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, paid }: BackProps) {
+  return <div ref={innerRef} className={`idp idp-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     <div className="idp-hero idp-hero--sm">
       <div className="idp-ring" />
       <div className="idp-top">
