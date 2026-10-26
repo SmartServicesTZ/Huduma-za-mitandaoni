@@ -20,7 +20,7 @@ import {
   generateBusinessLicense,
   getLipaApplicationDocument,
   getServiceApplicationDocument,
-  listServiceApplications, listChatMembers, replyToServiceApplication,
+  listServiceApplications, listChatMembers, replyToServiceApplication, registerFcmToken, sendPushNotification,
   listLipaApplications,
   markLipaApplicationViewed,
   markServiceApplicationViewed,
