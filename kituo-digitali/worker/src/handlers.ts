@@ -1248,6 +1248,26 @@ export const getServiceApplicationDocument = callable(async (request) => {
   return { url, expiresAt: Date.now() + 5 * 60 * 1000 };
 });
 
+export const listAdminUsers = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "viewUsers");
+
+  const snapshot = await db.collection("users").get();
+  return snapshot.docs.map((document) => {
+    const data = document.data() as Record<string, unknown>;
+    const {
+      password: _password,
+      pin: _pin,
+      pinHash: _pinHash,
+      email: _email,
+      emailVerified: _emailVerified,
+      ...safeData
+    } = data;
+    return { id: document.id, ...safeData };
+  });
+});
+
 export const updateUserAccess = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
