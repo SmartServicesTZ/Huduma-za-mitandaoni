@@ -378,6 +378,29 @@ export default function ChatPage() {
     }, (error) => toast.error(errorMessage(error, "Hali ya simu haijasomeka.")));
   };
 
+  const loadCallIceServers = async (): Promise<{ iceServers: RTCIceServer[]; turnAvailable: boolean }> => {
+    const fallback: RTCIceServer[] = [{ urls: "stun:stun.cloudflare.com:3478" }];
+    try {
+      if (!firebaseUser) return { iceServers: fallback, turnAvailable: false };
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch("https://huduma-za-mtandao-api.stewardjackson999.workers.dev/turn/credentials", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      const result = await response.json().catch(() => null) as { iceServers?: RTCIceServer[] } | null;
+      if (!response.ok || !Array.isArray(result?.iceServers) || !result.iceServers.length) return { iceServers: fallback, turnAvailable: false };
+      const turnAvailable = result.iceServers.some((server) => {
+        const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+        return urls.some((url) => typeof url === "string" && url.toLowerCase().startsWith("turn"));
+      });
+      return { iceServers: result.iceServers, turnAvailable };
+    } catch (error) {
+      console.warn("TURN relay haipatikani; inatumia STUN pekee.", error);
+      return { iceServers: fallback, turnAvailable: false };
+    }
+  };
+
   const makePeerConnection = (callId: string, uid: string, stream: MediaStream, type: "voice" | "video", iceServers: RTCIceServer[] = [{ urls: "stun:stun.cloudflare.com:3478" }]) => {
     const pc = new RTCPeerConnection({ iceServers });
     peerConnectionRef.current = pc;
