@@ -338,14 +338,14 @@ export default function ChatPage() {
     }, (error) => toast.error(errorMessage(error, "Hali ya simu haijasomeka.")));
   };
 
-  const makePeerConnection = (callId: string, uid: string, stream: MediaStream) => {
+  const makePeerConnection = (callId: string, uid: string, stream: MediaStream, type: "voice" | "video") => {
     const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] });
     peerConnectionRef.current = pc;
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
     pc.ontrack = (event) => {
       const remote = event.streams[0];
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
-      if (remoteAudioRef.current) remoteAudioRef.current.srcObject = remote;
+      if (type === "video" && remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+      if (type === "voice" && remoteAudioRef.current) remoteAudioRef.current.srcObject = remote;
       setCallStatus("Imeunganishwa");
     };
     pc.onicecandidate = (event) => {
@@ -366,7 +366,7 @@ export default function ChatPage() {
       if (localVideoRef.current && type === "video") localVideoRef.current.srcObject = stream;
       const callRef = await addDoc(collection(firestore, "callSessions"), { callerId: firebaseUser.uid, calleeId: otherUid, participants: [firebaseUser.uid, otherUid], callType: type, status: "ringing", createdAt: serverTimestamp() });
       callSessionRef.current = callRef.id;
-      const pc = makePeerConnection(callRef.id, firebaseUser.uid, stream);
+      const pc = makePeerConnection(callRef.id, firebaseUser.uid, stream, type);
       attachCallDocument(callRef.id, true);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -387,7 +387,7 @@ export default function ChatPage() {
       localCallStreamRef.current = stream;
       if (localVideoRef.current && call.callType === "video") localVideoRef.current.srcObject = stream;
       callSessionRef.current = call.id; setIncomingCall(null);
-      const pc = makePeerConnection(call.id, firebaseUser.uid, stream);
+      const pc = makePeerConnection(call.id, firebaseUser.uid, stream, call.callType === "video" ? "video" : "voice");
       await pc.setRemoteDescription(new RTCSessionDescription(call.offer));
       for (const candidate of pendingCandidatesRef.current.splice(0)) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => undefined);
       const answer = await pc.createAnswer();
