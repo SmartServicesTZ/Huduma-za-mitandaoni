@@ -2393,3 +2393,9 @@ form,
 @media (prefers-reduced-motion: reduce) {
   input, textarea, select { transition: none !important; }
 }
+
+
+/* Business license: show the form first and the live template below it on all screen sizes. */
+.license-page .license-layout { grid-template-columns: minmax(0, 1fr) !important; }
+.license-page .license-form-card { order: 1; }
+.license-page .license-preview-column { order: 2; min-width: 0; width: 100%; }
