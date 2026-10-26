@@ -922,7 +922,7 @@ export const createPocketWifiOrder = callable(async (request) => {
   return { applicationId, status: "PENDING", duplicate: false };
 });
 
-createServiceApplication = callable(async (request) => {
+export const createServiceApplication = callable(async (request) => {
   const uid = authUid(request);
   const profile = await profileFor(uid);
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
