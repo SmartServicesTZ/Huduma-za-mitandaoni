@@ -287,6 +287,8 @@ export default function AirtelSmeContractPage() {
 
   const reset = () => {
     setForm(initialForm());
+    setPaid(false);
+    setRequestId(crypto.randomUUID());
     setStatus("✓ Fomu imerudishwa kwenye default.");
   };
 
