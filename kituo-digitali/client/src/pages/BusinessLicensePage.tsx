@@ -44,6 +44,14 @@ const initialForm: FormState = {
   licenseFee: 80000,
 };
 
+const tanzaniaRegions = [
+  "Arusha", "Dar es Salaam", "Dodoma", "Geita", "Iringa", "Kagera", "Katavi", "Kigoma",
+  "Kilimanjaro", "Lindi", "Manyara", "Mara", "Mbeya", "Morogoro", "Mtwara", "Mwanza",
+  "Njombe", "Pwani", "Rukwa", "Ruvuma", "Shinyanga", "Simiyu", "Singida", "Songwe",
+  "Tabora", "Tanga", "Kaskazini Pemba", "Kusini Pemba", "Kaskazini Unguja",
+  "Kusini Unguja", "Mjini Magharibi",
+];
+
 const businessTypes = [
   "GENERAL RETAIL SHOP", "WHOLESALE BUSINESS", "MOBILE PHONE SHOP", "ELECTRONICS SHOP", "STATIONERY SHOP",
   "RESTAURANT", "FOOD VENDOR", "CLOTHING SHOP", "HARDWARE SHOP", "SALON", "BARBERSHOP", "CAR WASH",
@@ -282,7 +290,17 @@ export default function BusinessLicensePage() {
               </SelectField>
             </Field>
             <Field label="Mkoa" english="Region" required>
-              <input value={form.region} onChange={(event) => set("region", titleCase(event.target.value))} placeholder="Andika mkoa wa biashara" autoComplete="off" list={undefined} />
+              <input
+                value={form.region}
+                onChange={(event) => set("region", titleCase(event.target.value))}
+                placeholder="Chagua au andika mkoa"
+                autoComplete="off"
+                list="tanzania-regions"
+                aria-label="Chagua au andika mkoa wa biashara"
+              />
+              <datalist id="tanzania-regions">
+                {tanzaniaRegions.map((region) => <option key={region} value={region} />)}
+              </datalist>
             </Field>
             <Field label="Kata" english="Ward" required><input value={form.ward} onChange={(event) => set("ward", titleCase(event.target.value))} /></Field>
             <Field label="Mtaa / Kijiji" english="Street / Village" required><input value={form.street} onChange={(event) => set("street", titleCase(event.target.value))} /></Field>
