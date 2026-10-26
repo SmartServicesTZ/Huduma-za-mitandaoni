@@ -312,9 +312,11 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
   const palette = ["#0f766e", "#c2410c", "#7e22ce", "#be123c", "#047857", "#b45309", "#4338ca", "#0e7490", "#a21caf", "#4d7c0f"];
   const colorIndex = [...service.slug].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
   const accent = locked ? "#dc2626" : (serviceColors[service.slug] ?? palette[colorIndex]);
+  const serviceIcons: Record<string, string> = { "pata-lipa-namba": "wallet-cards", "access-lipa-number": "wallet-cards", "nakala-nida": "contact", "cheti-tin": "file-badge", "leseni-biashara": "store", "leseni-udereva": "car-front", "stika-lipa": "qr-code", "stika-mawakala": "ticket", "sme-vodacom": "smartphone", "sme-airtel": "smartphone", "brela": "landmark", "mpiga-kura": "vote", "cheti-kuzaliwa": "baby", "simba-sc": "trophy", "yanga-africans": "star", "azam-tv": "tv" };
+  const iconName = locked ? service.icon : serviceIcons[service.slug] ?? service.icon;
   return <div className="portal-service-card-wrap">
     <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)} style={{ background: `linear-gradient(145deg, ${accent}18 0%, #ffffff 78%)`, borderColor: `${accent}55`, boxShadow: `0 5px 18px ${accent}12` }}>
-      <div className="service-card-icon" style={{ background: `${accent}16`, color: accent, border: `1px solid ${accent}55`, boxShadow: `0 5px 12px ${accent}18` }}><Icon name={service.icon} /></div>
+      <div className="service-card-icon" style={{ background: `${accent}16`, color: accent, border: `1px solid ${accent}55`, boxShadow: `0 5px 12px ${accent}18` }}><Icon name={iconName} /></div>
       <div className="service-card-copy"><strong>{service.name}</strong><span>{locked ? (service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") : service.description}</span></div>
       <div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}{external ? <span className="external-label"><ExternalLink size={13} /> FUNGUA</span> : <ChevronRight size={17} />}</div>
     </button>
