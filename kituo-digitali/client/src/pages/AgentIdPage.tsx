@@ -228,15 +228,13 @@ export default function AgentIdPage() {
     event.target.value = "";
   };
 
-  const downloadCards = async (side: "front" | "back" | "both") => {
-    const land = { size: LAND, label: "kulala", front: landFrontRef.current, back: landBackRef.current };
-    const port = { size: PORT, label: "kusimama", front: portFrontRef.current, back: portBackRef.current };
-    const sets = side === "both" ? [land, port] : [orientation === "landscape" ? land : port];
+  const downloadCards = async () => {
+    const set = orientation === "landscape"
+      ? { size: LAND, label: "mlalo", front: landFrontRef.current, back: landBackRef.current }
+      : { size: PORT, label: "wima", front: portFrontRef.current, back: portBackRef.current };
     const jobs: { el: HTMLElement; size: { w: number; h: number }; filename: string }[] = [];
-    for (const set of sets) {
-      if (side !== "back" && set.front) jobs.push({ el: set.front, size: set.size, filename: `kitambulisho-${set.label}-mbele.png` });
-      if (side !== "front" && set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
-    }
+    if (set.front) jobs.push({ el: set.front, size: set.size, filename: `kitambulisho-${set.label}-mbele.png` });
+    if (set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
     if (!jobs.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
     if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
     if (!name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim()) {
@@ -284,7 +282,7 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button>
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
-        <p className="aid-choice-note">Chagua aina unayotaka kupakua kwa vitufe vya "Mbele" na "Nyuma". Vyote viwili vinaonekana kwenye preview.</p>
+        <p className="aid-choice-note">Chagua mkao wa kitambulisho. Kitufe kimoja kitapakua picha mbili: mbele na nyuma, kwa mkao uliochagua.</p>
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
@@ -296,8 +294,7 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Kata / Eneo</span><input value={area} maxLength={30} onChange={(e) => setArea(e.target.value)} /></label>
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
-        <div className="aid-buttons"><button type="button" className="button button--green" disabled={busy} onClick={() => void downloadCards("front")}>{busy ? <LoaderCircle size={16} className="aid-spin" /> : <Download size={16} />} Pakua Mbele ({orientLabel})</button><button type="button" className="button button--green" disabled={busy} onClick={() => void downloadCards("back")}>{busy ? <LoaderCircle size={16} className="aid-spin" /> : <Download size={16} />} Pakua Nyuma ({orientLabel})</button></div>
-        <button type="button" className="button button--green button--wide" style={{ marginTop: 8 }} disabled={busy} onClick={() => void downloadCards("both")}>{busy ? <><LoaderCircle size={16} className="aid-spin" /> Inaandaa picha...</> : <><Download size={16} /> Pakua Vyote (Kulala na Kusimama, PNG)</>}</button>
+        <button type="button" className="button button--green button--wide" style={{ marginTop: 12 }} disabled={busy} onClick={() => void downloadCards()}>{busy ? <><LoaderCircle size={16} className="aid-spin" /> Inaandaa picha...</> : <><Download size={16} /> Pakua Kitambulisho ({orientLabel}) — Mbele na Nyuma</>}</button>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
 
