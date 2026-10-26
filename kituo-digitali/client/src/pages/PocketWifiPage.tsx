@@ -8,14 +8,15 @@ import tanzaniaLocations from "@/data/tanzaniaLocations.json";
 
 type DeviceId = "wireless-300" | "olax-mt30" | "zte-k12";
 type PlanId = "none" | "10mbps" | "20mbps" | "30mbps" | "50mbps" | "100mbps";
+type SaleType = "device-only" | "device-and-plan";
 type LocationData = { regions: Record<string, { districts: Record<string, string[]> }> };
 
 const locations = tanzaniaLocations as LocationData;
 const regionNames = Object.keys(locations.regions).sort((a, b) => a.localeCompare(b, "sw"));
-const devices: Array<{ id: DeviceId; name: string; shortName: string; description: string; features: string[]; price: number; icon: typeof Wifi; theme: string }> = [
-  { id: "wireless-300", name: "Wireless Mobile WiFi (300Mbps)", shortName: "Wireless Mobile WiFi", description: "Pocket WiFi ndogo, rahisi kubeba unapokuwa safarini.", features: ["Hadi 300Mbps", "Inabebeka"], price: 65000, icon: Wifi, theme: "cyan" },
-  { id: "olax-mt30", name: "OLAX MT30 LTE Advanced Mobile CPE", shortName: "OLAX MT30 LTE Advanced", description: "Router yenye betri ya 4000mAh na sehemu ya LAN.", features: ["Betri 4000mAh", "LAN Port"], price: 100000, icon: Router, theme: "violet" },
-  { id: "zte-k12", name: "ZTE K12 Wi-Fi 6 Router", shortName: "ZTE K12 Wi-Fi 6", description: "Wi-Fi 6 kwa matumizi ya hadi watu 32.", features: ["Hadi watu 32", "Betri 3000mAh"], price: 135000, icon: Radio, theme: "blue" },
+const devices: Array<{ id: DeviceId; name: string; shortName: string; description: string; features: string[]; price: number; icon: typeof Wifi; theme: string; image: string; specs: Array<[string, string]> }> = [
+  { id: "wireless-300", name: "Wireless Mobile WiFi (300Mbps)", shortName: "Wireless Mobile WiFi", description: "Pocket WiFi ya kubeba inayotumia SIM. 300Mbps ni kiwango cha Wi-Fi kinachotangazwa, si ahadi ya kasi ya intaneti.", features: ["Wi-Fi hadi 300Mbps", "Ya kubeba"], price: 65000, icon: Wifi, theme: "cyan", image: "https://down-my.img.susercontent.com/file/sg-11134201-824h4-mentpgoq5ngn8f", specs: [["Aina", "Pocket WiFi ya kubeba"], ["Mtandao", "SIM ya 4G LTE; thibitisha ulinganifu wa bendi na mtandao wako kabla ya kununua"], ["Kasi", "Wi-Fi hadi 300Mbps; kasi halisi ya intaneti hutegemea 4G, signal na bando"], ["Vifaa vinavyounganishwa", "Idadi hutegemea toleo halisi la kifaa; thibitisha kwa muuzaji"], ["Umbali wa Wi-Fi", "Hakuna umbali rasmi uliothibitishwa kwa toleo hili; kuta na mazingira huathiri signal"]] },
+  { id: "olax-mt30", name: "OLAX MT30 LTE Advanced Mobile CPE", shortName: "OLAX MT30 LTE Advanced", description: "Pocket router ya 4G LTE yenye betri ya 4000mAh na port ya LAN/WAN.", features: ["Betri 4000mAh", "LAN/WAN", "Hadi vifaa 10"], price: 100000, icon: Router, theme: "violet", image: "https://ecdn6-nc.globalso.com/upload/p/4099/image_other/2025-10/mt30-4g-mini-pocket-wifi-cpe-router-3.jpg", specs: [["Aina", "Pocket WiFi ya kubeba; pia ina LAN/WAN"], ["Mtandao", "SIM ya 4G LTE; bendi zinazotajwa ni B1/3/5/7/20/28/38/40/41"], ["Kasi", "Hadi 150Mbps LTE kulingana na maelezo ya mtengenezaji"], ["Vifaa vinavyounganishwa", "Hadi vifaa 10 kulingana na jedwali la specs la mtengenezaji"], ["Betri", "4000mAh; muda hutegemea matumizi na signal"], ["Umbali wa Wi-Fi", "Hakuna umbali rasmi wa mita uliothibitishwa; hutegemea kuta na mazingira"]] },
+  { id: "zte-k12", name: "ZTE K12 Wi-Fi 6 Router", shortName: "ZTE K12 Wi-Fi 6", description: "Router ya 4G LTE yenye Wi-Fi 6 na uwezo wa kuunganisha hadi vifaa 32.", features: ["Hadi vifaa 32", "Wi-Fi 6", "4G LTE"], price: 135000, icon: Radio, theme: "blue", image: "https://manuals.plus/ae/1005009885537463/images/S032a01b18bea4e91820a4862e3a5d07fj.jpg", specs: [["Aina", "Router ya 4G LTE ya kuweka sehemu moja; betri hutegemea toleo"], ["Mtandao", "4G LTE na 3G/HSPA; ulinganifu hutegemea bendi za kifaa na operator"], ["Kasi ya intaneti", "LTE Cat 4 hadi 150Mbps download / 50Mbps upload katika mazingira yanayofaa"], ["Wi-Fi", "Wi-Fi 6, 2.4GHz; kiwango cha Wi-Fi si sawa na kasi ya intaneti"], ["Vifaa vinavyounganishwa", "Hadi vifaa 32"], ["Betri", "Thibitisha ukubwa wa betri kwenye toleo litakalotumwa; specs za mtandaoni zinatofautiana"], ["Umbali wa Wi-Fi", "Hakuna umbali wa mita uliothibitishwa; hutegemea eneo, kuta na vizuizi"]] },
 ];
 const plans: Array<{ id: PlanId; speed: string; description: string; price: number }> = [
   { id: "none", speed: "Kifaa pekee", description: "Bila bando", price: 0 },
@@ -46,6 +47,7 @@ export default function PocketWifiPage() {
   const [lastOrderId, setLastOrderId] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<DeviceId>("wireless-300");
   const [selectedPlan, setSelectedPlan] = useState<PlanId>("none");
+  const [saleType, setSaleType] = useState<SaleType>("device-only");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [region, setRegion] = useState("");
@@ -53,11 +55,12 @@ export default function PocketWifiPage() {
   const [ward, setWard] = useState("");
   const [village, setVillage] = useState("");
 
-  const districtNames = useMemo(() => Object.keys(locations.regions[region]?.districts ?? {}).sort((a, b) => a.localeCompare(b, "sw")), [region]);
-  const wardNames = useMemo(() => locations.regions[region]?.districts[district] ?? [], [region, district]);
+  const matchedRegion = regionNames.find((name) => name.toLocaleLowerCase("sw") === region.trim().toLocaleLowerCase("sw")) ?? "";
+  const districtNames = useMemo(() => Object.keys(locations.regions[matchedRegion]?.districts ?? {}).sort((a, b) => a.localeCompare(b, "sw")), [matchedRegion]);
+  const wardNames = useMemo(() => locations.regions[matchedRegion]?.districts[district] ?? [], [matchedRegion, district]);
   const device = devices.find((item) => item.id === selectedDevice) ?? devices[0];
   const plan = plans.find((item) => item.id === selectedPlan) ?? plans[0];
-  const total = device.price + plan.price;
+  const total = device.price + (saleType === "device-only" ? 0 : plan.price);
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -69,7 +72,7 @@ export default function PocketWifiPage() {
       toast.error("Ingia kwenye akaunti yako kwanza ili oda ihifadhiwe na ufuatilie hali yake.");
       return;
     }
-    if (!name || !mobile || !region || !district || !ward || !villageName) {
+    if (!name || !mobile || !matchedRegion || !district || !ward || !villageName) {
       toast.error("Tafadhali jaza taarifa zote, ikiwemo Mkoa, Wilaya, Kata na Kijiji/Mtaa.");
       return;
     }
@@ -77,7 +80,7 @@ export default function PocketWifiPage() {
       toast.error("Tafadhali weka namba sahihi ya simu au WhatsApp.");
       return;
     }
-    const isCoreRegion = ["Dar es Salaam", "Pwani", "Morogoro"].includes(region);
+    const isCoreRegion = ["Dar es Salaam", "Pwani", "Morogoro"].includes(matchedRegion);
     const deliveryRule = isCoreRegion
       ? "ENEO LA UTOAJI: Dar es Salaam/Pwani/Morogoro. Thibitisha utaratibu wa malipo na kuwasilisha na admin."
       : "MALIPO KABLA YA USAFIRISHAJI: Kwa kuwa mteja yuko nje ya Dar es Salaam, Pwani na Morogoro, oda itatumwa kwenye usafiri baada ya malipo kuthibitishwa.";
@@ -85,10 +88,11 @@ export default function PocketWifiPage() {
       "ODA YA POCKET WIFI & MABANDO",
       "Jina kamili: " + name,
       "Namba ya mawasiliano: " + mobile,
-      "Mkoa: " + region,
+      "Mkoa: " + matchedRegion,
       "Wilaya: " + district,
       "Kata: " + ward,
       "Kijiji/Mtaa: " + villageName,
+      "Aina ya mauzo: " + (saleType === "device-only" ? "Kifaa pekee bila bando" : "Kifaa pamoja na bando"),
       "Kifaa: " + device.name,
       "Bei ya kifaa: " + money(device.price),
       "Bando: " + plan.speed + (selectedPlan === "none" ? "" : " - Vodacom Unlimited M2M"),
@@ -145,8 +149,8 @@ export default function PocketWifiPage() {
               const active = selectedDevice === item.id;
               const iconStyle = item.theme === "cyan" ? "bg-cyan-50 text-cyan-700 ring-cyan-100" : item.theme === "violet" ? "bg-violet-50 text-violet-700 ring-violet-100" : "bg-blue-50 text-blue-700 ring-blue-100";
               return <button type="button" key={item.id} aria-pressed={active} onClick={() => setSelectedDevice(item.id)} className={"flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition sm:gap-4 sm:p-4 " + (active ? "border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/10" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50")}>
-                <span className={"flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ring-1 sm:h-16 sm:w-16 " + iconStyle}><DeviceIcon size={29} strokeWidth={1.7} /></span>
-                <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold leading-5 text-slate-900 sm:text-base">{item.shortName}</strong><span className="mt-1 block text-xs leading-5 text-slate-500">{item.description}</span><span className="mt-2 flex flex-wrap gap-1.5">{item.features.map(feature => <span key={feature} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">{feature}</span>)}</span></span>
+<span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-white sm:h-24 sm:w-24"><img src={item.image} alt={item.shortName} loading="lazy" className="h-full w-full object-contain" onError={(event) => { event.currentTarget.style.opacity = "0"; }} /><DeviceIcon size={0} className="hidden" /></span>
+                <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold leading-5 text-slate-900 sm:text-base">{item.shortName}</strong><span className="mt-1 block text-xs leading-5 text-slate-500">{item.description}</span><span className="mt-2 flex flex-wrap gap-1.5">{item.features.map(feature => <span key={feature} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">{feature}</span>)}</span><details className="mt-2 text-left" onClick={event => event.stopPropagation()}><summary className="cursor-pointer text-xs font-bold text-blue-700">Soma maelezo ya kifaa</summary><dl className="mt-2 space-y-2 rounded-xl bg-white p-2">{item.specs.map(([label, value]) => <div key={label} className="grid grid-cols-[105px_1fr] gap-2 text-xs"><dt className="font-bold text-slate-600">{label}</dt><dd className="text-slate-700">{value}</dd></div>)}</dl></details></span>
                 <span className="flex shrink-0 flex-col items-end gap-2"><strong className="text-xs font-black text-blue-800 sm:text-sm">{money(item.price)}</strong><span className={"flex h-5 w-5 items-center justify-center rounded-full border " + (active ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 text-transparent")}><Check size={12} /></span></span>
               </button>;
             })}
@@ -155,23 +159,27 @@ export default function PocketWifiPage() {
 
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="mb-5 flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"><Radio size={21} /></span><div><p className="text-xs font-bold uppercase tracking-wider text-rose-600">Hatua ya 2</p><h2 className="text-lg font-extrabold">Chagua bando</h2><p className="text-xs text-slate-500">Vodacom Unlimited M2M · No Data Cap</p></div></div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {plans.map((item) => {
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button type="button" aria-pressed={saleType === "device-only"} onClick={() => { setSaleType("device-only"); setSelectedPlan("none"); }} className={"rounded-2xl border p-4 text-left transition " + (saleType === "device-only" ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/10" : "border-slate-200 bg-white hover:border-emerald-200")}><strong className="block text-sm font-extrabold text-slate-900">WiFi pekee</strong><span className="mt-1 block text-xs text-slate-500">Nunua kifaa bila bando</span><span className="mt-2 block text-sm font-black text-emerald-700">Hakuna gharama ya bando</span></button>
+            <button type="button" aria-pressed={saleType === "device-and-plan"} onClick={() => { setSaleType("device-and-plan"); if (selectedPlan === "none") setSelectedPlan("10mbps"); }} className={"rounded-2xl border p-4 text-left transition " + (saleType === "device-and-plan" ? "border-rose-400 bg-rose-50 ring-2 ring-rose-400/10" : "border-slate-200 bg-white hover:border-rose-200")}><strong className="block text-sm font-extrabold text-slate-900">WiFi + Bando</strong><span className="mt-1 block text-xs text-slate-500">Chagua kifaa pamoja na bando</span><span className="mt-2 block text-sm font-black text-rose-700">Bei huongezwa kiotomatiki</span></button>
+          </div>
+          {saleType === "device-and-plan" && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {plans.filter((item) => item.id !== "none").map((item) => {
               const active = selectedPlan === item.id;
               return <button type="button" key={item.id} aria-pressed={active} onClick={() => setSelectedPlan(item.id)} className={"relative flex min-h-[118px] flex-col items-start rounded-2xl border p-4 text-left transition " + (active ? "border-rose-400 bg-rose-50 ring-2 ring-rose-400/10" : "border-slate-200 bg-white hover:border-rose-200 hover:bg-rose-50/40")}>
                 {active && <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white"><Check size={12} /></span>}
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{item.id === "none" ? "Chaguo la 1" : "Vodacom M2M"}</span><strong className="mt-1 pr-5 text-base font-black text-slate-900">{item.speed}</strong><span className="mt-1 text-[11px] text-slate-500">{item.description}</span><span className={"mt-auto pt-3 text-sm font-black " + (item.price === 0 ? "text-slate-600" : "text-rose-600")}>{money(item.price)}</span>
               </button>;
             })}
-          </div>
-          <p className="mt-4 text-xs leading-5 text-slate-500">Kasi halisi inaweza kutegemea coverage, eneo na masharti ya mtoa huduma.</p>
+          </div>}
+          <p className="mt-4 text-xs leading-5 text-slate-500">Kasi halisi hutegemea coverage, signal, msongamano wa mtandao na masharti ya bando.</p>
         </section>
       </div>
 
       <aside className="space-y-5 lg:sticky lg:top-4">
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="bg-gradient-to-r from-[#0b3270] to-[#087e9c] p-5 text-white sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">Muhtasari wa oda yako</p><div className="mt-3 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"><ShoppingBag size={23} /></span><div className="min-w-0"><h3 className="font-extrabold">{device.shortName}</h3><p className="mt-1 text-xs text-blue-100">{plan.speed}{selectedPlan === "none" ? " · Bila bando" : " · Unlimited M2M"}</p></div></div></div>
-          <div className="space-y-3 p-5 sm:p-6"><div className="flex items-center justify-between gap-3 text-sm"><span className="text-slate-500">Bei ya kifaa</span><strong>{money(device.price)}</strong></div><div className="flex items-center justify-between gap-3 text-sm"><span className="text-slate-500">Bei ya bando</span><strong>{money(plan.price)}</strong></div><div className="border-t border-dashed border-slate-200 pt-4"><p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">JUMLA KUU</p><p className="mt-1 text-3xl font-black tracking-tight text-blue-800">{money(total)}</p><p className="mt-1 text-[11px] text-slate-500">Bei ya kifaa + bei ya bando ulilochagua.</p></div></div>
+          <div className="bg-gradient-to-r from-[#0b3270] to-[#087e9c] p-5 text-white sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">Muhtasari wa oda yako</p><div className="mt-3 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"><ShoppingBag size={23} /></span><div className="min-w-0"><h3 className="font-extrabold">{device.shortName}</h3><p className="mt-1 text-xs text-blue-100">{saleType === "device-only" ? "Bila bando" : plan.speed + " · Unlimited M2M"}</p></div></div></div>
+          <div className="space-y-3 p-5 sm:p-6"><div className="flex items-center justify-between gap-3 text-sm"><span className="text-slate-500">Bei ya kifaa</span><strong>{money(device.price)}</strong></div><div className="flex items-center justify-between gap-3 text-sm"><span className="text-slate-500">Bei ya bando</span><strong>{money(saleType === "device-only" ? 0 : plan.price)}</strong></div><div className="border-t border-dashed border-slate-200 pt-4"><p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">JUMLA KUU</p><p className="mt-1 text-3xl font-black tracking-tight text-blue-800">{money(total)}</p><p className="mt-1 text-[11px] text-slate-500">Bei ya kifaa + bei ya bando ulilochagua.</p></div></div>
         </section>
 
         <form onSubmit={submitOrder} className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -179,8 +187,8 @@ export default function PocketWifiPage() {
           <label className="block space-y-1.5"><span className="text-sm font-semibold text-slate-700">Jina kamili <span className="text-rose-500">*</span></span><input required autoComplete="name" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Andika jina lako kamili" className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
           <label className="block space-y-1.5"><span className="text-sm font-semibold text-slate-700">Namba ya mawasiliano <span className="text-rose-500">*</span></span><span className="relative block"><MessageCircle size={16} className="pointer-events-none absolute left-3.5 top-3.5 text-slate-400" /><input required type="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="07XX XXX XXX" className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></span></label>
           <div className="border-t border-slate-100 pt-4"><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-slate-800"><MapPin size={16} className="text-emerald-700" /> MAHALI ALIPO</h3><div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <SelectField label="Mkoa" value={region} onChange={value => { setRegion(value); setDistrict(""); setWard(""); }} placeholder="Chagua mkoa" options={regionNames} />
-            <SelectField label="Wilaya" value={district} onChange={value => { setDistrict(value); setWard(""); }} placeholder={region ? "Chagua wilaya" : "Anza kwa kuchagua mkoa"} options={districtNames} disabled={!region} />
+            <label className="block min-w-0 space-y-1.5"><span className="text-sm font-semibold text-slate-700">Mkoa <span className="text-rose-500">*</span></span><input required list="tanzania-region-options" value={region} onChange={event => { const typed = event.target.value; const match = regionNames.find(name => name.toLocaleLowerCase("sw") === typed.trim().toLocaleLowerCase("sw")); setRegion(match ?? typed); setDistrict(""); setWard(""); }} onBlur={() => { const match = regionNames.find(name => name.toLocaleLowerCase("sw") === region.trim().toLocaleLowerCase("sw")); if (match) setRegion(match); }} placeholder="Andika au tafuta mkoa..." className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /><datalist id="tanzania-region-options">{regionNames.map(name => <option key={name} value={name} />)}</datalist><span className="text-[11px] text-slate-500">Andika jina au chagua kwenye mapendekezo.</span></label>
+            <SelectField label="Wilaya" value={district} onChange={value => { setDistrict(value); setWard(""); }} placeholder={region ? "Chagua wilaya" : "Anza kwa kuchagua mkoa"} options={districtNames} disabled={!matchedRegion} />
             <SelectField label="Kata" value={ward} onChange={setWard} placeholder={district ? "Chagua kata" : "Anza kwa kuchagua wilaya"} options={wardNames} disabled={!district} />
             <label className="block min-w-0 space-y-1.5"><span className="text-sm font-semibold text-slate-700">Kijiji / Mtaa <span className="text-rose-500">*</span></span><input required value={village} onChange={e => setVillage(e.target.value)} placeholder="Andika kijiji au mtaa" className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></label>
           </div><p className="mt-2 text-[11px] leading-5 text-slate-500">Wilaya na kata huonekana baada ya kuchagua eneo lililotangulia. Kama jina la kata halipo kwenye orodha, tafadhali chagua lililo karibu na ulitaje kijiji/mtaa kwa usahihi.</p></div>
