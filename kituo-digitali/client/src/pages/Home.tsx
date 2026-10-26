@@ -703,6 +703,13 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
+    <section className="account-panel" style={{ margin: "0 auto 22px", maxWidth: 1180, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, border: "1px solid rgba(59,130,246,.35)", background: "linear-gradient(120deg, rgba(37,99,235,.16), rgba(16,185,129,.10))" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flex: "1 1 240px" }}>
+        <span style={{ width: 52, height: 52, display: "grid", placeItems: "center", borderRadius: 16, background: "rgba(59,130,246,.16)", color: "#3b82f6", flexShrink: 0 }}><Smartphone size={28} /></span>
+        <div><span className="overline">SMARTSERVICESTZ APP</span><h2 style={{ margin: "4px 0" }}>Pakua App ya SmartServicesTZ</h2><p style={{ margin: 0 }}>Sakinisha App kwenye simu yako ya Android na ufikie huduma kwa urahisi.</p></div>
+      </div>
+      <a className="button button--green" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", whiteSpace: "nowrap" }}><Smartphone size={18} /> PAKUA APP (APK)</a>
+    </section>
     <QuickNidaSearch isAuthenticated={isAuthenticated} />
     <section className="service-discovery"><div><span className="overline">{allServicesPage ? "TAFUTA NA CHUJA" : "SMART SERVICES"}</span><h2>{allServicesPage ? "HUDUMA ZOTE" : "Chagua huduma"}</h2><p>{allServicesPage ? `${matches.length} kati ya ${displayedServices.length} huduma zinaonekana. Tumia utafutaji au makundi kuchuja.` : "Anza hapa — huduma zako zote sehemu moja."}</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
