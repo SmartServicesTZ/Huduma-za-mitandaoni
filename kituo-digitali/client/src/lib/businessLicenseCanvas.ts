@@ -27,6 +27,7 @@ type TextItem = {
   color?: string;
   align?: CanvasTextAlign;
   maxWidth?: number;
+  strokeWidth?: number;
 };
 
 const assetUrl = (name: string) => `${import.meta.env.BASE_URL}license-assets/${name}`;
@@ -56,9 +57,9 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
   ctx.imageSmoothingEnabled = true;
-  // Slightly reinforce every label/value so the printed license text is clearer.
-  // A 1.5px stroke keeps the existing font sizes, layout, and colors unchanged.
-  ctx.lineWidth = 1.5;
+  // Keep body text crisp without letting labels compete with section headings.
+  // BL NO uses a slightly stronger 1.5px stroke for a brighter ocean-blue finish.
+  ctx.lineWidth = item.strokeWidth ?? 1;
   ctx.strokeStyle = ctx.fillStyle;
   if (item.maxWidth) {
     ctx.strokeText(text, item.x, item.y, item.maxWidth);
@@ -109,13 +110,13 @@ export async function renderBusinessLicenseCanvas(
   const labelX = pxX(9.35);
   const valueX = pxX(35.0);
   const notesX = pxX(10.8);
-  const bodyLabel = (text: string, y: number) => drawText(ctx, { x: labelX, y: pxY(y), size: 38, weight: 400 }, text);
-  const bodyValue = (text: string, y: number, maxWidth = pxX(55)) => drawText(ctx, { x: valueX, y: pxY(y), size: 37, weight: 400, maxWidth }, text);
+  const bodyLabel = (text: string, y: number) => drawText(ctx, { x: labelX, y: pxY(y), size: 32, weight: 400 }, text);
+  const bodyValue = (text: string, y: number, maxWidth = pxX(55)) => drawText(ctx, { x: valueX, y: pxY(y), size: 33, weight: 400, maxWidth }, text);
   const sectionHeading = (text: string, y: number) => drawText(ctx, { x: sectionX, y: pxY(y), size: 60, weight: 400 }, text);
 
   drawText(ctx, { x: center, y: pxY(15.15), size: 62, align: "center", maxWidth: pxX(78) }, "THE UNITED REPUBLIC OF TANZANIA");
   drawText(ctx, { x: center, y: pxY(18.75), size: 55, align: "center" }, "BUSINESS LICENSE");
-  drawText(ctx, { x: center, y: pxY(22.0), size: 46, weight: 600, color: "#69b8c2", align: "center", maxWidth: pxX(72) }, `B.L. NO: ${licenseNumber || "Namba inatolewa..."}`);
+  drawText(ctx, { x: center, y: pxY(22.0), size: 46, weight: 600, color: "#69b8c2", strokeWidth: 1.5, align: "center", maxWidth: pxX(72) }, `B.L. NO: ${licenseNumber || "Namba inatolewa..."}`);
   drawText(ctx, { x: center, y: pxY(25.0), size: 38, align: "center", maxWidth: pxX(80) }, "The Business Licensing Act (Act No. 25 of 1972)");
 
   sectionHeading("License Details", 27.7);
