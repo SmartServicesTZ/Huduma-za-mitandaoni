@@ -308,7 +308,7 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
       <div className="service-card-copy"><strong>{service.name}</strong><span>{locked ? (service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") : service.description}</span></div>
       <div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}{external ? <span className="external-label"><ExternalLink size={13} /> FUNGUA</span> : <ChevronRight size={17} />}</div>
     </button>
-    <button type="button" className={`service-favorite-toggle ${favorite ? "is-favorite" : ""}`} onClick={toggleFavorite} aria-label={favorite ? `Ondoa ${service.name} kwenye huduma unazopenda` : `Hifadhi ${service.name} kwenye huduma unazopenda`} aria-pressed={favorite}><Star size={16} fill={favorite ? "currentColor" : "none"} /></button>
+    <button type="button" className={`service-favorite-toggle ${favorite ? "is-favorite" : ""} hidden-favorite-star`} onClick={toggleFavorite} aria-label={favorite ? `Ondoa ${service.name} kwenye huduma unazopenda` : `Hifadhi ${service.name} kwenye huduma unazopenda`} aria-pressed={favorite}><Star size={16} fill={favorite ? "currentColor" : "none"} /></button>
   </div>;
 }
 
