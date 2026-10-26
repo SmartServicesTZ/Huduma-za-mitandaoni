@@ -185,6 +185,11 @@ export default function AgentIdPage() {
   const qrText = useMemo(() => JSON.stringify({ network, name, agentId, phone, type, region, district, area, issueDate, expiryDate: expiry(issueDate) }), [network, name, agentId, phone, type, region, district, area, issueDate]);
 
   useEffect(() => {
+    setPaid(false);
+    setRequestId(crypto.randomUUID());
+  }, [network, orientation, name, agentId, phone, type, region, district, area, issueDate, photo]);
+
+  useEffect(() => {
     let cancelled = false;
     QRCode.toDataURL(qrText, { width: 420, margin: 2, errorCorrectionLevel: "H", color: { dark: "#0f172a", light: "#ffffff" } })
       .then((url) => { if (!cancelled) setQr(url); })
