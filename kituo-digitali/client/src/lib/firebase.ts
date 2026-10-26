@@ -1363,3 +1363,7 @@ if (typeof window !== "undefined") {
     if (user && typeof token === "string") void registerAndroidFcmToken(user, token);
   });
 }
+
+export async function adminSendPushNotification(data: { title: string; body: string; targetUid?: string; broadcast?: boolean }) {
+  return invokeWorker<{ sent: number; failed: number; attempted?: number; message?: string }>("sendPushNotification", data);
+}
