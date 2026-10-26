@@ -517,20 +517,33 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
   useEffect(() => {
     if (!isAuthenticated) { setRequests([]); return; }
     let stopped = false;
-    const load = async () => {
+    void listMyNidaRequests().then((rows) => {
+      if (!stopped) setRequests(rows);
+    }).catch(() => {
+      // Keep the last successful state; a temporary API/quota error must not erase the user's visible request.
+    });
+    return () => { stopped = true; };
+  }, [isAuthenticated]);
+
+  const shouldPollNidaRequests = Boolean(activeRequestId) || requests.some((item) => item.status === "PENDING" || item.status === "PROCESSING");
+  useEffect(() => {
+    if (!isAuthenticated || !shouldPollNidaRequests) return;
+    let stopped = false;
+    let inFlight = false;
+    const timer = window.setInterval(async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
         const rows = await listMyNidaRequests();
-        if (!stopped) {
-          setRequests(rows);
-        }
+        if (!stopped) setRequests(rows);
       } catch {
-        if (!stopped) setRequests([]);
+        // Preserve the last successful result and retry on the next interval.
+      } finally {
+        inFlight = false;
       }
-    };
-    void load();
-    const timer = window.setInterval(() => void load(), 5000);
+    }, 30000);
     return () => { stopped = true; window.clearInterval(timer); };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, shouldPollNidaRequests]);
 
   useEffect(() => {
     for (const item of requests) {
