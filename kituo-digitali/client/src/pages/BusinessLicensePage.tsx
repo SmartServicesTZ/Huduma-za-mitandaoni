@@ -170,7 +170,6 @@ export default function BusinessLicensePage() {
     if (!form.principalBranch) { toast.error("Chagua Principal au Branch."); return false; }
     if (!form.businessType || (form.businessType === "OTHER" && !form.otherBusinessType.trim())) { toast.error("Tafadhali chagua aina ya biashara."); return false; }
     if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin.trim())) { toast.error("Format ya TIN si sahihi. Tumia mfumo 123-123-123."); return false; }
-    if (!form.region) { toast.error("Chagua Mkoa."); return false; }
     if (!form.ward.trim()) { toast.error("Tafadhali jaza Kata."); return false; }
     if (!form.street.trim()) { toast.error("Tafadhali jaza Mtaa / Kijiji."); return false; }
     if (!Number.isFinite(form.licenseFee) || form.licenseFee <= 0) { toast.error("Ada ya leseni lazima iwe zaidi ya sifuri."); return false; }
