@@ -378,8 +378,8 @@ export default function ChatPage() {
     }, (error) => toast.error(errorMessage(error, "Hali ya simu haijasomeka.")));
   };
 
-  const makePeerConnection = (callId: string, uid: string, stream: MediaStream, type: "voice" | "video") => {
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] });
+  const makePeerConnection = (callId: string, uid: string, stream: MediaStream, type: "voice" | "video", iceServers: RTCIceServer[] = [{ urls: "stun:stun.cloudflare.com:3478" }]) => {
+    const pc = new RTCPeerConnection({ iceServers });
     peerConnectionRef.current = pc;
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
     pc.onconnectionstatechange = () => {
