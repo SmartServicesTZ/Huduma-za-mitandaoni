@@ -49,10 +49,6 @@ export default function ChatPage() {
   useEffect(() => { try { localStorage.setItem("sstz-chat-theme", chatTheme); } catch {} }, [chatTheme]);
   useEffect(() => { try { localStorage.setItem("sstz-chat-compact", String(compactChat)); } catch {} }, [compactChat]);
   useEffect(() => { try { localStorage.setItem("sstz-chat-preview", String(showMessagePreview)); } catch {} }, [showMessagePreview]);
-  useEffect(() => { try { localStorage.setItem("sstz-group-notifications", String(groupNotifications)); } catch {} }, [groupNotifications]);
-  useEffect(() => { try { localStorage.setItem("sstz-group-auto-download", String(groupAutoDownload)); } catch {} }, [groupAutoDownload]);
-  useEffect(() => { try { localStorage.setItem("sstz-group-disappearing", String(groupDisappearing)); } catch {} }, [groupDisappearing]);
-  useEffect(() => { try { localStorage.setItem("sstz-group-lock-preference", String(groupLockEnabled)); } catch {} }, [groupLockEnabled]);
   const [publicMessages, setPublicMessages] = useState<ChatMessage[]>([]);
   const [conversations, setConversations] = useState<PrivateConversation[]>([]);
   const [groups, setGroups] = useState<ChatGroup[]>([]);
@@ -74,6 +70,10 @@ export default function ChatPage() {
   const [groupAutoDownload, setGroupAutoDownload] = useState(() => { try { return localStorage.getItem("sstz-group-auto-download") === "true"; } catch { return false; } });
   const [groupDisappearing, setGroupDisappearing] = useState(() => { try { return localStorage.getItem("sstz-group-disappearing") === "true"; } catch { return false; } });
   const [groupLockEnabled, setGroupLockEnabled] = useState(() => { try { return localStorage.getItem("sstz-group-lock-preference") === "true"; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem("sstz-group-notifications", String(groupNotifications)); } catch {} }, [groupNotifications]);
+  useEffect(() => { try { localStorage.setItem("sstz-group-auto-download", String(groupAutoDownload)); } catch {} }, [groupAutoDownload]);
+  useEffect(() => { try { localStorage.setItem("sstz-group-disappearing", String(groupDisappearing)); } catch {} }, [groupDisappearing]);
+  useEffect(() => { try { localStorage.setItem("sstz-group-lock-preference", String(groupLockEnabled)); } catch {} }, [groupLockEnabled]);
   const [groupSettingsName, setGroupSettingsName] = useState("");
   const [groupSettingsDescription, setGroupSettingsDescription] = useState("");
   const [groupSettingsVisibility, setGroupSettingsVisibility] = useState<"private" | "public">("private");
