@@ -253,15 +253,34 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 function TokenCard({ compact = false }: { compact?: boolean }) {
   const { isAuthenticated, profile } = useAuth();
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
-
+  const [nidaTokens, setNidaTokens] = useState("10");
+  const [otherTokens, setOtherTokens] = useState("0");
+  const [paidFromPhone, setPaidFromPhone] = useState(profile?.phone ?? "");
   const nidaBalance = profile?.tokenBalanceNida ?? 0;
   const otherBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
-  const openWhatsApp = (tokenType: "nida" | "huduma") => {
-    const label = tokenType === "nida" ? "CHEKI NIDA" : "HUDUMA NYINGINE";
-    const price = tokenType === "nida" ? 100 : 500;
-    const phone = profile?.phone ? "\nNamba ya simu: " + profile.phone : "";
-    const message = "Habari SmartServicesTZ, naomba kuongeza tokeni.\n\nAina ya tokeni: " + label + "\nBei: TZS " + price.toLocaleString("en-US") + " kwa tokeni" + phone;
+  const nidaCount = Math.max(0, Math.floor(Number(nidaTokens) || 0));
+  const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
+  const nidaAmount = nidaCount * 100;
+  const otherAmount = otherCount * 500;
+  const totalAmount = nidaAmount + otherAmount;
+  const canProceed = totalAmount >= 1000 && (nidaCount > 0 || otherCount > 0) && paidFromPhone.trim().length >= 9;
+  const openWhatsAppProof = () => {
+    if (!canProceed) return;
+    const message = [
+      "Habari SmartServicesTZ, nimelipia tokeni na natuma ushahidi wa malipo.",
+      "",
+      "Jina la akaunti: " + (profile?.name ?? "Halijatajwa"),
+      "Namba ya akaunti: " + (profile?.phone ?? "Haipo"),
+      "Namba iliyolipia: " + paidFromPhone.trim(),
+      "Lipa namba: 29126823",
+      "Jina la mpokeaji: Steward Tz",
+      "Kiasi kilicholipwa: TZS " + totalAmount.toLocaleString("en-US"),
+      "Tokeni za NIDA: " + nidaCount + " (TZS " + nidaAmount.toLocaleString("en-US") + ")",
+      "Tokeni zingine: " + otherCount + " (TZS " + otherAmount.toLocaleString("en-US") + ")",
+      "",
+      "Nimeambatisha ushahidi wa malipo. Tafadhali hakiki na ongeza tokeni kwenye akaunti yangu."
+    ].join("\n");
     window.location.href = "https://wa.me/255698232313?text=" + encodeURIComponent(message);
     setTokenChoiceOpen(false);
   };
@@ -270,14 +289,19 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">WALLET YA TOKENI</span><strong>{isAuthenticated ? nidaBalance + otherBalance : 0}</strong><span className="token-label">tokeni zote</span></div><span className="token-live-pill">● LIVE</span></div><div className="token-balances"><div><span>Tokeni za NIDA</span><strong>{isAuthenticated ? nidaBalance : 0}</strong></div><div><span>Tokeni zingine</span><strong>{isAuthenticated ? otherBalance : 0}</strong></div></div>
     <div className="token-card__meta"><div className="token-account-identity"><strong className="token-account-name">{profile?.name ?? "Mwanachama"}</strong><div className="token-phone-line"><span>{profile?.phone ?? "—"}</span><span className={`token-verification-status ${status === "approved" ? "is-verified" : "is-pending"}`}>{status === "approved" ? <><BadgeCheck size={16} aria-hidden="true"/> Verified</> : "Haijathibitishwa"}</span></div></div></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
-    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Chagua aina ya tokeni unayotaka</small></span><ChevronRight size={18}/></button>
+    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Lipa kwanza, kisha tuma ushahidi WhatsApp</small></span><ChevronRight size={18}/></button>
     {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
     {tokenChoiceOpen && <div className="token-choice-modal" role="dialog" aria-modal="true">
-      <div className="token-choice-card">
-        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Tokeni ni za nini?</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
-        <button type="button" className="token-choice-option" onClick={() => openWhatsApp("nida")}><strong>CHEKI NIDA</strong><span>Tokeni 1 = TZS 100</span></button>
-        <button type="button" className="token-choice-option" onClick={() => openWhatsApp("huduma")}><strong>HUDUMA NYINGINE</strong><span>Tokeni 1 = TZS 500</span></button>
-        <p className="token-choice-help">Ukichagua, utafunguliwa WhatsApp moja kwa moja kuwasiliana nasi.</p>
+      <div className="token-choice-card" style={{maxHeight:"88vh",overflowY:"auto"}}>
+        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Chagua tokeni na kiasi</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
+        <p className="token-choice-help">Kifurushi cha chini ni TZS 1,000. Unaweza kuchanganya tokeni za NIDA na tokeni zingine.</p>
+        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Tokeni za NIDA</strong><span>Tokeni 1 = TZS 100</span><input type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
+        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Tokeni zingine</strong><span>Tokeni 1 = TZS 500</span><input type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
+        <div style={{background:"#f3f7ff",borderRadius:10,padding:12,display:"grid",gap:5}}><span>Malipo ya NIDA: <strong>TZS {nidaAmount.toLocaleString("en-US")}</strong></span><span>Malipo ya tokeni zingine: <strong>TZS {otherAmount.toLocaleString("en-US")}</strong></span><span style={{fontSize:17}}>Jumla ya kulipa: <strong>TZS {totalAmount.toLocaleString("en-US")}</strong></span>{totalAmount>0&&totalAmount<1000&&<small style={{color:"#b91c1c"}}>Kiasi cha chini cha malipo ni TZS 1,000.</small>}</div>
+        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Namba iliyotuma malipo</strong><input type="tel" value={paidFromPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="Mfano 07XXXXXXXX" style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
+        <div style={{border:"1px solid #d1d5db",borderRadius:10,padding:13,marginTop:12}}><strong>Lipa namba: 29126823</strong><p style={{margin:"5px 0"}}>Jina la mpokeaji: <strong>Steward Tz</strong></p><p style={{margin:"5px 0"}}>Lipa kiasi kilichoonyeshwa hapo juu kupitia Azam Pesa.</p></div>
+        <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA USHAHIDI WHATSAPP</button>
+        <p className="token-choice-help">WhatsApp itafunguka na taarifa za akaunti, kiasi na aina za tokeni zikiwa zimejazwa. Ambatisha picha ya ushahidi wa malipo kabla ya kutuma. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
       </div>
     </div>}
   </section>;
