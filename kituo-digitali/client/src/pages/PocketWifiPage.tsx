@@ -72,7 +72,7 @@ export default function PocketWifiPage() {
       toast.error("Ingia kwenye akaunti yako kwanza ili oda ihifadhiwe na ufuatilie hali yake.");
       return;
     }
-    if (!name || !mobile || !matchedRegion || !district || !ward || !villageName) {
+    if (!name || !mobile || !region.trim() || !district.trim() || !ward.trim() || !villageName) {
       toast.error("Tafadhali jaza taarifa zote, ikiwemo Mkoa, Wilaya, Kata na Kijiji/Mtaa.");
       return;
     }
@@ -80,7 +80,7 @@ export default function PocketWifiPage() {
       toast.error("Tafadhali weka namba sahihi ya simu au WhatsApp.");
       return;
     }
-    const isCoreRegion = ["Dar es Salaam", "Pwani", "Morogoro"].includes(matchedRegion);
+    const isCoreRegion = ["Dar es Salaam", "Pwani", "Morogoro"].includes(region.trim());
     const deliveryRule = isCoreRegion
       ? "ENEO LA UTOAJI: Dar es Salaam/Pwani/Morogoro. Thibitisha utaratibu wa malipo na kuwasilisha na admin."
       : "MALIPO KABLA YA USAFIRISHAJI: Kwa kuwa mteja yuko nje ya Dar es Salaam, Pwani na Morogoro, oda itatumwa kwenye usafiri baada ya malipo kuthibitishwa.";
@@ -88,7 +88,7 @@ export default function PocketWifiPage() {
       "ODA YA POCKET WIFI & MABANDO",
       "Jina kamili: " + name,
       "Namba ya mawasiliano: " + mobile,
-      "Mkoa: " + matchedRegion,
+      "Mkoa: " + region.trim(),
       "Wilaya: " + district,
       "Kata: " + ward,
       "Kijiji/Mtaa: " + villageName,
