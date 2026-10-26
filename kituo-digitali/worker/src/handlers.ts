@@ -40,7 +40,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat"
   setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", replyToServiceApplication: "admin", listNidaRequests: "admin", setNidaRequestStatus: "admin", completeNidaRequest: "admin", submitNidaRequest: "applications", updateNidaRequestPhone: "applications", listMyNidaRequests: "read",
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
-  createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
+  createPocketWifiOrder: "applications", createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
   getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", listChatMembers: "chat", createTokenPurchaseOrder: "payments",
   markUserMessageRead: "read", syncAuthClaims: "auth",
@@ -889,7 +889,40 @@ export const completeNidaRequest = callable(async (request) => {
   });
 });
 
-export const createServiceApplication = callable(async (request) => {
+export const createPocketWifiOrder = callable(async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
+  const data = objectValue(request.data, "Oda ya Pocket WiFi");
+  const applicationId = text(data.applicationId, 80);
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new ApiError("invalid-argument", "Namba ya oda si sahihi.");
+  const details = text(data.details, 6000);
+  const phone = text(data.phone, 30);
+  if (details.length < 20) throw new ApiError("invalid-argument", "Taarifa za oda hazijakamilika.");
+  if (!/^\+?[0-9][0-9 ()-]{6,18}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya mawasiliano si sahihi.");
+  const ref = db.collection("serviceApplications").doc(applicationId);
+  const fields = [{ fieldName: "details", label: "Maelezo ya oda", type: "TEXTAREA", required: true, order: 0 }];
+  const applicantData = { details };
+  await db.runTransaction(async (transaction) => {
+    const prior = await transaction.get(ref);
+    if (prior.exists) throw new ApiError("already-exists", "Namba ya oda hii tayari imetumika.");
+    transaction.create(ref, {
+      applicationId, userId: uid, userName: String(profile.name ?? ""), serviceSlug: "pata-pocket-wifi-mabando",
+      serviceName: "PATA POCKET WIFI & MABANDO", serviceFields: fields,
+      statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData,
+      orderPhone: phone, orderType: "POCKET_WIFI", status: "PENDING",
+      submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
+    });
+    transaction.set(db.collection("messages").doc(), {
+      recipientId: uid, subject: "Oda ya Pocket WiFi imepokelewa",
+      body: "Oda yako ya Pocket WiFi imehifadhiwa. Unaweza kufuatilia hali yake kwenye Historia > Maombi yangu ya huduma. Admin atakuthibitishia malipo na usafirishaji.",
+      type: "serviceApplication", applicationId, createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+  return { applicationId, status: "PENDING", duplicate: false };
+});
+
+createServiceApplication = callable(async (request) => {
   const uid = authUid(request);
   const profile = await profileFor(uid);
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
