@@ -237,15 +237,18 @@ export default function AdminDashboard() {
       {panel === "services" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} />}
       {panel === "serviceControl" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} controlOnly onEdit={() => navigate("/admin/services")} />}
       {panel === "applications" && <section className="admin-card admin-unified-applications">
-        <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU · MAOMBI YOTE</span><h2>MAOMBI YOTE</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi ya huduma, SME, Pata Lipa namba na Access Lipa yanasimamiwa hapa. Kila ombi lina jina la huduma na hali yake.</p></div><ClipboardList size={22}/></div>
-        <div role="tablist" aria-label="Chuja maombi" style={{display:"flex",gap:8,flexWrap:"wrap",margin:"0 0 18px",borderBottom:"1px solid #e2e8f0",paddingBottom:12}}>
-          <button type="button" role="tab" aria-selected={applicationInboxTab==="ALL"} onClick={()=>setApplicationInboxTab("ALL")} style={{border:0,borderRadius:9,padding:"10px 14px",fontWeight:800,cursor:"pointer",background:applicationInboxTab==="ALL"?"#dbeafe":"#f1f5f9",color:applicationInboxTab==="ALL"?"#1d4ed8":"#475569"}}>YOTE ({serviceApplications.length+lipaApplications.length})</button>
-          <button type="button" role="tab" aria-selected={applicationInboxTab==="SERVICES"} onClick={()=>setApplicationInboxTab("SERVICES")} style={{border:0,borderRadius:9,padding:"10px 14px",fontWeight:800,cursor:"pointer",background:applicationInboxTab==="SERVICES"?"#dbeafe":"#f1f5f9",color:applicationInboxTab==="SERVICES"?"#1d4ed8":"#475569"}}>HUDUMA + SME ({serviceApplications.length})</button>
-          <button type="button" role="tab" aria-selected={applicationInboxTab==="LIPA"} onClick={()=>setApplicationInboxTab("LIPA")} style={{border:0,borderRadius:9,padding:"10px 14px",fontWeight:800,cursor:"pointer",background:applicationInboxTab==="LIPA"?"#dbeafe":"#f1f5f9",color:applicationInboxTab==="LIPA"?"#1d4ed8":"#475569"}}>PATA LIPA / ACCESS LIPA ({lipaApplications.length})</button>
+        <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU</span><h2>MAOMBI YA HUDUMA</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi yote yanaonekana hapa kwa mwonekano mmoja. Aina ya kila ombi inaonyeshwa kwenye taarifa zake.</p></div><ClipboardList size={22}/></div>
+        <div style={{display:"grid",gap:18}}>
+          <section aria-label="Maombi ya huduma na SME">
+            <div className="admin-kicker" style={{marginBottom:8}}>AINA: HUDUMA ZA MFUMO NA SME</div>
+            <ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} />
+          </section>
+          <section aria-label="Maombi ya Pata Lipa namba na Access Lipa">
+            <div className="admin-kicker" style={{marginBottom:8}}>AINA: PATA LIPA NAMBA / ACCESS LIPA</div>
+            <LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} />
+          </section>
+          {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
         </div>
-        {(applicationInboxTab==="ALL" || applicationInboxTab==="SERVICES") && <section style={{marginBottom:22}}><div className="admin-card-heading"><div><span className="admin-kicker">AINA YA OMBI: HUDUMA ZA MFUMO NA SME</span><h3 style={{margin:0}}>HUDUMA + SME</h3></div></div><ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
-        {(applicationInboxTab==="ALL" || applicationInboxTab==="LIPA") && <section style={{marginBottom:22}}><div className="admin-card-heading"><div><span className="admin-kicker">AINA YA OMBI: PATA LIPA NAMBA / ACCESS LIPA</span><h3 style={{margin:0}}>PATA LIPA / ACCESS LIPA</h3></div><WalletCards size={22}/></div><LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
-        {applicationInboxTab==="ALL" && hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
       </section>}
       {panel === "nida" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">INBOX MAALUM</span><h2>MAOMBI YA NIDA</h2></div><Search size={22}/></div><NidaRequestsPanel /></section>}
       {panel === "lipaReport" && <LipaGlobalReport applications={lipaApplications} />}
