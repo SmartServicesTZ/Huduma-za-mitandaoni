@@ -158,6 +158,9 @@ async function handleCallable(request: Request, name: string, cors: Headers, env
       : {};
     // Keep provider diagnostics in private Worker logs; never expose them to the client.
     console.error("Worker callable failed", { name, code, diagnostic, ...firestoreError });
+    if (firestoreError.status === 429 || firestoreError.statusCode === "RESOURCE_EXHAUSTED") {
+      return jsonResponse({ error: { code: "resource-exhausted", message: "Kikomo cha matumizi ya Firestore kimefikiwa. Data haiwezi kupakiwa mpaka kikomo kirejee au quota iongezwe kwenye Google Cloud/Firebase." } }, 429, cors);
+    }
     return jsonResponse({ error: { code: "internal", message: "Ombi halijakamilika kwa sasa. Jaribu tena baadaye." } }, 500, cors);
   }
 }
