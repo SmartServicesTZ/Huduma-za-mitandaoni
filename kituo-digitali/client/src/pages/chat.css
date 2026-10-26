@@ -533,3 +533,22 @@
 .chat-call-incoming-actions button:disabled{opacity:.6;cursor:wait}
 .chat-call-modal audio{display:none}
 @media(max-width:520px){.chat-call-modal{width:calc(100vw - 28px);max-width:420px;padding:22px 16px}.chat-call-video-grid{min-height:170px}.chat-call-video-grid .chat-call-local-video{width:100px;height:130px}}
+
+
+/* Call history and mobile layout */
+.chat-call-history-trigger{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border:1px solid #dbe5ef;border-radius:11px;background:#fff;color:#1e4770;font-size:11px;font-weight:800;cursor:pointer}
+.chat-call-history-trigger:hover{background:#f0f7ff;border-color:#9cc7ef}
+.chat-call-history-modal{width:min(480px,calc(100vw - 26px));max-height:min(82dvh,700px);display:flex;flex-direction:column;gap:14px;padding:20px;border:1px solid #dce6ef;border-radius:20px;background:#fff;color:#20384b;box-shadow:0 24px 80px #07182c40}
+.chat-call-history-modal>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.chat-call-history-modal>header h2{margin:4px 0 5px;font-size:23px}
+.chat-call-history-modal>header p{margin:0;color:#708196;font-size:11px;line-height:1.5}
+.chat-call-history-list{display:grid;gap:3px;overflow:auto;min-height:80px}
+.chat-call-history-row{display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid #edf1f5}
+.chat-call-history-icon{width:38px;height:38px;display:grid;place-items:center;flex:none;border-radius:13px;background:#eaf8ef;color:#16834c}
+.chat-call-history-icon.is-missed{background:#fff0f0;color:#dc3434}
+.chat-call-history-copy{display:grid;gap:3px;min-width:0}
+.chat-call-history-copy strong{font-size:12px;color:#233c52}
+.chat-call-history-copy small{font-size:10px;color:#718096;overflow-wrap:anywhere}
+.chat-call-history-close{align-self:flex-end;padding:9px 15px;border:0;border-radius:10px;background:#167c49;color:white;font-weight:800;cursor:pointer}
+.service-favorite-toggle.hidden-favorite-star{display:none!important}
+@media(max-width:700px){.chat-call-history-trigger{padding:8px 9px;font-size:10px}.chat-call-history-modal{padding:16px}.chat-call-modal{width:min(430px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow:auto}.chat-call-video-grid video{max-width:100%}.chat-head-actions{flex-wrap:wrap;gap:7px}}
