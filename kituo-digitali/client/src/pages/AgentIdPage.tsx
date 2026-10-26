@@ -134,6 +134,8 @@ async function exportCard(source: HTMLElement, size: { w: number; h: number }, f
   host.setAttribute("aria-hidden", "true");
   host.style.cssText = `position:fixed;left:-10000px;top:0;width:${size.w}px;height:${size.h}px;pointer-events:none;z-index:-1;overflow:visible;`;
   const clone = source.cloneNode(true) as HTMLElement;
+  // Watermark ni ya preview pekee; usiiweke kwenye faili halisi baada ya tokeni kukatwa.
+  clone.querySelectorAll('[aria-label="Watermark ya kitambulisho ambacho hakijalipiwa"]').forEach((el) => el.remove());
   clone.style.transform = "none";
   clone.style.margin = "0";
   clone.style.width = `${size.w}px`;
