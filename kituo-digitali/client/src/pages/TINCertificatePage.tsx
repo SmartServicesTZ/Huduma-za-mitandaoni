@@ -153,7 +153,7 @@ export default function TINCertificatePage() {
         <div className="license-preview-wrap" style={{ position: "relative" }}>
           <canvas ref={canvasRef} className="license-preview-canvas" />
           {!paid && <div aria-label="Watermark ya cheti cha TIN ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none", zIndex: 2 }}>
-            <div style={{ transform: "rotate(-30deg)", border: "3px solid rgba(185,28,28,.65)", color: "rgba(185,28,28,.72)", background: "rgba(255,255,255,.12)", padding: "10px 16px", fontSize: "clamp(18px, 4vw, 34px)", fontWeight: 900, letterSpacing: "3px", textAlign: "center", lineHeight: 1.4, maxWidth: "95%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</div>
+            <div style={{ transform: "rotate(-30deg)", border: "1px solid rgba(185,28,28,.65)", color: "rgba(185,28,28,.72)", background: "rgba(255,255,255,.12)", padding: "4px 8px", fontSize: "clamp(10px, 1.8vw, 18px)", fontWeight: 900, letterSpacing: "1px", textAlign: "center", lineHeight: 1.4, maxWidth: "95%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</div>
           </div>}
         </div>
       </section>
