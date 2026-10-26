@@ -56,8 +56,17 @@ function drawText(ctx: CanvasRenderingContext2D, item: TextItem, text: string) {
   ctx.textAlign = item.align ?? "left";
   ctx.textBaseline = "middle";
   ctx.imageSmoothingEnabled = true;
-  if (item.maxWidth) ctx.fillText(text, item.x, item.y, item.maxWidth);
-  else ctx.fillText(text, item.x, item.y);
+  // Slightly reinforce every label/value so the printed license text is clearer.
+  // A 1.5px stroke keeps the existing font sizes, layout, and colors unchanged.
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = ctx.fillStyle;
+  if (item.maxWidth) {
+    ctx.strokeText(text, item.x, item.y, item.maxWidth);
+    ctx.fillText(text, item.x, item.y, item.maxWidth);
+  } else {
+    ctx.strokeText(text, item.x, item.y);
+    ctx.fillText(text, item.x, item.y);
+  }
   ctx.restore();
 }
 
