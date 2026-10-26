@@ -443,6 +443,38 @@ export default function ChatPage() {
     }, (error) => console.warn("Ufuatiliaji wa simu zinazoingia haupatikani", error));
   }, [firebaseUser?.uid, incomingCall?.id]);
 
+  useEffect(() => {
+    if (!incomingCall?.offer || callMode) return;
+    let stopped = false;
+    let intervalId: number | undefined;
+    let audioContext: AudioContext | null = null;
+    const ring = () => {
+      if (stopped) return;
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        audioContext ??= new AudioContextClass();
+        if (audioContext.state === "suspended") void audioContext.resume();
+        const startAt = audioContext.currentTime;
+        [0, 0.24].forEach((offset) => {
+          const oscillator = audioContext!.createOscillator();
+          const gain = audioContext!.createGain();
+          oscillator.type = "sine";
+          oscillator.frequency.value = 880;
+          gain.gain.setValueAtTime(0.0001, startAt + offset);
+          gain.gain.exponentialRampToValueAtTime(0.12, startAt + offset + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + offset + 0.17);
+          oscillator.connect(gain); gain.connect(audioContext!.destination);
+          oscillator.start(startAt + offset); oscillator.stop(startAt + offset + 0.18);
+        });
+        if ("vibrate" in navigator) navigator.vibrate([180, 100, 180]);
+      } catch { /* Browser may block audio until the user interacts. */ }
+    };
+    ring();
+    intervalId = window.setInterval(ring, 1800);
+    return () => { stopped = true; if (intervalId !== undefined) window.clearInterval(intervalId); if ("vibrate" in navigator) navigator.vibrate(0); if (audioContext) void audioContext.close().catch(() => undefined); };
+  }, [incomingCall?.id, Boolean(incomingCall?.offer), callMode]);
+
   const setTypingDraft = (value: string) => {
     setDraft(value);
     if (!firebaseUser) return;
