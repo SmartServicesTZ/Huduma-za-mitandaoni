@@ -278,7 +278,7 @@ export default function AgentIdPage() {
             <ScaledCard width={PORT.w} height={PORT.h}><PortraitBack innerRef={portBackRef} cfg={cfg} network={network} qr={qr} {...data} /></ScaledCard>
           </div>
           {!paid && <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none", zIndex: 10 }}>
-            <div style={{ transform: "rotate(-28deg)", border: "3px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.16)", padding: "10px 18px", fontSize: "clamp(18px, 4vw, 34px)", fontWeight: 900, letterSpacing: "3px", textAlign: "center", lineHeight: 1.4, maxWidth: "95%" }}>PREVIEW<br />HAIJALIPIWA</div>
+            <div style={{ transform: "rotate(-28deg)", border: "3px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.16)", padding: "10px 18px", fontSize: "clamp(18px, 4vw, 34px)", fontWeight: 900, letterSpacing: "3px", textAlign: "center", lineHeight: 1.4, maxWidth: "95%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</div>
           </div>}
         </div>
       </section>
