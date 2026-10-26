@@ -1040,7 +1040,7 @@ export async function createChatGroup(current: ChatUser, members: ChatUser[], na
   const unique = [current, ...members].filter((item, index, all) => all.findIndex((candidate) => candidate.uid === item.uid) === index);
   if (!cleanName) throw new Error("Weka jina la group.");
   if (unique.length < 2) throw new Error("Ongeza angalau mtu mmoja kwenye group.");
-  if (unique.length > 50) throw new Error("Group linaweza kuwa na hadi watu 50.");
+  if (unique.length > 5000) throw new Error("Group linaweza kuwa na hadi washiriki 5,000.");
   const groupRef = doc(collection(firestore, "chatGroups"));
   const memberIds = unique.map((item) => item.uid).sort();
   const memberNames = Object.fromEntries(unique.map((item) => [item.uid, item.name]));
@@ -1162,7 +1162,7 @@ export async function approveChatGroupJoinRequest(groupId: string, request: Chat
     const group = groupSnap.data() as ChatGroup;
     if (group.ownerId !== firebaseAuth.currentUser?.uid) throw Object.assign(new Error("Ni admin wa group pekee anaweza kukubali."), { code: "permission-denied" });
     if (group.memberIds.includes(request.userId)) return;
-    if (group.memberIds.length >= 50) throw new Error("Group limefikia watu 50.");
+    if (group.memberIds.length >= 5000) throw new Error("Group limefikia washiriki 5,000.");
     tx.update(groupRef, { memberIds: arrayUnion(request.userId), memberNames: { ...group.memberNames, [request.userId]: request.userName }, memberPhones: { ...group.memberPhones, [request.userId]: request.userPhone }, memberImages: { ...(group.memberImages ?? {}), [request.userId]: request.userImage ?? "" }, updatedAt: serverTimestamp() });
     tx.update(requestRef, { status: "approved", updatedAt: serverTimestamp() });
   });
