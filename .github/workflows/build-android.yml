@@ -454,11 +454,14 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
+      - name: Prepare public APK filename
+        run: cp android-app/app/build/outputs/apk/debug/app-debug.apk android-app/app/build/outputs/apk/debug/SmartServicesTZ.apk
+
       - name: Upload standalone APK
         uses: actions/upload-artifact@v4
         with:
           name: smartservicestz-standalone-apk-v4
-          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          path: android-app/app/build/outputs/apk/debug/SmartServicesTZ.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -468,7 +471,7 @@ jobs:
           tag_name: smartservicestz-latest
           name: SmartServicesTZ Android App
           body: "Toleo la sasa la SmartServicesTZ kwa Android. Pakua SmartServicesTZ.apk na usakinishe kwenye simu yako."
-          files: android-app/app/build/outputs/apk/debug/app-debug.apk
+          files: android-app/app/build/outputs/apk/debug/SmartServicesTZ.apk
           overwrite_files: true
           make_latest: false
           fail_on_unmatched_files: true
