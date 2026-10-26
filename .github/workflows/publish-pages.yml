@@ -47,6 +47,7 @@ jobs:
         working-directory: kituo-digitali
         env:
           GITHUB_ACTIONS: "true"
+          VITE_FIREBASE_STORAGE_READY: "true"
         run: pnpm build
 
       - name: Publish generated static files to the Pages root
