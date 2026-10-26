@@ -20,6 +20,19 @@ function errorMessage(error: any, fallback: string) {
   if (error?.code === "unauthenticated") return "Kipindi chako kimeisha. Ingia tena kisha ujaribu.";
   return error?.message || fallback;
 }
+function callMediaErrorMessage(error: any, callType?: "voice" | "video") {
+  const name = String(error?.name || error?.code || "");
+  console.error("SmartServicesTZ call receive error:", { name, message: error?.message, constraint: error?.constraint, code: error?.code });
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") return "Ruhusa imezuiwa. Ruhusu Camera na Microphone kwa SmartServicesTZ kwenye mipangilio ya kivinjari/simu, kisha pakia ukurasa upya.";
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") return callType === "video" ? "Kamera au maikrofoni haijapatikana. Hakikisha vifaa vipo na havijazimwa." : "Maikrofoni haijapatikana. Hakikisha haijazimwa au kutumika na programu nyingine.";
+  if (name === "NotReadableError" || name === "TrackStartError") return "Kamera/maikrofoni inatumiwa na programu nyingine au simu imeshindwa kuifungua. Funga programu nyingine zinazotumia kamera kisha jaribu tena.";
+  if (name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError") return "Mipangilio ya kamera haiendani na kifaa hiki. Jaribu tena au tumia simu ya sauti.";
+  if (name === "SecurityError" || name === "TypeError") return "Kivinjari hakiruhusu kamera/maikrofoni. Fungua SmartServicesTZ kupitia HTTPS na kivinjari cha kisasa, si ndani ya dirisha lililozuia ruhusa.";
+  if (name === "AbortError") return "Kamera/maikrofoni imeshindwa kuwashwa. Funga ukurasa, fungua tena, kisha jaribu.";
+  if (name === "permission-denied") return "Firebase imekataa ruhusa ya simu. Kagua Firestore Rules za callSessions na candidates.";
+  if (name === "unauthenticated") return "Kuingia kwako kumekwisha. Ingia tena kisha ujaribu kupokea simu.";
+  return `Imeshindwa kupokea simu (${name || "hitilafu isiyojulikana"}). ${error?.message || "Angalia ruhusa za kamera/maikrofoni na ujaribu tena."}`;
+}
 function initials(name?: string) { return (name?.trim() || "M").slice(0, 1).toUpperCase(); }
 function callDateLabel(value: unknown) {
   const date = value && typeof value === "object" && "toDate" in value && typeof (value as any).toDate === "function" ? (value as any).toDate() : null;
@@ -416,7 +429,7 @@ export default function ChatPage() {
       attachCallDocument(call.id, false); setCallStatus("Imeunganishwa"); setCallBusy(false);
     } catch (error: any) {
       console.error(error); setCallBusy(false); stopCallMedia();
-      toast.error(error?.code === "permission-denied" ? "Ruhusa ya simu imekataliwa na Firestore Rules." : "Imeshindwa kupokea simu. Kagua ruhusa ya kamera/maikrofoni.");
+      toast.error(callMediaErrorMessage(error, call.callType === "video" ? "video" : "voice"));
     }
   };
 
