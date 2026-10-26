@@ -1,4 +1,5 @@
 import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "wouter";
 import {
   BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, PlayCircle, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
@@ -292,19 +293,20 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
     <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Lipa kwanza, kisha tuma ushahidi WhatsApp</small></span><ChevronRight size={18}/></button>
     {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
-    {tokenChoiceOpen && <div className="token-choice-modal" role="dialog" aria-modal="true">
-      <div className="token-choice-card" style={{maxHeight:"88vh",overflowY:"auto"}}>
-        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Chagua tokeni na kiasi</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
-        <p className="token-choice-help">Kifurushi cha chini ni TZS 1,000. Unaweza kuchanganya tokeni za NIDA na tokeni zingine.</p>
-        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Tokeni za NIDA</strong><span>Tokeni 1 = TZS 100</span><input type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
-        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Tokeni zingine</strong><span>Tokeni 1 = TZS 500</span><input type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
-        <div style={{background:"#f3f7ff",borderRadius:10,padding:12,display:"grid",gap:5}}><span>Malipo ya NIDA: <strong>TZS {nidaAmount.toLocaleString("en-US")}</strong></span><span>Malipo ya tokeni zingine: <strong>TZS {otherAmount.toLocaleString("en-US")}</strong></span><span style={{fontSize:17}}>Jumla ya kulipa: <strong>TZS {totalAmount.toLocaleString("en-US")}</strong></span>{totalAmount>0&&totalAmount<1000&&<small style={{color:"#b91c1c"}}>Kiasi cha chini cha malipo ni TZS 1,000.</small>}</div>
-        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Namba iliyotuma malipo</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="Mfano 07XXXXXXXX" style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
-        <div style={{border:"1px solid #d1d5db",borderRadius:10,padding:13,marginTop:12}}><strong>Lipa namba: 29126823</strong><p style={{margin:"5px 0"}}>Jina la mpokeaji: <strong>Steward Tz</strong></p><p style={{margin:"5px 0"}}>Lipa kiasi kilichoonyeshwa hapo juu kupitia Azam Pesa.</p></div>
-        <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA USHAHIDI WHATSAPP</button>
-        <p className="token-choice-help">WhatsApp itafunguka na taarifa za akaunti, kiasi na aina za tokeni zikiwa zimejazwa. Ambatisha picha ya ushahidi wa malipo kabla ya kutuma. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
+    {tokenChoiceOpen && typeof document !== "undefined" && createPortal(<div className="token-choice-modal" role="dialog" aria-modal="true">
+      <div className="token-choice-card">
+        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Chagua tokeni</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
+        <div className="token-choice-fields">
+          <label><strong>Tokeni za NIDA</strong><span>1 = TZS 100</span><input aria-label="Idadi ya tokeni za NIDA" type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} /></label>
+          <label><strong>Tokeni zingine</strong><span>1 = TZS 500</span><input aria-label="Idadi ya tokeni zingine" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
+        </div>
+        <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong>{totalAmount>0&&totalAmount<1000&&<small>Kiwango cha chini ni TZS 1,000.</small>}</div>
+        <label className="token-choice-phone"><strong>Namba iliyolipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
+        <div className="token-choice-payto"><strong>Lipa namba: 29126823</strong><span>Steward Tz · Azam Pesa</span></div>
+        <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA WHATSAPP</button>
+        <p className="token-choice-help">Baada ya kulipa, tuma picha ya uthibitisho WhatsApp. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
       </div>
-    </div>}
+    </div>, document.body)}
   </section>;
 }
 function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (service: ServiceCatalogItem) => void }) {
