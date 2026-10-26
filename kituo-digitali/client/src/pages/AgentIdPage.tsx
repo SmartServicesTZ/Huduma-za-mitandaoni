@@ -5,7 +5,7 @@ import { Download, Upload, RotateCcw, LoaderCircle } from "lucide-react";
 import { triggerDownload } from "@/lib/downloadHistory";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
-import { consumeFirebaseTokens } from "@/lib/firebase";
+import { consumeFirebaseTokens, createAgentRecord } from "@/lib/firebase";
 import { serviceCatalog } from "../../../shared/catalog";
 
 type Network = "Airtel" | "Vodacom" | "Yas" | "Halotel" | "Mbeya One Company Limited" | "Huduma za Mtandaoni";
@@ -35,17 +35,12 @@ const PORT = { w: 320, h: 520 };
 
 type AgentData = { name: string; agentId: string; phone: string; type: string; region: string; district: string; area: string; issueDate: string };
 
-const codeFor = (value: string) => {
-  const normalized = value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (!normalized) return "XXXX";
-  let hash = 2166136261;
-  for (let i = 0; i < normalized.length; i++) hash = Math.imul(hash ^ normalized.charCodeAt(i), 16777619);
-  return (hash >>> 0).toString(36).toUpperCase().padStart(4, "0").slice(-4);
-};
+const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
-const roleCode: Record<string, string> = { Freelancer: "FRE", "Team Leader": "TLD", Supervisor: "SUP", "Authorized Agent": "AUT" };
-const makeAgentId = (network: Network, region: string, district: string, type: string) =>
-  `TZ-${codeFor(region)}-${codeFor(district)}-${networkCode[network]}-${roleCode[type] ?? "AGT"}`;
+const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", Supervisor: "SV", "Authorized Agent": "AA" };
+const regionCodeFor = (value: string) => { const normalized = value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().trim(); return regionCodes[normalized] ?? normalized.replace(/[^a-z]/g, "").slice(0, 3).toUpperCase().padEnd(3, "X"); };
+const makeAgentId = (network: Network, region: string, _district: string, type: string) =>
+  `T-${regionCodeFor(region)}-${networkCode[network]}-${roleCode[type] ?? "AG"}-000`;
 
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const expiry = (value: string) => { if (!value) return ""; const parts = value.split("-").map(Number); if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return ""; const d = new Date(parts[0], parts[1] - 1, parts[2]); d.setFullYear(d.getFullYear() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
@@ -187,7 +182,7 @@ export default function AgentIdPage() {
   const [issueDate, setIssueDate] = useState(today());
   const [photo, setPhoto] = useState("");
   const [qr, setQr] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);\n  const [savedRecordId, setSavedRecordId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const landFrontRef = useRef<HTMLDivElement>(null);
   const landBackRef = useRef<HTMLDivElement>(null);
@@ -201,7 +196,7 @@ export default function AgentIdPage() {
   useEffect(() => {
     setPaid(false);
     setRequestId(crypto.randomUUID());
-  }, [network, orientation, name, agentId, phone, type, region, district, area, issueDate, photo]);
+  }, [network, orientation, name, phone, type, region, district, area, issueDate, photo]);\n\n  useEffect(() => { setSavedRecordId(""); }, [network, name, phone, type, region, district, area, issueDate]);
 
   useEffect(() => {
     setAgentId(makeAgentId(network, region, district, type));
@@ -237,8 +232,23 @@ export default function AgentIdPage() {
     }
     if (!jobs.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
     if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
+    if (!name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim()) {
+      window.alert("Jaza jina kamili, simu, mkoa, wilaya na kata/eneo kabla ya kuhifadhi kitambulisho.");
+      return;
+    }
     setBusy(true);
     try {
+      if (!savedRecordId) {
+        const saved = await createAgentRecord({
+          userId: firebaseUser.uid, name: name.trim(), phone: phone.trim(), network, type,
+          region: region.trim(), district: district.trim(), area: area.trim(), issueDate,
+          expiryDate: expiry(issueDate)
+        });
+        setSavedRecordId(saved.id);
+        setAgentId(saved.agentId);
+        toast.success(`Taarifa zimehifadhiwa: ${saved.agentId}`);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      }
       if (!paid) {
         const service = serviceCatalog.find((item) => item.slug === "kitambulisho-wakala") ?? { slug: "kitambulisho-wakala", name: "KITAMBULISHO CHA WAKALA", tokenCost: 2, kind: "paid" as const };
         await consumeFirebaseTokens(firebaseUser.uid, service, requestId);
@@ -267,7 +277,7 @@ export default function AgentIdPage() {
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="aid-field"><span>Agent ID (hutengenezwa na mfumo)</span><input value={agentId} readOnly aria-readonly="true" /></label><small className="aid-help">Msimbo una sehemu za eneo, wilaya, mtandao na aina ya wakala.</small>
+        <label className="aid-field"><span>Agent ID (hutengenezwa na mfumo)</span><input value={agentId} readOnly aria-readonly="true" /></label><small className="aid-help">Msimbo unaonyesha nchi, mkoa, mtandao, aina ya wakala na namba ya kipekee. Taarifa za wilaya na kata huhifadhiwa kwenye mfumo.</small>
         <label className="aid-field"><span>Namba ya Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
         <label className="aid-field"><span>Agent Type</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Supervisor</option><option>Authorized Agent</option></select></label>
         <label className="aid-field"><span>Mkoa</span><input value={region} maxLength={30} onChange={(e) => setRegion(e.target.value)} /></label>
