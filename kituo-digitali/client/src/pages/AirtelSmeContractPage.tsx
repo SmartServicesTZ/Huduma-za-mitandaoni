@@ -267,6 +267,13 @@ export default function AirtelSmeContractPage() {
           outputBlob = new Blob([pdfBuffer], { type: "application/pdf" });
           extension = "pdf";
         }
+        if (!paid) {
+          const uid = firebaseAuth.currentUser?.uid;
+          if (!uid) throw new Error("Ingia kwanza ili kulipia na kupakua mkataba.");
+          const service = serviceCatalog.find((item) => item.slug === "sme-airtel-mkataba") ?? { slug: "sme-airtel-mkataba", name: "SME AIRTEL MKATABA", tokenCost: 2, kind: "paid" as const };
+          await consumeFirebaseTokens(uid, service, requestId);
+          setPaid(true);
+        }
         triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase());
         const sizeKB = Math.round(outputBlob.size / 1024);
         setStatus(`✓ Mkataba umepakuliwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
