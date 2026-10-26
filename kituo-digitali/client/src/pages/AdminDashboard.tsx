@@ -599,10 +599,7 @@ function exportTransactionsCsv(rows: any[]) {
     ["Balance baada", (item) => item.newBalance ?? item.balanceAfter],
     ["Tarehe", (item) => dateText(item.createdAt)],
   ];
-  const escapeCell = (value: unknown) => {
-    const raw = String(value ?? "");
-    return '"' + raw.replaceAll('"', '""').replaceAll("\r", " ").replaceAll("\n", " ") + '"';
-  };
+  const escapeCell = (value: unknown) => '"' + String(value ?? "").replaceAll('"', '""') + '"' ;
   const csv = "\uFEFF" + [columns.map(([label]) => escapeCell(label)).join(","), ...rows.map((item) => columns.map(([, read]) => escapeCell(read(item))).join(","))].join("\r\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
   const link = document.createElement("a");
