@@ -866,14 +866,18 @@ export async function adminListLipaApplications() {
 export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let retryDelay = 30_000;
   const load = async () => {
     try {
       const rows = await adminListLipaApplications();
       if (!stopped) callback(rows);
+      retryDelay = 30_000;
     } catch (error) {
       if (!stopped) onError?.(error);
+      // Back off during quota/network failures instead of hammering Firestore.
+      retryDelay = Math.min(retryDelay * 2, 5 * 60_000);
     } finally {
-      if (!stopped) timer = setTimeout(load, 5000);
+      if (!stopped) timer = setTimeout(load, retryDelay);
     }
   };
   void load();
@@ -993,14 +997,18 @@ export async function adminListServiceApplications() {
 export function subscribeToAdminServiceApplications(callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let retryDelay = 30_000;
   const load = async () => {
     try {
       const rows = await adminListServiceApplications();
       if (!stopped) callback(rows);
+      retryDelay = 30_000;
     } catch (error) {
       if (!stopped) onError?.(error);
+      // Back off during quota/network failures instead of hammering Firestore.
+      retryDelay = Math.min(retryDelay * 2, 5 * 60_000);
     } finally {
-      if (!stopped) timer = setTimeout(load, 5000);
+      if (!stopped) timer = setTimeout(load, retryDelay);
     }
   };
   void load();
