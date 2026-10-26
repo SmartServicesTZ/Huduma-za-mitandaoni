@@ -6,9 +6,10 @@ import { renderBusinessLicenseCanvas, type BusinessLicenseCanvasForm } from "@/l
   issueDate: string;
   expiryDate: string;
   licenseNumber: string;
+  paid?: boolean;
 };
 
-export default function LicenseTemplatePreview({ form, issueDate, expiryDate, licenseNumber }: Props) {
+export default function LicenseTemplatePreview({ form, issueDate, expiryDate, licenseNumber, paid = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [renderError, setRenderError] = useState("");
 
@@ -41,8 +42,11 @@ export default function LicenseTemplatePreview({ form, issueDate, expiryDate, li
       <div><span className="overline">MUONEKANO WA TEMPLATE ULIYOTUMA</span><h2>LIVE BUSINESS LICENSE</h2></div>
       <span className="license-draft-badge">PREVIEW</span>
     </div>
-    <div className="license-template-paper">
+    <div className="license-template-paper" style={{ position: "relative" }}>
       <canvas ref={canvasRef} className="license-template-canvas" width={1012} height={1300} aria-label="Live preview ya leseni ya biashara" />
+      {!paid && <div aria-label="Watermark ya preview isiyolipiwa" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none", zIndex: 2 }}>
+        <div style={{ transform: "rotate(-32deg)", border: "3px solid rgba(185,28,28,.62)", color: "rgba(185,28,28,.66)", background: "rgba(255,255,255,.12)", padding: "10px 18px", fontSize: "clamp(18px, 4vw, 34px)", fontWeight: 900, letterSpacing: "3px", textAlign: "center", lineHeight: 1.4, textShadow: "0 1px 1px rgba(255,255,255,.5)", maxWidth: "95%" }}>PREVIEW<br />HAIJALIPIWA</div>
+      </div>}
       {renderError && <div className="license-template-error" role="status">{renderError}</div>}
     </div>
     {!licenseNumber && <p className="license-template-hint">Namba ya leseni na QR ya kipekee vitaonekana baada ya kuingia kwenye akaunti.</p>}
