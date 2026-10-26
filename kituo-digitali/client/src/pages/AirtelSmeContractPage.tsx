@@ -39,7 +39,7 @@ const firstAndLastName = (name: string) => {
   return `${words[0]} ${words[words.length - 1]}`.toUpperCase();
 };
 
-const digits = (value: string) => value.replace(/\\D/g, "");
+const digits = (value: string) => value.replace(/\D/g, "");
 
 const formatTin = (value: string) => {
   const d = digits(value).slice(0, 9);
@@ -49,7 +49,7 @@ const formatTin = (value: string) => {
 const initialForm = (): FormState => ({
   customerName: "",
   phone: "",
-  tin: "215-153-210",
+  tin: "",
   idType: "NIDA",
   idNumber: "20060505175200000312",
   street: "TEGETA",
@@ -151,7 +151,7 @@ export default function AirtelSmeContractPage() {
       if (key === "customerName2") next.signature1 = initials(String(value));
       if (key === "salesName") next.signature2 = initials(String(value));
       if (key === "phone") next.devicePhone = digits(String(value)).slice(0, 10);
-      if (key === "tin") next.tin = formatTin(String(value));
+      if (key === "tin") next.tin = digits(String(value)).slice(0, 9);
       if (key === "idNumber") next.idNumber = digits(String(value)).slice(0, 20);
       return next;
     });
@@ -286,11 +286,23 @@ export default function AirtelSmeContractPage() {
       <span>{label}</span>
       <input
         type={type}
-        value={String(form[key] ?? "")}
-        placeholder={placeholder}
-        maxLength={maxLength}
+        value={key === "tin" ? formatTin(String(form.tin ?? "")) : String(form[key] ?? "")}
+        placeholder={key === "tin" ? "Mfano: 215153210" : placeholder}
+        maxLength={key === "tin" ? 11 : maxLength}
         readOnly={readOnly}
-        inputMode={type === "tel" ? "numeric" : undefined}
+        inputMode={type === "tel" || key === "tin" ? "numeric" : undefined}
+        onKeyDown={key === "tin" ? (e) => {
+          const input = e.currentTarget;
+          const start = input.selectionStart ?? 0;
+          const end = input.selectionEnd ?? start;
+          const shown = formatTin(String(form.tin ?? ""));
+          if (e.key === "Backspace" && start === end && start > 0 && shown[start - 1] === "-") {
+            e.preventDefault();
+            const raw = digits(String(form.tin ?? ""));
+            const removeAt = Math.max(0, start - 2);
+            update("tin", raw.slice(0, removeAt) + raw.slice(removeAt + 1));
+          }
+        } : undefined}
         onChange={(e) => update(key, e.target.value)}
       />
       {errors[String(key)] && <small className="sme-error">{errors[String(key)]}</small>}
