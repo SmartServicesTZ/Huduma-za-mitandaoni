@@ -264,7 +264,8 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const nidaAmount = nidaCount * 100;
   const otherAmount = otherCount * 500;
   const totalAmount = nidaAmount + otherAmount;
-  const canProceed = totalAmount >= 1000 && (nidaCount > 0 || otherCount > 0) && paidFromPhone.trim().length >= 9;
+  const paymentPhone = paidFromPhone.trim() || profile?.phone || "";
+  const canProceed = totalAmount >= 1000 && (nidaCount > 0 || otherCount > 0) && paymentPhone.trim().length >= 9;
   const openWhatsAppProof = () => {
     if (!canProceed) return;
     const message = [
@@ -272,7 +273,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       "",
       "Jina la akaunti: " + (profile?.name ?? "Halijatajwa"),
       "Namba ya akaunti: " + (profile?.phone ?? "Haipo"),
-      "Namba iliyolipia: " + paidFromPhone.trim(),
+      "Namba iliyolipia: " + paymentPhone.trim(),
       "Lipa namba: 29126823",
       "Jina la mpokeaji: Steward Tz",
       "Kiasi kilicholipwa: TZS " + totalAmount.toLocaleString("en-US"),
@@ -298,7 +299,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Tokeni za NIDA</strong><span>Tokeni 1 = TZS 100</span><input type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
         <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Tokeni zingine</strong><span>Tokeni 1 = TZS 500</span><input type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
         <div style={{background:"#f3f7ff",borderRadius:10,padding:12,display:"grid",gap:5}}><span>Malipo ya NIDA: <strong>TZS {nidaAmount.toLocaleString("en-US")}</strong></span><span>Malipo ya tokeni zingine: <strong>TZS {otherAmount.toLocaleString("en-US")}</strong></span><span style={{fontSize:17}}>Jumla ya kulipa: <strong>TZS {totalAmount.toLocaleString("en-US")}</strong></span>{totalAmount>0&&totalAmount<1000&&<small style={{color:"#b91c1c"}}>Kiasi cha chini cha malipo ni TZS 1,000.</small>}</div>
-        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Namba iliyotuma malipo</strong><input type="tel" value={paidFromPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="Mfano 07XXXXXXXX" style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
+        <label style={{display:"grid",gap:6,margin:"12px 0"}}><strong>Namba iliyotuma malipo</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="Mfano 07XXXXXXXX" style={{width:"100%",padding:12,border:"1px solid #d1d5db",borderRadius:9}} /></label>
         <div style={{border:"1px solid #d1d5db",borderRadius:10,padding:13,marginTop:12}}><strong>Lipa namba: 29126823</strong><p style={{margin:"5px 0"}}>Jina la mpokeaji: <strong>Steward Tz</strong></p><p style={{margin:"5px 0"}}>Lipa kiasi kilichoonyeshwa hapo juu kupitia Azam Pesa.</p></div>
         <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA USHAHIDI WHATSAPP</button>
         <p className="token-choice-help">WhatsApp itafunguka na taarifa za akaunti, kiasi na aina za tokeni zikiwa zimejazwa. Ambatisha picha ya ushahidi wa malipo kabla ya kutuma. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
