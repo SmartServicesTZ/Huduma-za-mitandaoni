@@ -161,7 +161,7 @@ export default function AgentIdPage() {
   const { firebaseUser } = useAuth();
   const [paid, setPaid] = useState(false);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
-  const [network, setNetwork = useState<Network>("Airtel");
+  const [network, setNetwork] = useState<Network>("Airtel");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [name, setName] = useState("Steward Jackson Njiwa");
   const [agentId, setAgentId] = useState("T63663");
