@@ -977,7 +977,7 @@ export function subscribeUserMessages(uid: string, callback: (rows: Array<Record
 export type ChatUser = { uid: string; name: string; phone: string; profileImageUrl?: string; verificationStatus?: "pending" | "approved" | "rejected" };
 export type ChatMessage = { id: string; senderId: string; senderName?: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; editedAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
 export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; profileImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
-export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; visibility: "private" | "public"; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };
+export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; visibility: "private" | "public"; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; avatarUrl?: string; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };
 export type ChatGroupJoinRequest = { id: string; groupId: string; userId: string; userName: string; userPhone: string; userImage?: string; status: "pending" | "approved" | "rejected"; createdAt?: unknown };
 
 export function subscribeChatMembers(callback: (rows: ChatUser[]) => void, onError?: (error: unknown) => void) {
@@ -1048,6 +1048,37 @@ export async function createChatGroup(current: ChatUser, members: ChatUser[], na
   const memberImages = Object.fromEntries(unique.map((item) => [item.uid, item.profileImageUrl ?? ""]));
   await setDoc(groupRef, { name: cleanName, description: description.trim().slice(0, 240), ownerId: current.uid, visibility, memberIds, memberNames, memberPhones, memberImages, lastMessage: "", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   return groupRef.id;
+}
+export async function updateChatGroupSettings(groupId: string, uid: string, values: { name?: string; description?: string; visibility?: "private" | "public" }) {
+  const groupRef = doc(firestore, "chatGroups", groupId);
+  const snapshot = await getDoc(groupRef);
+  if (!snapshot.exists()) throw new Error("Group halipatikani.");
+  const group = snapshot.data() as ChatGroup;
+  if (group.ownerId !== uid) throw new Error("Msimamizi wa group pekee ndiye anayeweza kubadilisha mipangilio.");
+  const updates: Record<string, unknown> = { updatedAt: serverTimestamp() };
+  if (values.name !== undefined) {
+    const name = values.name.trim().slice(0, 80);
+    if (!name) throw new Error("Jina la group haliwezi kuwa tupu.");
+    updates.name = name;
+  }
+  if (values.description !== undefined) updates.description = values.description.trim().slice(0, 240);
+  if (values.visibility !== undefined) updates.visibility = values.visibility;
+  await updateDoc(groupRef, updates);
+}
+export async function uploadChatGroupAvatar(groupId: string, uid: string, file: File) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Chagua picha ya JPG, PNG au WebP.");
+  if (file.size > 2 * 1024 * 1024) throw new Error("Picha ya group isizidi MB 2.");
+  const snapshot = await getDoc(doc(firestore, "chatGroups", groupId));
+  if (!snapshot.exists()) throw new Error("Group halipatikani.");
+  const group = snapshot.data() as ChatGroup;
+  if (group.ownerId !== uid) throw new Error("Msimamizi wa group pekee ndiye anayeweza kubadilisha picha.");
+  const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const path = `chatGroupFiles/${groupId}/${uid}/avatar-${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const objectRef = storageRef(firebaseStorage, path);
+  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "private,max-age=300" });
+  const url = await getDownloadURL(objectRef);
+  await updateDoc(doc(firestore, "chatGroups", groupId), { avatarUrl: url, avatarPath: path, updatedAt: serverTimestamp() });
+  return url;
 }
 export function subscribePublicChatGroups(callback: (rows: ChatGroup[]) => void, onError?: (error: unknown) => void) {
   return onSnapshot(query(collection(firestore, "chatGroups"), where("visibility", "==", "public")), (snapshot) => {
