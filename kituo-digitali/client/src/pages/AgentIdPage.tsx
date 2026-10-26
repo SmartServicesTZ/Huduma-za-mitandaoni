@@ -35,6 +35,18 @@ const PORT = { w: 320, h: 520 };
 
 type AgentData = { name: string; agentId: string; phone: string; type: string; region: string; district: string; area: string; issueDate: string };
 
+const codeFor = (value: string) => {
+  const normalized = value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!normalized) return "XXXX";
+  let hash = 2166136261;
+  for (let i = 0; i < normalized.length; i++) hash = Math.imul(hash ^ normalized.charCodeAt(i), 16777619);
+  return (hash >>> 0).toString(36).toUpperCase().padStart(4, "0").slice(-4);
+};
+const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
+const roleCode: Record<string, string> = { Freelancer: "FRE", "Team Leader": "TLD", Supervisor: "SUP", "Authorized Agent": "AUT" };
+const makeAgentId = (network: Network, region: string, district: string, type: string) =>
+  `TZ-${codeFor(region)}-${codeFor(district)}-${networkCode[network]}-${roleCode[type] ?? "AGT"}`;
+
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const expiry = (value: string) => { if (!value) return ""; const parts = value.split("-").map(Number); if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return ""; const d = new Date(parts[0], parts[1] - 1, parts[2]); d.setFullYear(d.getFullYear() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const fmt = (value: string) => { if (!value) return "—"; const parts = value.split("-"); return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value; };
@@ -163,13 +175,13 @@ export default function AgentIdPage() {
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [network, setNetwork] = useState<Network>("Airtel");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
-  const [name, setName] = useState("Steward Jackson Njiwa");
-  const [agentId, setAgentId] = useState("T63663");
-  const [phone, setPhone] = useState("0698232313");
+  const [name, setName] = useState("");
+  const [agentId, setAgentId] = useState(() => makeAgentId("Airtel", "", "", "Freelancer"));
+  const [phone, setPhone] = useState("");
   const [type, setType] = useState("Freelancer");
-  const [region, setRegion] = useState("Manyara");
-  const [district, setDistrict] = useState("Kiteto");
-  const [area, setArea] = useState("Ndirigishi");
+  const [region, setRegion] = useState("");
+  const [district, setDistrict] = useState("");
+  const [area, setArea] = useState("");
   const [issueDate, setIssueDate] = useState(today());
   const [photo, setPhoto] = useState("");
   const [qr, setQr] = useState("");
@@ -190,6 +202,10 @@ export default function AgentIdPage() {
   }, [network, orientation, name, agentId, phone, type, region, district, area, issueDate, photo]);
 
   useEffect(() => {
+    setAgentId(makeAgentId(network, region, district, type));
+  }, [network, region, district, type]);
+
+  useEffect(() => {
     let cancelled = false;
     QRCode.toDataURL(qrText, { width: 420, margin: 2, errorCorrectionLevel: "H", color: { dark: "#0f172a", light: "#ffffff" } })
       .then((url) => { if (!cancelled) setQr(url); })
@@ -197,7 +213,7 @@ export default function AgentIdPage() {
     return () => { cancelled = true; };
   }, [qrText]);
 
-  const reset = () => { setName(""); setAgentId(""); setPhone(""); setType("Freelancer"); setRegion(""); setDistrict(""); setArea(""); setIssueDate(today()); setPhoto(""); setNetwork("Airtel"); };
+  const reset = () => { setName(""); setPhone(""); setType("Freelancer"); setRegion(""); setDistrict(""); setArea(""); setIssueDate(today()); setPhoto(""); setNetwork("Airtel"); setAgentId(makeAgentId("Airtel", "", "", "Freelancer")); };
 
   const onPhoto = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -246,10 +262,10 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
         <p className="aid-choice-note">Chagua aina unayotaka kupakua kwa vitufe vya "Mbele" na "Nyuma". Vyote viwili vinaonekana kwenye preview.</p>
-        <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</button>)}</div>
+        <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo">{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="aid-field"><span>Agent ID / Code</span><input value={agentId} maxLength={20} onChange={(e) => setAgentId(e.target.value)} /></label>
+        <label className="aid-field"><span>Agent ID (hutengenezwa na mfumo)</span><input value={agentId} readOnly aria-readonly="true" /></label><small className="aid-help">Msimbo una sehemu za eneo, wilaya, mtandao na aina ya wakala.</small>
         <label className="aid-field"><span>Namba ya Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
         <label className="aid-field"><span>Agent Type</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Supervisor</option><option>Authorized Agent</option></select></label>
         <label className="aid-field"><span>Mkoa</span><input value={region} maxLength={30} onChange={(e) => setRegion(e.target.value)} /></label>
@@ -297,7 +313,7 @@ function LogoChip({ cfg, network, className = "" }: { cfg: NetworkCfg; network: 
 
 /* ============================ KULALA · MBELE ============================ */
 function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate }: FrontProps) {
-  const displayName = (name.trim() || "JINA LA WAKALA").toUpperCase();
+  const displayName = name.trim().toUpperCase();
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
   return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={cardVars(cfg)}>
     <div className="idl-side">
@@ -309,7 +325,7 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
       {cfg.logo && <img className="idl-wm" src={cfg.logo} alt="" aria-hidden="true" />}
       <div className="idl-kicker"><span><Words text="HUDUMA ZA MTANDAONI" /></span><em>✓ <Words text="VERIFIED AGENT" /></em></div>
       <div className="idl-role"><Words text={role} /></div>
-      <div className="idl-name" style={{ fontSize: landscapeNameSize(displayName) }}><Words text={displayName} /></div>
+      <div className="idl-name" style={{ fontSize: landscapeNameSize(displayName) }}><Words text={displayName} fallback="—" /></div>
       <div className="idl-rule-line" />
       <div className="idl-grid">
         <div><small>PHONE</small><b><Words text={phone} fallback="—" /></b></div>
@@ -365,7 +381,7 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
 
 /* ============================ KUSIMAMA · MBELE ============================ */
 function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate }: FrontProps) {
-  const displayName = (name.trim() || "JINA LA WAKALA").toUpperCase();
+  const displayName = name.trim().toUpperCase();
   return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={cardVars(cfg)}>
     <div className="idp-hero">
       <div className="idp-ring" />
