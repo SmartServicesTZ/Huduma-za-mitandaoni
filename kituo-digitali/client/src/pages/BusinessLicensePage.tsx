@@ -282,7 +282,7 @@ export default function BusinessLicensePage() {
               </SelectField>
             </Field>
             <Field label="Mkoa" english="Region" required>
-              <input value={form.region} onChange={(event) => set("region", titleCase(event.target.value))} placeholder="Andika mkoa wa biashara" autoComplete="address-level1" />
+              <input value={form.region} onChange={(event) => set("region", titleCase(event.target.value))} placeholder="Andika mkoa wa biashara" autoComplete="off" list={undefined} />
             </Field>
             <Field label="Kata" english="Ward" required><input value={form.ward} onChange={(event) => set("ward", titleCase(event.target.value))} /></Field>
             <Field label="Mtaa / Kijiji" english="Street / Village" required><input value={form.street} onChange={(event) => set("street", titleCase(event.target.value))} /></Field>
