@@ -43,7 +43,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat"
   createPocketWifiOrder: "applications", createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
   getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", listChatMembers: "chat", createTokenPurchaseOrder: "payments",
-  markUserMessageRead: "read", syncAuthClaims: "auth",
+  markUserMessageRead: "read", registerFcmToken: "profile", sendPushNotification: "admin", syncAuthClaims: "auth",
 };
 
 export async function enforceAccountRestriction(uid: string, callableName: string) {
@@ -128,6 +128,67 @@ function validateConfiguredFields(value: unknown) {
     return { fieldName, label, type, placeholder: typeof field.placeholder === "string" ? field.placeholder.slice(0, 200) : "", required: field.required === true, helpText: typeof field.helpText === "string" ? field.helpText.slice(0, 300) : "", order: Number.isFinite(Number(field.order)) ? Number(field.order) : index, ...(options ? { options } : {}), ...(validation ? { validation } : {}), ...(maxSizeMb ? { maxSizeMb } : {}), ...(Array.isArray(field.accept) ? { accept: field.accept.filter((item): item is string => typeof item === "string" && item.length <= 100).slice(0, 10) } : {}) };
   });
 }
+
+
+export const registerFcmToken = callable(async (request) => {
+  const uid = authUid(request);
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const token = typeof data.token === "string" ? data.token.trim() : "";
+  if (token.length < 20 || token.length > 4096 || /\\s/.test(token)) {
+    throw new ApiError("invalid-argument", "Token ya arifa si sahihi.");
+  }
+  const existing = await db.collection("fcmTokens").where("token", "==", token).limit(1).get();
+  if (!existing.empty) {
+    const ref = existing.docs[0].ref;
+    await ref.set({ uid, token, updatedAt: FieldValue.serverTimestamp(), platform: "android" }, { merge: true });
+    return { saved: true };
+  }
+  await db.collection("fcmTokens").add({
+    uid, token, platform: "android",
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  return { saved: true };
+});
+
+export const sendPushNotification = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  requirePermission(actor, "manageMessages");
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const title = typeof data.title === "string" ? data.title.trim().slice(0, 100) : "";
+  const body = typeof data.body === "string" ? data.body.trim().slice(0, 500) : "";
+  const targetUid = typeof data.targetUid === "string" ? data.targetUid.trim().slice(0, 128) : "";
+  const broadcast = data.broadcast === true;
+  if (!title || !body || (!broadcast && !targetUid) || (broadcast && targetUid)) {
+    throw new ApiError("invalid-argument", "Weka kichwa, ujumbe na chagua mtumiaji mmoja au watumiaji wote.");
+  }
+  const tokensSnapshot = broadcast
+    ? await db.collection("fcmTokens").limit(1000).get()
+    : await db.collection("fcmTokens").where("uid", "==", targetUid).limit(1000).get();
+  const tokens = [...new Set(tokensSnapshot.docs.map((doc) => doc.data()?.token).filter((token): token is string => typeof token === "string" && token.length >= 20))];
+  if (!tokens.length) return { sent: 0, failed: 0, message: "Hakuna kifaa kilichosajili tokeni ya arifa." };
+  const accessToken = await getGoogleAccessToken();
+  let sent = 0;
+  let failed = 0;
+  for (const token of tokens) {
+    const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(getWorkerEnv().FIREBASE_PROJECT_ID)}/messages:send`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ message: { token, notification: { title, body }, android: { priority: "HIGH", notification: { channel_id: "smartservicestz_updates" } } } }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (response.ok) sent++;
+    else {
+      failed++;
+      if (response.status === 404 || response.status === 400) {
+        // Invalid tokens are retained for audit and can be cleaned up safely later.
+      }
+      console.error("FCM delivery failed", { status: response.status });
+    }
+  }
+  return { sent, failed, attempted: tokens.length };
+});
 
 export const adminWrite = callable(async (request) => {
   const uid = authUid(request);
