@@ -465,11 +465,12 @@ export async function adminListAgentRecords() {
 }
 
 export async function adminListUsers() {
-  const snapshot = await getDocs(collection(firestore, "users"));
-  return snapshot.docs.map((item) => {
-    const { password: _password, pin: _pin, pinHash: _pinHash, ...safeData } = item.data();
-    return { id: item.id, ...safeData, createdAt: timestampValue(safeData.createdAt), lastLoginAt: timestampValue(safeData.lastLoginAt) } as AdminUserRecord & { id: string };
-  });
+  const users = await invokeWorker<Array<AdminUserRecord & { id: string; createdAt?: unknown; lastLoginAt?: unknown }>>("listAdminUsers", {});
+  return users.map((user) => ({
+    ...user,
+    createdAt: timestampValue(user.createdAt),
+    lastLoginAt: timestampValue(user.lastLoginAt),
+  }));
 }
 
 export async function adminListServices() {
