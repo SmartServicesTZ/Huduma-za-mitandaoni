@@ -284,20 +284,6 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
 function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (service: ServiceCatalogItem) => void }) {
   const locked = service.kind === "locked";
   const external = Boolean(service.actionUrl);
-  const [favorite, setFavorite] = useState(() => {
-    try { return (JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]") as string[]).includes(service.slug); }
-    catch { return false; }
-  });
-  const toggleFavorite = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    let favorites: string[] = [];
-    try { favorites = JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]"); } catch { favorites = []; }
-    favorites = favorite ? favorites.filter((slug) => slug !== service.slug) : [...new Set([...favorites, service.slug])];
-    try { localStorage.setItem("steward-tz-favorite-services-v1", JSON.stringify(favorites)); } catch { toast.error("Imeshindikana kuhifadhi huduma uipendayo kwenye simu hii."); return; }
-    setFavorite(!favorite);
-    window.dispatchEvent(new CustomEvent("smartservicestz-favorites-changed", { detail: favorites }));
-    toast.success(favorite ? "Huduma imeondolewa kwenye unazopenda." : "Huduma imehifadhiwa kwenye unazopenda.");
-  };
   const iconPalette: Record<string, string> = { "store": "#059669", "file-badge": "#7c3aed", "car-front": "#ea580c", "badge-check": "#16a34a", "contact": "#4f46e5", "vote": "#0891b2", "qr-code": "#db2777", "ticket": "#d97706", "landmark": "#2563eb", "wallet-cards": "#0d9488", "smartphone": "#8b5cf6", "copy": "#475569", "baby": "#ec4899", "trophy": "#ca8a04", "star": "#e11d48", "tv": "#6366f1", "image-search": "#0f766e", "radio": "#c026d3", "plane": "#0284c7", "heart-handshake": "#059669", "file-warning": "#c2410c", "music-2": "#9333ea", "palette": "#be185d", "scan-face": "#0f766e", "user-round-pen": "#7c3aed", "search": "#0284c7" };
   const palette = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706", "#db2777", "#4f46e5", "#0d9488", "#ea580c", "#9333ea"];
   const colorIndex = [...service.slug].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
@@ -308,7 +294,6 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
       <div className="service-card-copy"><strong>{service.name}</strong><span>{locked ? (service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") : service.description}</span></div>
       <div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}{external ? <span className="external-label"><ExternalLink size={13} /> FUNGUA</span> : <ChevronRight size={17} />}</div>
     </button>
-    <button type="button" className={`service-favorite-toggle ${favorite ? "is-favorite" : ""} hidden-favorite-star`} onClick={toggleFavorite} aria-label={favorite ? `Ondoa ${service.name} kwenye huduma unazopenda` : `Hifadhi ${service.name} kwenye huduma unazopenda`} aria-pressed={favorite}><Star size={16} fill={favorite ? "currentColor" : "none"} /></button>
   </div>;
 }
 
