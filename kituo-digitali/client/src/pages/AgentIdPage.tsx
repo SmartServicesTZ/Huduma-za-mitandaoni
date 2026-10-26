@@ -312,7 +312,7 @@ function LogoChip({ cfg, network, className = "" }: { cfg: NetworkCfg; network: 
 
 function CardWatermark({ paid }: { paid: boolean }) {
   if (paid) return null;
-  return <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, zIndex: 50, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none" }}>
+  return <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, zIndex: 1, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none" }}>
     <span style={{ transform: "rotate(-28deg)", border: "1px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.25)", padding: "4px 7px", fontSize: "clamp(8px, 2.1vw, 13px)", fontWeight: 900, letterSpacing: ".4px", lineHeight: 1.3, textAlign: "center", maxWidth: "92%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</span>
   </div>;
 }
