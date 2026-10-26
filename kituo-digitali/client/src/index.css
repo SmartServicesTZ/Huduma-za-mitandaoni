@@ -2548,3 +2548,14 @@ form,
   .token-choice-head h3 { font-size: 20px !important; }
   .token-choice-fields { gap: 8px; }
 }
+
+
+/* Token payment details: keep recipient, pay number and provider readable on every screen. */
+.token-choice-total small { display:block !important; flex-basis:100% !important; color:#334155 !important; font-weight:600; line-height:1.4; }
+.token-choice-payto { display:grid !important; grid-template-columns:minmax(0,1fr) !important; gap:0 !important; padding:8px 12px !important; background:#f8fafc !important; color:#10213b !important; }
+.token-choice-payto-row { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:12px !important; padding:8px 0 !important; border-bottom:1px solid #dbe4ef !important; }
+.token-choice-payto-row:last-child { border-bottom:0 !important; }
+.token-choice-payto-row span { display:block !important; color:#475569 !important; font-size:11px !important; font-weight:800 !important; letter-spacing:.02em; }
+.token-choice-payto-row strong { display:block !important; color:#0f172a !important; font-size:14px !important; font-weight:900 !important; text-align:right; }
+.idx-logochip { position:relative; z-index:5; flex-shrink:0; background:#fff !important; opacity:1 !important; border:2px solid rgba(255,255,255,.95); box-shadow:0 5px 14px rgba(0,0,0,.28) !important; isolation:isolate; }
+.idx-logochip img { display:block !important; width:100% !important; height:100% !important; max-width:100% !important; max-height:100% !important; object-fit:contain !important; opacity:1 !important; filter:none !important; mix-blend-mode:normal !important; position:relative; z-index:6; }
