@@ -301,7 +301,8 @@ export default function ChatPage() {
     <section className="chat-workspace">
       <aside className="chat-sidebar">
         <div className="chat-sidebar-heading"><div><span className="chat-section-mark"><MessageCircle size={18}/></span><strong>Ujumbe</strong></div><span className="chat-total-count">{view === "moderation" ? moderationConversations.length : conversations.length}</span></div>
-        <nav className="chat-tabs" aria-label="Aina ya mazungumzo">\n          <button className={view === "all" ? "active" : ""} onClick={() => { setView("all"); setRoomId(""); setGroupId(""); setContactSearch(""); }}><MessageCircle size={16}/> Yote</button>
+        <nav className="chat-tabs" aria-label="Aina ya mazungumzo">
+          <button className={view === "all" ? "active" : ""} onClick={() => { setView("all"); setRoomId(""); setGroupId(""); setContactSearch(""); }}><MessageCircle size={16}/> Yote</button>
           <button className={view === "public" ? "active" : ""} onClick={() => { setView("public"); setRoomId(""); setContactSearch(""); }}><Users size={16}/> Jumuiya</button>
           <button className={view === "private" ? "active" : ""} onClick={() => { setView("private"); setRoomId(""); setGroupId(""); setContactSearch(""); }}><MessageCircle size={16}/> Binafsi</button><button className={view === "groups" ? "active" : ""} onClick={() => { setView("groups"); setRoomId(""); setContactSearch(""); }}><Users size={16}/> Magroup</button>
           {canModerate && <button className={view === "moderation" ? "active" : ""} onClick={() => { setView("moderation"); setRoomId(""); setContactSearch(""); }}><ShieldAlert size={16}/> Usimamizi</button>}
