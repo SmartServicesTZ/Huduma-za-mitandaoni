@@ -1065,6 +1065,58 @@ export async function updateChatGroupSettings(groupId: string, uid: string, valu
   if (values.visibility !== undefined) updates.visibility = values.visibility;
   await updateDoc(groupRef, updates);
 }
+export async function addChatGroupMember(groupId: string, actorUid: string, member: ChatUser) {
+  const ref = doc(firestore, "chatGroups", groupId);
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Group halipatikani.");
+    const group = snap.data() as ChatGroup;
+    if (group.ownerId !== actorUid) throw Object.assign(new Error("Admin wa group pekee ndiye anaweza kuongeza washiriki."), { code: "permission-denied" });
+    if (group.memberIds.includes(member.uid)) throw new Error("Mtumiaji huyu tayari yupo kwenye group.");
+    if (group.memberIds.length >= 5000) throw new Error("Group limefikia kikomo cha washiriki.");
+    tx.update(ref, {
+      memberIds: arrayUnion(member.uid),
+      [`memberNames.${member.uid}`]: member.name,
+      [`memberPhones.${member.uid}`]: member.phone,
+      [`memberImages.${member.uid}`]: member.profileImageUrl ?? "",
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+export async function leaveChatGroup(groupId: string, uid: string) {
+  const ref = doc(firestore, "chatGroups", groupId);
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Group halipatikani.");
+    const group = snap.data() as ChatGroup;
+    if (group.ownerId === uid) throw new Error("Admin mkuu hawezi kutoka kabla hajahamisha umiliki wa group.");
+    if (!group.memberIds.includes(uid)) throw new Error("Wewe si mwanachama wa group hili.");
+    tx.update(ref, {
+      memberIds: group.memberIds.filter((id) => id !== uid),
+      [`memberNames.${uid}`]: deleteField(),
+      [`memberPhones.${uid}`]: deleteField(),
+      [`memberImages.${uid}`]: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+export async function reportChatGroup(reporterId: string, groupId: string, groupName: string, reason: string) {
+  const cleanReason = reason.trim().slice(0, 500);
+  if (!cleanReason) throw new Error("Eleza sababu ya kuripoti group.");
+  await addDoc(collection(firestore, "chatReports"), {
+    reporterId, targetType: "group", groupId, groupName: groupName.slice(0, 80),
+    reason: cleanReason, status: "open", createdAt: serverTimestamp(),
+  });
+}
+export function subscribeGroupTyping(groupId: string, callback: (uids: string[]) => void, onError?: (error: unknown) => void) {
+  return onSnapshot(collection(firestore, "chatGroups", groupId, "typing"), (snapshot) => callback(snapshot.docs.map((item) => item.id)), onError);
+}
+export async function setChatGroupTyping(groupId: string, uid: string, typing: boolean) {
+  const ref = doc(firestore, "chatGroups", groupId, "typing", uid);
+  if (typing) await setDoc(ref, { updatedAt: serverTimestamp() });
+  else await deleteDoc(ref);
+}
+
 export async function uploadChatGroupAvatar(groupId: string, uid: string, file: File) {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Chagua picha ya JPG, PNG au WebP.");
   if (file.size > 2 * 1024 * 1024) throw new Error("Picha ya group isizidi MB 2.");
