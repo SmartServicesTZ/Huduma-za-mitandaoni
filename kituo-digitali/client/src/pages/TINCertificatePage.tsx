@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { renderTinCertificateCanvas, type TinCertificateForm } from "@/lib/tinCertificateCanvas";
 import { PDFDocument } from "pdf-lib";
 import { triggerDownload } from "@/lib/downloadHistory";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { consumeFirebaseTokens } from "@/lib/firebase";
+import { serviceCatalog } from "../../../shared/catalog";
 
 type FieldProps = { label: string; english?: string; children: React.ReactNode };
 
@@ -16,6 +19,9 @@ function Field({ label, english, children }: FieldProps) {
 }
 
 export default function TINCertificatePage() {
+  const { firebaseUser } = useAuth();
+  const [paid, setPaid] = useState(false);
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:"", traLocation:"", taxOffice:"", physicalLocation:"", streetArea:"", commissioner:"" });
   const [busy, setBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,7 +47,21 @@ export default function TINCertificatePage() {
     return () => { cancelled = true; };
   }, [form]);
 
-  const set = (key: keyof TinCertificateForm, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const set = (key: keyof TinCertificateForm, value: string) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setPaid(false);
+    setRequestId(crypto.randomUUID());
+  };
+
+  const ensurePaid = async () => {
+    if (paid) return;
+    if (!firebaseUser?.uid) throw new Error("Ingia kwanza ili kulipia na kupakua cheti.");
+    const service = serviceCatalog.find((item) => item.slug === "cheti-tin") ?? {
+      slug: "cheti-tin", name: "TIN NUMBER CERTIFICATE", tokenCost: 2, kind: "paid" as const,
+    };
+    await consumeFirebaseTokens(firebaseUser.uid, service, requestId);
+    setPaid(true);
+  };
 
   const prepareDownloadCanvas = async () => {
     const output = document.createElement("canvas");
@@ -57,6 +77,7 @@ export default function TINCertificatePage() {
     setBusy(true);
     try {
       const cropped = await prepareDownloadCanvas();
+      await ensurePaid();
       const blob = await new Promise<Blob>((resolve, reject) => cropped.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kutengeneza PNG.")), "image/png"));
       triggerDownload(blob, "tin-certificate.png", "PNG");
       toast.success("PNG imeandaliwa kupakuliwa. Angalia Downloads au Historia ndani ya dakika 30.");
@@ -72,6 +93,7 @@ export default function TINCertificatePage() {
     setBusy(true);
     try {
       const cropped = await prepareDownloadCanvas();
+      await ensurePaid();
       const pngDataUrl = cropped.toDataURL("image/png");
       const pdf = await PDFDocument.create();
       const image = await pdf.embedPng(pngDataUrl);
@@ -128,8 +150,11 @@ export default function TINCertificatePage() {
 
       <section className="license-preview-card">
         <div className="license-card-title"><FileBadge size={21} /><div><h2>LIVE PREVIEW</h2><p>Preview ya cheti</p></div></div>
-        <div className="license-preview-wrap">
+        <div className="license-preview-wrap" style={{ position: "relative" }}>
           <canvas ref={canvasRef} className="license-preview-canvas" />
+          {!paid && <div aria-label="Watermark ya cheti cha TIN ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none", zIndex: 2 }}>
+            <div style={{ transform: "rotate(-30deg)", border: "3px solid rgba(185,28,28,.65)", color: "rgba(185,28,28,.72)", background: "rgba(255,255,255,.12)", padding: "10px 16px", fontSize: "clamp(18px, 4vw, 34px)", fontWeight: 900, letterSpacing: "3px", textAlign: "center", lineHeight: 1.4, maxWidth: "95%" }}>PREVIEW<br />HAIJALIPIWA</div>
+          </div>}
         </div>
       </section>
     </div>
