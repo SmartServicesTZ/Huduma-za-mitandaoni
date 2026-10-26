@@ -341,7 +341,7 @@ export default function BusinessLicensePage() {
       </section>
 
       <div className="license-preview-column">
-        <LicenseTemplatePreview form={form} issueDate={issueDate} expiryDate={expiryDate} licenseNumber={licenseNumber} />
+        <LicenseTemplatePreview form={form} issueDate={issueDate} expiryDate={expiryDate} licenseNumber={licenseNumber} paid={submitted} />
         {isAuthenticated && form.licenseType === "NEW LICENCE" && !licenseNumber && (
           <div className={numberError ? "notice notice--warning" : "notice notice--info"} role="status">
             <span>{numberPending ? "BL NO inatolewa, tafadhali subiri..." : numberError ? "Namba haikupatikana. Jaribu tena; namba halisi hutolewa na huduma ya leseni." : "BL NO bado haijatolewa."}</span>
