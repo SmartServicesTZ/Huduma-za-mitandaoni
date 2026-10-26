@@ -374,14 +374,15 @@ export default function AirtelSmeContractPage() {
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName", "Hujazwa kutoka jina la akaunti yako", "text", undefined, true)}
             <div className="sme-row">{field("Date", "date1")}{field("Date", "date2")}</div>
-            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("jpg")}>⬇ Download JPG</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ Download PDF</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
+            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("jpg")}>⬇ {paid ? "Download JPG" : "LIPIA NA PAKUA JPG"}</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ {paid ? "Download PDF" : "LIPIA NA PAKUA PDF"}</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
           </section>
 
           <section className="sme-card">
             <div className="sme-preview-head"><h2>LIVE PREVIEW</h2><span>Template: <b>contact.png</b></span></div>
             <div className="sme-preview">
-              <div className="sme-template" style={{"--ink-color": inkHex} as React.CSSProperties}>
+              <div className="sme-template" style={{"--ink-color": inkHex, position: "relative"} as React.CSSProperties}>
+                {!paid && <div aria-label="Watermark ya mkataba ambao haujalipiwa" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none", zIndex: 20 }}><div style={{ transform: "rotate(-28deg)", border: "3px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.16)", padding: "10px 18px", fontSize: "clamp(18px, 4vw, 34px)", fontWeight: 900, letterSpacing: "3px", textAlign: "center" }}>PREVIEW • HAJALIPIWA</div></div>}
                 <img src={imageSrc} alt="Airtel SME Contract Template" onError={() => setStatus("⚠️ contact.png haijapatikana. Iweke ndani ya client/public/contact.png.")} />
                 <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),color:inkHex}}>{form.customerName}</div>
                 <div className="sme-overlay" style={{...ov("phoneX","phoneY","phoneSize","39%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div>
