@@ -243,6 +243,10 @@ export default function AgentIdPage() {
       window.alert("Jaza jina kamili, simu, mkoa, wilaya na kata/eneo kabla ya kuhifadhi kitambulisho.");
       return;
     }
+    if (!locationData.regions[region] || !locationData.regions[region].districts[district]) {
+      window.alert("Chagua mkoa na wilaya sahihi kutoka kwenye orodha.");
+      return;
+    }
     setBusy(true);
     try {
       if (!savedRecordId) {
