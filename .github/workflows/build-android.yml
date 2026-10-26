@@ -93,6 +93,7 @@ jobs:
                   <uses-permission android:name="android.permission.CAMERA" />
                   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
                   <uses-permission android:name="android.permission.VIBRATE" />
+                  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
                   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
               <application android:theme="@style/AppTheme" android:label="SmartServicesTZ" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:resizeableActivity="true">
                   <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
@@ -199,6 +200,7 @@ jobs:
                   super.onCreate(state);
                   getWindow().setStatusBarColor(Color.rgb(6,21,45));
                   getWindow().setNavigationBarColor(Color.rgb(6,21,45));
+                  requestNotificationPermission();
 
                   LinearLayout root = new LinearLayout(this);
                   root.setOrientation(LinearLayout.VERTICAL);
@@ -328,6 +330,13 @@ jobs:
 
                   if (state == null) webView.loadUrl(HOME);
                   else webView.restoreState(state);
+              }
+
+
+              private void requestNotificationPermission() {
+                  if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                      ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1003);
+                  }
               }
 
               @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
