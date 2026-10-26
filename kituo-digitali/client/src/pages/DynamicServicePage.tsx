@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   createServiceApplication,
@@ -25,6 +26,13 @@ type UploadPreview = {
 };
 type ResultLike = { reference?: string; applicationId?: string };
 
+const pocketWifiProducts = [
+  { name: "Airtel 4G Pocket WiFi", detail: "Kasi ya 4G · rahisi kubeba", image: "/pocket-wifi/airtel-mifi.jpg", tone: "red" },
+  { name: "Smart Black Hotspot", detail: "Battery ya muda mrefu · 4G/5G", image: "/pocket-wifi/black-hotspot.webp", tone: "indigo" },
+  { name: "Portable White MiFi", detail: "Screen ya taarifa · SIM unlocked", image: "/pocket-wifi/white-hotspot.png", tone: "cyan" },
+  { name: "Travel Pocket Router", detail: "WiFi ya safari · compact design", image: "/pocket-wifi/portable-mifi.webp", tone: "violet" },
+] as const;
+
 function newApplicationId() {
   return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
@@ -50,6 +58,7 @@ function errorMessage(error: unknown, fallback: string) {
 
 export default function DynamicServicePage({ service }: DynamicServicePageProps) {
   const { firebaseUser, loading: authLoading } = useAuth();
+  const isPocketWifi = /pocket[ -]?wifi|mifi|hotspot|portable[ -]?wifi/i.test(`${service.slug} ${service.name}`);
   const fields = useMemo(
     () => [...(service.fields ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [service.fields],
@@ -235,6 +244,11 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
       } else {
         const result = await createServiceApplication(applicationId, service.slug, values) as ResultLike;
         setSuccessReference(String(result.reference ?? result.applicationId ?? applicationId));
+        if (isPocketWifi) {
+          const summary = Object.entries(values).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "").map(([key, value]) => `${key}: ${String(value)}`).join("\n");
+          const message = `Habari Huduma za mtandaoni, nimetuma ombi la PATA POCKET WIFI.\nRejea: ${String(result.reference ?? result.applicationId ?? applicationId)}\n${summary}`;
+          window.open(`https://wa.me/255698232313?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+        }
       }
     } catch (error) {
       setFormError(errorMessage(error, "Imeshindikana kutuma ombi. Tafadhali jaribu tena."));
@@ -324,7 +338,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
   };
 
   return (
-    <main className="dynamic-service-page">
+    <main className={`dynamic-service-page ${isPocketWifi ? "pocket-wifi-page" : ""}`}>
       <style>{`
         .dynamic-service-page { min-height: 100vh; padding: 42px 20px 72px; background: #f5f8fb; color: #13283b; }
         .dynamic-service-shell { width: min(980px, 100%); margin: 0 auto; }
@@ -374,6 +388,30 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
         .dynamic-service-status { display: inline-block; border-radius: 99px; padding: 4px 9px; background: #eef3f7; color: #425d72; font-size: .75rem; font-weight: 800; }
         .dynamic-service-history-row small { display: block; margin-top: 5px; color: #637b8a; }
         .dynamic-service-rejection { margin-top: 8px; padding: 9px 11px; border-radius: 7px; color: #953939; background: #fff1f1; font-size: .88rem; }
+        .pocket-wifi-page { background: radial-gradient(circle at 8% 0%, #d9f8ff 0, transparent 32%), radial-gradient(circle at 94% 12%, #eee4ff 0, transparent 28%), #f6f8fc; }
+        .pocket-wifi-showcase { width: min(980px, 100%); margin: 0 auto 18px; padding: clamp(20px, 4vw, 32px); border: 1px solid #dbe6f3; border-radius: 22px; background: rgba(255,255,255,.86); box-shadow: 0 18px 42px rgba(30,58,95,.1); backdrop-filter: blur(14px); }
+        .pocket-wifi-showcase-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+        .pocket-wifi-kicker { color: #5264d8; font-size: .72rem; font-weight: 900; letter-spacing: .16em; }
+        .pocket-wifi-showcase h2 { margin: 5px 0 6px; color: #14243f; font-size: clamp(1.35rem, 3vw, 2rem); }
+        .pocket-wifi-showcase-heading p { max-width: 610px; margin: 0; color: #667995; line-height: 1.55; }
+        .pocket-wifi-live { display: inline-flex; align-items: center; gap: 7px; flex: none; padding: 8px 11px; border: 1px solid #bcebdc; border-radius: 999px; color: #087653; background: #effcf6; font-size: .7rem; font-weight: 900; letter-spacing: .04em; }
+        .pocket-wifi-live span { width: 7px; height: 7px; border-radius: 50%; background: #11b878; box-shadow: 0 0 0 4px #c9f5e2; }
+        .pocket-wifi-products { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .pocket-wifi-product { min-width: 0; overflow: hidden; border: 1px solid #dfe7f1; border-radius: 17px; background: #fff; box-shadow: 0 8px 22px rgba(31,53,87,.07); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .pocket-wifi-product:hover { transform: translateY(-4px); border-color: #9aaaf1; box-shadow: 0 16px 30px rgba(53,74,142,.15); }
+        .pocket-wifi-product-image { display: grid; place-items: center; height: 142px; padding: 12px; background: linear-gradient(145deg, #f7fbff, #eef3fb); }
+        .pocket-wifi-product--red .pocket-wifi-product-image { background: linear-gradient(145deg, #fff1f2, #ffe2e4); }
+        .pocket-wifi-product--indigo .pocket-wifi-product-image { background: linear-gradient(145deg, #f0efff, #e1e4ff); }
+        .pocket-wifi-product--cyan .pocket-wifi-product-image { background: linear-gradient(145deg, #edfbff, #d9f5fa); }
+        .pocket-wifi-product--violet .pocket-wifi-product-image { background: linear-gradient(145deg, #faf1ff, #eee0ff); }
+        .pocket-wifi-product-image img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; filter: drop-shadow(0 10px 8px rgba(24,45,70,.15)); transition: transform .2s ease; }
+        .pocket-wifi-product:hover .pocket-wifi-product-image img { transform: scale(1.06) rotate(-2deg); }
+        .pocket-wifi-product-copy { display: grid; gap: 6px; padding: 13px; }
+        .pocket-wifi-product-copy strong { color: #182b49; font-size: .88rem; line-height: 1.28; }
+        .pocket-wifi-product-copy span { min-height: 32px; color: #71819a; font-size: .73rem; line-height: 1.45; }
+        .pocket-wifi-product-copy small { display: inline-flex; align-items: center; gap: 2px; color: #5264d8; font-size: .72rem; font-weight: 850; }
+        @media (max-width: 780px) { .pocket-wifi-products { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 520px) { .pocket-wifi-showcase { padding: 16px; border-radius: 17px; } .pocket-wifi-showcase-heading { display: grid; gap: 12px; } .pocket-wifi-products { gap: 9px; } .pocket-wifi-product-image { height: 118px; padding: 8px; } .pocket-wifi-product-copy { padding: 10px; } .pocket-wifi-product-copy strong { font-size: .78rem; } .pocket-wifi-product-copy span { font-size: .68rem; } }
         @media (max-width: 600px) { .dynamic-service-page { padding: 20px 12px 44px; } .dynamic-service-header, .dynamic-service-card { border-radius: 13px; } .dynamic-service-submit-row { display: block; } .dynamic-service-submit { width: 100%; } }
       `}</style>
       <div className="dynamic-service-shell">
@@ -383,6 +421,10 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
           {service.description && <p className="dynamic-service-description">{service.description}</p>}
           {service.instructions && <div className="dynamic-service-instructions"><strong>Maelekezo</strong><br />{service.instructions}</div>}
         </header>
+        {isPocketWifi && <section className="pocket-wifi-showcase" aria-labelledby="pocket-wifi-options-heading">
+          <div className="pocket-wifi-showcase-heading"><div><span className="pocket-wifi-kicker">CHAGUA KIFAA CHAKO</span><h2 id="pocket-wifi-options-heading">Pocket WiFi zinazopatikana</h2><p>Chagua kifaa unachopendelea. Tutakuthibitishia bei, mtandao na upatikanaji kupitia WhatsApp.</p></div><span className="pocket-wifi-live"><span /> INAPATIKANA</span></div>
+          <div className="pocket-wifi-products">{pocketWifiProducts.map((product) => <article className={`pocket-wifi-product pocket-wifi-product--${product.tone}`} key={product.name}><div className="pocket-wifi-product-image"><img src={product.image} alt={product.name} loading="lazy" /></div><div className="pocket-wifi-product-copy"><strong>{product.name}</strong><span>{product.detail}</span><small>Omba sasa <ChevronRight size={14} /></small></div></article>)}</div>
+        </section>}
         <section className="dynamic-service-card">
           <h2 className="dynamic-service-card-heading">Taarifa za ombi</h2>
           {formError && <div className="dynamic-service-alert dynamic-service-alert-error" role="alert">{formError}</div>}
