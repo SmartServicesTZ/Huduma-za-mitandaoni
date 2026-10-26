@@ -44,7 +44,7 @@ jobs:
         env:
           VITE_CLOUDFLARE_WORKER_URL: ${{ vars.VITE_CLOUDFLARE_WORKER_URL }}
           VITE_PAYMENT_FLOWS_ENABLED: ${{ vars.VITE_PAYMENT_FLOWS_ENABLED }}
-          VITE_FIREBASE_STORAGE_READY: "false"
+          VITE_FIREBASE_STORAGE_READY: "true"
         run: pnpm build
 
       - name: Prepare GitHub Pages SPA fallback
