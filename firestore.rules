@@ -213,11 +213,11 @@ service cloud.firestore {
       allow update: if accountMay('chat')
         && request.auth.uid in resource.data.participants
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offer','answer','status','updatedAt'])
-        && request.resource.data.status in ['ringing','accepted','rejected','ended']
+        && request.resource.data.status in ['ringing','accepted','rejected','ended','missed']
         && request.resource.data.updatedAt == request.time
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['offer']) || request.auth.uid == resource.data.callerId)
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['answer']) || request.auth.uid == resource.data.calleeId)
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) || request.resource.data.status == 'ended' || request.resource.data.status == 'rejected' || (request.resource.data.status == 'accepted' && request.auth.uid == resource.data.calleeId));
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']) || request.resource.data.status == 'ended' || request.resource.data.status == 'rejected' || (request.resource.data.status == 'missed' && request.auth.uid == resource.data.callerId) || (request.resource.data.status == 'accepted' && request.auth.uid == resource.data.calleeId));
       allow delete: if false;
       match /candidates/{candidateId} {
         allow read: if accountMayRead() && request.auth.uid in get(/databases/$(database)/documents/callSessions/$(callId)).data.participants;
