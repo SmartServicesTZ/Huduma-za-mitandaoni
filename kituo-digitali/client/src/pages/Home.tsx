@@ -300,9 +300,9 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
           <label><strong>Tokeni za NIDA</strong><span>1 = TZS 100</span><input aria-label="Idadi ya tokeni za NIDA" type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} /></label>
           <label><strong>Tokeni zingine</strong><span>1 = TZS 500</span><input aria-label="Idadi ya tokeni zingine" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
-        <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong>{totalAmount>0&&totalAmount<1000&&<small>Kiwango cha chini ni TZS 1,000.</small>}</div>
+        <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Kiasi cha chini ni TZS 1,000; unaweza kuongeza tokeni na kulipa zaidi.</small></div>
         <label className="token-choice-phone"><strong>Namba iliyolipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
-        <div className="token-choice-payto"><strong>Lipa namba: 29126823</strong><span>Steward Tz · Azam Pesa</span></div>
+        <div className="token-choice-payto"><div className="token-choice-payto-row"><span>NAMBA YA LIPA</span><strong>29126823</strong></div><div className="token-choice-payto-row"><span>JINA LA MPOKEAJI</span><strong>Steward Tz</strong></div><div className="token-choice-payto-row"><span>HUDUMA</span><strong>Azam Pesa</strong></div></div>
         <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA WHATSAPP</button>
         <p className="token-choice-help">Baada ya kulipa, tuma picha ya uthibitisho WhatsApp. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
       </div>
