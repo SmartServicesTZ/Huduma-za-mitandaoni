@@ -102,7 +102,7 @@ export default function PocketWifiPage() {
       orderDetails,
       "",
       "Naomba kuthibitishiwa oda, malipo na usafirishaji."
-    ].join("\\n");
+    ].join("\n");
     const popup = window.open("about:blank", "_blank");
     setBusy(true);
     try {
