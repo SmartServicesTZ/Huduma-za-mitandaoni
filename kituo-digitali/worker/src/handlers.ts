@@ -42,7 +42,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat"
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
-  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", createTokenPurchaseOrder: "payments",
+  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", listChatMembers: "chat", createTokenPurchaseOrder: "payments",
   markUserMessageRead: "read", syncAuthClaims: "auth",
 };
 
@@ -1220,6 +1220,16 @@ export const syncAuthClaims = callable(async (request) => {
     throw new ApiError("unavailable", "Role ya akaunti haikuweza kusawazishwa sasa hivi.");
   }
   return { role, permissions: safePermissions, isSuperAdmin: role === "super_admin" };
+});
+
+export const listChatMembers = callable(async (request) => {
+  const uid = authUid(request);
+  await profileFor(uid);
+  const snapshot = await db.collection("users").orderBy("name", "asc").limit(500).get();
+  return snapshot.docs.filter((item) => item.id !== uid && item.data().accountStatus !== "blocked" && item.data().accountStatus !== "deleted").map((item) => {
+    const profile = item.data() as Profile;
+    return { uid: item.id, name: String(profile.name ?? "Mwanachama"), phone: String(profile.phone ?? ""), profileImageUrl: typeof profile.profileImageUrl === "string" ? profile.profileImageUrl : "", verificationStatus: profile.verificationStatus };
+  });
 });
 
 export const findChatUser = callable(async (request) => {
