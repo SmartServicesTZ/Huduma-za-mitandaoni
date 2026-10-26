@@ -164,7 +164,7 @@ async function exportCard(source: HTMLElement, size: { w: number; h: number }, f
       windowWidth: Math.max(size.w, document.documentElement.clientWidth),
     });
     const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi picha ya kitambulisho.")), "image/png"));
-    triggerDownload(blob, filename, "PNG");
+    return blob;
   } finally {
     host.remove();
   }
@@ -264,7 +264,22 @@ export default function AgentIdPage() {
         setPaid(true);
         toast.success("Tokeni zimekatwa. Watermark imeondolewa; kitambulisho kiko tayari.");
       }
-      for (const job of jobs) await exportCard(job.el, job.size, job.filename);
+      // Pakua faili moja lenye pande zote mbili. Simu nyingi huzuia download ya pili
+      // inapoanzishwa na click ileile, ndiyo maana awali mbele pekee ndiyo ilihifadhiwa.
+      const blobs: Blob[] = [];
+      for (const job of jobs) blobs.push(await exportCard(job.el, job.size, job.filename));
+      const combined = document.createElement("canvas");
+      combined.width = set.size.w * 3;
+      combined.height = set.size.h * 3 * blobs.length;
+      const context = combined.getContext("2d");
+      if (!context) throw new Error("Imeshindikana kuunganisha mbele na nyuma ya kitambulisho.");
+      for (let index = 0; index < blobs.length; index++) {
+        const bitmap = await createImageBitmap(blobs[index]);
+        context.drawImage(bitmap, 0, index * set.size.h * 3, set.size.w * 3, set.size.h * 3);
+        bitmap.close();
+      }
+      const finalBlob = await new Promise<Blob>((resolve, reject) => combined.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi pande zote za kitambulisho.")), "image/png"));
+      triggerDownload(finalBlob, `kitambulisho-${set.label}-mbele-na-nyuma.png`, "PNG");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
     } finally { setBusy(false); }
@@ -283,7 +298,7 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
         <p className="aid-choice-note">Chagua mkao wa kitambulisho. Kitufe kimoja kitapakua picha mbili: mbele na nyuma, kwa mkao uliochagua.</p>
-        <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
+        <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{display:"block",width:"auto",height:"auto",maxWidth:"100%",maxHeight:"100%",objectFit:"contain",flex:"0 0 auto"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
         <label className="aid-field"><span>Agent ID</span><input value={agentId} readOnly aria-readonly="true" /></label>
@@ -505,7 +520,7 @@ const AGENT_ID_CSS = `
 
 /* ===== Vipande vya pamoja ===== */
 .idx-logochip{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:118px;height:42px;padding:6px 12px;border-radius:12px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.16)}
-.idx-logochip img{max-width:100%;max-height:100%;object-fit:contain}
+.idx-logochip img{display:block;width:auto!important;height:auto!important;max-width:100%;max-height:100%;object-fit:contain;aspect-ratio:auto;flex:0 0 auto}
 .idx-logochip strong{font-size:16px;font-weight:900;color:var(--c);letter-spacing:-.04em}
 .idx-ph{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;box-sizing:border-box;background:linear-gradient(170deg,#eef2f7,#d9e1ec);overflow:hidden}
 .idx-ph-head{display:block;width:34%;height:0;padding-bottom:34%;border-radius:50%;background:#b6c2d2;margin-bottom:5px}
