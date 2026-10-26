@@ -89,6 +89,10 @@ jobs:
           cat > android-app/app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
                   <uses-permission android:name="android.permission.INTERNET" />
+                  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+                  <uses-permission android:name="android.permission.CAMERA" />
+                  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+                  <uses-permission android:name="android.permission.VIBRATE" />
                   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
               <application android:theme="@style/AppTheme" android:label="SmartServicesTZ" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:resizeableActivity="true">
                   <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
@@ -129,6 +133,8 @@ jobs:
           package tz.steward.huduma;
 
           import android.app.Activity;
+          import android.Manifest;
+          import android.content.pm.PackageManager;
           import android.content.ContentValues;
           import android.content.Intent;
           import android.graphics.Color;
@@ -148,6 +154,7 @@ jobs:
           import android.webkit.DownloadListener;
           import android.webkit.ValueCallback;
           import android.webkit.WebChromeClient;
+          import android.webkit.PermissionRequest;
           import android.webkit.WebResourceRequest;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
@@ -156,12 +163,16 @@ jobs:
           import android.widget.TextView;
           import android.widget.Toast;
           import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
           import java.io.File;
           import java.io.FileOutputStream;
           import java.io.OutputStream;
 
           public class MainActivity extends Activity {
               private static final int FILE_CHOOSER = 1001;
+              private static final int MEDIA_PERMISSION_REQUEST = 1002;
+              private PermissionRequest pendingWebPermissionRequest;
               private static final String HOME = "https://smartservicestz.github.io/Huduma-za-mitandaoni/?app=android-v6";
               private WebView webView;
               private SwipeRefreshLayout refreshLayout;
@@ -272,6 +283,31 @@ jobs:
                   });
 
                   webView.setWebChromeClient(new WebChromeClient() {
+                      @Override public void onPermissionRequest(PermissionRequest request) {
+                          runOnUiThread(() -> {
+                              if (request == null || request.getOrigin() == null
+                                      || !request.getOrigin().toString().startsWith("https://smartservicestz.github.io/")) {
+                                  if (request != null) request.deny();
+                                  return;
+                              }
+                              boolean wantsAudio = false;
+                              boolean wantsVideo = false;
+                              for (String resource : request.getResources()) {
+                                  if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) wantsAudio = true;
+                                  if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) wantsVideo = true;
+                              }
+                              java.util.ArrayList<String> missing = new java.util.ArrayList<>();
+                              if (wantsAudio && ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) missing.add(Manifest.permission.RECORD_AUDIO);
+                              if (wantsVideo && ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) missing.add(Manifest.permission.CAMERA);
+                              if (missing.isEmpty()) {
+                                  request.grant(request.getResources());
+                              } else {
+                                  if (pendingWebPermissionRequest != null) pendingWebPermissionRequest.deny();
+                                  pendingWebPermissionRequest = request;
+                                  ActivityCompat.requestPermissions(MainActivity.this, missing.toArray(new String[0]), MEDIA_PERMISSION_REQUEST);
+                              }
+                          });
+                      }
                       @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                           if (fileCallback != null) fileCallback.onReceiveValue(null);
                           fileCallback = callback;
@@ -292,6 +328,17 @@ jobs:
 
                   if (state == null) webView.loadUrl(HOME);
                   else webView.restoreState(state);
+              }
+
+              @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                  super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                  if (requestCode != MEDIA_PERMISSION_REQUEST) return;
+                  PermissionRequest pending = pendingWebPermissionRequest;
+                  pendingWebPermissionRequest = null;
+                  if (pending == null) return;
+                  boolean granted = grantResults.length > 0;
+                  for (int result : grantResults) if (result != PackageManager.PERMISSION_GRANTED) granted = false;
+                  if (granted) pending.grant(pending.getResources()); else pending.deny();
               }
 
               private void beginNativeFile(String name, String mimeType) throws Exception {
