@@ -20,7 +20,7 @@ type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 
-type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBonusRegistrationGranted?: boolean; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; phone?: string; mustChangePassword?: boolean };
+type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBonusRegistrationGranted?: boolean; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; firstName?: string; phone?: string; profileImageUrl?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
@@ -618,8 +618,9 @@ export const setLipaApplicationStatus = callable(async (request) => {
     const now = FieldValue.serverTimestamp();
     const networkName = String(application.network ?? application.networkId ?? "").trim();
     const isAirtel = /airtel/i.test(networkName) || /airtel/i.test(String(application.networkId ?? ""));
+    const applicantPhone = (application.applicantData as Record<string, unknown> | undefined)?.phone;
     const approvedMessage = isAirtel
-      ? `Ombi lako la lipa namba Airtel la namba hii ${String(application.phone ?? application.applicantData?.phone ?? "—")} limefanikiwa.\\n\\nKuwezesha account ya biashara fuata hatua hizi\\n*150*60*05#\\nChagua 1 kuendelea\\nChagua 1 Get lipa namba\\nKisha weka namba ya siri\\n(Utapokea lipa namba yako kupitia SMS)`
+      ? `Ombi lako la lipa namba Airtel la namba hii ${String(application.phone ?? applicantPhone ?? "—")} limefanikiwa.\\n\\nKuwezesha account ya biashara fuata hatua hizi\\n*150*60*05#\\nChagua 1 kuendelea\\nChagua 1 Get lipa namba\\nKisha weka namba ya siri\\n(Utapokea lipa namba yako kupitia SMS)`
       : `Ombi lako la Lipa Namba la ${networkName || "mtandao uliochagua"} limekubaliwa. Tafadhali fuata maelekezo ya mtandao husika ili kukamilisha kuwezesha account ya biashara.`;
     const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
     if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
@@ -739,7 +740,7 @@ export const listLipaApplications = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
   const snapshot = await db.collection("lipaApplications").limit(1000).get();
-  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => {
     const left = String(a.submittedAt ?? "");
     const right = String(b.submittedAt ?? "");
@@ -887,7 +888,9 @@ export const updateNidaRequestPhone = callable(async (request) => {
 export const listMyNidaRequests = callable(async (request) => {
   const uid = authUid(request);
   const snapshot = await db.collection("nidaRequests").where("userId", "==", uid).limit(50).get();
-  return { requests: snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))) };
+  const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  requests.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
+  return { requests };
 });
 
 export const listNidaRequests = callable(async (request) => {
@@ -897,7 +900,7 @@ export const listNidaRequests = callable(async (request) => {
   // Firestore REST adapter supports equality filters and limits, but not orderBy().
   // Fetch requests first, then sort newest-first in the Worker to avoid the admin list failing.
   const snapshot = await db.collection("nidaRequests").limit(200).get();
-  const requests = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   requests.sort((a, b) => {
     const toMillis = (value: unknown) => value instanceof Date ? value.getTime() : typeof value === "string" ? Date.parse(value) || 0 : value && typeof value === "object" && "seconds" in value ? Number((value as { seconds: unknown }).seconds) * 1000 : 0;
     return toMillis(b.submittedAt) - toMillis(a.submittedAt);
@@ -1342,11 +1345,11 @@ export const syncAuthClaims = callable(async (request) => {
 export const listChatMembers = callable(async (request) => {
   const uid = authUid(request);
   await profileFor(uid);
-  const snapshot = await db.collection("users").orderBy("name", "asc").limit(500).get();
-  return snapshot.docs.filter((item) => item.id !== uid && item.data().accountStatus !== "blocked" && item.data().accountStatus !== "deleted").map((item) => {
-    const profile = item.data() as Profile;
-    return { uid: item.id, name: String(profile.name ?? "Mwanachama"), phone: String(profile.phone ?? ""), profileImageUrl: typeof profile.profileImageUrl === "string" ? profile.profileImageUrl : "", verificationStatus: profile.verificationStatus };
-  });
+  const snapshot = await db.collection("users").limit(500).get();
+  return snapshot.docs.map((item) => ({ item, profile: item.data() as Profile | undefined }))
+    .filter(({ item, profile }) => item.id !== uid && profile?.accountStatus !== "blocked" && profile?.accountStatus !== "deleted")
+    .map(({ item, profile }) => ({ uid: item.id, name: String(profile?.name ?? "Mwanachama"), phone: String(profile?.phone ?? ""), profileImageUrl: typeof profile?.profileImageUrl === "string" ? profile.profileImageUrl : "", verificationStatus: profile?.verificationStatus }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 });
 
 export const findChatUser = callable(async (request) => {

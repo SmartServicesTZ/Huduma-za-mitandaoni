@@ -1,0 +1,13 @@
+# D1 proof-of-concept configuration only.
+# This file is never used by the production Worker deployment.
+name = "smartservicestz-d1-poc"
+main = "src/index.ts"
+compatibility_date = "2026-10-02"
+compatibility_flags = ["nodejs_compat", "nodejs_als"]
+workers_dev = true
+
+[[d1_databases]]
+binding = "D1_POC_DB"
+database_name = "smartservicestz-poc-clean"
+database_id = "b2b331d9-fb25-416d-890a-269d07346faf"
+migrations_dir = "migrations"
