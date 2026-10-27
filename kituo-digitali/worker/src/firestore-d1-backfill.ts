@@ -165,11 +165,15 @@ export async function migrateFirestoreCollection(
 
     const ids = new Set<string>();
     const orderedDocuments = [...page.documents].sort((a, b) => a.id.localeCompare(b.id));
+    // Validate the whole page before any target write, so malformed pages fail closed.
     for (const document of orderedDocuments) {
       const sourceId = requireLabel(document.id, "source document ID");
       if (ids.has(sourceId)) throw new Error("Source page contains duplicate document IDs.");
       ids.add(sourceId);
+    }
 
+    for (const document of orderedDocuments) {
+      const sourceId = document.id.trim();
       const mapped = options.mapDocument(document);
       const targetId = requireLabel(mapped.targetId, "target document ID");
       const recordChecksum = await sha256(canonicalize({ id: targetId, values: mapped.values }));
