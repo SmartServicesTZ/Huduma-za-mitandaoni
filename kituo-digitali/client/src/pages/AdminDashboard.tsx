@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowDown, ArrowUp, BarChart3, Download, Bell, Boxes, ChevronRight, ClipboardList, FileKey2, LayoutDashboard, LogOut, Menu, MessageSquare, Palette, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Trash2, UserCog, Users, WalletCards, X, Zap } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart3, Download, Bell, Boxes, ChevronRight, ClipboardList, LayoutDashboard, LogOut, Menu, MessageSquare, Palette, Plus, RefreshCw, Search, ShieldCheck, Trash2, UserCog, Users, WalletCards, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminListAgentRecords, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, subscribeToAdminServiceApplications, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
@@ -12,9 +12,9 @@ import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../s
 import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels";
 import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
 
-type Panel = "overview" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "ordering" | "transactions" | "reports" | "cms" | "security" | "messages" | "licenses";
+type Panel = "overview" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
-  ["overview", "Muhtasari", LayoutDashboard], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["lipaReport", "Ripoti za Lipa", BarChart3], ["ordering", "Mpangilio wa vipengele", SlidersHorizontal], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["cms", "Muonekano & CMS", Palette], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["licenses", "Leseni", FileKey2],
+  ["overview", "Muhtasari", LayoutDashboard], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["lipaReport", "Ripoti za Lipa", BarChart3], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare],
 ];
 const emptyService = { id: "", name: "", slug: "", description: "", icon: "sparkles", tokenCost: 2, reward: 0, isFree: false, isVisible: true, active: true, isLocked: false, maintenanceMessage: "", category: "Huduma kuu", actionUrl: "", instructions: "", buttonText: "TUMA OMBI", statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], adminWorkflow: true, order: 0, fields: [] as ServiceFormField[] };
 const emptyMessage = { subject: "", body: "", recipientId: "" };
@@ -123,7 +123,6 @@ export default function AdminDashboard() {
   const [serviceLocks, setServiceLocks] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
-  const [licenses, setLicenses] = useState<any[]>([]);
   const [lipaApplications, setLipaApplications] = useState<LipaApplication[]>([]);
   const [serviceApplications, setServiceApplications] = useState<ServiceApplication[]>([]);
   const [applicationInboxTab, setApplicationInboxTab] = useState<"ALL" | "SERVICES" | "LIPA">("ALL");
@@ -180,9 +179,8 @@ export default function AdminDashboard() {
         hasPermission("manageServices") && needs("services", "serviceControl") ? adminListServices() : Promise.resolve([]),
         hasPermission("manageReports") && needs("overview", "transactions", "reports") ? adminListTransactions() : Promise.resolve([]),
         hasPermission("manageMessages") && needs("messages") ? adminListCollection("messages") : Promise.resolve([]),
-        hasPermission("manageLicenses") && needs("licenses") ? adminListCollection("licenseTemplates") : Promise.resolve([]),
         hasPermission("viewAuditLogs") && needs("security") ? adminListCollection("adminActions") : Promise.resolve([]),
-        hasPermission("manageSettings") && needs("cms", "ordering", "services", "serviceControl") ? adminGetSiteSettings() : Promise.resolve(null),
+        hasPermission("manageSettings") && needs("services", "serviceControl") ? adminGetSiteSettings() : Promise.resolve(null),
         hasPermission("manageServices") && needs("services", "serviceControl") ? adminListCollection("serviceLocks") : Promise.resolve([]),
         hasPermission("manageServices") && needs("applications", "lipa") ? adminListCollection("lipaServices") : Promise.resolve([]),
         Promise.resolve(null), // Maombi ya Lipa hupakiwa na subscription paneli husika tu.
@@ -236,7 +234,6 @@ export default function AdminDashboard() {
   if (loading) return <main className="admin-guard"><RefreshCw className="spin" /> Inakagua ruhusa za admin...</main>;
   if (!canManage) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Ukurasa huu ni wa admin pekee</h2><p>Ingia kwa akaunti yenye role ya admin au super_admin.</p><Link className="admin-primary" href="/">Rudi portal</Link></main>;
   const title = nav.find(([key]) => key === panel)?.[1] ?? "Muhtasari";
-  if (panel === "ordering" && !isSuper) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Sehemu hii ni ya Super Admin pekee</h2><p>Mpangilio wa umma unaweza kubadilishwa na akaunti ya Super Admin tu.</p><Link className="admin-primary" href="/admin">Rudi dashboard</Link></main>;
   if (panelPermission[panel] && !hasPermission(panelPermission[panel]!)) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Huna ruhusa ya sehemu hii</h2><p>Wasiliana na Super Admin ili upewe permission husika.</p><Link className="admin-primary" href="/admin">Rudi dashboard</Link></main>;
   return <div className="admin-app">
     <aside className={`admin-sidebar ${drawer ? "open" : ""}`}><div className="admin-brand"><div className="admin-brand-mark">$</div><div><strong>$TEWARD TZ</strong><small>HUDUMA ZA MTANDAONI • CONTROL</small></div><button className="admin-close" onClick={() => setDrawer(false)}><X size={18} /></button></div><div className="admin-profile"><div className="admin-avatar">{String(user?.name ?? "AD").slice(0, 2).toUpperCase()}</div><div><strong>{user?.name ?? "Admin"}</strong><small>{String(user?.role ?? "admin").replace("_", " ").toUpperCase()}</small></div></div><nav className="admin-nav">{visibleNav.map(([key, label, Icon]) => <Link key={key} href={key === "overview" ? "/admin" : `/admin/${key}`} className={panel === key ? "active" : ""} onClick={() => setDrawer(false)}><Icon size={17} /><span>{label}</span>{key === "applications" && serviceApplications.filter((app) => app.status === "PENDING").length > 0 && <b className="lipa-admin-nav-badge">{serviceApplications.filter((app) => app.status === "PENDING").length}</b>}{key === "lipa" && lipaApplications.filter((app) => app.status === "PENDING").length > 0 && <b className="lipa-admin-nav-badge">{lipaApplications.filter((app) => app.status === "PENDING").length}</b>}<ChevronRight size={14} /></Link>)}</nav><div className="admin-sidebar-bottom"><Link href="/"><ChevronRight size={15} /> Portal</Link><button onClick={() => void logout()}><LogOut size={15} /> Logout</button></div></aside>
@@ -264,13 +261,10 @@ export default function AdminDashboard() {
         </div>
       </section>}
       {panel === "lipaReport" && <LipaGlobalReport applications={lipaApplications} />}
-      {panel === "ordering" && isSuper && <ServiceOrderingPanel services={services} serviceOrder={serviceOrder} setServiceOrder={setServiceOrder} sectionOrder={homepageSectionOrder} setSectionOrder={setHomepageSectionOrder} onSave={() => run(() => setHomepageServiceOrder(serviceOrder, homepageSectionOrder), "Mpangilio wa huduma umehifadhiwa.")} busy={busy} />}
             {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2></div><button type="button" className="button button--green button--small" onClick={() => exportTransactionsCsv(transactions)} disabled={!transactions.length}>Pakua ripoti CSV</button></div><TransactionTable rows={transactions} /></section>}
       {panel === "reports" && <BusinessReport transactions={transactions} users={users} serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} />}
-            {panel === "cms" && <><CmsPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} /><TemplateEditorPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} /></>}
       {panel === "security" && <SecurityPanel isSuper={isSuper} users={users} audit={audit} />}
       {panel === "messages" && <MessagesPanel users={users} form={message} setForm={setMessage} onRun={run} adminId={firebaseUser!.uid} />}
-      {panel === "licenses" && <CollectionPanel title="Usimamizi wa Leseni" collectionName="licenseTemplates" rows={licenses} form={{ id: "", name: "", fileType: "", fileSize: "", status: "disabled" }} setForm={() => undefined} fields={[["name", "Template name"], ["fileType", "File type"], ["fileSize", "File size"]]} onRun={run} adminId={firebaseUser!.uid} readOnly />}
     </section>{selectedUser && <UserModal person={selectedUser} onClose={() => setSelectedUser(null)} />}</div>;
 }
 
@@ -288,7 +282,7 @@ const permissionOptions = [
   ["viewAuditLogs", "Audit logs: kuona historia ya actions"],
 ] as const;
 
-const panelPermission: Partial<Record<Panel, string>> = { agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", nida: "manageServices", lipa: "manageLipaApplications", videos: "manageContent", transactions: "manageReports", reports: "manageReports", announcements: "manageContent", cms: "manageSettings", security: "viewAuditLogs", messages: "manageMessages", licenses: "manageLicenses" };
+const panelPermission: Partial<Record<Panel, string>> = { agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", nida: "manageServices", lipa: "manageLipaApplications", videos: "manageContent", transactions: "manageReports", reports: "manageReports", announcements: "manageContent", security: "viewAuditLogs", messages: "manageMessages" };
 
 function BusinessReport({ transactions, users, serviceApplications, lipaApplications, services }: { transactions: any[]; users: any[]; serviceApplications: ServiceApplication[]; lipaApplications: LipaApplication[]; services: any[] }) {
   const [from, setFrom] = useState("");
