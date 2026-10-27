@@ -15,7 +15,7 @@ export interface D1UserRow {
   uid: string;
   phone: string | null;
   display_name: string | null;
-  role: "user" | "admin" | "super_admin";
+  role: "user" | "admin" | "moderator" | "support" | "super_admin";
   active: number;
   created_at: string;
   updated_at: string;
