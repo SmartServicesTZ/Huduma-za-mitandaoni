@@ -280,7 +280,7 @@ const permissionOptions = [
   ["manageTokens", "Tokeni: kuongeza/kupunguza na ledger"],
   ["manageServices", "Huduma: kuongeza, kuhariri na kufuta"],
   ["manageLipaApplications", "Lipa Namba: kuona na kuchakata maombi"],
-  ["manageContent", "Content: announcements na videos"],
+  ["manageContent", "Content: CMS"],
   ["manageMessages", "Messages: kutuma ujumbe"],
   ["manageReports", "Reports: kuona ripoti"],
   ["manageSettings", "Settings: kubadilisha mfumo"],
