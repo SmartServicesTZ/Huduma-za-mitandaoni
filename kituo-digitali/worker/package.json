@@ -8,8 +8,10 @@
     "test": "tsx --test test/*.test.ts test/*.test.mjs",
     "build": "wrangler deploy --dry-run --outdir /tmp/huduma-worker-build",
     "deploy": "wrangler deploy",
-    "d1:poc:migrate:local": "wrangler d1 execute smartservicestz-poc-clean --local --config wrangler.poc.toml --file migrations/0001_smartservicestz_poc.sql",
-    "d1:poc:verify:local": "wrangler d1 execute smartservicestz-poc-clean --local --config wrangler.poc.toml --command \"SELECT name, type FROM sqlite_master WHERE type IN ('table','index') ORDER BY type, name; SELECT uid, nida_tokens, service_tokens FROM token_balances WHERE uid = 'poc-user-001'; SELECT id, title, visible FROM services WHERE id = 'poc-service-001';\""
+    "d1:poc:migrate:local": "CI=1 wrangler d1 migrations apply smartservicestz-poc-clean --local --config wrangler.poc.toml",
+    "d1:poc:verify:local": "wrangler d1 execute smartservicestz-poc-clean --local --config wrangler.poc.toml --command \"SELECT name, type FROM sqlite_master WHERE type IN ('table','index') ORDER BY type, name; SELECT name, applied_at FROM d1_migrations ORDER BY id; SELECT uid, nida_tokens, service_tokens FROM token_balances WHERE uid = 'poc-user-001'; SELECT id, title, visible FROM services WHERE id = 'poc-service-001';\"",
+    "d1:poc:backup-restore:local": "bash scripts/d1-poc-backup-restore-check.sh",
+    "d1:poc:schema-contract": "python3 scripts/d1-poc-schema-contract.py"
   },
   "dependencies": {
     "jose": "6.1.0"
