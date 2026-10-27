@@ -11,11 +11,10 @@ import { serviceFieldTypes, type ServiceFormField } from "../../../shared/servic
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels";
 import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
-import NidaRequestsPanel from "./NidaRequestsPanel";
 
-type Panel = "overview" | "health" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "nida" | "lipa" | "lipaReport" | "ordering" | "videos" | "transactions" | "reports" | "announcements" | "cms" | "security" | "messages" | "licenses";
+type Panel = "overview" | "health" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "ordering" | "videos" | "transactions" | "reports" | "announcements" | "cms" | "security" | "messages" | "licenses";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
-  ["overview", "Muhtasari", LayoutDashboard], ["health", "Mlinzi wa Hitilafu", ShieldCheck], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["nida", "MAOMBI YA NIDA", Search], ["lipaReport", "Ripoti za Lipa", BarChart3], ["ordering", "Mpangilio wa vipengele", SlidersHorizontal], ["videos", "Video", PlaySquare], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["announcements", "Matangazo", Bell], ["cms", "Muonekano & CMS", Palette], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["licenses", "Leseni", FileKey2],
+  ["overview", "Muhtasari", LayoutDashboard], ["health", "Mlinzi wa Hitilafu", ShieldCheck], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["lipaReport", "Ripoti za Lipa", BarChart3], ["ordering", "Mpangilio wa vipengele", SlidersHorizontal], ["videos", "Video", PlaySquare], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["announcements", "Matangazo", Bell], ["cms", "Muonekano & CMS", Palette], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["licenses", "Leseni", FileKey2],
 ];
 const emptyService = { id: "", name: "", slug: "", description: "", icon: "sparkles", tokenCost: 2, reward: 0, isFree: false, isVisible: true, active: true, isLocked: false, maintenanceMessage: "", category: "Huduma kuu", actionUrl: "", instructions: "", buttonText: "TUMA OMBI", statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], adminWorkflow: true, order: 0, fields: [] as ServiceFormField[] };
 const emptyVideo = { id: "", title: "", videoUrl: "", category: "Mafunzo", enabled: true, order: 0 };
@@ -275,7 +274,6 @@ export default function AdminDashboard() {
           {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
         </div>
       </section>}
-      {panel === "nida" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">INBOX MAALUM</span><h2>MAOMBI YA NIDA</h2></div><Search size={22}/></div><NidaRequestsPanel /></section>}
       {panel === "lipaReport" && <LipaGlobalReport applications={lipaApplications} />}
       {panel === "ordering" && isSuper && <ServiceOrderingPanel services={services} serviceOrder={serviceOrder} setServiceOrder={setServiceOrder} sectionOrder={homepageSectionOrder} setSectionOrder={setHomepageSectionOrder} onSave={() => run(() => setHomepageServiceOrder(serviceOrder, homepageSectionOrder), "Mpangilio wa huduma umehifadhiwa.")} busy={busy} />}
       {panel === "videos" && <CollectionPanel title="Video za Mafunzo" collectionName="tutorialVideos" rows={videos} form={video} setForm={setVideo} fields={[["title", "Title"], ["videoUrl", "Video URL"], ["category", "Category"], ["order", "Order"]]} onRun={run} adminId={firebaseUser!.uid} />}
@@ -492,13 +490,10 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   const lockBySlug = new Map<string, boolean>();
   for (const entry of serviceLocks as any[]) lockBySlug.set(String(entry.slug ?? entry.id), entry.isLocked === true);
   // Firestore inaweza kuwa na config chache tu; control panel lazima ionyeshe catalog nzima, pamoja na ZANA ZA ZIADA.
-  const configuredServices = mergeServiceCatalogDefaults(services as any[], true);
+  const configuredServices = mergeServiceCatalogDefaults(services as any[], true).filter((item: any) => String(item.slug ?? item.id) !== "utafutaji-nida" && !/\bnida\b/i.test(`${item.name ?? ""} ${item.slug ?? item.id ?? ""}`));
   // Dedupe kwa slug: TAFUTA NIDA ilikuwa inaonekana mara mbili ndani ya Funga/Fungua Huduma.
   const uniqueServices = new Map<string, any>();
   for (const item of configuredServices) uniqueServices.set(String(item.slug), item);
-  if (!uniqueServices.has("utafutaji-nida")) {
-    uniqueServices.set("utafutaji-nida", { slug: "utafutaji-nida", name: "TAFUTA NIDA (DASHBOARD)", description: "Kipengele cha kutafuta NIDA kwenye dashboard ya mtumiaji.", icon: "search", category: "HUDUMA ZA WAKALA", tokenCost: 0, isFree: true, active: true, isVisible: true, order: -1, kind: "free" } as any);
-  }
   const rows = Array.from(uniqueServices.values()).map((item) => {
     const slug = String(item.slug ?? item.id);
     const storedLock = lockBySlug.get(slug);
