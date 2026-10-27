@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   uid TEXT PRIMARY KEY,
   phone TEXT,
   display_name TEXT,
-  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user','admin','super_admin')),
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user','admin','moderator','support','super_admin')),
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
