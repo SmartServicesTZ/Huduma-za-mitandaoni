@@ -1,39 +1,37 @@
 # SmartServicesTZ — D1 proof of concept
 
-Status: isolated proof-of-concept only. No production data is copied and no production Worker configuration is changed.
+Status: isolated proof-of-concept only. Firestore remains production source of truth. No production Worker, website, data, billing, or cutover changes are part of this work.
 
-## Files
-- `migrations/0001_smartservicestz_poc.sql`: normalized D1 schema plus synthetic test records.
-- Test-only D1 binding: `smartservicestz-poc-clean` (Cloudflare D1 UUID: `b2b331d9-fb25-416d-890a-269d07346faf`) in `wrangler.poc.toml`. The production `wrangler.toml` does not reference this database.
-- The earlier `smartservicestz-poc` database already contained a different schema and was not accessed during this task.
+## Target and scope
 
-## Verification — 2026-10-27
+The PoC binding is `smartservicestz-poc-clean` (Cloudflare D1 UUID `b2b331d9-fb25-416d-890a-269d07346faf`) in `wrangler.poc.toml`. The older `smartservicestz-poc` database was not accessed. The D1 binding is not connected to production handlers.
 
-### Local
-- Starting branch/commit: `poc/firestore-to-d1-schema` at `77b469f66bdfdf3cb278584592e6d6d167b8a9ec`; working tree was clean before edits.
-- Fixed the Worker TypeScript diagnostics by aligning the fallback service type with optional `tokenType`, adding profile fields already read by handlers, using explicit row types for Firestore document spreads, narrowing the untyped callable result in its test, and removing unsupported Firestore REST `orderBy()` usage in `listChatMembers`. The chat list is now sorted in-memory and handles missing profile data safely.
-- `pnpm test`: passed, 34 tests passed and 0 failed.
-- `pnpm check`: passed, TypeScript reported no errors.
-- Earlier local D1 verification remains: `pnpm d1:poc:migrate:local` and `pnpm d1:poc:verify:local` passed; synthetic `poc-user-001` (balances 2/5) and `poc-service-001` were verified.
+## Latest verification — 2026-10-27
 
-### Remote D1
-- The confirmed target is `smartservicestz-poc-clean` / `b2b331d9-fb25-416d-890a-269d07346faf`. The pre-existing `smartservicestz-poc` database was not accessed.
-- A current read-only query again found the expected 19 application tables, D1 system table `_cf_KV`, and expected indexes. The expected synthetic user/balance and service records were present; the checked payment, NIDA, application, license, file, ledger, audit, idempotency, and checkpoint tables had no rows.
-- Wrangler journal check: `d1_migrations` does not exist. Wrangler CLI reports `You are not authenticated`. Therefore **do not run `wrangler d1 migrations apply` yet**: existing schema is present but Wrangler's journal state is absent, so applying the migration risks an untracked/repeated schema operation. No remote migration command was run in this task; no schema was changed.
-- In the previous verification session, the exact idempotent migration SQL was sent through the D1 API; statements succeeded with no changes because the schema and synthetic fixtures were already present. This is not equivalent to Wrangler migration tracking.
-- Previous remote synthetic write/read/idempotency/cleanup test passed; duplicate key rejected and all temporary records were verified at zero after cleanup.
-- Cloudflare's database-list metadata previously reported `num_tables: 0`, inconsistent with live `sqlite_master`; live D1 queries are the schema evidence.
+### Local checks
 
-## Safety boundaries
-- Firebase Authentication remains the identity provider, and Firestore remains production source of truth.
-- No production secrets, users, token balances, payments, NIDA results, Lipa applications, license records, or files are copied.
-- D1 is not bound to production Worker handlers. No production Worker configuration, website, billing, or cutover was changed.
-- Token/payment/license mutations require transactional batches with unique idempotency keys before any production use.
+- `pnpm test`: PASS — 34 passed, 0 failed.
+- `pnpm check`: PASS — TypeScript completed with no errors.
+- The earlier local D1 migration and `pnpm d1:poc:verify:local` succeeded; synthetic user `poc-user-001` has NIDA/service balances 2/5 and `poc-service-001` was present.
+
+### Remote D1, read-only schema/journal review
+
+- Rechecked the target by exact name and UUID through the authorized Cloudflare integration.
+- A read-only `sqlite_master` query returned 19 application tables, D1 system table `_cf_KV`, and 13 named indexes. The table and named-index DDL was reviewed against `migrations/0001_smartservicestz_poc.sql`; expected definitions were present. Synthetic fixtures remained `poc-user-001` (2/5) and `poc-service-001`.
+- `SELECT name FROM sqlite_master WHERE type='table' AND name='d1_migrations'` returned no rows. Wrangler CLI `pnpm exec wrangler whoami` reports `You are not authenticated`.
+- `wrangler d1 migrations apply` was **not run**. The schema already exists while Wrangler's migration journal is absent. There is no verified, non-destructive Wrangler reconciliation procedure in this task; applying it could repeat an untracked schema migration. No D1 schema or data was changed during this task.
+- A prior session submitted the idempotent SQL through Cloudflare's D1 API; the SQL succeeded with no changes because the objects and seeds already existed. That does not create or prove Wrangler migration tracking.
+- A prior remote synthetic write/read/idempotency/cleanup test passed; duplicate idempotency key was rejected and temporary rows were verified at zero after cleanup.
+- Cloudflare's database-list metadata previously reported `num_tables: 0`, inconsistent with live `sqlite_master`; live D1 query results were used for schema evidence.
+
+## Wrangler authentication needed
+
+Wrangler OAuth is still blocked. To authenticate safely, run `pnpm exec wrangler login` from the `kituo-digitali/worker` directory in the same terminal environment that will run Wrangler, open its generated URL in a browser, and review/approve the Cloudflare OAuth permissions if acceptable. Do not paste a password or API token into chat. Wrangler's OAuth request includes D1 write access and other Cloudflare scopes; inspect the requested permissions before approval. After login, recheck target name/UUID, schema, and migration journal before considering any migration command. Do not delete or alter existing schema to force tracking.
+
+## Safety and implementation boundaries
+
+No production data is copied. Firebase Authentication remains the identity provider; Firestore remains production source of truth. No production configuration, website, billing, or cutover has changed. Future token/payment/license mutations must use transactional batches and unique idempotency keys. D1 production integration, auth-boundary review, backup, backfill, shadow reads, and rollback/cutover work remain out of scope.
 
 ## Repository groundwork
-- `src/d1-poc-repository.ts` provides read-only helpers for user lookup, visible service listing, token balance, user permissions, and bounded token-ledger lookup. It uses bound parameters and is intentionally not wired into production handlers.
-- `test/d1-poc-repository.test.ts` covers parameter binding, empty UID rejection, visible-service filtering/order, token balance access, permission lookup, and ledger page bounds.
-- Remote Wrangler migration tracking requires Wrangler OAuth plus an explicit review of the existing tables/journal before any `wrangler d1 migrations apply smartservicestz-poc-clean --remote --config wrangler.poc.toml` attempt. Do not delete or alter existing schema to force migration.
 
-## Not implemented
-This schema does not switch application handlers to D1 and is not a production migration. Firebase ID token verification, D1 repository methods, R2 authorization, backfill, shadow reads, and cutover/rollback flags require separate implementation and tests. Firestore has not been migrated or disabled.
+`src/d1-poc-repository.ts` contains read-only D1 helpers and `test/d1-poc-repository.test.ts` covers binding and result behavior. The schema is not connected to production handlers. Firebase ID token verification, R2 authorization, backfill, shadow reads, and cutover/rollback controls require a separate review and implementation.
