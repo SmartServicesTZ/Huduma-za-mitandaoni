@@ -66,7 +66,11 @@ def expect_integrity_error(sql: str, values: tuple[object, ...], label: str) -> 
 
 
 user_uid = "poc-user-001"
-expect_integrity_error("INSERT INTO users(uid, role) VALUES (?, ?)", ("contract-role-invalid", "moderator"), "D1 role CHECK")
+supported_roles = ("user", "admin", "moderator", "support", "super_admin")
+for role in supported_roles:
+    connection.execute("INSERT INTO users(uid, role) VALUES (?, ?)", (f"contract-role-{role}", role))
+connection.commit()
+expect_integrity_error("INSERT INTO users(uid, role) VALUES (?, ?)", ("contract-role-invalid", "viewer"), "D1 role CHECK")
 expect_integrity_error("INSERT INTO users(uid, active) VALUES (?, ?)", ("contract-active-invalid", 2), "D1 active CHECK")
 connection.execute("INSERT INTO users(uid) VALUES (?)", ("contract-check-user",))
 connection.commit()
