@@ -1399,27 +1399,7 @@ export async function reportChatUser(uid: string, targetUid: string, roomId: str
   await addDoc(collection(firestore, "chatReports"), { reporterId: uid, targetUid, roomId, reason: reason.slice(0, 500), createdAt: serverTimestamp(), status: "open" });
 }
 
-type AndroidFcmWindow = Window & { AndroidFCM?: { getFcmToken: () => string } };
-async function registerAndroidFcmToken(user: User, suppliedToken?: string) {
-  try {
-    const token = (suppliedToken || (window as AndroidFcmWindow).AndroidFCM?.getFcmToken?.() || "").trim();
-    if (token.length < 20) return;
-    await invokeWorker("registerFcmToken", { token }, user);
-  } catch (error) {
-    console.warn("SmartServicesTZ push-token registration failed.", error);
-  }
-}
-if (typeof window !== "undefined") {
-  onAuthStateChanged(firebaseAuth, (user) => {
-    if (user) void registerAndroidFcmToken(user);
-  });
-  window.addEventListener("smartservicestz-fcm-token", (event: Event) => {
-    const token = (event as CustomEvent<string>).detail;
-    const user = firebaseAuth.currentUser;
-    if (user && typeof token === "string") void registerAndroidFcmToken(user, token);
-  });
-}
 
-export async function adminSendPushNotification(data: { title: string; body: string; targetUid?: string; broadcast?: boolean }) {
+
   return invokeWorker<{ sent: number; failed: number; attempted?: number; message?: string }>("sendPushNotification", data);
 }
