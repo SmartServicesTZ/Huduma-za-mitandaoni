@@ -26,6 +26,7 @@ import {
   getDocs,
   getFirestore,
   increment,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -112,6 +113,22 @@ function createWorkerCall<TRequest = unknown, TResponse = unknown>(name: string)
 const appCheckSiteKey = String(import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY ?? "").trim();
 export const firebaseAppCheck = appCheckSiteKey ? initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true }) : null;
 export { onAuthStateChanged };
+
+type CollectionListener = {
+  callbacks: Set<(rows: DocumentData[]) => void>;
+  unsubscribe: () => void;
+};
+const collectionListenerCache = new Map<string, CollectionListener>();
+const collectionReadLimits: Record<string, number> = {
+  announcements: 50,
+  siteSettings: 10,
+  serviceLocks: 250,
+  services: 250,
+  lipaServices: 50,
+};
+function adminPollDelay() {
+  return typeof document !== "undefined" && document.visibilityState === "hidden" ? 120_000 : 30_000;
+}
 export type AdminPermissions = {
   viewUsers?: boolean;
   manageUsers?: boolean;
@@ -391,7 +408,7 @@ export async function createServiceRequest(uid: string, service: { slug: string;
 }
 
 export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void) {
-  const tokenQuery = query(collection(firestore, "tokenTransactions"), where("userId", "==", uid));
+  const tokenQuery = query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), limit(100));
   return onSnapshot(tokenQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData) as DocumentData).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")))));
 }
 
@@ -685,9 +702,20 @@ export async function reserveBusinessLicenseNumber(reservationId: string, licens
 }
 
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(collection(firestore, name), (snapshot) => {
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+  const existing = collectionListenerCache.get(name);
+  if (existing) {
+    existing.callbacks.add(callback);
+    return () => { existing.callbacks.delete(callback); if (existing.callbacks.size === 0) { existing.unsubscribe(); collectionListenerCache.delete(name); } };
+  }
+  const source = collection(firestore, name);
+  const bounded = collectionReadLimits[name] ? query(source, limit(collectionReadLimits[name])) : source;
+  const callbacks = new Set<(rows: DocumentData[]) => void>([callback]);
+  const unsubscribe = onSnapshot(bounded, (snapshot) => {
+    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
+    callbacks.forEach((listener) => listener(rows));
   }, onError);
+  collectionListenerCache.set(name, { callbacks, unsubscribe });
+  return () => { callbacks.delete(callback); if (callbacks.size === 0) { unsubscribe(); collectionListenerCache.delete(name); } };
 }
 
 export type LipaNetworkConfig = {
@@ -892,7 +920,9 @@ export function subscribeToAdminLipaApplications(callback: (rows: LipaApplicatio
       // Back off during quota/network failures instead of hammering Firestore.
       retryDelay = Math.min(retryDelay * 2, 10 * 60_000);
     } finally {
+
       if (!stopped) timer = setTimeout(load, retryDelay);
+
     }
   };
   void load();
@@ -903,7 +933,7 @@ export function subscribeToAdminLipaApplications(callback: (rows: LipaApplicatio
 }
 
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
-  const userQuery = query(collection(firestore, "lipaApplications"), where("userId", "==", uid));
+  const userQuery = query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(50));
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
 }
 
@@ -1023,7 +1053,9 @@ export function subscribeToAdminServiceApplications(callback: (rows: ServiceAppl
       // Back off during quota/network failures instead of hammering Firestore.
       retryDelay = Math.min(retryDelay * 2, 10 * 60_000);
     } finally {
+
       if (!stopped) timer = setTimeout(load, retryDelay);
+
     }
   };
   void load();
@@ -1046,7 +1078,7 @@ export async function getServiceApplicationDocument(applicationId: string, field
 }
 
 export function subscribeUserServiceApplications(uid: string, callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
-  const userQuery = query(collection(firestore, "serviceApplications"), where("userId", "==", uid));
+  const userQuery = query(collection(firestore, "serviceApplications"), where("userId", "==", uid), limit(50));
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
 }
 
@@ -1058,8 +1090,8 @@ export async function markUserMessageRead(messageId: string, uid: string) {
 
 export function subscribeUserMessages(uid: string, callback: (rows: Array<Record<string, unknown> & { id: string }>) => void, onError?: (error: unknown) => void) {
   const messages = collection(firestore, "messages");
-  const personalQuery = query(messages, where("recipientId", "==", uid));
-  const broadcastQuery = query(messages, where("broadcast", "==", true));
+  const personalQuery = query(messages, where("recipientId", "==", uid), limit(100));
+  const broadcastQuery = query(messages, where("broadcast", "==", true), limit(50));
   const personalRows = new Map<string, Record<string, unknown> & { id: string }>();
   const broadcastRows = new Map<string, Record<string, unknown> & { id: string }>();
   const emit = () => {

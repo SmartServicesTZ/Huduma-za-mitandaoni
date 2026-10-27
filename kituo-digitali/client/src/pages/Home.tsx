@@ -531,6 +531,7 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
     let stopped = false;
     let inFlight = false;
     const timer = window.setInterval(async () => {
+      if (document.visibilityState === "hidden") return;
       if (inFlight) return;
       inFlight = true;
       try {
@@ -541,7 +542,9 @@ function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
       } finally {
         inFlight = false;
       }
+
     }, 30000);
+
     return () => { stopped = true; window.clearInterval(timer); };
   }, [isAuthenticated, shouldPollNidaRequests]);
 
