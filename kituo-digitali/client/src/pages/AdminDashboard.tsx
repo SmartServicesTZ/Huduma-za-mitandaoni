@@ -226,12 +226,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Usipoll makusanyo ya maombi wakati admin yuko kwenye paneli nyingine.
     // Paneli ya Lipa ndiyo pekee inayohitaji inbox ya Lipa iwe hai.
-    if (!canManageLipaApplications || panel !== "lipa") { setLipaApplications([]); return; }
+    if (!canManageLipaApplications) { setLipaApplications([]); return; }
+    if (panel !== "lipa") return;
     return subscribeToAdminLipaApplications(setLipaApplications, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
   }, [canManageLipaApplications, panel, firebaseUser?.uid]);
   useEffect(() => {
     // Maombi ya huduma hupakiwa tu admin anapofungua paneli ya Applications.
-    if (!hasPermission("manageServices") || panel !== "applications") { setServiceApplications([]); return; }
+    if (!hasPermission("manageServices")) { setServiceApplications([]); return; }
+    if (panel !== "applications") return;
     return subscribeToAdminServiceApplications(setServiceApplications, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
   }, [canManage, isAdmin, isSuper, panel, firebaseUser?.uid]);
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
