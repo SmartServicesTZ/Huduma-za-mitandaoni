@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
-import WebsiteHealthMonitor from "./components/WebsiteHealthMonitor";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 
@@ -68,7 +67,6 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
-          <WebsiteHealthMonitor />
           <DownloadProgressNotice />
           <Router />
         </TooltipProvider>

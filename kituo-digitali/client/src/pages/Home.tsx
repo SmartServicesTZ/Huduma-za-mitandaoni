@@ -2,12 +2,12 @@ import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "wouter";
 import {
-  BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, Music2, Palette, Plane, PlayCircle, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
+  BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, Music2, Palette, Plane, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, updateNidaRequestPhone, type NidaRequest } from "@/lib/firebase";
-import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
+import { mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
@@ -232,7 +232,6 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
   return <>
-    <div className="announcement"><Bell size={17} /> <strong>{announcementText}</strong></div>
     <header className="app-header">
       <button type="button" className="header-back-button" onClick={() => window.history.length > 1 ? window.history.back() : navigate("/")} aria-label="Rudi hatua moja nyuma"><ArrowLeft size={20}/><span>Back</span></button>
       <button className="mobile-menu" onClick={onMenu} aria-label="Fungua menyu"><Menu size={24} /></button>
@@ -246,26 +245,23 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { user } = useAuth();
-  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/chat", label: "Chat", icon: MessageCircle }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }];
+  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }];
   return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.profileImageUrl ? <img src={user.profileImageUrl} alt="" /> : (user?.name?.slice(0, 2).toUpperCase() ?? "HM")}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <><Link href="/admin" className={`portal-nav-item admin-link ${location === "/admin" ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link></>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
 function TokenCard({ compact = false }: { compact?: boolean }) {
   const { isAuthenticated, profile } = useAuth();
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
-  const [nidaTokens, setNidaTokens] = useState("10");
   const [otherTokens, setOtherTokens] = useState("0");
   const [paidFromPhone, setPaidFromPhone] = useState(profile?.phone ?? "");
   const nidaBalance = profile?.tokenBalanceNida ?? 0;
   const otherBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
-  const nidaCount = Math.max(0, Math.floor(Number(nidaTokens) || 0));
   const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
-  const nidaAmount = nidaCount * 100;
   const otherAmount = otherCount * 500;
-  const totalAmount = nidaAmount + otherAmount;
+  const totalAmount = otherAmount;
   const paymentPhone = paidFromPhone.trim() || profile?.phone || "";
-  const canProceed = totalAmount >= 1000 && (nidaCount > 0 || otherCount > 0) && paymentPhone.trim().length >= 9;
+  const canProceed = totalAmount >= 1000 && otherCount > 0 && paymentPhone.trim().length >= 9;
   const openWhatsAppProof = () => {
     if (!canProceed) return;
     const message = [
@@ -277,7 +273,6 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       "Lipa namba: 29126823",
       "Jina la mpokeaji: Steward Tz",
       "Kiasi kilicholipwa: TZS " + totalAmount.toLocaleString("en-US"),
-      "Tokeni za NIDA: " + nidaCount + " (TZS " + nidaAmount.toLocaleString("en-US") + ")",
       "Tokeni zingine: " + otherCount + " (TZS " + otherAmount.toLocaleString("en-US") + ")",
       "",
       "Nimeambatisha ushahidi wa malipo. Tafadhali hakiki na ongeza tokeni kwenye akaunti yangu."
@@ -296,7 +291,6 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       <div className="token-choice-card">
         <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Chagua tokeni</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
         <div className="token-choice-fields">
-          <label><strong>Tokeni za NIDA</strong><span>1 = TZS 100</span><input aria-label="Idadi ya tokeni za NIDA" type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} /></label>
           <label><strong>Tokeni zingine</strong><span>1 = TZS 500</span><input aria-label="Idadi ya tokeni zingine" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
         <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Kiasi cha chini ni TZS 1,000; unaweza kuongeza tokeni na kulipa zaidi.</small></div>
@@ -375,10 +369,6 @@ function TopQuickServices({ services, onUse }: { services: ServiceCatalogItem[];
   </section>;
 }
 
-function TutorialsSection() {
-  const [selected, setSelected] = useState<typeof tutorials[number] | null>(null);
-  return <section className="portal-section"><div className="section-title"><div><span className="overline">Jifunze kwa hatua</span><h2>VIDEO ZA MAFUNZO</h2></div></div><div className="tutorial-grid">{tutorials.map((item) => <button className="tutorial-card" key={item.slug} onClick={() => setSelected(item)}><span className="play-circle"><PlayCircle size={25} /></span><strong>{item.title}</strong><small>{item.description}</small><span className="paid-label"><CreditCard size={13} /> Tokeni {item.tokenCost}</span></button>)}</div>{selected && <div className="portal-modal-backdrop" onClick={() => setSelected(null)}><div className="portal-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setSelected(null)}><X size={19} /></button><PlayCircle size={42} className="modal-symbol" /><h3>{selected.title}</h3>{selected.videoUrl ? <video src={selected.videoUrl} controls /> : <Notice tone="info">Video itaongezwa na admin hivi karibuni. Hakuna kiungo bandia kilichowekwa.</Notice>}<button className="button button--green button--wide" onClick={() => setSelected(null)}>Funga</button></div></div>}</section>;
-}
 
 function HistoryPage() {
   const { firebaseUser } = useAuth();
@@ -478,211 +468,7 @@ function HistoryPage() {
 function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
 
-function QuickNidaSearch({ isAuthenticated }: { isAuthenticated: boolean }) {
-  const [phone, setPhone] = useState("");
-  const [requests, setRequests] = useState<NidaRequest[]>([]);
-  const [editPhones, setEditPhones] = useState<Record<string, string>>({});
-  const [savingPhone, setSavingPhone] = useState<string | null>(null);
-  const [activeRequestId, setActiveRequestId] = useState("");
-  const [showNidaHistory, setShowNidaHistory] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [nidaSearchLocked, setNidaSearchLocked] = useState(false);
-  const [inlineError, setInlineError] = useState("");
-  const [copiedResults, setCopiedResults] = useState<Record<string, boolean>>({});
-  const hideTimers = useRef<Record<string, number>>({});
-  const resultTimers = useRef<Record<string, number>>({});
-  const formatPhone = (value: string) => value.replace(/\D/g, "").slice(0, 10);
 
-  // NIDA ikipatikana au ombi likikamilika, onyesha matokeo juu kwa dakika 1 kisha ficha kwenye Historia.
-  useEffect(() => {
-    const active = requests.find((item) => item.id === activeRequestId || item.requestId === activeRequestId);
-    if (!active || !["APPROVED", "REJECTED"].includes(active.status) || resultTimers.current[active.id]) return;
-    resultTimers.current[active.id] = window.setTimeout(() => {
-      setActiveRequestId((current) => current === active.id || current === active.requestId ? "" : current);
-      delete resultTimers.current[active.id];
-    }, 60 * 1000);
-  }, [requests, activeRequestId]);
-
-  useEffect(() => () => {
-    Object.values(resultTimers.current).forEach((timer) => window.clearTimeout(timer));
-    Object.values(hideTimers.current).forEach((timer) => window.clearTimeout(timer));
-  }, []);
-
-  useEffect(() => subscribeToCollection("serviceLocks", (rows) => {
-    const setting = rows.find((item) => String(item.slug ?? item.id) === "utafutaji-nida");
-    setNidaSearchLocked(setting?.isLocked === true);
-  }), []);
-
-  useEffect(() => {
-    if (!isAuthenticated) { setRequests([]); return; }
-    let stopped = false;
-    void listMyNidaRequests().then((rows) => {
-      if (!stopped) setRequests(rows);
-    }).catch(() => {
-      // Keep the last successful state; a temporary API/quota error must not erase the user's visible request.
-    });
-    return () => { stopped = true; };
-  }, [isAuthenticated]);
-
-  const shouldPollNidaRequests = Boolean(activeRequestId) || requests.some((item) => item.status === "PENDING" || item.status === "PROCESSING");
-  useEffect(() => {
-    if (!isAuthenticated || !shouldPollNidaRequests) return;
-    let stopped = false;
-    let inFlight = false;
-    const timer = window.setInterval(async () => {
-      if (document.visibilityState === "hidden") return;
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const rows = await listMyNidaRequests();
-        if (!stopped) setRequests(rows);
-      } catch {
-        // Preserve the last successful result and retry on the next interval.
-      } finally {
-        inFlight = false;
-      }
-
-    }, 30000);
-
-    return () => { stopped = true; window.clearInterval(timer); };
-  }, [isAuthenticated, shouldPollNidaRequests]);
-
-  useEffect(() => {
-    for (const item of requests) {
-      if (item.status !== "APPROVED" || !item.nidaNumber || hideTimers.current[item.id]) continue;
-      let expiresAt = 0;
-      try { expiresAt = Number(window.sessionStorage.getItem(`smartservices-nida-hide-${item.id}`) ?? 0); } catch { /* session storage may be unavailable */ }
-      if (!expiresAt) continue;
-      const remaining = expiresAt - Date.now();
-      if (remaining <= 0) {
-        setCopiedResults((old) => ({ ...old, [item.id]: true }));
-        continue;
-      }
-      hideTimers.current[item.id] = window.setTimeout(() => {
-        setCopiedResults((old) => ({ ...old, [item.id]: true }));
-        delete hideTimers.current[item.id];
-      }, remaining);
-    }
-  }, [requests]);
-
-  useEffect(() => () => {
-    Object.values(hideTimers.current).forEach((timer) => window.clearTimeout(timer));
-  }, []);
-
-  const run = async () => {
-    if (nidaSearchLocked) { toast.error("Kipengele cha kutafuta NIDA kimefungwa na admin."); return; }
-    if (!isAuthenticated) { toast.error("Ingia kwenye akaunti yako kabla ya kutuma ombi la NIDA."); return; }
-    if (!/^\d{9,10}$/.test(phone)) { toast.error("Weka namba ya simu yenye tarakimu 9 au 10."); return; }
-    setBusy(true);
-    try {
-      const submitted = await submitNidaRequest(phone);
-      setPhone("");
-      setActiveRequestId(submitted.requestId);
-      const rows = await listMyNidaRequests();
-      setRequests(rows);
-      setActiveRequestId(submitted.requestId);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena.";
-      setInlineError(message);
-      toast.error(message);
-    } finally { setBusy(false); }
-  };
-  const copyResult = async (requestId: string, result: string) => {
-    try {
-      await navigator.clipboard.writeText(result);
-      setCopiedResults((old) => ({ ...old, [requestId]: false }));
-      if (hideTimers.current[requestId]) window.clearTimeout(hideTimers.current[requestId]);
-      const expiresAt = Date.now() + 10 * 60 * 1000;
-      try { window.sessionStorage.setItem(`smartservices-nida-hide-${requestId}`, String(expiresAt)); } catch { /* timer still works for this page */ }
-      hideTimers.current[requestId] = window.setTimeout(() => {
-        setCopiedResults((old) => ({ ...old, [requestId]: true }));
-        delete hideTimers.current[requestId];
-      }, 10 * 60 * 1000);
-      toast.success("Namba ya NIDA imenakiliwa. Itaondolewa kwenye mwonekano baada ya dakika 10.");
-    } catch { toast.error("Imeshindikana kunakili namba ya NIDA."); }
-  };
-  const statusText: Record<string, string> = { PENDING: "INASUBIRI", PROCESSING: "INAFANYIWA KAZI", APPROVED: "NIDA IMEPATIKANA", REJECTED: "NIN NOT FOUND" };
-  const saveEditedPhone = async (item: NidaRequest) => {
-    const nextPhone = formatPhone(editPhones[item.id] ?? item.phone);
-    if (!/^\d{9,10}$/.test(nextPhone)) { toast.error("Weka namba sahihi ya simu yenye tarakimu 9 au 10."); return; }
-    setSavingPhone(item.id);
-    try {
-      await updateNidaRequestPhone(item.requestId || item.id, nextPhone);
-      setRequests((current) => current.map((row) => row.id === item.id ? { ...row, phone: nextPhone } : row));
-      setEditPhones((current) => { const next = { ...current }; delete next[item.id]; return next; });
-      toast.success("Phone number updated.");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update phone number."); }
-    finally { setSavingPhone(null); }
-  };
-  // Ombi linaloonyeshwa juu lisihesabiwe kwenye Historia mpaka muda wa dakika 1 uishe.
-  const recentHistory = requests.filter((item) => {
-    const isActiveResult = (item.id === activeRequestId || item.requestId === activeRequestId) && ["APPROVED", "REJECTED"].includes(item.status);
-    if (isActiveResult || ["PENDING", "PROCESSING"].includes(item.status)) return false;
-    const value = item.submittedAt as any;
-    const timestamp = value?.toDate ? value.toDate().getTime() : value ? new Date(value).getTime() : 0;
-    return Number.isFinite(timestamp) && timestamp > 0 && Date.now() - timestamp <= 24 * 60 * 60 * 1000;
-  });
-  const copyHistoryNida = async (nidaNumber: string) => {
-    try { await navigator.clipboard.writeText(nidaNumber); toast.success("Namba ya NIDA imenakiliwa."); }
-    catch { toast.error("Imeshindikana kunakili namba ya NIDA."); }
-  };
-
-  return <section className="quick-nida-panel" id="cheki-nida">
-    <div className="quick-nida-panel__head">
-      <div className="quick-nida-search__icon"><Search size={20}/></div>
-      <div><span className="overline">HUDUMA KUU • NIDA</span><h3>TAFUTA NAMBA YA NIDA</h3></div>
-    </div>
-    {inlineError && <div className="notice notice--warning" role="alert" style={{margin:"12px 0",padding:"14px",fontSize:"14px",lineHeight:1.6,overflowWrap:"anywhere",whiteSpace:"normal"}}><CircleAlert size={18}/><span>{inlineError}</span></div>}
-    {nidaSearchLocked ? <div className="notice notice--warning"><LockKeyhole size={16}/><span>Kipengele cha kutafuta NIDA kimefungwa kwa muda na admin.</span></div> : <div className="quick-nida-form">
-      <label className="quick-nida-phone-field"><span>Namba ya simu</span><input inputMode="numeric" autoComplete="tel" maxLength={10} value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Ingiza tarakimu 9 au 10" aria-label="Namba ya simu ya mteja"/></label>
-      <button type="button" className="button button--green" onClick={() => void run()} disabled={busy}><Search size={16}/> {busy ? "Inatuma..." : "Tafuta NIDA"}</button>
-    </div>}
-    {!nidaSearchLocked && !isAuthenticated && <div className="notice notice--info"><LogIn size={16}/><span>Ingia kwenye akaunti yako ili kutuma ombi na kuona matokeo.</span></div>}
-    {isAuthenticated && requests.some((item) => ["PENDING", "PROCESSING"].includes(item.status) || ((item.id === activeRequestId || item.requestId === activeRequestId) && ["APPROVED", "REJECTED"].includes(item.status))) && <div className="quick-nida-request-list">
-      {requests.filter((item) => ["PENDING", "PROCESSING"].includes(item.status) || ((item.id === activeRequestId || item.requestId === activeRequestId) && ["APPROVED", "REJECTED"].includes(item.status))).map((item) => <article key={item.id} className={`quick-nida-request ${item.status === "APPROVED" ? "quick-nida-request--success" : item.status === "REJECTED" ? "quick-nida-request--error" : ""}`}>
-        <div className="quick-nida-request__details">
-          <div className="quick-nida-request__labels"><span>Phone number</span>{item.status === "PENDING" ? <><input inputMode="numeric" autoComplete="tel" maxLength={10} value={editPhones[item.id] ?? item.phone} onChange={(e) => setEditPhones((current) => ({ ...current, [item.id]: formatPhone(e.target.value) }))} aria-label="Edit pending NIDA phone number" /><button type="button" className="button button--small" disabled={savingPhone === item.id || !/^\d{9,10}$/.test(formatPhone(editPhones[item.id] ?? item.phone)) || formatPhone(editPhones[item.id] ?? item.phone) === item.phone} onClick={() => void saveEditedPhone(item)}>{savingPhone === item.id ? "Saving..." : "Save phone"}</button></> : <strong>{item.phone}</strong>}</div>
-          <div className="quick-nida-request__status"><strong>{(item.status === "PENDING" || item.status === "PROCESSING") && <LoaderCircle size={15} className="quick-nida-spinner" aria-label="Inatafuta NIDA"/>} {item.status === "REJECTED" && !String(item.rejectionReason || "").toUpperCase().includes("NIN NOT FOUND") ? "HAIJAWEZA KUKAMILIKA" : (statusText[item.status] ?? item.status)}</strong>
-            {item.status === "PENDING" && <span>Loading... Your request is waiting to be processed.</span>}
-            {item.status === "PROCESSING" && <span>Your NIDA request is in process. We will show the result here.</span>}
-            {item.status === "REJECTED" && <span>{String(item.rejectionReason || "NIN NOT FOUND").toUpperCase().includes("NIN NOT FOUND") ? "NIN NOT FOUND" : item.rejectionReason}</span>}
-          </div>
-          {item.status === "APPROVED" && item.nidaNumber && <div className="quick-nida-result">
-            <span>NIDA</span>
-            {copiedResults[item.id] ? <p className="quick-nida-expired">Namba ya NIDA imefichwa baada ya muda wake.</p> : <>
-              <code>{item.nidaNumber}</code>
-              <button type="button" className="button button--green button--small" onClick={() => void copyResult(item.id, item.nidaNumber!)}><Copy size={15}/> Nakili NIDA</button>
-            </>}
-          </div>}
-        </div>
-      </article>)}
-    </div>}
-    {isAuthenticated && recentHistory.length > 0 && <section className="quick-nida-history">
-      <button type="button" className="quick-nida-history__toggle" aria-expanded={showNidaHistory} onClick={() => setShowNidaHistory((visible) => !visible)}>
-        <span><History size={16}/> Historia ya NIDA <small>({recentHistory.length} · saa 24)</small></span>
-        <strong>{showNidaHistory ? "Ficha historia" : "Gusa kuona"}</strong>
-        {showNidaHistory ? <ChevronUp size={17}/> : <ChevronDown size={17}/>}
-      </button>
-      {showNidaHistory && <div className="quick-nida-history__list">
-        {[...recentHistory].sort((a, b) => {
-          const timestamp = (item: NidaRequest) => {
-            const value = item.submittedAt as any;
-            if (value?.toDate) return value.toDate().getTime();
-            const parsed = value ? new Date(value).getTime() : 0;
-            return Number.isFinite(parsed) ? parsed : 0;
-          };
-          return timestamp(b) - timestamp(a);
-        }).map((item) => <article className="quick-nida-history__item" key={item.id}>
-          <div><strong>{item.phone}</strong><small>{(() => { const value = item.submittedAt as any; const date = value?.toDate ? value.toDate() : value ? new Date(value) : null; return date && !Number.isNaN(date.getTime()) ? date.toLocaleString("sw-TZ") : "Muda haujapatikana"; })()}</small></div>
-          <span className={item.status === "APPROVED" ? "is-approved" : item.status === "REJECTED" ? "is-rejected" : "is-pending"}>{statusText[item.status] ?? item.status}</span>
-          {item.status === "APPROVED" && item.nidaNumber && <div className="quick-nida-history__copy"><code>{item.nidaNumber}</code><button type="button" className="button button--green button--small" onClick={() => void copyHistoryNida(item.nidaNumber!)}><Copy size={14}/> Copy</button></div>}
-          {item.status === "REJECTED" && <small>{item.rejectionReason || "NIN NOT FOUND"}</small>}
-        </article>)}
-      </div>}
-    </section>}
-    <style>{`.quick-nida-spinner{display:inline-block;vertical-align:middle;animation:quickNidaSpin 1s linear infinite;color:#2563eb;flex-shrink:0}@keyframes quickNidaSpin{to{transform:rotate(360deg)}}.quick-nida-history{border:1px solid #dbeafe;border-radius:12px;background:#fff;overflow:hidden}.quick-nida-history__toggle{display:flex;align-items:center;gap:8px;width:100%;padding:11px 12px;border:0;background:#f8fafc;color:#1e3a8a;text-align:left;cursor:pointer;font-weight:800}.quick-nida-history__toggle>span{display:flex;align-items:center;gap:7px;flex:1}.quick-nida-history__toggle small{color:#64748b}.quick-nida-history__toggle>strong{font-size:.78rem;color:#2563eb}.quick-nida-history__list{display:grid;gap:0;padding:0 10px}.quick-nida-history__item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:10px 2px;border-top:1px solid #e2e8f0}.quick-nida-history__item>div{display:grid;gap:3px}.quick-nida-history__item>div strong{font-size:.9rem;color:#0f172a}.quick-nida-history__item small{font-size:.75rem;color:#64748b;overflow-wrap:anywhere}.quick-nida-history__item>span{font-size:.75rem;font-weight:900;text-align:right}.quick-nida-history__item .is-approved{color:#15803d}.quick-nida-history__item .is-rejected{color:#b91c1c}.quick-nida-history__item .is-pending{color:#1d4ed8}.quick-nida-history__copy{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}.quick-nida-history__copy code{color:#166534;font-weight:900;overflow-wrap:anywhere;min-width:0}.quick-nida-history__copy .button{flex-shrink:0}.quick-nida-history__item>small{grid-column:1/-1;color:#b91c1c}.quick-nida-panel{display:grid;gap:6px;padding:8px;max-width:560px;width:100%;justify-self:start;border:1px solid #dbeafe;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#f5f8ff 100%);box-shadow:0 12px 32px rgba(15,23,42,.07)}.quick-nida-panel__head{display:flex;align-items:center;gap:10px}.quick-nida-search__icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:#e0eaff;color:#1d4ed8}.quick-nida-panel__head h3{margin:2px 0 0;color:#0f172a;font-size:1rem;font-weight:900}.quick-nida-panel__head p{display:none}.quick-nida-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.quick-nida-phone-field{display:grid;gap:6px;color:#334155;font-size:.8rem;font-weight:800}.quick-nida-phone-field input{width:100%;min-width:0;padding:8px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#0f172a;font-size:1rem;outline:none}.quick-nida-phone-field input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}.quick-nida-form .button{min-height:36px;padding:8px 10px;white-space:nowrap}.quick-nida-request-list{display:grid;gap:6px}.quick-nida-request{padding:7px 9px;border:1px solid #dbe3ee;border-radius:13px;background:#fff}.quick-nida-request--success{border-color:#86efac;background:#f0fdf4}.quick-nida-request--error{border-color:#fca5a5;background:#fff1f2}.quick-nida-request__details{display:grid;gap:4px}.quick-nida-request__labels{display:grid;gap:3px}.quick-nida-request__labels span,.quick-nida-result>span{font-size:.75rem;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.quick-nida-request__labels strong{color:#0f172a;font-size:1rem}.quick-nida-request__status{display:grid;gap:4px}.quick-nida-request__status strong{color:#1d4ed8;font-size:.84rem;font-weight:900}.quick-nida-request--success .quick-nida-request__status strong{color:#15803d}.quick-nida-request--error .quick-nida-request__status strong{color:#b91c1c}.quick-nida-request__status span{font-size:.84rem;color:#475569;overflow-wrap:anywhere}.quick-nida-result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 7px;align-items:center;padding-top:6px;border-top:1px solid #bbf7d0}.quick-nida-result>span{grid-column:1/-1;color:#15803d}.quick-nida-result code{color:#166534;font-size:1.05rem;font-weight:900;overflow-wrap:anywhere}.quick-nida-expired{grid-column:1/-1;margin:0;color:#64748b;font-size:.84rem}.quick-nida-request--error .quick-nida-request__status span{color:#b91c1c;font-weight:800}@media(max-width:560px){.quick-nida-form{grid-template-columns:1fr}.quick-nida-form .button{width:100%;justify-content:center}.quick-nida-result{grid-template-columns:1fr}.quick-nida-result .button{width:100%;justify-content:center}}`}</style>
-  </section>;
-}
 function PortalHome({ search, onUse, services, userName, isAuthenticated, allServicesPage }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[]; userName?: string; isAuthenticated: boolean; allServicesPage: boolean }) {
   const [category, setCategory] = useState("Zote");
   const [showAppDownload, setShowAppDownload] = useState(false);
@@ -700,7 +486,6 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]"); } catch { return []; }
   });
-  const [announcements, setAnnouncements] = useState<any[]>([]);
   useEffect(() => {
     const onFavoritesChanged = (event: Event) => {
       const detail = (event as CustomEvent<string[]>).detail;
@@ -714,7 +499,6 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
   const [layout, setLayout] = useState({ homeColumns: 4, homeTabletColumns: 2, homeMobileColumns: 1, sectionGap: 34, cardGap: 12, cardRadius: 14, cardPadding: 15, heroRadius: 18, heroPadding: 35, contentMaxWidth: 1420, showMetrics: true, showHero: true, compactCards: false });
   useEffect(() => {
-    const stopAnnouncements = subscribeToCollection("announcements", (rows) => setAnnouncements(rows.filter((item) => item.enabled !== false)));
     const stopSettings = subscribeToCollection("siteSettings", (rows) => {
       const settings = rows.find((item) => item.id === "public");
       if (Array.isArray(settings?.serviceOrder)) setServiceOrder(settings.serviceOrder.filter((id: unknown): id is string => typeof id === "string"));
@@ -722,7 +506,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
       setLayout((current) => ({ ...current, ...Object.fromEntries(Object.keys(current).map((key) => [key, settings?.[key] ?? current[key as keyof typeof current]])) }));
     });
     const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true]))));
-    return () => { stopAnnouncements(); stopSettings(); stopLocks(); };
+    return () => { stopSettings(); stopLocks(); };
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
@@ -747,7 +531,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     locked: null,
     special: null,
     tools: (category === "Zote" || category === "HUDUMA ZINGINE") ? <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>HUDUMA ZINGINE</h2></div><span className="section-count">{other.length + specialServices.length}</span></div><div className="portal-service-grid">{other.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div><SpecialSection /></section> : null,
-    tutorials: <TutorialsSection />,
+    tutorials: null,
   };
   const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
   const freeCount = displayedServices.filter((service) => service.kind === "free").length;
