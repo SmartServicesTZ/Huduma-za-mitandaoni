@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { verifyFirebaseIdToken } from "./firebase-auth.js";
 import {
   adminDelete,
   adminWrite,
@@ -66,7 +66,6 @@ const webhook: HttpRoute = fimipayWebhook;
 function paymentFlowsEnabled(env: Env) {
   return String(env.PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() === "true"; // Keep payments OFF by default; enable only after live credentials/webhook verification.
 }
-const firebaseJwks = createRemoteJWKSet(new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"));
 
 function allowedOrigins(env: Env) {
   return new Set((env.ALLOWED_ORIGINS ?? "https://smartservicestz.github.io,https://steward-tz.github.io")
@@ -107,34 +106,13 @@ function statusForError(code: string) {
   return statuses[code] ?? 500;
 }
 
-async function verifyFirebaseIdToken(request: Request, env: Env) {
-  const authorization = request.headers.get("Authorization") ?? "";
-  const match = /^Bearer\s+(.+)$/i.exec(authorization);
-  if (!match) throw new ApiError("unauthenticated", "Ingia kwanza.");
-  const projectId = env.FIREBASE_PROJECT_ID;
-  if (!projectId) throw new Error("Firebase project is not configured.");
-  try {
-    const verified = await jwtVerify(match[1], firebaseJwks, {
-      algorithms: ["RS256"],
-      audience: projectId,
-      issuer: `https://securetoken.google.com/${projectId}`,
-    });
-    const uid = verified.payload.sub;
-    if (typeof uid !== "string" || uid.length < 1 || uid.length > 128) throw new Error("invalid sub");
-    const email = typeof verified.payload.email === "string" ? verified.payload.email : undefined;
-    return { uid, email };
-  } catch {
-    throw new ApiError("unauthenticated", "Kikao cha kuingia kimeisha au si sahihi. Ingia tena.");
-  }
-}
-
 async function handleCallable(request: Request, name: string, cors: Headers, env: Env) {
   const descriptor = callableRoutes[name];
   if (!descriptor) return jsonResponse({ error: { code: "not-found", message: "Huduma ya API haikupatikana." } }, 404, cors);
   if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
   const contentLength = Number(request.headers.get("Content-Length") ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 1024 * 1024) return jsonResponse({ error: { code: "invalid-argument", message: "Ombi limezidi ukubwa unaoruhusiwa." } }, 413, cors);
-  const auth = await verifyFirebaseIdToken(request, env);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
   let body: unknown;
   try {
     const text = await request.text();
@@ -188,7 +166,7 @@ async function handleLipaDocumentUpload(request: Request, cors: Headers, env: En
   if (Number.isFinite(contentLength) && contentLength > 11 * 1024 * 1024) {
     return jsonResponse({ error: { code: "invalid-argument", message: "Picha imezidi MB 10." } }, 413, cors);
   }
-  const auth = await verifyFirebaseIdToken(request, env);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
   await enforceAccountRestriction(auth.uid, "submitLipaApplication");
   let form: FormData;
   try { form = await request.formData(); } catch { return jsonResponse({ error: { code: "invalid-argument", message: "Muundo wa picha si sahihi." } }, 400, cors); }
@@ -217,7 +195,7 @@ async function handleServiceDocumentUpload(request: Request, cors: Headers, env:
   if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
   const contentLength = Number(request.headers.get("Content-Length") ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 6 * 1024 * 1024) return jsonResponse({ error: { code: "invalid-argument", message: "Picha imezidi MB 5." } }, 413, cors);
-  const auth = await verifyFirebaseIdToken(request, env);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
   await enforceAccountRestriction(auth.uid, "createServiceApplication");
   if (!env.LIPA_DOCUMENTS) return jsonResponse({ error: { code: "unavailable", message: "Hifadhi ya picha haijasanidiwa." } }, 503, cors);
   let form: FormData;
@@ -244,7 +222,7 @@ async function handleServiceDocumentUpload(request: Request, cors: Headers, env:
 
 async function handleServiceDocumentDelete(request: Request, cors: Headers, env: Env) {
   if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
-  const auth = await verifyFirebaseIdToken(request, env);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
   if (!env.LIPA_DOCUMENTS) return jsonResponse({ data: { ok: true } }, 200, cors);
   const body = await request.json().catch(() => null) as { path?: unknown } | null;
   const path = String(body?.path ?? "");
@@ -255,7 +233,7 @@ async function handleServiceDocumentDelete(request: Request, cors: Headers, env:
 
 async function handleServiceDocumentDownload(request: Request, cors: Headers, env: Env) {
   if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
-  const auth = await verifyFirebaseIdToken(request, env);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
   const query = new URL(request.url).searchParams;
   const applicationId = query.get("applicationId")?.trim() ?? "";
   const fieldName = query.get("fieldName")?.trim() ?? "";
@@ -291,7 +269,7 @@ async function handleServiceDocumentDownload(request: Request, cors: Headers, en
 
 async function handleLipaDocumentDownload(request: Request, cors: Headers, env: Env) {
   if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
-  const auth = await verifyFirebaseIdToken(request, env);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
   const query = new URL(request.url).searchParams;
   const applicationId = query.get("applicationId")?.trim() ?? "";
   const fieldName = query.get("fieldName")?.trim() ?? "";
@@ -398,7 +376,7 @@ const worker = {
       if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
       return withWorkerEnv(env, async () => {
         try {
-          await verifyFirebaseIdToken(request, env);
+          await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
           const keyId = typeof env.CLOUDFLARE_TURN_KEY_ID === "string" ? env.CLOUDFLARE_TURN_KEY_ID.trim() : "";
           const keySecret = typeof env.CLOUDFLARE_TURN_KEY_SECRET === "string" ? env.CLOUDFLARE_TURN_KEY_SECRET.trim() : "";
           if (!keyId || !keySecret) return jsonResponse({ error: { code: "failed-precondition", message: "TURN relay bado haijasanidiwa kwenye seva." } }, 412, cors);
