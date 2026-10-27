@@ -1400,6 +1400,3 @@ export async function reportChatUser(uid: string, targetUid: string, roomId: str
 }
 
 
-
-  return invokeWorker<{ sent: number; failed: number; attempted?: number; message?: string }>("sendPushNotification", data);
-}
