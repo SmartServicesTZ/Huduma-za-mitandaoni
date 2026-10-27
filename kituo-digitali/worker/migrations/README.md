@@ -4,7 +4,7 @@
 
 Firestore remains the application's source of truth. The D1 schema and repository in this branch are isolated PoC tooling; production handlers remain Firestore-backed. No production data was copied, no production Worker or website was deployed/changed, and no cutover was performed.
 
-The only D1 target authorized for test inspection is `smartservicestz-poc-clean` (`b2b331d9-fb25-416d-890a-269d07346faf`). The older `smartservicestz-poc` database is out of scope. Remote read-only checks found the expected PoC schema and synthetic fixtures; `d1_migrations` was absent. Wrangler OAuth is still unauthenticated, so no remote migration command was run.
+The only D1 target authorized for test inspection is `smartservicestz-poc-clean` (`b2b331d9-fb25-416d-890a-269d07346faf`). The older `smartservicestz-poc` database is out of scope. A fresh read-only `sqlite_master` query on 2026-10-27 confirmed the 19 application tables and 14 named indexes from the PoC schema; Cloudflare's internal `_cf_KV` table is not an application migration table. The query response reported `changed_db=false` and `rows_written=0`; `d1_migrations` was absent. Wrangler OAuth is still unauthenticated, so no remote migration command was run.
 
 ## Source-to-target mapping and decisions still required
 
@@ -26,8 +26,10 @@ These are recommendations for review, not adopted business rules. Keep Firestore
 
 - `src/firebase-auth.ts` extracts the existing Firebase ID-token verifier without changing its RS256, issuer, audience or UID checks; synthetic local-JWKS tests cover acceptance and rejection cases.
 - `src/d1-migration-checkpoints.ts` provides bound, state-idempotent checkpoint upsert/read and count/checksum comparison primitives for migration rehearsal. It records metadata only; it does not read Firestore or move application records.
+- `scripts/d1-poc-schema-contract.py` validates all 19 migration tables, 14 explicit indexes, documented constraints, the five read-only D1 repository SELECTs, and checkpoint upsert/read SQL against synthetic in-memory SQLite data; it does not access Firestore or remote services.
 - `scripts/d1-poc-backup-restore-check.sh` backs up only the local PoC D1 database and restores into a fresh temporary local persistence directory, verifying synthetic fixtures.
-- `.github/workflows/worker-ci.yml` runs Worker tests, TypeScript, dry-run build, local PoC migration/fixture checks and the local backup/restore rehearsal. It uses read-only GitHub contents permission and no secrets.
+- Seven new synthetic-only characterization suites cover current Firestore behavior for users/permissions, token adjustments, payment-pending webhooks, NIDA, Lipa, service applications/licenses, and audit/messages/FCM. They do not wire D1 or choose new business policy.
+- `.github/workflows/worker-ci.yml` runs the schema contract, Worker tests, TypeScript, dry-run build, local PoC migration/fixture checks and the local backup/restore rehearsal. It uses read-only GitHub contents permission and no secrets.
 
 ## Safe rehearsal procedure
 
@@ -36,6 +38,7 @@ From `kituo-digitali/worker`:
 ```sh
 pnpm test
 pnpm check
+pnpm d1:poc:schema-contract # in-memory synthetic schema/repository contract test
 pnpm build                 # Wrangler dry-run; does not deploy
 pnpm d1:poc:migrate:local  # local sandbox only
 pnpm d1:poc:verify:local
@@ -50,6 +53,6 @@ Rollback for the current local rehearsal means discarding its temporary restore 
 
 ## Verification notes
 
-Verified locally on 2026-10-27 in this branch: `pnpm test` passed **44/44**; `pnpm check` passed; `pnpm build` passed in Wrangler `--dry-run` mode; `pnpm d1:poc:backup-restore:local` passed and restored the synthetic user with balances 2/5 plus the synthetic service into a fresh temporary local persistence directory. Backup SHA-256: `13b1230ee334888e15f049faa7aa1499cfa1f534d7d268acfe13333264cdee9b`.
+Verified locally on 2026-10-27 in this branch: `pnpm test` passed **56/56**, including the new synthetic characterization tests; `pnpm check` passed; `pnpm d1:poc:schema-contract` passed (19 tables, 14 explicit indexes, five read-only repository SELECTs and checkpoint SQL validated with synthetic data); `pnpm build` passed in Wrangler `--dry-run` mode; `pnpm d1:poc:backup-restore:local` passed and restored the synthetic user with balances 2/5 plus the synthetic service into a fresh temporary local persistence directory. Backup SHA-256: `13b1230ee334888e15f049faa7aa1499cfa1f534d7d268acfe13333264cdee9b`.
 
 CI is configured to run only local PoC commands; it does not authenticate to Cloudflare or access the remote test database. A passing local build/test is not evidence of remote migration tracking or production deployment.

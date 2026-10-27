@@ -51,6 +51,9 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate synthetic D1 schema and repository contract
+        run: pnpm --dir worker d1:poc:schema-contract
+
       - name: Worker tests
         run: pnpm --dir worker test
 
