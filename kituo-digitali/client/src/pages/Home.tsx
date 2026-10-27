@@ -2,7 +2,7 @@ import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "wouter";
 import {
-  BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, Music2, Palette, Plane, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
+  BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
