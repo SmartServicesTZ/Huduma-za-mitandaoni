@@ -31,7 +31,7 @@ pnpm exec wrangler d1 execute smartservicestz-poc --local --file=migrations/0001
 pnpm exec wrangler d1 execute smartservicestz-poc --local --command="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
 ```
 
-The remote PoC database was created separately in Cloudflare and is empty until the migration is applied. Apply remotely only after reviewing the SQL:
+The remote PoC database was created separately in Cloudflare and the schema has now been applied and verified. It contains schema objects only; user and service record counts are both zero. Re-applying the migration is safe because the DDL uses `IF NOT EXISTS` and the version marker uses `INSERT OR IGNORE`. For any future fresh environment, apply only after reviewing the SQL:
 
 ```sh
 pnpm exec wrangler d1 execute smartservicestz-poc --remote --file=migrations/0001_poc_schema.sql
