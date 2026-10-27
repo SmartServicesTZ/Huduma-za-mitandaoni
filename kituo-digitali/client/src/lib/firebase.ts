@@ -314,6 +314,11 @@ export async function signOutFirebaseUser() {
   if (uid) authClaimsInFlight.delete(uid);
 }
 
+export async function getFirebaseProfileOnce(uid: string): Promise<FirebaseProfile | null> {
+  const snapshot = await getDocFromServer(doc(firestore, "users", uid));
+  return snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null;
+}
+
 export function subscribeToProfile(uid: string, callback: (profile: FirebaseProfile | null) => void, onError?: (error: unknown) => void) {
   return onSnapshot(doc(firestore, "users", uid), (snapshot) => callback(snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null), onError);
 }
