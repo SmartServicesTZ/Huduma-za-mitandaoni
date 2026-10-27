@@ -3,11 +3,11 @@ import {
   authPersistenceReady,
   ensureAuthenticatedProfile,
   ensureUserProfile,
+  getFirebaseProfileOnce,
   firebaseAuth,
   onAuthStateChanged,
   saveFirebaseProfile,
   signOutFirebaseUser,
-  subscribeToProfile,
   syncFirebaseAuthClaims,
   type FirebaseRoleClaims,
   type FirebaseProfile,
@@ -53,15 +53,16 @@ export function useAuth(options?: UseAuthOptions) {
     return () => { active = false; unsubscribe(); };
   }, []);
 
+  // Load the profile once per sign-in instead of keeping a live Firestore
+  // listener in every useAuth() instance (Home, header, and admin can mount
+  // separately). This avoids duplicate reads on every profile document change.
   useEffect(() => {
     if (!firebaseUser) return;
     let active = true;
-    const unsubscribe = subscribeToProfile(
-      firebaseUser.uid,
-      (nextProfile) => { if (active) setProfile(nextProfile); },
-      (cause) => { if (active) setError(cause); },
-    );
-    return () => { active = false; unsubscribe(); };
+    void getFirebaseProfileOnce(firebaseUser.uid)
+      .then((nextProfile) => { if (active) setProfile(nextProfile); })
+      .catch((cause) => { if (active) setError(cause); });
+    return () => { active = false; };
   }, [firebaseUser]);
 
   const logout = useCallback(async () => {
@@ -89,9 +90,15 @@ export function useAuth(options?: UseAuthOptions) {
   return {
     user, firebaseUser, profile, loading, error,
     isAuthenticated: Boolean(firebaseUser),
-    refresh: async () => { if (firebaseUser) await ensureUserProfile(firebaseUser); },
+    refresh: async () => {
+      if (!firebaseUser) return;
+      await ensureUserProfile(firebaseUser);
+      setProfile(await getFirebaseProfileOnce(firebaseUser.uid));
+    },
     updateProfile: async (values: Partial<FirebaseProfile>) => {
-      if (firebaseUser) await saveFirebaseProfile(firebaseUser.uid, values);
+      if (!firebaseUser) return;
+      await saveFirebaseProfile(firebaseUser.uid, values);
+      setProfile((current) => ({ ...(current ?? {}), ...values } as FirebaseProfile));
     },
     logout,
   };
