@@ -97,8 +97,10 @@ test("claimRegistrationPhone creates one canonical server-owned phone reservatio
       auth: { uid, email: `${phone}@login.huduma-za-mtandao.local` },
       data: { phone: "0712 345 678", firstName: "Mwanachama", lastName: "Test" },
     }));
-    assert.equal(result.ok, true);
-    assert.equal(result.profileCreated, true);
+    assert.ok(result && typeof result === "object");
+    const outcome = result as { ok?: unknown; profileCreated?: unknown };
+    assert.equal(outcome.ok, true);
+    assert.equal(outcome.profileCreated, true);
     const commit = calls.find((call) => call.url.includes(":commit"));
     assert.ok(commit);
     assert.equal(commit.body.writes[0].currentDocument.exists, false);
