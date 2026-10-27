@@ -94,13 +94,19 @@ function requirePageSize(value: number | undefined): number {
   return size;
 }
 
+function jsonScalar(value: null | string | boolean | number): string {
+  const encoded = JSON.stringify(value);
+  if (encoded === undefined) throw new Error("Migration values must be JSON-compatible.");
+  return encoded;
+}
+
 function canonicalize(value: unknown): string {
   if (value === null || typeof value === "string" || typeof value === "boolean") {
-    return JSON.stringify(value);
+    return jsonScalar(value);
   }
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw new Error("Migration values cannot contain non-finite numbers.");
-    return JSON.stringify(value);
+    return jsonScalar(value);
   }
   if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
   if (typeof value === "object") {
