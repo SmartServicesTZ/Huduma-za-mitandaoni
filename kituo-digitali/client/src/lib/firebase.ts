@@ -881,16 +881,16 @@ export async function adminListLipaApplications() {
 export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
-  let retryDelay = 30_000;
+  let retryDelay = 60_000;
   const load = async () => {
     try {
       const rows = await adminListLipaApplications();
       if (!stopped) callback(rows);
-      retryDelay = 30_000;
+      retryDelay = 120_000;
     } catch (error) {
       if (!stopped) onError?.(error);
       // Back off during quota/network failures instead of hammering Firestore.
-      retryDelay = Math.min(retryDelay * 2, 5 * 60_000);
+      retryDelay = Math.min(retryDelay * 2, 10 * 60_000);
     } finally {
       if (!stopped) timer = setTimeout(load, retryDelay);
     }
