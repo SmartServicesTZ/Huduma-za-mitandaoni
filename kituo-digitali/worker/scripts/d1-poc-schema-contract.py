@@ -6,10 +6,12 @@ import sqlite3
 
 WORKER_DIR = Path(__file__).resolve().parents[1]
 MIGRATION_FILE = WORKER_DIR / "migrations/0001_smartservicestz_poc.sql"
+ROLE_MIGRATION_FILE = WORKER_DIR / "migrations/0002_expand_user_roles.sql"
 REPOSITORY_FILE = WORKER_DIR / "src/d1-poc-repository.ts"
 CHECKPOINT_FILE = WORKER_DIR / "src/d1-migration-checkpoints.ts"
 
 migration_sql = MIGRATION_FILE.read_text(encoding="utf-8")
+role_migration_sql = ROLE_MIGRATION_FILE.read_text(encoding="utf-8")
 repository_source = REPOSITORY_FILE.read_text(encoding="utf-8")
 checkpoint_source = CHECKPOINT_FILE.read_text(encoding="utf-8")
 connection = sqlite3.connect(":memory:")
@@ -72,6 +74,62 @@ for role in supported_roles:
 connection.commit()
 expect_integrity_error("INSERT INTO users(uid, role) VALUES (?, ?)", ("contract-role-invalid", "viewer"), "D1 role CHECK")
 expect_integrity_error("INSERT INTO users(uid, active) VALUES (?, ?)", ("contract-active-invalid", 2), "D1 active CHECK")
+
+# Rehearse the role-constraint upgrade from the exact legacy remote role CHECK.
+current_role_check = "role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user','admin','moderator','support','super_admin'))"
+legacy_role_check = "role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user','admin','super_admin'))"
+assert migration_sql.count(current_role_check) == 1, "expected the current five-role users CHECK exactly once"
+legacy_migration_sql = migration_sql.replace(current_role_check, legacy_role_check)
+legacy = sqlite3.connect(":memory:")
+legacy.execute("PRAGMA foreign_keys = ON")
+legacy.executescript(legacy_migration_sql)
+legacy.executescript("""
+INSERT INTO user_permissions(uid, permission) VALUES ('poc-user-001', 'synthetic.migration-test');
+INSERT INTO token_ledger(id, uid, token_type, delta, reason, idempotency_key)
+VALUES ('migration-ledger-001', 'poc-user-001', 'service', 1, 'synthetic migration test', 'migration-idempotency-001');
+INSERT INTO payment_orders(id, uid, status, amount_tzs, idempotency_key)
+VALUES ('migration-payment-001', 'poc-user-001', 'pending', 0, 'migration-payment-key-001');
+INSERT INTO nida_requests(id, uid, status, charged_ledger_id)
+VALUES ('migration-nida-001', 'poc-user-001', 'pending', 'migration-ledger-001');
+INSERT INTO service_applications(id, uid, service_id)
+VALUES ('migration-application-001', 'poc-user-001', 'poc-service-001');
+INSERT INTO lipa_applications(id, uid) VALUES ('migration-lipa-001', 'poc-user-001');
+INSERT INTO licenses(id, uid, license_number) VALUES ('migration-license-001', 'poc-user-001', 'MIG-TEST-001');
+INSERT INTO file_objects(object_key, owner_uid, mime_type, byte_size)
+VALUES ('migration-file-001', 'poc-user-001', 'application/octet-stream', 1);
+INSERT INTO admin_actions(id, actor_uid, action, entity_type, entity_id)
+VALUES ('migration-action-001', 'poc-user-001', 'synthetic-test', 'user', 'poc-user-001');
+INSERT INTO idempotency_keys(key, operation, uid)
+VALUES ('migration-rehearsal-key', 'synthetic-test', 'poc-user-001');
+""")
+preserved_tables = [
+    "users", "user_permissions", "services", "token_balances", "token_ledger",
+    "payment_orders", "nida_requests", "service_applications", "lipa_applications",
+    "licenses", "file_objects", "admin_actions", "idempotency_keys",
+]
+def rows_by_table(db: sqlite3.Connection, table: str) -> list[tuple[object, ...]]:
+    return sorted((tuple(row) for row in db.execute(f'SELECT * FROM "{table}"')), key=repr)
+
+before_migration = {table: rows_by_table(legacy, table) for table in preserved_tables}
+legacy.executescript(role_migration_sql)
+after_migration = {table: rows_by_table(legacy, table) for table in preserved_tables}
+assert before_migration == after_migration, "role migration changed or lost existing user/domain rows"
+assert not list(legacy.execute("PRAGMA foreign_key_check")), "role migration introduced a foreign-key violation"
+assert not any(name.startswith("__role_mig_") for (name,) in legacy.execute("SELECT name FROM sqlite_master WHERE type='table'")), "migration staging tables were not removed"
+legacy.execute("INSERT INTO users(uid, role) VALUES ('migration-role-moderator', 'moderator')")
+legacy.execute("INSERT INTO users(uid, role) VALUES ('migration-role-support', 'support')")
+legacy.commit()
+legacy.execute("DELETE FROM users WHERE uid IN ('migration-role-moderator', 'migration-role-support')")
+legacy.commit()
+expect_role_invalid = False
+try:
+    legacy.execute("INSERT INTO users(uid, role) VALUES ('migration-role-invalid', 'viewer')")
+except sqlite3.IntegrityError:
+    expect_role_invalid = True
+assert expect_role_invalid, "role migration must continue rejecting unsupported roles"
+migration_preserved_row_count = sum(len(rows) for rows in before_migration.values())
+legacy.close()
+
 connection.execute("INSERT INTO users(uid) VALUES (?)", ("contract-check-user",))
 connection.commit()
 expect_integrity_error("INSERT INTO token_balances(uid, nida_tokens) VALUES (?, ?)", ("contract-check-user", -1), "token balance nonnegative CHECK")
@@ -135,6 +193,6 @@ assert not (absent_domain_tables & actual_tables), "review expected absent domai
 worker_entry = (WORKER_DIR / "src/index.ts").read_text(encoding="utf-8")
 assert "d1-poc-repository" not in worker_entry and "d1-migration-checkpoints" not in worker_entry, "PoC repository must stay isolated from the production Worker entrypoint"
 
-print(f"PASS: {len(actual_tables)} tables, {len(actual_indexes)} explicit indexes, documented checks, {len(repository_queries)} read-only repository SELECTs and checkpoint upsert/read SQL validated with synthetic data.")
+print(f"PASS: {len(actual_tables)} tables, {len(actual_indexes)} explicit indexes, documented checks, {len(repository_queries)} read-only repository SELECTs and checkpoint SQL; role migration preserved {migration_preserved_row_count} synthetic rows, accepted the five supported roles, rejected unsupported roles, and passed FK checks.")
 print("Known absent workflow tables: " + ", ".join(sorted(absent_domain_tables)))
 print("No Firestore, network, Cloudflare API, remote D1, or production Worker was accessed.")
