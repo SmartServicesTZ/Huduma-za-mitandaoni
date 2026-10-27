@@ -1,37 +1,55 @@
-# SmartServicesTZ — D1 proof of concept
+# SmartServicesTZ — Firestore to D1 migration work
 
-Status: isolated proof-of-concept only. Firestore remains production source of truth. No production Worker, website, data, billing, or cutover changes are part of this work.
+## Current state and boundaries
 
-## Target and scope
+Firestore remains the application's source of truth. The D1 schema and repository in this branch are isolated PoC tooling; production handlers remain Firestore-backed. No production data was copied, no production Worker or website was deployed/changed, and no cutover was performed.
 
-The PoC binding is `smartservicestz-poc-clean` (Cloudflare D1 UUID `b2b331d9-fb25-416d-890a-269d07346faf`) in `wrangler.poc.toml`. The older `smartservicestz-poc` database was not accessed. The D1 binding is not connected to production handlers.
+The only D1 target authorized for test inspection is `smartservicestz-poc-clean` (`b2b331d9-fb25-416d-890a-269d07346faf`). The older `smartservicestz-poc` database is out of scope. Remote read-only checks found the expected PoC schema and synthetic fixtures; `d1_migrations` was absent. Wrangler OAuth is still unauthenticated, so no remote migration command was run.
 
-## Latest verification — 2026-10-27
+## Source-to-target mapping and decisions still required
 
-### Local checks
+These are recommendations for review, not adopted business rules. Keep Firestore authoritative until each mapping, access policy, and test is explicitly reviewed.
 
-- `pnpm test`: PASS — 34 passed, 0 failed.
-- `pnpm check`: PASS — TypeScript completed with no errors.
-- The earlier local D1 migration and `pnpm d1:poc:verify:local` succeeded; synthetic user `poc-user-001` has NIDA/service balances 2/5 and `poc-service-001` was present.
+| Domain | Firestore behavior observed | Current D1 PoC coverage | Recommendation and effect; unresolved decision |
+|---|---|---|---|
+| Users, roles, permissions, restrictions | `users/{uid}` includes profile fields, role, permissions, `accountStatus`, `accessMode`, `allowedActions`, restriction notices and password-reset state. Current role set includes `user`, `admin`, `moderator`, `support`, `super_admin`. | `users` permits only `user`, `admin`, `super_admin`; `user_permissions` stores individual permission rows. D1 user reads are read-only. | Prefer normalized role/permission mapping with a separate role catalogue and explicit restriction fields. Do not silently map `moderator`/`support` to `admin` or discard account restrictions. This may require a schema migration and compatibility layer; without it, access may be broadened or users locked out. |
+| Service catalog and CMS | Firestore collections include `services`, `siteSettings`, `announcements`, `tutorialVideos`, `serviceLocks`; catalog defaults and homepage ordering affect client behavior. | D1 has `services`, `site_settings`, `announcements`, `tutorial_videos`, `service_locks`; only a visible-service read helper exists. | Define per-collection field validation and explicit mappings for visibility, lock state, order, form fields, token cost, defaults, and initialization flags. Keep JSON payloads only where their version/validation contract is tested. Otherwise content can disappear, reorder, or behave differently. |
+| Token balances and ledger | Firestore uses legacy `tokenBalance` and newer `tokenBalanceOther`/`tokenBalanceNida`; purchase, adjustment, consumption and bonus paths do not all update the same fields identically. | `token_balances(nida_tokens, service_tokens)` and `token_ledger` with unique idempotency key; repository is currently read-only. | First select one canonical balance rule by tracing/reconciling each handler and historical records. Preserve ledger provenance and use one atomic balance+ledger transaction with duplicate-key conflict tests. No balance precedence or conversion is chosen here; guessing could duplicate or erase token value. |
+| Payments | FimiPay order creation, webhook verification and settlement use Firestore transactions; payment flows are disabled by default. No refund/reconciliation handler was found in the audited path. | `payment_orders` and unique idempotency columns exist, but there is no D1 settlement implementation or provider-event table. | Keep exact provider verification and transaction idempotency; consider an immutable provider-event/reconciliation record. Refund, chargeback and ambiguous `CREATE_UNKNOWN` handling need business/provider decisions and cannot be inferred from the table schema. No live provider was contacted. |
+| NIDA requests/results/refunds | Requests include owner/contact, status, administrative assignment, rejection fields, raw NIDA result, token debit and notifications. The audited rejection path did not show a refund. | `nida_requests` stores hashes and charged-ledger link, not the raw operational fields/result; token tables are generic. No D1 workflow methods exist. | Decide whether raw NIDA results are retained, encrypted or stored separately, who can read them, and retention/deletion period. Separately decide refund/compensation on rejection. Until then, do not copy raw results or issue automatic refunds; each choice affects privacy, UI access and user balances. |
+| Lipa applications/rewards | Firestore stores network configuration, submitted fields/files, status, replies, reward qualification/payment tracking, notifications and audit. | `lipa_applications` has generic status and `metadata_json`; no dedicated network, reward, report or open-application model. | Model network/application/reward events explicitly and make retries idempotent. Define network eligibility, verified-transaction criteria, reward amount, duplicate-open policy and paid-state transitions with the business owner first; changing these could cause duplicate or incorrect payouts. |
+| Service applications and licenses | Firestore maintains submitted fields, status/replies, open markers, service usage, license applications and separate license-number reservations. | `service_applications`, `licenses` (unique license number), `license_templates`, `service_locks` and generic idempotency table exist; no D1 write flow exists. | Map lifecycle fields and define a reservation/expiry/collision strategy plus an explicit status transition graph. Keep application, token debit, ledger and license issuance atomic where appropriate. The existing five-digit suffix and eligibility rules must not be changed without product approval. |
+| Files and retention | Staged/final application documents use Firebase Storage or the R2 adapter; Worker endpoints perform identity/owner checks and short-lived downloads. | `file_objects` records key, owner, application, MIME, size, optional hash and status; no D1 file lifecycle is wired. | Store metadata/references in D1 and bytes in the chosen object store; validate actual content, owner/application linkage, deletion/orphan cleanup and retention. Do not copy file bytes or widen public access. Storage provider, retention, and deletion windows require approval. |
+| Audit, messages, push and idempotency | Firestore uses `adminActions`, `auditLogs`, `messages`, nested chat messages and `fcmTokens`; push delivery is an external side effect. | `admin_actions`, `idempotency_keys` and some domain idempotency columns exist; no message/outbox/push-token D1 flow exists. | Preserve immutable audit history and consider a transactional outbox with deduplication and retry state. Delivery guarantees (at-most-once vs retry/at-least-once), chat privacy and token-retention policy require decisions; an outbox alone cannot guarantee exactly-once external delivery. |
 
-### Remote D1, read-only schema/journal review
+## Work completed in this branch
 
-- Rechecked the target by exact name and UUID through the authorized Cloudflare integration.
-- A read-only `sqlite_master` query returned 19 application tables, D1 system table `_cf_KV`, and 13 named indexes. The table and named-index DDL was reviewed against `migrations/0001_smartservicestz_poc.sql`; expected definitions were present. Synthetic fixtures remained `poc-user-001` (2/5) and `poc-service-001`.
-- `SELECT name FROM sqlite_master WHERE type='table' AND name='d1_migrations'` returned no rows. Wrangler CLI `pnpm exec wrangler whoami` reports `You are not authenticated`.
-- `wrangler d1 migrations apply` was **not run**. The schema already exists while Wrangler's migration journal is absent. There is no verified, non-destructive Wrangler reconciliation procedure in this task; applying it could repeat an untracked schema migration. No D1 schema or data was changed during this task.
-- A prior session submitted the idempotent SQL through Cloudflare's D1 API; the SQL succeeded with no changes because the objects and seeds already existed. That does not create or prove Wrangler migration tracking.
-- A prior remote synthetic write/read/idempotency/cleanup test passed; duplicate idempotency key was rejected and temporary rows were verified at zero after cleanup.
-- Cloudflare's database-list metadata previously reported `num_tables: 0`, inconsistent with live `sqlite_master`; live D1 query results were used for schema evidence.
+- `src/firebase-auth.ts` extracts the existing Firebase ID-token verifier without changing its RS256, issuer, audience or UID checks; synthetic local-JWKS tests cover acceptance and rejection cases.
+- `src/d1-migration-checkpoints.ts` provides bound, state-idempotent checkpoint upsert/read and count/checksum comparison primitives for migration rehearsal. It records metadata only; it does not read Firestore or move application records.
+- `scripts/d1-poc-backup-restore-check.sh` backs up only the local PoC D1 database and restores into a fresh temporary local persistence directory, verifying synthetic fixtures.
+- `.github/workflows/worker-ci.yml` runs Worker tests, TypeScript, dry-run build, local PoC migration/fixture checks and the local backup/restore rehearsal. It uses read-only GitHub contents permission and no secrets.
 
-## Wrangler authentication needed
+## Safe rehearsal procedure
 
-Wrangler OAuth is still blocked. To authenticate safely, run `pnpm exec wrangler login` from the `kituo-digitali/worker` directory in the same terminal environment that will run Wrangler, open its generated URL in a browser, and review/approve the Cloudflare OAuth permissions if acceptable. Do not paste a password or API token into chat. Wrangler's OAuth request includes D1 write access and other Cloudflare scopes; inspect the requested permissions before approval. After login, recheck target name/UUID, schema, and migration journal before considering any migration command. Do not delete or alter existing schema to force tracking.
+From `kituo-digitali/worker`:
 
-## Safety and implementation boundaries
+```sh
+pnpm test
+pnpm check
+pnpm build                 # Wrangler dry-run; does not deploy
+pnpm d1:poc:migrate:local  # local sandbox only
+pnpm d1:poc:verify:local
+pnpm d1:poc:backup-restore:local
+```
 
-No production data is copied. Firebase Authentication remains the identity provider; Firestore remains production source of truth. No production configuration, website, billing, or cutover has changed. Future token/payment/license mutations must use transactional batches and unique idempotency keys. D1 production integration, auth-boundary review, backup, backfill, shadow reads, and rollback/cutover work remain out of scope.
+The backup/restore command uses `--local` for both export and restore. It writes a SQL backup (retained at the printed path) and removes only its own temporary restore directory. To select a persistent output directory, run `bash scripts/d1-poc-backup-restore-check.sh /path/to/backup-directory`. It never targets remote D1. A real remote backup/restore drill still requires Wrangler OAuth and a separately reviewed test procedure.
 
-## Repository groundwork
+For any future synthetic backfill rehearsal, use stable source document IDs, explicit versioned mapping functions, bounded batches, a checkpoint per domain/batch, and compare both counts and deterministic checksums. The checkpoint helpers are only bookkeeping primitives; no Firestore reader, backfill worker, reconciliation scanner or shadow-read path is implemented yet. Production shadow reads and data migration remain prohibited without separate authorization.
 
-`src/d1-poc-repository.ts` contains read-only D1 helpers and `test/d1-poc-repository.test.ts` covers binding and result behavior. The schema is not connected to production handlers. Firebase ID token verification, R2 authorization, backfill, shadow reads, and cutover/rollback controls require a separate review and implementation.
+Rollback for the current local rehearsal means discarding its temporary restore directory and using the retained SQL dump to recreate an isolated local copy. This is not a production rollback plan. Before any production change, require a verified backup/restore, tested recovery-point objective, data reconciliation, monitoring, abort criteria, and explicit go/no-go approval.
+
+## Verification notes
+
+Verified locally on 2026-10-27 in this branch: `pnpm test` passed **44/44**; `pnpm check` passed; `pnpm build` passed in Wrangler `--dry-run` mode; `pnpm d1:poc:backup-restore:local` passed and restored the synthetic user with balances 2/5 plus the synthetic service into a fresh temporary local persistence directory. Backup SHA-256: `13b1230ee334888e15f049faa7aa1499cfa1f534d7d268acfe13333264cdee9b`.
+
+CI is configured to run only local PoC commands; it does not authenticate to Cloudflare or access the remote test database. A passing local build/test is not evidence of remote migration tracking or production deployment.

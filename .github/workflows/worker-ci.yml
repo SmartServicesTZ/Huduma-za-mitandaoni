@@ -1,0 +1,70 @@
+name: Worker CI
+
+on:
+  push:
+    branches:
+      - main
+      - "poc/**"
+      - "migration/**"
+    paths:
+      - "kituo-digitali/worker/**"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - ".github/workflows/worker-ci.yml"
+  pull_request:
+    paths:
+      - "kituo-digitali/worker/**"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - ".github/workflows/worker-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worker:
+    name: Worker tests, checks, and local D1 rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: kituo-digitali
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: kituo-digitali/pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Worker tests
+        run: pnpm --dir worker test
+
+      - name: TypeScript check
+        run: pnpm --dir worker check
+
+      - name: Wrangler dry-run build
+        run: pnpm --dir worker build
+
+      - name: Initialize isolated local D1 PoC schema
+        run: pnpm --dir worker d1:poc:migrate:local
+
+      - name: Verify local synthetic fixtures
+        run: pnpm --dir worker d1:poc:verify:local
+
+      - name: Rehearse local D1 backup and restore
+        run: pnpm --dir worker d1:poc:backup-restore:local
