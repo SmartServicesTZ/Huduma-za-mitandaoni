@@ -30,6 +30,8 @@ These are recommendations for review, not adopted business rules. Keep Firestore
 
 ## Work completed in this branch
 
+- `src/firestore-d1-backfill.ts` adds an adapter-neutral, paginated, resumable backfill orchestration primitive with deterministic per-record SHA-256 checksums, idempotency keys, explicit caller-supplied mapping, and checkpoint advancement only after a page succeeds. `test/firestoreD1Backfill.test.ts` covers synthetic ordering, resume, stable retry keys, duplicate IDs, and JSON validation. This is scaffolding only: it is not wired to Firebase, D1 SQL, or production handlers, and no real data is read or copied.
+
 - `src/firebase-auth.ts` extracts the existing Firebase ID-token verifier without changing its RS256, issuer, audience or UID checks; synthetic local-JWKS tests cover acceptance and rejection cases.
 - `src/d1-migration-checkpoints.ts` provides bound, state-idempotent checkpoint upsert/read and count/checksum comparison primitives for migration rehearsal. It records metadata only; it does not read Firestore or move application records.
 - `migrations/0002_expand_user_roles.sql` rebuilds the isolated PoC `users` table while staging and restoring its dependent rows in FK-safe order. The migration contract test preserves 13 synthetic rows across 13 tables, accepts the five observed roles, rejects an unsupported role, and checks FK integrity.
