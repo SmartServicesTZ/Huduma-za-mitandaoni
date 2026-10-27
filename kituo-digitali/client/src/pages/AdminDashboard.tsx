@@ -194,8 +194,8 @@ export default function AdminDashboard() {
         hasPermission("manageSettings") && needs("cms", "ordering", "services", "serviceControl") ? adminGetSiteSettings() : Promise.resolve(null),
         hasPermission("manageServices") && needs("services", "serviceControl") ? adminListCollection("serviceLocks") : Promise.resolve([]),
         hasPermission("manageServices") && needs("applications", "lipa") ? adminListCollection("lipaServices") : Promise.resolve([]),
-        hasPermission("manageLipaApplications") && needs("applications", "lipa") ? adminListLipaApplications() : Promise.resolve([]),
-        hasPermission("manageServices") && needs("applications") ? adminListServiceApplications() : Promise.resolve([]),
+        Promise.resolve(null), // Maombi ya Lipa hupakiwa na subscription paneli husika tu.
+        Promise.resolve(null), // Maombi ya huduma hupakiwa na subscription paneli husika tu.
         hasPermission("manageUsers") && needs("agents") ? adminListAgentRecords() : Promise.resolve([]),
       ]);
       const [u, s, t, v, a, m, l, logs, settings, locks, networkConfigs, applications, genericApplications, agentRows] = results;
@@ -209,8 +209,8 @@ export default function AdminDashboard() {
       if (logs.status === "fulfilled") setAudit(logs.value); else setDataError((current) => current || "Audit: " + safeError(logs.reason));
       if (locks.status === "fulfilled") setServiceLocks(locks.value); else setDataError((current) => current || "Locks za huduma: " + safeError(locks.reason));
       if (networkConfigs.status === "fulfilled") setLipaServices(networkConfigs.value); else setDataError((current) => current || "Mipangilio ya Lipa: " + safeError(networkConfigs.reason));
-      if (applications.status === "fulfilled") setLipaApplications(applications.value); else setDataError((current) => current || "Maombi ya Lipa: " + safeError(applications.reason));
-      if (genericApplications.status === "fulfilled") setServiceApplications(genericApplications.value); else setDataError((current) => current || "Maombi ya huduma: " + safeError(genericApplications.reason));
+      if (applications.status === "rejected") setDataError((current) => current || "Maombi ya Lipa: " + safeError(applications.reason));
+      if (genericApplications.status === "rejected") setDataError((current) => current || "Maombi ya huduma: " + safeError(genericApplications.reason));
       if (agentRows.status === "fulfilled") setAgentRecords(agentRows.value); else setDataError((current) => current || "Mawakala: " + safeError(agentRows.reason));
       if (settings.status === "fulfilled" && settings.value) {
         const saved = settings.value as Record<string, unknown>;
@@ -224,13 +224,16 @@ export default function AdminDashboard() {
   };
   useEffect(() => { void refresh(); }, [canManage, panel]);
   useEffect(() => {
-    if (!canManageLipaApplications) { setLipaApplications([]); return; }
+    // Usipoll makusanyo ya maombi wakati admin yuko kwenye paneli nyingine.
+    // Paneli ya Lipa ndiyo pekee inayohitaji inbox ya Lipa iwe hai.
+    if (!canManageLipaApplications || panel !== "lipa") { setLipaApplications([]); return; }
     return subscribeToAdminLipaApplications(setLipaApplications, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
-  }, [canManageLipaApplications, firebaseUser?.uid]);
+  }, [canManageLipaApplications, panel, firebaseUser?.uid]);
   useEffect(() => {
-    if (!hasPermission("manageServices")) { setServiceApplications([]); return; }
+    // Maombi ya huduma hupakiwa tu admin anapofungua paneli ya Applications.
+    if (!hasPermission("manageServices") || panel !== "applications") { setServiceApplications([]); return; }
     return subscribeToAdminServiceApplications(setServiceApplications, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
-  }, [canManage, isAdmin, isSuper, firebaseUser?.uid]);
+  }, [canManage, isAdmin, isSuper, panel, firebaseUser?.uid]);
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
   const visibleUsers = useMemo(() => users.filter((item) => `${item.name} ${item.phone} ${item.username}`.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const totalIssued = transactions.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);
