@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { BadgeCheck, Camera, CheckCircle2, Globe2, ImagePlus, LockKeyhole, LogOut, ShieldCheck, UserRound, Bell, Palette, SlidersHorizontal, Eye, History, WalletCards } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Globe2, ImagePlus, LockKeyhole, LogOut, ShieldCheck, UserRound, Bell, Palette, SlidersHorizontal, Eye, History, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { subscribeUserMessages, updatePassword, uploadProfileImage } from "@/lib/firebase";
+import { subscribeUserMessages, updatePassword } from "@/lib/firebase";
 
 export default function AccountPage() {
   const { isAuthenticated, user, profile, firebaseUser, logout, updateProfile: saveProfile } = useAuth();
@@ -12,7 +12,6 @@ export default function AccountPage() {
   const [bio, setBio] = useState("");
   const [language, setLanguage] = useState<"sw" | "en">("sw");
   const [newPassword, setNewPassword] = useState("");
-  const [imageBusy, setImageBusy] = useState(false);
   const [profileBusy, setProfileBusy] = useState(false);
   const [notifications, setNotifications] = useState(true); const [compactMode, setCompactMode] = useState(false); const [showBalance, setShowBalance] = useState(true); const [theme, setTheme] = useState<"system" | "light" | "dark">("dark"); const [accent, setAccent] = useState<"green" | "blue" | "purple">("green"); const [reduceMotion, setReduceMotion] = useState(false); const [sounds, setSounds] = useState(true); const [autoRefresh, setAutoRefresh] = useState(true); const [showOnlineStatus, setShowOnlineStatus] = useState(true); const [confirmActions, setConfirmActions] = useState(true); const [dataSaver, setDataSaver] = useState(false); const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
 
@@ -34,17 +33,7 @@ export default function AccountPage() {
     return subscribeUserMessages(firebaseUser.uid, setMessages, () => toast.error("Imeshindikana kupakia ujumbe."));
   }, [firebaseUser]);
 
-  const chooseProfileImage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !firebaseUser) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { toast.error("Chagua picha ya JPG, PNG au WebP."); return; }
-    if (file.size > 2 * 1024 * 1024) { toast.error("Picha isizidi MB 2."); return; }
-    setImageBusy(true);
-    void uploadProfileImage(firebaseUser.uid, file)
-      .then(() => toast.success("Picha ya wasifu imehifadhiwa."))
-      .catch((error: any) => toast.error(error?.message ?? "Imeshindikana kuhifadhi picha."))
-      .finally(() => { setImageBusy(false); event.target.value = ""; });
-  };
+
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!firstName.trim() || !lastName.trim()) { toast.error("Jaza jina la kwanza na la mwisho."); return; }
@@ -76,7 +65,7 @@ export default function AccountPage() {
     <div className="profile-layout">
       <section className="profile-main-card">
         <div className="profile-card-heading"><div><span className="profile-icon"><UserRound size={20}/></span><div><h2>Account / Wasifu wangu</h2><p>Simu yako ndiyo utambulisho wa akaunti; haiwezi kubadilishwa hapa.</p></div></div></div>
-        <div className="profile-summary"><div className="profile-avatar">{profile?.profileImageUrl ? <img src={profile.profileImageUrl} alt="Picha ya wasifu"/> : <span>{(user?.name ?? "M").slice(0, 1).toUpperCase()}</span>}</div><div className="profile-summary-copy"><strong>{profile?.name ?? user?.name ?? "Mwanachama"} {profile?.verificationStatus === "approved" && <BadgeCheck size={16}/>}</strong><span>Namba iliyosajiliwa: <b>{profile?.phone ?? "—"}</b></span>{profile?.verificationStatus === "approved" ? <span className="profile-verified-badge"><BadgeCheck size={15}/> Verified</span> : <span className="profile-unverified-badge">Verification pending</span>}<label className="profile-image-picker"><Camera size={15}/>{imageBusy ? "Inapakia picha…" : "Badilisha picha"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseProfileImage} disabled={imageBusy || !profile}/></label></div></div>
+        <div className="profile-summary"><div className="profile-avatar">{profile?.profileImageUrl ? <img src={profile.profileImageUrl} alt="Picha ya wasifu"/> : <span>{(user?.name ?? "M").slice(0, 1).toUpperCase()}</span>}</div><div className="profile-summary-copy"><strong>{profile?.name ?? user?.name ?? "Mwanachama"} {profile?.verificationStatus === "approved" && <BadgeCheck size={16}/>}</strong><span>Namba iliyosajiliwa: <b>{profile?.phone ?? "—"}</b></span>{profile?.verificationStatus === "approved" ? <span className="profile-verified-badge"><BadgeCheck size={15}/> Verified</span> : <span className="profile-unverified-badge">Verification pending</span>}<span className="profile-muted">Upakiaji wa picha za wasifu umezimwa kwa muda.</span></div></div>
         <form onSubmit={save} className="profile-form">
           <div className="profile-field-grid"><label>Jina la kwanza<input autoComplete="given-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} maxLength={60} disabled={!profile || profileBusy}/></label><label>Jina la mwisho<input autoComplete="family-name" value={lastName} onChange={(event) => setLastName(event.target.value)} maxLength={60} disabled={!profile || profileBusy}/></label></div>
           <label className="profile-field">Namba ya simu<input type="tel" value={profile?.phone ?? ""} readOnly aria-readonly="true" disabled={!profile}/><small>Inatumika kuingia na haiwezi kubadilishwa ili kuzuia kupoteza utambulisho wa akaunti.</small></label>
