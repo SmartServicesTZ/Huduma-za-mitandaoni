@@ -97,8 +97,8 @@ export default function AccountPage() {
 <div className="profile-setting-row"><span>✓ Thibitisha vitendo muhimu</span><button type="button" className={confirmActions ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!confirmActions; setConfirmActions(value); void saveSetting({confirmActions:value}); }}><i/></button></div>
 <div className="profile-setting-row"><span>📶 Data saver</span><button type="button" className={dataSaver ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!dataSaver; setDataSaver(value); void saveSetting({dataSaver:value}); }}><i/></button></div>
 <div className="settings-divider">Akaunti na faragha</div>
-<div className="settings-action-grid"><Link href="/history">Historia ya shughuli</Link><Link href="/chat">Chat na Magroup</Link><button type="button" onClick={() => void logout()}>Ondoka kwenye akaunti</button></div>
-<div className="settings-shortcuts"><Link href="/chat">💬 Chat & Magroup</Link><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
+<div className="settings-action-grid"><Link href="/history">Historia ya shughuli</Link><button type="button" onClick={() => void logout()}>Ondoka kwenye akaunti</button></div>
+<div className="settings-shortcuts"><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
 <p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
         <section className="profile-side-card support-center-card">
           <div className="profile-side-title"><span className="profile-icon"><Bell size={18}/></span><div><h3>Msaada na Mawasiliano</h3><p>Jaribu hatua hizi kabla ya kuwasiliana na msimamizi.</p></div></div>
