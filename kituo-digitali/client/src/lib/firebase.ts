@@ -72,7 +72,20 @@ function workerBaseUrl() {
   return value.replace(/\/+$/, "");
 }
 
+// Firestore quota protection: after a quota response, pause Worker-backed calls briefly
+// instead of letting repeated UI refreshes immediately hit the same exhausted quota.
+let workerQuotaCooldownUntil = 0;
+const WORKER_QUOTA_COOLDOWN_MS = 60_000;
+
+function isQuotaFailure(status: number, code: string, message: string) {
+  const value = `${code} ${message}`.toLowerCase();
+  return status === 429 || value.includes("resource_exhausted") || value.includes("resource-exhausted") || value.includes("quota exceeded") || value.includes("quota-exceeded");
+}
+
 async function invokeWorker<TResponse>(name: string, data: unknown, authUser?: User): Promise<TResponse> {
+  if (Date.now() < workerQuotaCooldownUntil) {
+    throw Object.assign(new Error("Matumizi ya database yamefikia kikomo kwa muda. Mfumo unasubiri kabla ya kujaribu tena; tafadhali subiri dakika moja."), { code: "api/quota-cooldown" });
+  }
   const user = authUser ?? firebaseAuth.currentUser;
   if (!user) throw Object.assign(new Error("Ingia kwanza."), { code: "unauthenticated" });
   const token = await user.getIdToken();
@@ -84,7 +97,9 @@ async function invokeWorker<TResponse>(name: string, data: unknown, authUser?: U
   const result = await response.json().catch(() => null) as { data?: TResponse; error?: { code?: string; message?: string } } | null;
   if (!response.ok || !result || result.error) {
     const code = result?.error?.code ?? "api/request-failed";
-    const error = new Error(result?.error?.message ?? `Ombi la API limeshindikana (${response.status}).`);
+    const message = result?.error?.message ?? `Ombi la API limeshindikana (${response.status}).`;
+    if (isQuotaFailure(response.status, code, message)) workerQuotaCooldownUntil = Date.now() + WORKER_QUOTA_COOLDOWN_MS;
+    const error = new Error(message);
     Object.assign(error, { code });
     throw error;
   }
