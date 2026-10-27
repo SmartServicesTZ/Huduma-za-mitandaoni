@@ -40,6 +40,18 @@ export interface D1TokenBalanceRow {
   updated_at: string;
 }
 
+export interface D1TokenLedgerRow {
+  id: string;
+  uid: string;
+  token_type: "nida" | "service";
+  delta: number;
+  reason: string;
+  reference_id: string | null;
+  idempotency_key: string;
+  actor_uid: string | null;
+  created_at: string;
+}
+
 function assertUid(uid: string): string {
   const normalized = uid.trim();
   if (!normalized || normalized.length > 256) throw new Error("A valid user ID is required.");
@@ -67,4 +79,23 @@ export async function getD1TokenBalance(db: D1ReadBinding, uid: string): Promise
   return db.prepare(
     "SELECT uid, nida_tokens, service_tokens, updated_at FROM token_balances WHERE uid = ? LIMIT 1",
   ).bind(assertUid(uid)).first<D1TokenBalanceRow>();
+}
+
+/** Read permissions for one user; authorization decisions remain outside this PoC repository. */
+export async function listD1UserPermissions(db: D1ReadBinding, uid: string): Promise<string[]> {
+  const result = await db.prepare(
+    "SELECT permission FROM user_permissions WHERE uid = ? ORDER BY permission ASC",
+  ).bind(assertUid(uid)).all<{ permission: string }>();
+  if (result.success === false) throw new Error("D1 permission query failed.");
+  return result.results.map((row) => row.permission);
+}
+
+/** Read a bounded token ledger page; this method never mutates balances or ledger rows. */
+export async function listD1TokenLedger(db: D1ReadBinding, uid: string, limit = 50): Promise<D1TokenLedgerRow[]> {
+  const boundedLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.trunc(limit), 1), 100) : 50;
+  const result = await db.prepare(
+    "SELECT id, uid, token_type, delta, reason, reference_id, idempotency_key, actor_uid, created_at FROM token_ledger WHERE uid = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+  ).bind(assertUid(uid), boundedLimit).all<D1TokenLedgerRow>();
+  if (result.success === false) throw new Error("D1 token ledger query failed.");
+  return result.results;
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { getD1TokenBalance, getD1User, listD1VisibleServices, type D1ReadBinding } from "../src/d1-poc-repository.js";
+import { getD1TokenBalance, getD1User, listD1TokenLedger, listD1UserPermissions, listD1VisibleServices, type D1ReadBinding } from "../src/d1-poc-repository.js";
 
 function mockDb(firstResult: unknown = null, allResult: unknown[] = []) {
   const calls: Array<{ sql: string; values: unknown[] }> = [];
@@ -47,4 +47,19 @@ test("getD1TokenBalance uses a bound UID and performs a read-only query", async 
   assert.deepEqual(await getD1TokenBalance(db, "user-1"), row);
   assert.match(calls[0].sql, /^SELECT/);
   assert.deepEqual(calls[0].values, ["user-1"]);
+});
+
+test("listD1UserPermissions binds the UID and returns deterministic permission order", async () => {
+  const { db, calls } = mockDb(null, [{ permission: "manageServices" }, { permission: "viewUsers" }]);
+  assert.deepEqual(await listD1UserPermissions(db, "user-1"), ["manageServices", "viewUsers"]);
+  assert.match(calls[0].sql, /WHERE uid = \?/);
+  assert.deepEqual(calls[0].values, ["user-1"]);
+});
+
+test("listD1TokenLedger bounds the page size and binds both values", async () => {
+  const rows = [{ id: "ledger-1", uid: "user-1", token_type: "service", delta: 1, reason: "test", reference_id: null, idempotency_key: "key-1", actor_uid: null, created_at: "now" }];
+  const { db, calls } = mockDb(null, rows);
+  assert.deepEqual(await listD1TokenLedger(db, "user-1", 500), rows);
+  assert.match(calls[0].sql, /ORDER BY created_at DESC, id DESC LIMIT \?/);
+  assert.deepEqual(calls[0].values, ["user-1", 100]);
 });
