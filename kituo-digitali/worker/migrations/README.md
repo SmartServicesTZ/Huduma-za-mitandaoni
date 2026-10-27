@@ -4,7 +4,7 @@ Status: isolated proof-of-concept only. Firestore remains production source of t
 
 ## Target and scope
 
-The PoC binding is `smartservicestz-poc-clean` (Cloudflare D1 UUID `b2b331d9-fb25-416d-890a-269d07346faf`) in `wrangler.poc.toml`. The older `smartservicestz-poc` database was not accessed. The D1 binding is not connected to production handlers.
+The PoC binding is `smartservicestz-poc-clean` (Cloudflare D1 UUID `b2b331d9-fb25-416d-890a-269d07346faf`) in `wrangler.poc.toml`. The older `smartservicestz-poc` database was not accessed. The D1 binding is not connected to production handlers. Current application roles in the PoC schema are `user`, `admin`, `moderator`, `support`, and `super_admin`.
 
 ## Latest verification — 2026-10-27
 
@@ -17,7 +17,7 @@ The PoC binding is `smartservicestz-poc-clean` (Cloudflare D1 UUID `b2b331d9-fb2
 ### Remote D1, read-only schema/journal review
 
 - Rechecked the target by exact name and UUID through the authorized Cloudflare integration.
-- A read-only `sqlite_master` query returned 19 application tables, D1 system table `_cf_KV`, and 13 named indexes. The table and named-index DDL was reviewed against `migrations/0001_smartservicestz_poc.sql`; expected definitions were present. Synthetic fixtures remained `poc-user-001` (2/5) and `poc-service-001`.
+- A read-only `sqlite_master` query returned 19 application tables, D1 system table `_cf_KV`, and 14 named indexes. The table and named-index DDL was reviewed against `migrations/0001_smartservicestz_poc.sql`; expected definitions were present. Synthetic fixtures remained `poc-user-001` (2/5) and `poc-service-001`.
 - `SELECT name FROM sqlite_master WHERE type='table' AND name='d1_migrations'` returned no rows. Wrangler CLI `pnpm exec wrangler whoami` reports `You are not authenticated`.
 - `wrangler d1 migrations apply` was **not run**. The schema already exists while Wrangler's migration journal is absent. There is no verified, non-destructive Wrangler reconciliation procedure in this task; applying it could repeat an untracked schema migration. No D1 schema or data was changed during this task.
 - A prior session submitted the idempotent SQL through Cloudflare's D1 API; the SQL succeeded with no changes because the objects and seeds already existed. That does not create or prove Wrangler migration tracking.
