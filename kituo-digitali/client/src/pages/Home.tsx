@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteAnnouncement, adminDeleteService, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminSaveAnnouncement, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, updateNidaRequestPhone, type NidaRequest } from "@/lib/firebase";
-import { announcementText, mergeServiceCatalogDefaults, serviceCatalog, specialServices, tutorials, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, listMyNidaRequests, submitNidaRequest, updateNidaRequestPhone, type NidaRequest } from "@/lib/firebase";
+import { mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
@@ -232,7 +232,6 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
   return <>
-    <div className="announcement"><Bell size={17} /> <strong>{announcementText}</strong></div>
     <header className="app-header">
       <button type="button" className="header-back-button" onClick={() => window.history.length > 1 ? window.history.back() : navigate("/")} aria-label="Rudi hatua moja nyuma"><ArrowLeft size={20}/><span>Back</span></button>
       <button className="mobile-menu" onClick={onMenu} aria-label="Fungua menyu"><Menu size={24} /></button>
@@ -375,10 +374,6 @@ function TopQuickServices({ services, onUse }: { services: ServiceCatalogItem[];
   </section>;
 }
 
-function TutorialsSection() {
-  const [selected, setSelected] = useState<typeof tutorials[number] | null>(null);
-  return <section className="portal-section"><div className="section-title"><div><span className="overline">Jifunze kwa hatua</span><h2>VIDEO ZA MAFUNZO</h2></div></div><div className="tutorial-grid">{tutorials.map((item) => <button className="tutorial-card" key={item.slug} onClick={() => setSelected(item)}><span className="play-circle"><PlayCircle size={25} /></span><strong>{item.title}</strong><small>{item.description}</small><span className="paid-label"><CreditCard size={13} /> Tokeni {item.tokenCost}</span></button>)}</div>{selected && <div className="portal-modal-backdrop" onClick={() => setSelected(null)}><div className="portal-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setSelected(null)}><X size={19} /></button><PlayCircle size={42} className="modal-symbol" /><h3>{selected.title}</h3>{selected.videoUrl ? <video src={selected.videoUrl} controls /> : <Notice tone="info">Video itaongezwa na admin hivi karibuni. Hakuna kiungo bandia kilichowekwa.</Notice>}<button className="button button--green button--wide" onClick={() => setSelected(null)}>Funga</button></div></div>}</section>;
-}
 
 function HistoryPage() {
   const { firebaseUser } = useAuth();
@@ -700,7 +695,6 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]"); } catch { return []; }
   });
-  const [announcements, setAnnouncements] = useState<any[]>([]);
   useEffect(() => {
     const onFavoritesChanged = (event: Event) => {
       const detail = (event as CustomEvent<string[]>).detail;
@@ -714,7 +708,6 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
   const [layout, setLayout] = useState({ homeColumns: 4, homeTabletColumns: 2, homeMobileColumns: 1, sectionGap: 34, cardGap: 12, cardRadius: 14, cardPadding: 15, heroRadius: 18, heroPadding: 35, contentMaxWidth: 1420, showMetrics: true, showHero: true, compactCards: false });
   useEffect(() => {
-    const stopAnnouncements = subscribeToCollection("announcements", (rows) => setAnnouncements(rows.filter((item) => item.enabled !== false)));
     const stopSettings = subscribeToCollection("siteSettings", (rows) => {
       const settings = rows.find((item) => item.id === "public");
       if (Array.isArray(settings?.serviceOrder)) setServiceOrder(settings.serviceOrder.filter((id: unknown): id is string => typeof id === "string"));
@@ -722,7 +715,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
       setLayout((current) => ({ ...current, ...Object.fromEntries(Object.keys(current).map((key) => [key, settings?.[key] ?? current[key as keyof typeof current]])) }));
     });
     const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true]))));
-    return () => { stopAnnouncements(); stopSettings(); stopLocks(); };
+    return () => { stopSettings(); stopLocks(); };
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
@@ -747,7 +740,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     locked: null,
     special: null,
     tools: (category === "Zote" || category === "HUDUMA ZINGINE") ? <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>HUDUMA ZINGINE</h2></div><span className="section-count">{other.length + specialServices.length}</span></div><div className="portal-service-grid">{other.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div><SpecialSection /></section> : null,
-    tutorials: <TutorialsSection />,
+    tutorials: null,
   };
   const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
   const freeCount = displayedServices.filter((service) => service.kind === "free").length;
