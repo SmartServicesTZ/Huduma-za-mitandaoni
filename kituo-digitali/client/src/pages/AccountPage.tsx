@@ -106,7 +106,18 @@ export default function AccountPage() {
 <div className="settings-divider">Akaunti na faragha</div>
 <div className="settings-action-grid"><Link href="/history">Historia ya shughuli</Link><button type="button" onClick={() => void logout()}>Ondoka kwenye akaunti</button></div>
 <div className="settings-shortcuts"><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
-<p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
+<p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card">
+          <div className="profile-side-title"><span className="profile-icon"><Globe2 size={18}/></span><div><h3>Kuhusu SmartServicesTZ</h3><p>Taarifa za app na njia za haraka.</p></div></div>
+          <div className="profile-stat-row"><span>Jina la app</span><strong>SmartServicesTZ</strong></div>
+          <div className="profile-stat-row"><span>Aina</span><strong>Huduma za mtandaoni</strong></div>
+          <div style={{display:"grid",gap:9,marginTop:12}}>
+            <a className="profile-side-link" href="https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&iam=2" target="_blank" rel="noreferrer"><MessageCircle size={16}/> Jiunge na Group la WhatsApp</a>
+            <button className="profile-side-link" type="button" onClick={() => window.location.reload()} style={{width:"100%",textAlign:"left",cursor:"pointer",font:"inherit"}}>↻ Refresh / Pakia upya app</button>
+            <Link className="profile-side-link" href="/history"><History size={16}/> Historia ya shughuli</Link>
+            <Link className="profile-side-link" href="/tokens"><WalletCards size={16}/> Wallet ya tokeni</Link>
+          </div>
+          <p className="profile-muted" style={{marginTop:10}}>Usalama: usimpe mtu password yako wala kutuma taarifa za siri kwenye mazungumzo.</p>
+        </section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
         <section className="profile-side-card support-center-card">
           <div className="profile-side-title"><span className="profile-icon"><Bell size={18}/></span><div><h3>Msaada na Maswali</h3><p>Maswali 18 ya kawaida kuhusu akaunti na huduma.</p></div></div>
           <div className="settings-divider">Maswali ya mara kwa mara (18)</div>
