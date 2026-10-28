@@ -778,8 +778,6 @@ export type LipaApplication = {
   updatedAt?: unknown;
 };
 export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
-export type NidaRequest = { id: string; requestId: string; userId: string; userName?: string; phone: string; status: "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED"; nidaNumber?: string; rejectionReason?: string; submittedAt?: unknown; updatedAt?: unknown };
-
 export async function seedServiceCatalog() {
   const callable = createWorkerCall("seedServiceCatalog");
   return (await callable({})).data as { createdServices: number; createdNetworks: number };
