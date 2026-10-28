@@ -13,12 +13,12 @@ test("the configured Super Admin phone is promoted regardless of input formattin
   }
 });
 
-test("a Super Admin profile with a different phone is downgraded", () => {
+test("an existing Super Admin is not silently demoted because the phone allow-list differs", () => {
   assert.deepEqual(resolveAuthRole("super_admin", "255712345678", "255698232313"), {
-    role: "user",
+    role: "super_admin",
     isConfiguredSuperAdmin: false,
     shouldPromote: false,
-    shouldDemote: true,
+    shouldDemote: false,
   });
 });
 
