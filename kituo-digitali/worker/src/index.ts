@@ -308,44 +308,75 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
   const message = typeof body === "object" && body !== null ? (body as { message?: unknown }).message : undefined;
   if (typeof message !== "string" || !message.trim()) return jsonResponse({ error: { message: "Andika ujumbe kwanza." } }, 400, cors);
   if (message.length > 4000) return jsonResponse({ error: { message: "Ujumbe usizidi herufi 4,000." } }, 400, cors);
-  const apiKey = (env as Env & { GEMINI_API_KEY?: string }).GEMINI_API_KEY;
-  if (!apiKey) {
-    return jsonResponse({ error: { message: "Msaidizi wa AI bado hajawashwa. Admin anahitaji kuweka GEMINI_API_KEY kwenye Cloudflare Worker Secrets." } }, 503, cors);
+
+  const keys = env as Env & { GEMINI_API_KEY?: string; GROQ_API_KEY?: string; OPENROUTER_API_KEY?: string };
+  const systemPrompt = "Wewe ni msaidizi wa SmartServicesTZ. Jibu kwa Kiswahili rahisi isipokuwa mtumiaji aombe lugha nyingine. Toa maelezo sahihi na mafupi. Usidai kuwa unaweza kuona akaunti au kufanya miamala. Usitake password, API keys, au taarifa za siri.";
+  const prompt = message.trim();
+  const errors: string[] = [];
+  let configured = false;
+
+  // Jaribu watoa huduma tofauti. Funguo zote ni hiari; angalau moja lazima iwekwe kwenye Worker Secrets.
+  const compatibleProviders: Array<{ name: string; key?: string; url: string; model: string; headers?: Record<string, string> }> = [
+    { name: "Groq", key: keys.GROQ_API_KEY, url: "https://api.groq.com/openai/v1/chat/completions", model: "llama-3.3-70b-versatile" },
+    { name: "OpenRouter", key: keys.OPENROUTER_API_KEY, url: "https://openrouter.ai/api/v1/chat/completions", model: "openrouter/free", headers: { "HTTP-Referer": "https://smartservicestz.github.io/Huduma-za-mitandaoni/", "X-Title": "SmartServicesTZ" } },
+  ];
+
+  for (const provider of compatibleProviders) {
+    if (!provider.key) continue;
+    configured = true;
+    try {
+      const upstream = await fetch(provider.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${provider.key}`, ...(provider.headers ?? {}) },
+        body: JSON.stringify({ model: provider.model, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: prompt }], max_tokens: 700, temperature: 0.7 }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const data = await upstream.json() as { choices?: Array<{ message?: { content?: string | Array<{ text?: string }> } }>; error?: { message?: string } };
+      if (upstream.ok) {
+        const raw = data.choices?.[0]?.message?.content;
+        const reply = (typeof raw === "string" ? raw : Array.isArray(raw) ? raw.map((part) => part.text ?? "").join("") : "").trim();
+        if (reply) return jsonResponse({ reply }, 200, cors);
+      }
+      errors.push(`${provider.name}:${upstream.status}`);
+      console.error("Alternative AI provider failed", { provider: provider.name, status: upstream.status, detail: String(data.error?.message ?? "").slice(0, 160) });
+    } catch (error) {
+      errors.push(`${provider.name}:network`);
+      console.error("Alternative AI provider request failed", { provider: provider.name, code: error instanceof Error ? error.name : "unknown" });
+    }
   }
-  try {
+
+  if (keys.GEMINI_API_KEY) {
+    configured = true;
     const requestBody = JSON.stringify({
-      systemInstruction: { parts: [{ text: "Wewe ni msaidizi wa SmartServicesTZ. Jibu kwa Kiswahili rahisi isipokuwa mtumiaji aombe lugha nyingine. Toa maelezo sahihi na mafupi. Usidai kuwa unaweza kuona akaunti au kufanya miamala. Usitake password, API keys, au taarifa za siri." }] },
-      contents: [{ role: "user", parts: [{ text: message.trim() }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: { maxOutputTokens: 700, temperature: 0.7, thinkingConfig: { thinkingLevel: "LOW" } },
     });
-    let lastStatus = 0;
     for (const model of ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]) {
       try {
         const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": keys.GEMINI_API_KEY },
           body: requestBody,
-          signal: AbortSignal.timeout(9000),
+          signal: AbortSignal.timeout(7000),
         });
         const data = await upstream.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } };
-        if (!upstream.ok) {
-          lastStatus = upstream.status;
-          console.error("Gemini chat upstream error", { model, status: upstream.status, providerMessage: String(data.error?.message ?? "No provider message").slice(0, 240) });
-          if ([404, 429, 500, 502, 503, 504].includes(upstream.status)) continue;
-          return jsonResponse({ error: { message: "Msaidizi wa AI hapatikani kwa sasa. Jaribu tena baadaye." } }, 502, cors);
-        }
         const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
-        if (reply) return jsonResponse({ reply }, 200, cors);
-        console.error("Gemini returned an empty reply", { model });
+        if (upstream.ok && reply) return jsonResponse({ reply }, 200, cors);
+        errors.push(`Gemini:${upstream.status}`);
+        console.error("Gemini fallback failed", { model, status: upstream.status, detail: String(data.error?.message ?? "").slice(0, 160) });
       } catch (error) {
-        console.error("Gemini chat model attempt failed", { model, code: error instanceof Error ? error.name : "unknown" });
+        errors.push("Gemini:network");
+        console.error("Gemini fallback request failed", { model, code: error instanceof Error ? error.name : "unknown" });
       }
     }
-    return jsonResponse({ error: { message: lastStatus === 429 ? "Huduma ya AI imefikia kikomo cha maombi kwa sasa. Jaribu tena baada ya dakika moja." : "Huduma ya AI haijapatikana kwenye miundo iliyojaribiwa. Jaribu tena baada ya muda mfupi." } }, 502, cors);
-  } catch (error) {
-    console.error("Gemini chat request failed", { code: error instanceof Error ? error.name : "unknown" });
-    return jsonResponse({ error: { message: "Imeshindikana kuwasiliana na AI. Kagua mtandao ujaribu tena." } }, 502, cors);
   }
+
+  if (!configured) {
+    return jsonResponse({ error: { message: "AI haijaunganishwa bado. Admin aweke angalau moja ya siri hizi kwenye Cloudflare Worker: GROQ_API_KEY, OPENROUTER_API_KEY au GEMINI_API_KEY." } }, 503, cors);
+  }
+  console.error("All configured AI providers failed", { attempts: errors });
+  return jsonResponse({ error: { message: "AI zote zilizosanidiwa hazijajibu kwa sasa. Mfumo umejaribu watoa huduma mbadala; jaribu tena baada ya muda mfupi." } }, 503, cors);
 }
 
 const worker = {
