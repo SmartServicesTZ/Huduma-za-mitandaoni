@@ -678,7 +678,9 @@ export default function Home() {
   const [showYangaRules, setShowYangaRules] = useState(false);
   const [yangaRulesAccepted, setYangaRulesAccepted] = useState(false);
   const [yangaQuizPassed, setYangaQuizPassed] = useState(false);
-  const [yangaEntryStep, setYangaEntryStep] = useState<"choice" | "quiz" | "rules">("choice");
+  const [yangaEntryStep, setYangaEntryStep] = useState<"choice" | "quiz" | "review" | "rules">("choice");
+  const [yangaReviewResults, setYangaReviewResults] = useState<Array<{ question: string; selected: string; correct: string; isCorrect: boolean }>>([]);
+  const [yangaPlayersReview, setYangaPlayersReview] = useState<{ selected: string[]; correct: string[]; isCorrect: boolean } | null>(null);
   const [yangaPaymentBusy, setYangaPaymentBusy] = useState(false);
   const [yangaFanConfirm, setYangaFanConfirm] = useState("");
   const [yangaLoveConfirm, setYangaLoveConfirm] = useState("");
@@ -851,16 +853,26 @@ export default function Home() {
   ];
   const submitYangaQuiz = () => {
     if (yangaFanConfirm !== "Ndiyo" || yangaLoveConfirm !== "Ndiyo") { setYangaQuizError("Lazima uthibitishe kuwa wewe ni shabiki wa Yanga na unaipenda Yanga ili kuendelea."); return; }
-    const allAnswered = yangaQuizQuestions.every((_, i) => Boolean(yangaAnswers[i]));
-    if (!allAnswered) { setYangaQuizError("Jibu maswali yote 10 kwanza."); return; }
-    if (yangaPlayers.length !== 11) { setYangaQuizError("Chagua wachezaji 11 wa Yanga tu kutoka kwenye orodha ya timu zote mbili."); return; }
-    const selected = yangaPlayerChoices.filter((p) => yangaPlayers.includes(p.name));
-    if (selected.some((p) => p.team !== "YANGA")) { setYangaQuizError("Umechagua mchezaji wa Simba. Ondoa chaguo hilo na chagua wachezaji wa Yanga pekee."); return; }
-    const correct = yangaQuizQuestions.every((question, i) => yangaAnswers[i] === question.answer);
-    if (!correct) { setYangaQuizError("Kuna majibu yasiyo sahihi. Tumechagua maswali mapya; jibu tena."); setYangaAnswers({}); setYangaPlayers([]); setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) }))); return; }
-    setYangaQuizError("");
-    setYangaQuizPassed(true);
-    setYangaEntryStep("rules");
+    if (!yangaQuizQuestions.every((_, i) => Boolean(yangaAnswers[i]))) { setYangaQuizError("Jibu maswali yote 10 kwanza."); return; }
+    if (yangaPlayers.length !== 11) { setYangaQuizError("Chagua majina 11 tu kwenye orodha ya wachezaji 30."); return; }
+    const correctPlayers = yangaPlayerChoices.filter((p) => p.team === "YANGA").map((p) => p.name);
+    const selectedPlayers = [...yangaPlayers];
+    const playersCorrect = selectedPlayers.length === 11 && selectedPlayers.every((name) => correctPlayers.includes(name)) && correctPlayers.every((name) => selectedPlayers.includes(name));
+    const results = yangaQuizQuestions.map((question, i) => ({ question: question.q, selected: yangaAnswers[i] ?? "Hujajibu", correct: question.answer, isCorrect: yangaAnswers[i] === question.answer }));
+    if (!results.every((result) => result.isCorrect) || !playersCorrect) {
+      setYangaReviewResults(results);
+      setYangaPlayersReview({ selected: selectedPlayers, correct: correctPlayers, isCorrect: playersCorrect });
+      setYangaQuizError("");
+      setYangaEntryStep("review");
+      return;
+    }
+    setYangaReviewResults([]); setYangaPlayersReview(null); setYangaQuizError("");
+    setYangaQuizPassed(true); setYangaEntryStep("rules");
+  };
+  const retryYangaQuiz = () => {
+    setYangaAnswers({}); setYangaPlayers([]); setYangaReviewResults([]); setYangaPlayersReview(null); setYangaQuizError("");
+    setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) })));
+    setYangaEntryStep("quiz");
   };
   const payYangaEntry = async () => {
     if (!firebaseUser) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); return; }
@@ -933,7 +945,7 @@ export default function Home() {
   const appAccent = profile?.settings?.accent ?? "green";
   const compactMode = profile?.settings?.compactMode === true;
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.location.href = service.actionUrl; else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
-  const handleUse = (service: ServiceCatalogItem) => { if (!isAuthenticated) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); toast("Jisajili au ingia kwanza ili kuendelea kutumia huduma."); return; } if (service.slug === "simba-sc") { setServiceNotice("SIMBA SC WHATSAPP GROUP bado haijaandaliwa. Kipengele hiki kimefungwa kwa muda hadi kiungo rasmi cha WhatsApp na maudhui yake yatakapowekwa."); return; } if (service.slug === "yanga-africans") { setYangaRulesAccepted(false); setYangaQuizPassed(false); setYangaEntryStep("choice"); setYangaFanConfirm(""); setYangaLoveConfirm(""); setYangaAnswers({}); setYangaPlayers([]); setYangaQuizError(""); setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) }))); setShowYangaRules(true); return; } if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
+  const handleUse = (service: ServiceCatalogItem) => { if (!isAuthenticated) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); toast("Jisajili au ingia kwanza ili kuendelea kutumia huduma."); return; } if (service.slug === "simba-sc") { setServiceNotice("SIMBA SC WHATSAPP GROUP bado haijaandaliwa. Kipengele hiki kimefungwa kwa muda hadi kiungo rasmi cha WhatsApp na maudhui yake yatakapowekwa."); return; } if (service.slug === "yanga-africans") { setYangaRulesAccepted(false); setYangaQuizPassed(false); setYangaEntryStep("choice"); setYangaFanConfirm(""); setYangaLoveConfirm(""); setYangaAnswers({}); setYangaPlayers([]); setYangaReviewResults([]); setYangaPlayersReview(null); setYangaQuizError(""); setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) }))); setShowYangaRules(true); return; } if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
   const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
@@ -963,7 +975,7 @@ export default function Home() {
           <p className="yanga-entry-hint">Njia ya bure inahitaji majibu yote sahihi na kuchagua wachezaji 11 wa Yanga.</p>
         </> : !yangaQuizPassed ? <>
           <h2 id="yanga-rules-title">Thibitisha kuwa shabiki wa Yanga</h2>
-          <p className="yanga-rules-motto">Maswali 10 yamechaguliwa kwa bahati nasibu kutoka kwenye hifadhi ya maswali. Kila jaribio linaweza kuwa tofauti.</p>
+          <p className="yanga-rules-motto">Maswali 10 huchaguliwa kwa bahati nasibu kutoka kwenye hifadhi ya maswali zaidi ya 100. Kila jaribio linaweza kuwa tofauti.</p>
           <div className="yanga-fan-confirm">
             <label>Je, wewe ni mshabiki wa Yanga?
               <select value={yangaFanConfirm} onChange={(event) => setYangaFanConfirm(event.target.value)}><option value="">Chagua jibu</option><option>Ndiyo</option><option>Hapana</option></select>
@@ -981,7 +993,7 @@ export default function Home() {
             </div>
             <div className="yanga-player-picker">
               <h3>Chagua wachezaji 11 wa Yanga ({yangaPlayers.length}/11)</h3>
-              <p>Chagua majina 11 unayoamini ni wachezaji wa Yanga pekee.</p>
+              <p>Orodha ina majina 30 kutoka klabu mbalimbali duniani. Chagua wachezaji 11 wa Yanga pekee; majina hayajawekewa lebo za timu.</p>
               <div className="yanga-player-grid">{yangaPlayerChoices.map((player) => <label className="yanga-player-option" key={player.name}><input type="checkbox" checked={yangaPlayers.includes(player.name)} onChange={(event) => { setYangaPlayers((prev) => event.target.checked ? (prev.length < 11 ? [...prev, player.name] : prev) : prev.filter((name) => name !== player.name)); setYangaQuizError(""); }} /><span>{player.name}</span></label>)}</div>
             </div>
           </div>
