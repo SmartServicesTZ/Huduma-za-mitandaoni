@@ -376,8 +376,13 @@ function WebsiteHealthPanel() {
       } catch (error) { if (!cancelled) setExternalError(`Ukaguzi wa nje haupatikani: ${String(error)}`); }
     };
     void loadExternal();
-    const interval = window.setInterval(() => void loadExternal(), 300000);
-    return () => { cancelled = true; unsubscribe(); window.clearInterval(interval); };
+    // Tab ikiwa hidden usiite GitHub API kila dakika 5; refresh itafanyika tab ikirudi foreground.
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== "hidden") void loadExternal();
+    }, 300000);
+    const onVisibility = () => { if (document.visibilityState === "visible") void loadExternal(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { cancelled = true; unsubscribe(); window.clearInterval(interval); document.removeEventListener("visibilitychange", onVisibility); };
   }, []);
   const unresolved = reports.filter((row) => row.status !== "resolved");
   const openExternal = externalIssues.filter((row) => row.state === "open");

@@ -12,6 +12,7 @@ This audit is isolated to branch `audit/firestore-read-optimization`. It does no
 - Bounded Chat public/private/group message listeners to the latest 200 messages and preserved oldest-to-newest display order.
 - Bounded conversation and group lists to 100 records, public groups and join requests to 100 records, call history to 50 records, and ICE candidates to 200 records.
 - Reduced Chat unread-listener fan-out to the 20 most recent conversations instead of opening a message listener for every conversation.
+- Updated the admin Website Health Monitor so its five-minute GitHub polling pauses while the tab is hidden and refreshes when the tab returns to the foreground.
 
 ## Verification evidence
 
@@ -20,6 +21,8 @@ This audit is isolated to branch `audit/firestore-read-optimization`. It does no
 - `kituo-digitali/worker`: `pnpm build` dry-run passed.
 - `kituo-digitali/worker`: `pnpm test` passed: 34 tests, 0 failures.
 - `git diff --check` passed.
+
+The active production routes reviewed include `AdminDashboard.tsx`, `Chat.tsx`, `Home.tsx`, `NidaRequestsPanel.tsx`, `firebase.ts`, and the Worker `handlers.ts`. Firestore rules were also reviewed: ordinary users are scoped to their own users, applications, token records, messages, conversations, and call documents; admin reads remain permission-gated.
 
 ## Deliberate limitations
 
