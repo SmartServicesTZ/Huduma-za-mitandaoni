@@ -720,3 +720,15 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .yanga-quiz-error{margin:10px 0;padding:10px 12px;border:1px solid rgba(248,113,113,.4);border-radius:10px;background:rgba(127,29,29,.25);color:#fecaca;font-size:12px;line-height:1.5}
 .yanga-rules-list li strong{color:#bbf7d0}
 @media(max-width:560px){.yanga-fan-confirmations{grid-template-columns:1fr;gap:8px}.yanga-player-grid{grid-template-columns:1fr}.yanga-quiz-question{padding:10px}.yanga-quiz-question legend{font-size:11px}.yanga-quiz-option{font-size:11px}}
+
+
+/* Yanga WhatsApp entry options and fan verification */
+.yanga-entry-options{display:grid;grid-template-columns:1fr;gap:12px;margin:22px 0 12px}
+.yanga-entry-options .yanga-rules-join{width:100%;justify-content:center;min-height:52px}
+.yanga-entry-options .yanga-entry-free{background:linear-gradient(135deg,#15803d,#16a34a);border:1px solid #22c55e}
+.yanga-entry-hint{font-size:13px;line-height:1.6;opacity:.82;text-align:center;margin:8px 0 4px}
+.yanga-fan-confirm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.yanga-fan-confirm label{display:grid;gap:7px;font-weight:700;font-size:14px}
+.yanga-fan-confirm select{width:100%;min-height:42px;padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:#0f172a}
+.yanga-player-option small{display:none!important}
+@media(max-width:560px){.yanga-fan-confirm{grid-template-columns:1fr}}
