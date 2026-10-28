@@ -502,3 +502,122 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .portal-service-card.service-locked .service-card-icon{filter:none!important;opacity:1!important}
 .portal-service-card .locked-label{display:inline-flex;align-items:center;justify-content:center;padding:5px 9px;border-radius:999px;background:#fff1f2;color:#be123c;font-size:9px;font-weight:900;letter-spacing:.08em}
 @media(max-width:480px){html body .portal-shell .portal-content .portal-main .token-card:not(.token-card--compact){padding:18px!important;border-radius:21px!important}.wallet-fashion-balance{padding:19px 16px}.wallet-fashion-orbit{width:52px;height:52px;flex-basis:52px}.wallet-fashion-orbit span:nth-child(2){top:29px;left:32px}.wallet-fashion-status{max-width:85px}}
+
+
+/* Dark premium storefront: reduce oversized white areas while keeping text contrast high. */
+html, body, #app, #root {
+  background: #071326 !important;
+}
+body {
+  color: #e7eefb;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(37,99,235,.18), transparent 32%),
+    radial-gradient(ellipse at 96% 25%, rgba(124,58,237,.13), transparent 30%),
+    #071326 !important;
+}
+.portal-shell, .portal-content, .portal-main {
+  background: transparent !important;
+}
+.portal-main {
+  color: #e8efff !important;
+}
+.portal-main .page-heading h1,
+.portal-main .section-title h2,
+.portal-main .service-discovery__copy h2,
+.portal-main .service-discovery__copy p,
+.portal-main .overline {
+  color: #edf4ff !important;
+}
+.portal-main .service-discovery {
+  color: #edf4ff !important;
+  border-color: rgba(148,163,184,.22) !important;
+  background:
+    radial-gradient(ellipse at 92% 3%, rgba(99,102,241,.23), transparent 34%),
+    radial-gradient(ellipse at 1% 100%, rgba(20,184,166,.14), transparent 38%),
+    linear-gradient(135deg,#101d36 0%,#122442 56%,#102b32 100%) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,.2) !important;
+}
+.portal-main .service-discovery__filters > span,
+.portal-main .service-discovery__stat small {
+  color: #b8c7e0 !important;
+}
+.portal-main .service-discovery__stat {
+  border-color: rgba(148,163,184,.2) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.portal-main .service-discovery__stat strong { color: #fff !important; }
+.portal-main .service-chips button {
+  color: #d8e4f8 !important;
+  border-color: rgba(148,163,184,.28) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.portal-main .service-chips button.active {
+  color: #fff !important;
+  border-color: #60a5fa !important;
+  background: linear-gradient(135deg,#1d4ed8,#6d28d9) !important;
+}
+html body .portal-shell .portal-content .portal-main .portal-service-grid > .portal-service-card-wrap > .portal-service-card {
+  color: #eaf1ff !important;
+  border-color: rgba(148,163,184,.22) !important;
+  background: linear-gradient(145deg,#13223d 0%,#101a30 100%) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.18) !important;
+}
+.portal-main .portal-service-card h3,
+.portal-main .portal-service-card strong,
+.portal-main .portal-service-card .service-card-title {
+  color: #f8fbff !important;
+}
+.portal-main .portal-service-card p,
+.portal-main .portal-service-card small,
+.portal-main .portal-service-card .service-card-description {
+  color: #b8c8e2 !important;
+}
+.portal-main .wallet-fashion-account {
+  background: #f8fbff !important;
+  border: 1px solid #dbe6f5 !important;
+}
+.portal-main .wallet-fashion-account-copy small { color: #64748b !important; }
+.portal-main .wallet-fashion-account-copy strong,
+.portal-main .wallet-fashion-account-copy > span { color: #152440 !important; }
+.portal-main .wallet-fashion-status.is-verified {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: 1px solid #86efac !important;
+}
+.portal-main .wallet-fashion-status.is-pending {
+  background: #fff7ed !important;
+  color: #9a3412 !important;
+  border: 1px solid #fdba74 !important;
+}
+.super-admin-home-entry {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 15px 17px;
+  border: 1px solid rgba(196,181,253,.55);
+  border-radius: 20px;
+  color: #fff !important;
+  text-decoration: none !important;
+  background: linear-gradient(110deg,rgba(76,29,149,.97),rgba(30,64,175,.96) 58%,rgba(13,148,136,.9));
+  box-shadow: 0 14px 32px rgba(30,64,175,.24), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.super-admin-home-entry:active { transform: translateY(1px); }
+.super-admin-home-icon {
+  display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px;
+  border-radius: 15px; color: #fef3c7; background: rgba(255,255,255,.13);
+  border: 1px solid rgba(255,255,255,.22);
+}
+.super-admin-home-copy { display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
+.super-admin-home-copy small { color:#ddd6fe; font-size:9px; font-weight:900; letter-spacing:.12em; }
+.super-admin-home-copy strong { color:#fff; font-size:15px; font-weight:950; letter-spacing:.04em; }
+.super-admin-home-copy em { color:#dbeafe; font-size:11px; font-style:normal; line-height:1.35; }
+.super-admin-home-arrow { display:grid; place-items:center; color:#fff; }
+@media(max-width:520px) {
+  .super-admin-home-entry { padding:13px; gap:11px; border-radius:17px; }
+  .super-admin-home-icon { width:42px; height:42px; flex-basis:42px; }
+  .super-admin-home-copy strong { font-size:13px; }
+  .super-admin-home-copy em { font-size:10px; }
+}
