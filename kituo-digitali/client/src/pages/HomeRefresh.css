@@ -690,3 +690,11 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .yanga-rules-join{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:48px;padding:12px;border:0;border-radius:14px;background:linear-gradient(100deg,#16a34a,#22c55e);color:#052e16;font-size:13px;font-weight:900}
 .yanga-rules-join:disabled{cursor:not-allowed;background:#475569;color:#cbd5e1;opacity:.7}
 @media(max-width:480px){.yanga-rules-backdrop{padding:8px}.yanga-rules-modal{max-height:94dvh;padding:20px 15px 14px;border-radius:19px}.yanga-rules-list{gap:8px;font-size:12px;padding-left:24px}.yanga-rules-closing{font-size:11px;margin:10px 0}.yanga-rules-accept{padding:10px;font-size:11px}.yanga-rules-join{font-size:12px;min-height:45px}}
+
+
+/* Make the sign-in/register action obvious on desktop and mobile */
+.portal-shell .header-actions>.button.button--green.button--small{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 16px!important;border:2px solid #bbf7d0!important;border-radius:13px!important;background:linear-gradient(110deg,#15803d,#16a34a 55%,#0d9488)!important;color:#fff!important;font-size:12px!important;font-weight:900!important;box-shadow:0 5px 16px rgba(22,163,74,.28),inset 0 1px 0 rgba(255,255,255,.18);white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.16)}
+.portal-shell .header-actions>.button.button--green.button--small svg{width:17px;height:17px;flex-shrink:0}
+.portal-shell .header-actions>.button.button--green.button--small:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 7px 20px rgba(22,163,74,.36)}
+.portal-shell .header-actions>.button.button--green.button--small:focus-visible{outline:3px solid #fde047;outline-offset:3px}
+@media(max-width:560px){.portal-shell .header-actions>.button.button--green.button--small{min-height:40px;padding:0 10px!important;font-size:11px!important;gap:5px}.portal-shell .header-actions>.button.button--green.button--small svg{width:16px;height:16px}}
