@@ -260,7 +260,25 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const totalAmount = Math.ceil(otherCount / 3) * 500;
   const otherAmount = totalAmount;
   const paymentPhone = paidFromPhone.trim() || profile?.phone || "";
-  const canProceed = totalAmount >= 500 && otherCount >= 3 && paymentPhone.trim().length >= 9;
+  const canProceed = totalAmount >= 500 && otherCount >= 3 && otherCount % 3 === 0 && paymentPhone.trim().length >= 9;
+  const copyLipaNumber = async () => {
+    try {
+      await navigator.clipboard.writeText("29126823");
+      toast.success("Lipa Namba imenakiliwa.");
+    } catch {
+      const field = document.createElement("textarea");
+      field.value = "29126823";
+      field.setAttribute("readonly", "true");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      document.body.appendChild(field);
+      field.select();
+      const copied = document.execCommand("copy");
+      field.remove();
+      if (copied) toast.success("Lipa Namba imenakiliwa.");
+      else toast.error("Imeshindikana kunakili. Shikilia namba uinakili mwenyewe.");
+    }
+  };
   const openWhatsAppProof = () => {
     if (!canProceed) return;
     const message = [
@@ -290,12 +308,21 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       <div className="token-choice-card">
         <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Nunua tokeni za huduma</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
         <div className="token-choice-fields">
-          <label><strong>Idadi ya tokeni za huduma</strong><span>Tokeni 3 = TZS 500 • Tokeni 6 = TZS 1,000</span><input aria-label="Idadi ya tokeni za huduma" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
+          <label><strong>Idadi ya tokeni za huduma</strong><span>Tokeni 3 = TZS 500 • Tokeni 6 = TZS 1,000</span><input aria-label="Idadi ya tokeni za huduma" type="number" min="0" step="3" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
         <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Bei: tokeni 3 = TZS 500, tokeni 6 = TZS 1,000; kila tokeni 3 za ziada ni TZS 500.</small></div>
         <label className="token-choice-phone"><strong>Namba iliyolipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
-        <div className="token-choice-payto"><div className="token-choice-payto-row"><span>NAMBA YA LIPA</span><strong>29126823</strong></div><div className="token-choice-payto-row"><span>JINA LA MPOKEAJI</span><strong>Steward Tz</strong></div><div className="token-choice-payto-row"><span>MTANDAO</span><strong>Azam Pesa</strong></div></div>
+        <div className="token-choice-payto" style={{display:"grid",gap:10,padding:16,border:"1px solid #dbeafe",borderRadius:16,background:"linear-gradient(145deg,#eff6ff 0%,#ffffff 85%)",marginTop:16}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+            <div><span style={{display:"block",fontSize:11,fontWeight:800,letterSpacing:".08em",color:"#64748b"}}>NAMBA YA LIPA</span><strong style={{display:"block",fontSize:26,letterSpacing:".04em",color:"#0f172a"}}>29126823</strong></div>
+            <button type="button" className="button button--small" onClick={copyLipaNumber} style={{display:"inline-flex",alignItems:"center",gap:7,justifyContent:"center"}}><Copy size={15}/> Nakili namba</button>
+          </div>
+          <div className="token-choice-payto-row"><span>JINA LA MPOKEAJI</span><strong>Steward Tz</strong></div>
+          <div className="token-choice-payto-row"><span>MTANDAO</span><strong>Azam Pesa</strong></div>
+          <p style={{margin:0,fontSize:12,lineHeight:1.55,color:"#475569"}}>Lipa kiasi kilichoonyeshwa hapo juu, kisha bonyeza kitufe cha kutuma uthibitisho WhatsApp.</p>
+        </div>
         <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA WHATSAPP</button>
+        {otherCount > 0 && otherCount % 3 !== 0 && <p style={{margin:"8px 0 0",fontSize:12,color:"#b45309"}}>Chagua idadi inayogawanyika kwa 3, mfano tokeni 3, 6 au 9.</p>}
         <p className="token-choice-help">Baada ya kulipa, tuma picha ya uthibitisho WhatsApp. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
       </div>
     </div>, document.body)}
