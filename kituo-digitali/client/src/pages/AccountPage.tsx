@@ -165,7 +165,7 @@ export default function AccountPage() {
             </details>
             <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
               <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Nikipakua hati sioni kwenye simu</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Angalia Files/My Files > Downloads. Ikiwa haipo, jaribu kupakua tena na ruhusu download inapoulizwa.</p>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Angalia Files/My Files &gt; Downloads. Ikiwa haipo, jaribu kupakua tena na ruhusu download inapoulizwa.</p>
             </details>
             <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
               <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Kitufe cha kupakua hakifanyi kazi</summary>
