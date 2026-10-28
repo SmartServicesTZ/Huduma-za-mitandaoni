@@ -581,3 +581,60 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .sidebar-portal .portal-nav-item.admin-link span { color: #ffffff !important; text-shadow: 0 1px 2px rgba(15,23,42,.2); }
 .sidebar-portal .portal-nav-item.admin-link:hover,
 .sidebar-portal .portal-nav-item.admin-link.active { filter: brightness(1.12); box-shadow: 0 9px 22px rgba(124,58,237,.32); }
+
+
+/* Permanent APK download call-to-action on the storefront */
+.app-download-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 24px;
+  padding: 16px 18px;
+  border: 1px solid rgba(96, 165, 250, .42);
+  border-radius: 20px;
+  color: #f8fafc;
+  background: linear-gradient(115deg, #0b1f3d 0%, #173e70 58%, #0f766e 100%);
+  box-shadow: 0 12px 28px rgba(15, 39, 77, .16);
+}
+.app-download-banner__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid rgba(191, 219, 254, .28);
+  border-radius: 15px;
+  color: #bfdbfe;
+  background: rgba(255, 255, 255, .10);
+}
+.app-download-banner__copy { display: grid; flex: 1; min-width: 0; gap: 4px; }
+.app-download-banner__copy strong { font-size: 15px; font-weight: 850; letter-spacing: -.01em; }
+.app-download-banner__copy span { color: #dbeafe; font-size: 12px; line-height: 1.5; }
+.app-download-banner__button {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 15px;
+  border: 1px solid rgba(187, 247, 208, .55);
+  border-radius: 12px;
+  color: #052e1b !important;
+  background: linear-gradient(135deg, #bbf7d0, #6ee7b7);
+  box-shadow: 0 5px 14px rgba(16, 185, 129, .2);
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: transform .18s ease, filter .18s ease;
+}
+.app-download-banner__button:hover { filter: brightness(1.04); transform: translateY(-1px); }
+@media (max-width: 560px) {
+  .app-download-banner { align-items: flex-start; flex-wrap: wrap; gap: 11px; padding: 14px; border-radius: 17px; }
+  .app-download-banner__icon { width: 42px; height: 42px; flex-basis: 42px; }
+  .app-download-banner__copy { min-height: 42px; justify-content: center; }
+  .app-download-banner__copy strong { font-size: 13px; }
+  .app-download-banner__copy span { font-size: 11px; }
+  .app-download-banner__button { width: 100%; min-height: 45px; }
+}
