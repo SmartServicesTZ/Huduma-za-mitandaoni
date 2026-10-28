@@ -144,11 +144,21 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
       }
       if (!nativeDownload.finishFile()) throw new Error("Android imeshindwa kuhifadhi faili. Jaribu tena.");
       window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
-    }).catch((error: unknown) => {
-      nativeDownload.cancelFile?.();
-      const message = error instanceof Error ? error.message : "Download imeshindikana kwenye Android.";
-      window.dispatchEvent(new CustomEvent("smartservicestz-download-error", { detail: { name, message } }));
-      window.alert(message);
+    }).catch(async (_error: unknown) => {
+      // Native Android bridge ikishindwa kuandika chunk, jaribu njia mbadala ya kuhifadhi.
+      try { nativeDownload.cancelFile?.(); } catch { /* faili la muda linaweza kuwa tayari limefungwa */ }
+      try {
+        if (typeof navigator.share === "function") {
+          const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
+          if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: name });
+            window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
+            return;
+          }
+        }
+      } catch { /* Share sheet haikupatikana; tumia browser download. */ }
+      startBrowserDownload(blob, name);
+      window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
     });
     return;
   }
