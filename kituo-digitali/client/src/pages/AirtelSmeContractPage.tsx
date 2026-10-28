@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { triggerDownload } from "@/lib/downloadHistory";
-import { firebaseAuth, getPublicSiteSettings, onAuthStateChanged, subscribeToProfile, consumeFirebaseTokens } from "@/lib/firebase";
+import { firebaseAuth, getPublicSiteSettings, consumeFirebaseTokens } from "@/lib/firebase";
 import { serviceCatalog } from "../../../shared/catalog";
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 
@@ -69,38 +70,19 @@ const initialForm = (): FormState => ({
 });
 
 export default function AirtelSmeContractPage() {
+  const { firebaseUser, profile } = useAuth();
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
   const [paid, setPaid] = useState(false);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
 
-  // Jaza Sales Executive Name kutoka kwenye akaunti ya mtumiaji aliyeingia.
+  // Jaza Sales Executive Name kutoka kwenye profile iliyoshirikiwa na useAuth.
   useEffect(() => {
-    let unsubscribeProfile: (() => void) | undefined;
-    const unsubscribeAuth = onAuthStateChanged(firebaseAuth, (user) => {
-      unsubscribeProfile?.();
-      unsubscribeProfile = undefined;
-      if (!user) {
-        setForm((current) => ({ ...current, salesName: "", signature2: "" }));
-        return;
-      }
-      const fallbackName = user.displayName?.trim() || "";
-      if (fallbackName) {
-        setForm((current) => ({ ...current, salesName: fallbackName.toUpperCase(), signature2: initials(fallbackName) }));
-      }
-      unsubscribeProfile = subscribeToProfile(user.uid, (profile) => {
-        if (!profile) return;
-        const accountName = String(profile.name || [profile.firstName, profile.lastName].filter(Boolean).join(" ") || fallbackName).trim();
-        if (!accountName) return;
-        setForm((current) => ({ ...current, salesName: accountName.toUpperCase(), signature2: initials(accountName) }));
-      });
-    });
-    return () => {
-      unsubscribeProfile?.();
-      unsubscribeAuth();
-    };
-  }, []);
+    const fallbackName = firebaseUser?.displayName?.trim() || "";
+    const accountName = String(profile?.name || [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") || fallbackName).trim();
+    setForm((current) => ({ ...current, salesName: accountName ? accountName.toUpperCase() : "", signature2: accountName ? initials(accountName) : "" }));
+  }, [firebaseUser?.uid, firebaseUser?.displayName, profile?.name, profile?.firstName, profile?.lastName]);
   const inkHex = inkColor === "black" ? "#111111" : inkColor === "blue" ? "#003cff" : "#d00000";
 
   useEffect(() => {

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
 import { mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -497,14 +497,17 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
   const [layout, setLayout] = useState({ homeColumns: 4, homeTabletColumns: 2, homeMobileColumns: 1, sectionGap: 34, cardGap: 12, cardRadius: 14, cardPadding: 15, heroRadius: 18, heroPadding: 35, contentMaxWidth: 1420, showMetrics: true, showHero: true, compactCards: false });
   useEffect(() => {
-    const stopSettings = subscribeToCollection("siteSettings", (rows) => {
-      const settings = rows.find((item) => item.id === "public");
+    let active = true;
+    const applySettings = (settings: Record<string, unknown> | null) => {
+      if (!active) return;
       if (Array.isArray(settings?.serviceOrder)) setServiceOrder(settings.serviceOrder.filter((id: unknown): id is string => typeof id === "string"));
       if (Array.isArray(settings?.homepageSectionOrder)) setHomepageSectionOrder(settings.homepageSectionOrder.filter((id: unknown): id is string => typeof id === "string"));
       setLayout((current) => ({ ...current, ...Object.fromEntries(Object.keys(current).map((key) => [key, settings?.[key] ?? current[key as keyof typeof current]])) }));
-    });
+    };
+    void getPublicSiteSettingsOnce().then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined);
+    const refreshTimer = window.setInterval(() => { void getPublicSiteSettingsOnce({ force: true }).then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined); }, 45_000);
     const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true]))));
-    return () => { stopSettings(); stopLocks(); };
+    return () => { active = false; window.clearInterval(refreshTimer); stopLocks(); };
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
@@ -613,9 +616,8 @@ export default function Home() {
   }, []);
   useEffect(() => {
     let cancelled = false;
-    void getCollectionOnce("siteSettings").then((rows) => {
+    void getPublicSiteSettingsOnce().then((settings) => {
       if (cancelled) return;
-      const settings = rows.find((item) => item.id === "public");
       setCatalogInitialized(settings?.catalogInitialized === true);
     }).catch(() => undefined);
     return () => { cancelled = true; };

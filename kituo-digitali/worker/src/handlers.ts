@@ -19,7 +19,10 @@ const roles = ["user", "admin", "moderator", "support", "super_admin"] as const;
 type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
-const ADMIN_LIST_LIMIT = 250;
+// Admin panels only need a recent working set; historical records remain in
+// Firestore and are loaded through the panel's pagination where supported.
+const ADMIN_LIST_LIMIT = 50;
+const FCM_BROADCAST_LIMIT = 100;
 
 type Profile = { createdAt?: unknown; role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBonusRegistrationGranted?: boolean; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; firstName?: string; phone?: string; profileImageUrl?: string; mustChangePassword?: boolean };
 
@@ -165,8 +168,8 @@ export const sendPushNotification = callable(async (request) => {
     throw new ApiError("invalid-argument", "Weka kichwa, ujumbe na chagua mtumiaji mmoja au watumiaji wote.");
   }
   const tokensSnapshot = broadcast
-    ? await db.collection("fcmTokens").limit(1000).get()
-    : await db.collection("fcmTokens").where("uid", "==", targetUid).limit(1000).get();
+    ? await db.collection("fcmTokens").limit(FCM_BROADCAST_LIMIT).get()
+    : await db.collection("fcmTokens").where("uid", "==", targetUid).limit(100).get();
   const tokens = [...new Set(tokensSnapshot.docs.map((doc) => doc.data()?.token).filter((token): token is string => typeof token === "string" && token.length >= 20))];
   if (!tokens.length) return { sent: 0, failed: 0, message: "Hakuna kifaa kilichosajili tokeni ya arifa." };
   const accessToken = await getGoogleAccessToken();

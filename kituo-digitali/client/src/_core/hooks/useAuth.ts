@@ -93,7 +93,7 @@ export function useAuth(options?: UseAuthOptions) {
     refresh: async () => {
       if (!firebaseUser) return;
       await ensureUserProfile(firebaseUser);
-      setProfile(await getFirebaseProfileOnce(firebaseUser.uid));
+      setProfile(await getFirebaseProfileOnce(firebaseUser.uid, { force: true }));
     },
     updateProfile: async (values: Partial<FirebaseProfile>) => {
       if (!firebaseUser) return;

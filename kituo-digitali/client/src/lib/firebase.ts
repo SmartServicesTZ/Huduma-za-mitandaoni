@@ -116,6 +116,9 @@ type CollectionListener = {
   unsubscribe: () => void;
 };
 const collectionListenerCache = new Map<string, CollectionListener>();
+const PROFILE_CACHE_TTL_MS = 45_000;
+const profileCache = new Map<string, { loadedAt: number; value: FirebaseProfile | null }>();
+const profileRequests = new Map<string, Promise<FirebaseProfile | null>>();
 const collectionReadLimits: Record<string, number> = {
   announcements: 50,
   siteSettings: 10,
@@ -316,12 +319,32 @@ export async function syncFirebaseAuthClaims(force = false) {
 export async function signOutFirebaseUser() {
   const uid = firebaseAuth.currentUser?.uid;
   await signOut(firebaseAuth);
-  if (uid) authClaimsInFlight.delete(uid);
+  if (uid) {
+    authClaimsInFlight.delete(uid);
+    profileCache.delete(uid);
+    profileRequests.delete(uid);
+  }
 }
 
-export async function getFirebaseProfileOnce(uid: string): Promise<FirebaseProfile | null> {
-  const snapshot = await getDocFromServer(doc(firestore, "users", uid));
-  return snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null;
+export async function getFirebaseProfileOnce(uid: string, options?: { force?: boolean }): Promise<FirebaseProfile | null> {
+  const force = options?.force === true;
+  const cached = profileCache.get(uid);
+  if (!force && cached && Date.now() - cached.loadedAt < PROFILE_CACHE_TTL_MS) return cached.value;
+  if (force) profileCache.delete(uid);
+  const pending = profileRequests.get(uid);
+  if (!force && pending) return pending;
+  const request = getDocFromServer(doc(firestore, "users", uid)).then((snapshot) => {
+    const value = snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null;
+    profileCache.set(uid, { loadedAt: Date.now(), value });
+    return value;
+  }).catch((error) => {
+    profileCache.delete(uid);
+    throw error;
+  }).finally(() => {
+    if (profileRequests.get(uid) === request) profileRequests.delete(uid);
+  });
+  profileRequests.set(uid, request);
+  return request;
 }
 
 export function subscribeToProfile(uid: string, callback: (profile: FirebaseProfile | null) => void, onError?: (error: unknown) => void) {
@@ -330,6 +353,7 @@ export function subscribeToProfile(uid: string, callback: (profile: FirebaseProf
 
 export async function saveFirebaseProfile(uid: string, values: Partial<FirebaseProfile>) {
   await setDoc(doc(firestore, "users", uid), { ...omitUndefinedFields(values as Record<string, unknown>), updatedAt: serverTimestamp() }, { merge: true });
+  profileCache.delete(uid);
 }
 
 export async function claimDailyTokenBonus() {
@@ -690,6 +714,19 @@ export async function setHomepageServiceOrder(serviceOrder: string[], homepageSe
 export async function getPublicSiteSettings() {
   const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
   return snapshot.exists() ? snapshot.data() : null;
+}
+let publicSiteSettingsCache: { loadedAt: number; value: DocumentData | null } | undefined;
+let publicSiteSettingsRequest: Promise<DocumentData | null> | undefined;
+export async function getPublicSiteSettingsOnce(options?: { force?: boolean }) {
+  const force = options?.force === true;
+  if (!force && publicSiteSettingsCache && Date.now() - publicSiteSettingsCache.loadedAt < 45_000) return publicSiteSettingsCache.value;
+  if (!force && publicSiteSettingsRequest) return publicSiteSettingsRequest;
+  publicSiteSettingsRequest = getDoc(doc(firestore, "siteSettings", "public")).then((snapshot) => {
+    const value = snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as DocumentData) : null;
+    publicSiteSettingsCache = { loadedAt: Date.now(), value };
+    return value;
+  }).finally(() => { publicSiteSettingsRequest = undefined; });
+  return publicSiteSettingsRequest;
 }
 
 let publicLicenseTemplateCache: Record<string, unknown> | null | undefined;
