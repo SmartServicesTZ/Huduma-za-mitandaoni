@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { Bot, MessageCircle, Minimize2, Send, Sparkles, X } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; text: string };
