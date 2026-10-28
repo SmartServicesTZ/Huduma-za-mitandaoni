@@ -706,6 +706,13 @@ export async function reserveBusinessLicenseNumber(reservationId: string, licens
   return (await callable({ reservationId, licenseType })).data;
 }
 
+export async function getCollectionOnce(name: string): Promise<DocumentData[]> {
+  const source = collection(firestore, name);
+  const bounded = collectionReadLimits[name] ? query(source, limit(collectionReadLimits[name])) : source;
+  const snapshot = await getDocs(bounded);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
+}
+
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
   const existing = collectionListenerCache.get(name);
   if (existing) {
