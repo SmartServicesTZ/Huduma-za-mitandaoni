@@ -313,13 +313,13 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
     return jsonResponse({ error: { message: "Msaidizi wa AI bado hajawashwa. Admin anahitaji kuweka GEMINI_API_KEY kwenye Cloudflare Worker Secrets." } }, 503, cors);
   }
   try {
-    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: "Wewe ni msaidizi wa SmartServicesTZ. Jibu kwa Kiswahili rahisi isipokuwa mtumiaji aombe lugha nyingine. Toa maelezo sahihi na mafupi. Usidai kuwa unaweza kuona akaunti au kufanya miamala. Usitake password, API keys, au taarifa za siri." }] },
         contents: [{ role: "user", parts: [{ text: message.trim() }] }],
-        generationConfig: { maxOutputTokens: 700, temperature: 0.7 },
+        generationConfig: { maxOutputTokens: 700, thinkingConfig: { thinkingLevel: "LOW" } },
       }),
       signal: AbortSignal.timeout(55000),
     });
