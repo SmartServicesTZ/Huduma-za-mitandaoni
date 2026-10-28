@@ -386,7 +386,8 @@ export const consumeTokens = callable(async (request) => {
     const isAgentId = serviceId === "kitambulisho-wakala";
     if (service.isFree === true && !isAgentId) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     const configuredCost = Number(service.tokenCost);
-    const cost = isAgentId && (!Number.isSafeInteger(configuredCost) || configuredCost <= 0) ? 2 : configuredCost;
+    // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
+    const cost = serviceId === "yanga-africans" ? 6 : (isAgentId && (!Number.isSafeInteger(configuredCost) || configuredCost <= 0) ? 2 : configuredCost);
     if (!Number.isSafeInteger(cost) || cost <= 0 || cost > 100000) throw new ApiError("failed-precondition", "Gharama ya huduma haijawekwa sawa. Wasiliana na admin.");
     const serviceName = String(service.name ?? data.serviceName ?? serviceId).slice(0, 180);
     const userSnapshot = await transaction.get(userRef);
