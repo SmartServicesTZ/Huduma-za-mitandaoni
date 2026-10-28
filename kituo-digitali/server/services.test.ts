@@ -16,7 +16,7 @@ describe("HUDUMA ZA MTANDAONI portal", () => {
     const caller = appRouter.createCaller(createPublicContext());
     const services = await caller.portal.services();
     expect(services.length).toBeGreaterThanOrEqual(serviceCatalog.length);
-    expect(services.find((service) => service.slug === "nakala-nida")?.kind).toBe("paid");
+    expect(services.some((service) => /nida|nin/i.test(`${service.slug} ${service.name}`))).toBe(false);
     expect(services.find((service) => service.slug === "cheti-tin")?.tokenCost).toBe(2);
   });
 
