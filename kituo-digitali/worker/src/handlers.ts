@@ -384,7 +384,7 @@ export const consumeTokens = callable(async (request) => {
     // Kitambulisho cha wakala ni huduma ya kulipia hata kama rekodi ya zamani ina isFree=true/tokenCost=0.
     // Tumia bei ya admin ikiwa ni chanya; vinginevyo tokeni 2 ndizo gharama ya msingi.
     const isAgentId = serviceId === "kitambulisho-wakala";
-    if (service.isFree === true && !isAgentId) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
+    if (service.isFree === true && !isAgentId && serviceId !== "yanga-africans") throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     const configuredCost = Number(service.tokenCost);
     // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
     const cost = serviceId === "yanga-africans" ? 6 : (isAgentId && (!Number.isSafeInteger(configuredCost) || configuredCost <= 0) ? 2 : configuredCost);
