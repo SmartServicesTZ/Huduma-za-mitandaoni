@@ -396,7 +396,7 @@ function SpecialSection() {
     if (action === "whatsapp") { window.open(whatsappUrl, "_blank", "noopener,noreferrer"); return; }
     toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => window.open(whatsappUrl, "_blank") } });
   };
-  return <div className="special-grid">{specialServices.map((item) => { const action = (item as unknown as { action?: string }).action; return <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{"url" in item ? (item.url.includes("chat.whatsapp.com") ? "Fungua WhatsApp Group" : "Fungua huduma") : action === "whatsapp" ? "Fungua WhatsApp" : "Wasiliana nasi kwa malipo"}</small></div><ExternalLink size={18} /></button>; })}</div>;
+  return <div className="special-grid">{specialServices.map((item) => { const action = (item as unknown as { action?: string }).action; const isWhatsAppGroup = "url" in item && item.url.includes("chat.whatsapp.com"); return <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{isWhatsAppGroup ? <><MessageCircle size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, color: "#25D366" }} />Fungua WhatsApp Group</> : "url" in item ? "Fungua huduma" : action === "whatsapp" ? <><MessageCircle size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, color: "#25D366" }} />Fungua WhatsApp</> : "Wasiliana nasi kwa malipo"}</small></div>{isWhatsAppGroup ? <MessageCircle size={20} aria-label="WhatsApp" color="#25D366" /> : <ExternalLink size={18} />}</button>; })}</div>;
 }
 
 function TopQuickServices({ services, onUse }: { services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {
@@ -607,11 +607,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
 
-    {showAppDownload && <aside role="complementary" aria-label="Pakua SmartServicesTZ App" style={{ position: "fixed", right: 14, bottom: "calc(82px + env(safe-area-inset-bottom))", zIndex: 80, width: "min(330px, calc(100vw - 28px))", padding: "11px 12px", borderRadius: 16, border: "1px solid rgba(59,130,246,.38)", background: "var(--navy, #071a36)", color: "#fff", boxShadow: "0 10px 35px rgba(0,0,0,.28)", display: "flex", alignItems: "center", gap: 10, animation: "stzAppFloatIn .45s ease-out both" }}>
-      <span style={{ width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 12, background: "rgba(59,130,246,.18)", color: "#60a5fa", flexShrink: 0 }}><Smartphone size={21} /></span>
-      <div style={{ flex: 1, minWidth: 0 }}><strong style={{ display: "block", fontSize: 13 }}>SmartServicesTZ App</strong><a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" style={{ display: "inline-block", marginTop: 3, color: "#86efac", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Pakua App <ExternalLink size={12} style={{ display: "inline", verticalAlign: "middle" }} /></a></div>
-      <button type="button" aria-label="Funga tangazo la App" onClick={() => { setShowAppDownload(false); try { sessionStorage.setItem("stz-app-download-dismissed", "1"); } catch {} }} style={{ border: 0, background: "transparent", color: "#cbd5e1", padding: 4, cursor: "pointer" }}><X size={17} /></button>
-    </aside>}
+    {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
     <section className={`service-discovery ${allServicesPage ? "service-discovery--all" : ""}`}>
       <div className="service-discovery__intro">
         <div className="service-discovery__copy">
