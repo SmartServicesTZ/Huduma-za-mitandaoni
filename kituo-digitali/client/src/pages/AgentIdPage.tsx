@@ -418,9 +418,9 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
   const displayName = name.trim().toUpperCase();
   return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
     <CardWatermark paid={paid} />
+    {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idp-hero">
       <div className="idp-ring" />
-      {cfg.logo && <img className="idp-company-logo" src={cfg.logo} alt="" aria-hidden="true" />}
       <div className="idp-top">
         <div className="idp-brand"><Words text="HUDUMA ZA MTANDAONI" /></div>
         <LogoChip cfg={cfg} network={network} />
@@ -454,6 +454,7 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
 function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, paid }: BackProps) {
   return <div ref={innerRef} className={`idp idp-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
     <CardWatermark paid={paid} />
+    {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idp-hero idp-hero--sm">
       <div className="idp-ring" />
       {cfg.logo && <img className="idp-company-logo" src={cfg.logo} alt="" aria-hidden="true" />}
@@ -571,10 +572,24 @@ const AGENT_ID_CSS = `
 .idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
 .idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.40;filter:contrast(1.35) saturate(1.4)}
 /* Nembo kubwa zikae katikati ya sehemu kuu ya mbele kwa Airtel, Vodacom, Halotel na Yas. */
-.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%)}
+.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);opacity:.20;filter:contrast(1.12) saturate(1.15)}
+/* Mbeya One: nembo kubwa katikati, kama background ya kitambulisho chote. */
+.net-mbeya .idl-wm{position:absolute;left:50%;right:auto;top:50%;bottom:auto;width:94%;height:94%;max-width:none;max-height:none;transform:translate(-50%,-50%);object-fit:contain;opacity:.13;filter:contrast(1.12) saturate(1.15)}
+.net-mbeya .idl-bbody .idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:90%;height:90%;opacity:.12}
 /* Nembo kubwa za kampuni kwenye vitambulisho vya kusimama, mbele na nyuma. */
-.idp-company-logo{position:absolute;z-index:1;right:14px;top:34px;width:126px;height:126px;object-fit:contain;opacity:.38;filter:contrast(1.35) saturate(1.4);pointer-events:none}
-.idp-hero--sm .idp-company-logo{top:24px;width:118px;height:118px}
+/* Mtindo mpya wa vitambulisho vya kusimama: nembo ya kampuni kama watermark ya kadi nzima. */
+.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;opacity:.12;filter:contrast(1.08) saturate(1.12);pointer-events:none}
+.idp>*:not(.idp-bg-logo):not(.idp-strip){position:relative;z-index:2}
+.idp-hero{flex-basis:154px;padding-top:16px;background:linear-gradient(145deg,var(--d) 0%,var(--c) 58%,var(--h) 100%)}
+.idp-hero--sm{flex-basis:142px}
+.idp-ring{right:-35px;top:14px;width:128px;height:128px;border-width:13px;border-color:rgba(255,255,255,.16)}
+.idp-photo{width:116px;height:130px;margin-top:-48px;border-radius:18px;border-width:4px}
+.idp-name{margin-top:6px;min-height:38px;padding:0 14px}
+.idp-grid{margin:8px 16px 0;gap:6px}
+.idp-grid>div{background:rgba(248,250,252,.94);border:1px solid rgba(148,163,184,.18);border-left:3px solid var(--c);border-radius:9px}
+.idp-qr-tile{width:112px;height:112px;margin-top:-24px;border-radius:16px}
+.idp-back{padding:9px 18px 9px}
+.idp-verify{background:rgba(255,255,255,.9);box-shadow:0 5px 16px rgba(15,23,42,.08)}
 /* Sogeza watermark za Airtel, Vodacom na Halotel ndani ya kadi ili nembo zisionekane zimekatika. */
 .net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm{right:0}
 .net-airtel .idl-bbody .idl-wm,.net-vodacom .idl-bbody .idl-wm,.net-halotel .idl-bbody .idl-wm{right:150px}
