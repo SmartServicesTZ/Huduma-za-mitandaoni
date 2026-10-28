@@ -73,7 +73,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   free("tengeneza-mkataba", "TENGENEZA MKATABA", "Tengeneza mkataba unaoweza kuhariri, kuona na kuhifadhi kama PDF.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("brela", "BRELA", "Msaada wa huduma za BRELA.", "landmark", "HUDUMA ZA WAKALA"),
   locked("cheti-kuzaliwa", "CHETI CHA KUZALIWA", "Huduma hii inasubiri kufunguliwa.", "baby", "HUDUMA ZA WAKALA"),
-  paid("simba-sc", "SIMBA SC", "Fungua taarifa na huduma rasmi za Simba SC.", "trophy", "HUDUMA ZINGINE"),
+  paid("simba-sc", "SIMBA SC WHATSAPP GROUP", "Kipengele kimefungwa kwa muda; group bado halijaandaliwa.", "trophy", "HUDUMA ZINGINE"),
   paid("yanga-africans", "YANGA SC WHATSAPP GROUP", "Jiunge na group la mashabiki wa Yanga baada ya kusoma na kukubali sheria.", "star", "HUDUMA ZINGINE"),
   paid("azam-tv", "AZAM TV", "Fungua huduma rasmi za Azam TV.", "tv", "HUDUMA ZINGINE"),
 ];
