@@ -507,7 +507,7 @@ export async function adminListUsers() {
     ...user,
     createdAt: timestampValue(user.createdAt),
     lastLoginAt: timestampValue(user.lastLoginAt),
-  }));
+  })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
 export async function adminListServices() {
@@ -915,7 +915,7 @@ export async function adminListLipaApplications() {
     ...item,
     submittedAt: timestampValue(item.submittedAt),
     updatedAt: timestampValue(item.updatedAt),
-  } as LipaApplication));
+  } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
@@ -961,12 +961,22 @@ export async function updateNidaRequestPhone(requestId: string, phone: string) {
 
 export async function listMyNidaRequests() {
   const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listMyNidaRequests");
-  return (await callable({})).data.requests ?? [];
+  const rows = (await callable({})).data.requests ?? [];
+  return rows.map((item) => ({
+    ...item,
+    submittedAt: timestampValue(item.submittedAt),
+    updatedAt: timestampValue(item.updatedAt),
+  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export async function listNidaRequests() {
   const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listNidaRequests");
-  return (await callable({})).data.requests ?? [];
+  const rows = (await callable({})).data.requests ?? [];
+  return rows.map((item) => ({
+    ...item,
+    submittedAt: timestampValue(item.submittedAt),
+    updatedAt: timestampValue(item.updatedAt),
+  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export async function setNidaRequestStatus(requestId: string, status: "PROCESSING" | "REJECTED", rejectionReason = "") {
@@ -1048,7 +1058,7 @@ export async function adminListServiceApplications() {
     ...item,
     submittedAt: timestampValue(item.submittedAt),
     updatedAt: timestampValue(item.updatedAt),
-  } as ServiceApplication));
+  } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export function subscribeToAdminServiceApplications(callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
