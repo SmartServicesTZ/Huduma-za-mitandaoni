@@ -99,15 +99,17 @@ function PanelStyles() {
       .service-app-admin-count { background: #edf4ef; border-radius: 999px; color: #126c44; font-size: .72rem; margin-left: 4px; padding: 2px 7px; }
       .service-app-admin-card { background: #fff; border: 1px solid #e2e9e4; border-radius: 14px; overflow: hidden; }
       .service-app-admin-table-wrap { overflow-x: auto; }\n      .service-app-admin-mobile-list { display: none; }\n      .service-app-admin-mobile-item { border-bottom: 1px solid #edf1ee; padding: 13px; }\n      .service-app-admin-mobile-item:last-child { border-bottom: 0; }\n      .service-app-admin-mobile-top { align-items: flex-start; display: flex; gap: 10px; justify-content: space-between; }\n      .service-app-admin-mobile-name { font-size: .92rem; font-weight: 800; overflow-wrap: anywhere; }\n      .service-app-admin-mobile-service { color: #126c44; font-size: .82rem; font-weight: 700; margin-top: 4px; overflow-wrap: anywhere; }\n      .service-app-admin-mobile-meta { color: #68746e; display: flex; flex-wrap: wrap; font-size: .75rem; gap: 6px 12px; margin-top: 9px; }
-      .service-app-admin-table { border-collapse: collapse; min-width: 920px; width: 100%; }
+      .service-app-admin-table { border-collapse: collapse; table-layout: fixed; min-width: 0; width: 100%; }
       .service-app-admin-table th { background: #f7faf8; color: #63716a; font-size: .72rem; letter-spacing: .025em; text-align: left; text-transform: uppercase; white-space: nowrap; }
-      .service-app-admin-table th, .service-app-admin-table td { border-bottom: 1px solid #edf1ee; padding: 12px 11px; vertical-align: top; }
+      .service-app-admin-table th, .service-app-admin-table td { border-bottom: 1px solid #d9e1dc; padding: 10px 7px; vertical-align: top; overflow-wrap: anywhere; }
+      .service-app-admin-table th:last-child { width: 115px; }
+      .service-app-admin-table th { white-space: normal; }
       .service-app-admin-table tbody tr:last-child td { border-bottom: 0; }
       .service-app-admin-table tbody tr { cursor: pointer; transition: background .15s ease; }
-      .service-app-admin-table tbody tr.status-row-pending, .service-app-admin-mobile-item.status-row-pending { background: #fffaf0; border-left: 4px solid #d99b12; }
-      .service-app-admin-table tbody tr.status-row-processing, .service-app-admin-mobile-item.status-row-processing { background: #f2f8ff; border-left: 4px solid #3182ce; }
-      .service-app-admin-table tbody tr.status-row-approved, .service-app-admin-mobile-item.status-row-approved { background: #f0fbf4; border-left: 4px solid #16a34a; }
-      .service-app-admin-table tbody tr.status-row-rejected, .service-app-admin-mobile-item.status-row-rejected { background: #fff4f3; border-left: 4px solid #dc2626; }
+      .service-app-admin-table tbody tr.status-row-pending, .service-app-admin-mobile-item.status-row-pending { background: #fff0a8; border-left: 7px solid #c47c00; }
+      .service-app-admin-table tbody tr.status-row-processing, .service-app-admin-mobile-item.status-row-processing { background: #c8e3ff; border-left: 7px solid #0969c7; }
+      .service-app-admin-table tbody tr.status-row-approved, .service-app-admin-mobile-item.status-row-approved { background: #baf2c8; border-left: 7px solid #07833c; }
+      .service-app-admin-table tbody tr.status-row-rejected, .service-app-admin-mobile-item.status-row-rejected { background: #ffc8c4; border-left: 7px solid #c51f1a; }
       .service-app-admin-table tbody tr:hover, .service-app-admin-table tbody tr:focus-within { background: #f8fcf9; }
       .service-app-admin-table td { font-size: .84rem; }
       .service-app-admin-application { display: grid; gap: 3px; }
@@ -118,7 +120,7 @@ function PanelStyles() {
       .service-app-admin-status-processing { background: #e2f0ff; color: #14568f; }
       .service-app-admin-status-approved { background: #ddf7e8; color: #13703e; }
       .service-app-admin-status-rejected { background: #ffe4e1; color: #a63329; }
-      .service-app-admin-open { background: #f2faf5; border: 1px solid #cbd9d0; border-radius: 8px; color: #126c44; cursor: pointer; font-size: .8rem; font-weight: 700; padding: 8px 11px; }
+      .service-app-admin-open { display:block; width:100%; box-sizing:border-box; background:#087c3e; border:2px solid #045b2c; border-radius:8px; color:#fff; cursor:pointer; font-size:.76rem; font-weight:900; text-align:center; white-space:normal; overflow-wrap:anywhere; line-height:1.2; padding:8px 4px; }
       .service-app-admin-open:hover { filter: brightness(.96); }
       .service-app-admin-empty { color: #68746e; padding: 30px; text-align: center; }
       .service-app-admin-overlay { align-items: center; background: rgba(13, 28, 20, .58); display: flex; inset: 0; justify-content: center; padding: 18px; position: fixed; z-index: 70; }
@@ -158,7 +160,8 @@ function PanelStyles() {
       .service-app-admin-preview-frame { border: 0; display: block; height: min(65vh, 680px); width: 100%; }
       .service-app-admin-button:focus-visible, .service-app-admin-open:focus-visible, .service-app-admin-tab:focus-visible, .service-app-admin-close:focus-visible, .service-app-admin-form textarea:focus-visible { outline: 3px solid rgba(24, 137, 83, .24); outline-offset: 2px; }
       @media (max-width: 720px) { .service-app-admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      @media (max-width: 620px) { .service-app-admin-table-wrap { display: none; } .service-app-admin-mobile-list { display: block; } .service-app-admin-heading { flex-direction: column; } .service-app-admin-detail-grid { grid-template-columns: 1fr; } .service-app-admin-modal { padding: 17px; } .service-app-admin-file { align-items: flex-start; flex-direction: column; } .service-app-admin-file-actions { width: 100%; } .service-app-admin-file-actions .service-app-admin-button { flex: 1; } }
+      @media (max-width: 900px) { .service-app-admin-table th, .service-app-admin-table td { padding:8px 5px; font-size:.76rem; } .service-app-admin-open { font-size:.7rem; padding:7px 3px; } }
+      @media (max-width: 620px) { .service-app-admin-table-wrap { display: none; } .service-app-admin-mobile-list { display: block; } .service-app-admin-mobile-item { border:2px solid #d2ddd5; border-radius:13px; margin:10px; box-shadow:0 3px 9px rgba(15,35,25,.12); overflow:hidden; } .service-app-admin-heading { flex-direction: column; } .service-app-admin-detail-grid { grid-template-columns: 1fr; } .service-app-admin-modal { padding: 17px; } .service-app-admin-file { align-items: flex-start; flex-direction: column; } .service-app-admin-file-actions { width: 100%; } .service-app-admin-file-actions .service-app-admin-button { flex: 1; } }
     `}</style>
   );
 }
@@ -359,7 +362,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                     <StatusBadge status={application.status} />
                   </div>
                   <div className="service-app-admin-mobile-meta"><span>{dateText(application.submittedAt)}</span></div>
-                  <div style={{ marginTop: 10 }}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>Open</button></div>
+                  <div style={{ marginTop: 10 }}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>FUNGUA OMBI</button></div>
                 </article>
               );
             })}
