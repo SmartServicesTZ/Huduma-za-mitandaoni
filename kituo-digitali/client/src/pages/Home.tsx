@@ -973,7 +973,7 @@ export default function Home() {
             <button type="button" className="yanga-rules-join yanga-entry-free" onClick={() => { setYangaEntryStep("quiz"); setYangaQuizError(""); setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) }))); }}>JIBU MASWALI KUJIUNGA BURE</button>
           </div>
           <p className="yanga-entry-hint">Njia ya bure inahitaji majibu yote sahihi na kuchagua wachezaji 11 wa Yanga.</p>
-        </> : !yangaQuizPassed ? <>
+        </> : yangaEntryStep === "quiz" ? <>
           <h2 id="yanga-rules-title">Thibitisha kuwa shabiki wa Yanga</h2>
           <p className="yanga-rules-motto">Maswali 10 huchaguliwa kwa bahati nasibu kutoka kwenye hifadhi ya maswali zaidi ya 100. Kila jaribio linaweza kuwa tofauti.</p>
           <div className="yanga-fan-confirm">
