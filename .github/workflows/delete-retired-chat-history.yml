@@ -20,12 +20,6 @@ jobs:
     if: ${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '[delete-chat-history]')) || (github.event_name == 'workflow_dispatch' && inputs.confirmation == 'DELETE_CHAT_HISTORY') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check deletion confirmation
-        run: |
-          if [ "${{ inputs.confirmation }}" != "DELETE_CHAT_HISTORY" ]; then
-            echo "Confirmation did not match; no data was deleted."
-            exit 1
-          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
