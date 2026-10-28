@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { BadgeCheck, CheckCircle2, Globe2, ImagePlus, LockKeyhole, LogOut, ShieldCheck, UserRound, Bell, Palette, SlidersHorizontal, Eye, History, WalletCards } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Globe2, ImagePlus, LockKeyhole, LogOut, ShieldCheck, UserRound, Bell, MessageCircle, Palette, SlidersHorizontal, Eye, History, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { subscribeUserMessages, updatePassword } from "@/lib/firebase";
