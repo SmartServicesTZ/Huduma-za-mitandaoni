@@ -6,6 +6,7 @@ import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import GeminiFloatingChat from "./components/GeminiFloatingChat";
 
 function Router() {
   return (
@@ -68,6 +69,7 @@ function App() {
           <Toaster />
           <DownloadProgressNotice />
           <Router />
+          <GeminiFloatingChat />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
