@@ -35,8 +35,11 @@ async function profileFor(uid: string) {
   const snapshot = await db.collection("users").doc(uid).get();
   if (!snapshot.exists) throw new ApiError("permission-denied", "Profile ya akaunti haijapatikana.");
   const profile = snapshot.data() as Profile;
-  const role = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
-  return { ...profile, role };
+  const roleResolution = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313");
+  if (roleResolution.shouldDemote) {
+    await db.collection("users").doc(uid).update({ role: "user", permissions: {}, updatedAt: FieldValue.serverTimestamp() });
+  }
+  return { ...profile, role: roleResolution.role, ...(roleResolution.shouldDemote ? { permissions: {} } : {}) };
 }
 
 const callableAccessAction: Record<string, "admin" | "read" | "profile" | "applications" | "services" | "payments" | "auth"> = {
@@ -1135,8 +1138,18 @@ export const listAdminUsers = callable(async (request) => {
   requirePermission(actor, "viewUsers");
 
   const snapshot = await db.collection("users").limit(ADMIN_LIST_LIMIT).get();
-  return snapshot.docs.map((document) => {
+  return Promise.all(snapshot.docs.map(async (document) => {
     const data = document.data() as Record<string, unknown>;
+    const roleResolution = resolveAuthRole(
+      typeof data.role === "string" ? data.role as Role : undefined,
+      data.phone,
+      getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313",
+    );
+    if (roleResolution.shouldDemote) {
+      await document.ref.update({ role: "user", permissions: {}, updatedAt: FieldValue.serverTimestamp() });
+      data.role = "user";
+      data.permissions = {};
+    }
     const {
       password: _password,
       pin: _pin,
@@ -1145,8 +1158,8 @@ export const listAdminUsers = callable(async (request) => {
       emailVerified: _emailVerified,
       ...safeData
     } = data;
-    return { id: document.id, ...safeData };
-  });
+    return { id: document.id, ...safeData, role: roleResolution.role };
+  }));
 });
 
 export const updateUserAccess = callable(async (request) => {
