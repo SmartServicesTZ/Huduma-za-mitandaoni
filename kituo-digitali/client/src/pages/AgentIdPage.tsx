@@ -456,6 +456,7 @@ function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region
     <CardWatermark paid={paid} />
     <div className="idp-hero idp-hero--sm">
       <div className="idp-ring" />
+      {cfg.logo && <img className="idp-company-logo" src={cfg.logo} alt="" aria-hidden="true" />}
       <div className="idp-top">
         <div className="idp-brand"><Words text="HUDUMA ZA MTANDAONI" /></div>
         <LogoChip cfg={cfg} network={network} />
