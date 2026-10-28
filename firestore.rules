@@ -36,19 +36,6 @@ service cloud.firestore {
     function canManageMessages() { return hasPermission('manageMessages'); }
     function canViewUsers() { return hasPermission('viewUsers') || hasPermission('manageUsers'); }
     function canViewAuditLogs() { return hasPermission('viewAuditLogs'); }
-    function isConversationParticipant(roomId) {
-      let roomPath = /databases/$(database)/documents/conversations/$(roomId);
-      return signedIn() && exists(roomPath) && request.auth.uid in get(roomPath).data.participants;
-    }
-    function canOpenConversationId(roomId) {
-      let participants = roomId.split('__');
-      return signedIn() && participants.size() == 2 && request.auth.uid in participants;
-    }
-    function isNotBlockedByEither(uidA, uidB) {
-      let aBlocksB = /databases/$(database)/documents/userBlocks/$(uidA)/blocked/$(uidB);
-      let bBlocksA = /databases/$(database)/documents/userBlocks/$(uidB)/blocked/$(uidA);
-      return !exists(aBlocksB) && !exists(bBlocksA);
-    }
     function serviceIsUnlocked(slug) {
       let lockPath = /databases/$(database)/documents/serviceLocks/$(slug);
       return exists(lockPath)
