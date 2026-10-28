@@ -42,7 +42,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat"
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createPocketWifiOrder: "applications", createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
-  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", findChatUser: "chat", listChatMembers: "chat", createTokenPurchaseOrder: "payments",
+  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", createTokenPurchaseOrder: "payments",
   markUserMessageRead: "read", registerFcmToken: "profile", sendPushNotification: "admin", syncAuthClaims: "auth",
 };
 
@@ -1202,30 +1202,6 @@ export const syncAuthClaims = callable(async (request) => {
     throw new ApiError("unavailable", "Role ya akaunti haikuweza kusawazishwa sasa hivi.");
   }
   return { role, permissions: safePermissions, isSuperAdmin: role === "super_admin" };
-});
-
-export const listChatMembers = callable(async (request) => {
-  const uid = authUid(request);
-  await profileFor(uid);
-  const snapshot = await db.collection("users").limit(500).get();
-  return snapshot.docs.map((item) => ({ item, profile: item.data() as Profile | undefined }))
-    .filter(({ item, profile }) => item.id !== uid && profile?.accountStatus !== "blocked" && profile?.accountStatus !== "deleted")
-    .map(({ item, profile }) => ({ uid: item.id, name: String(profile?.name ?? "Mwanachama"), phone: String(profile?.phone ?? ""), profileImageUrl: typeof profile?.profileImageUrl === "string" ? profile.profileImageUrl : "", verificationStatus: profile?.verificationStatus }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-});
-
-export const findChatUser = callable(async (request) => {
-  const uid = authUid(request);
-  const data = (request.data ?? {}) as Record<string, unknown>;
-  const phone = normalizeTanzaniaPhone(data.phone);
-  if (!phone) throw new ApiError("invalid-argument", "Weka namba halali ya simu ya Tanzania.");
-  if (normalizeTanzaniaPhone((await profileFor(uid)).phone) === phone) throw new ApiError("invalid-argument", "Huwezi kuanzisha mazungumzo na akaunti yako mwenyewe.");
-  const matches = await db.collection("users").where("phone", "==", phone).limit(1).get();
-  const target = matches.docs[0];
-  if (!target) throw new ApiError("not-found", "Hakuna akaunti iliyopatikana kwa namba hiyo.");
-  const user = target.data() as Profile;
-  if (user.accountStatus === "blocked") throw new ApiError("failed-precondition", "Akaunti hii haipatikani kwa sasa.");
-  return { uid: target.id, name: String(user.name ?? "Mwanachama"), phone };
 });
 
 export const claimRegistrationPhone = callable(async (request) => {
