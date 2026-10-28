@@ -154,7 +154,7 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
     setAuthError(null);
     if (!form.phone.trim() || !form.password) { setAuthError({ title: "Taarifa hazijakamilika", detail: "Weka namba ya simu na password kabla ya kuendelea.", code: "form/incomplete" }); return; }
     if (mode === "register" && (!form.firstName.trim() || !form.lastName.trim())) { setAuthError({ title: "Taarifa za usajili hazijakamilika", detail: "Jaza jina la kwanza na jina la mwisho.", code: "form/profile-required" }); return; }
-    if (!normalizeTanzaniaPhone(form.phone)) { setAuthError({ title: "Namba ya simu si sahihi", detail: "Tumia namba ya Tanzania, mfano 0692287767 au +255692287767.", code: "form/invalid-phone" }); return; }
+    if (!normalizeTanzaniaPhone(form.phone)) { setAuthError({ title: "Namba ya simu si sahihi", detail: "Tumia namba ya Tanzania, mfano 0712345678 au +255712345678.", code: "form/invalid-phone" }); return; }
     if (mode === "register" && form.password !== form.confirmPassword) { setAuthError({ title: "Password hazifanani", detail: "Andika password ileile kwenye sehemu zote mbili.", code: "form/password-mismatch" }); return; }
     if (mode === "register" && form.password.length < 6) { setAuthError({ title: "Password ni fupi", detail: "Password iwe na angalau herufi 6.", code: "form/weak-password" }); return; }
     setPending(true);
@@ -173,7 +173,7 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
         "email-already-in-use": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
         "phone/already-registered": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
         "already-exists": { title: "Namba hii tayari imesajiliwa. Tafadhali ingia kwenye akaunti yako.", detail: "Tumia namba hiyo hiyo kuingia." },
-        "phone/invalid": { title: "Namba ya simu si sahihi", detail: "Tumia namba halali ya Tanzania, mfano 0692287767 au +255692287767." },
+        "phone/invalid": { title: "Namba ya simu si sahihi", detail: "Tumia namba halali ya Tanzania, mfano 0712345678 au +255712345678." },
         "weak-password": { title: "Password ni dhaifu", detail: "Password iwe na angalau herufi 6." },
         "too-many-requests": { title: "Majaribio yamezidi", detail: "Subiri muda kidogo kabla ya kujaribu tena." },
         "operation-not-allowed": { title: "Mfumo wa usajili haujawashwa", detail: "Admin akague njia ya Firebase Authentication iliyowashwa." },
