@@ -998,7 +998,23 @@ export default function Home() {
             </div>
           </div>
           {yangaQuizError && <p className="yanga-quiz-error" role="alert">{yangaQuizError}</p>}
-          <button type="button" className="yanga-rules-join" onClick={submitYangaQuiz}>Thibitisha majibu na endelea</button>
+          <button type="button" className="yanga-rules-join" onClick={submitYangaQuiz}>THIBITISHA MAJIBU NA UENDELEE</button>
+        </> : yangaEntryStep === "review" ? <>
+          <h2 id="yanga-rules-title">Matokeo ya majibu yako</h2>
+          <p className="yanga-rules-motto">Kagua majibu uliyokosea na jibu sahihi. Jaribio linalofuata litakuwa na maswali mapya.</p>
+          <div className="yanga-quiz-review-list">
+            {yangaReviewResults.map((result, i) => <div className={result.isCorrect ? "yanga-quiz-review-item correct" : "yanga-quiz-review-item incorrect"} key={i}>
+              <strong>{i + 1}. {result.question}</strong>
+              <p>Jibu lako: <b>{result.selected}</b> {result.isCorrect ? "✓ Sahihi" : "✗ Si sahihi"}</p>
+              {!result.isCorrect && <p>Jibu sahihi: <b>{result.correct}</b></p>}
+            </div>)}
+          </div>
+          {yangaPlayersReview && <div className={yangaPlayersReview.isCorrect ? "yanga-quiz-review-item correct" : "yanga-quiz-review-item incorrect"}>
+            <strong>Uchaguzi wa wachezaji</strong>
+            <p>{yangaPlayersReview.isCorrect ? "Umechagua wachezaji 11 sahihi wa Yanga." : "Umechagua majina yasiyo sahihi au umeacha baadhi ya wachezaji wa Yanga."}</p>
+            {!yangaPlayersReview.isCorrect && <p>Majina 11 sahihi: <b>{yangaPlayersReview.correct.join(", ")}</b></p>}
+          </div>}
+          <button type="button" className="yanga-rules-join" onClick={retryYangaQuiz}>MASWALI MAPYA, JARIBU TENA</button>
         </> : <>
           <h2 id="yanga-rules-title">💚 SHERIA ZA GROUP LA WANANCHI 💚</h2>
           <p className="yanga-rules-motto">Daima Mbele, Nyuma Mwiko! 💪💚💛</p>
