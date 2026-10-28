@@ -300,7 +300,12 @@ export const claimDailyTokenBonus = callable(async (request) => {
   const settingsRef = db.collection("siteSettings").doc("public");
   // Tarehe ya bonus hutumia siku ya Tanzania (EAT), si UTC.
   const now = new Date();
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Dar_es_Salaam", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const dateInTanzania = (date: Date) => {
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Dar_es_Salaam", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+    const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "";
+    return part("year") + "-" + part("month") + "-" + part("day");
+  };
+  const today = dateInTanzania(now);
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
     if (!userSnap.exists) throw new ApiError("not-found", "Profile ya akaunti haijapatikana.");
@@ -312,7 +317,7 @@ export const claimDailyTokenBonus = callable(async (request) => {
     // Usajili siku hii unatoa tokeni za usajili pekee; bonus ya kila siku huanza siku inayofuata.
     const createdAt = profile.createdAt;
     const createdDate = createdAt && typeof createdAt === "object" && "toDate" in createdAt && typeof (createdAt as {toDate?: unknown}).toDate === "function"
-      ? new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Dar_es_Salaam", year: "numeric", month: "2-digit", day: "2-digit" }).format((createdAt as {toDate: () => Date}).toDate())
+      ? dateInTanzania((createdAt as {toDate: () => Date}).toDate())
       : typeof createdAt === "string" ? createdAt.slice(0, 10) : "";
     if (!createdDate || createdDate >= today || profile.lastDailyTokenBonusDate === today || dailyBonus === 0) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0) };
     const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
