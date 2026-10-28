@@ -1,16 +1,17 @@
 import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "wouter";
+import "./HomeRefresh.css";
 import {
   BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
-import { mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
+import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
-import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, type HomepageSectionId } from "../../../shared/serviceOrdering";
+import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, preferredHomepageServiceSlugs, prioritizeHomepageServices, type HomepageSectionId } from "../../../shared/serviceOrdering";
 import { clearDownloadHistory, downloadFromHistory, getDownloadHistory, removeDownload, type DownloadHistoryItem } from "@/lib/downloadHistory";
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
 const BusinessLicensePage = lazy(() => import("./BusinessLicensePage"));
@@ -342,12 +343,12 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
     "stika-lipa": "#db2777",
     "stika-mawakala": "#d97706",
     "pata-lipa-namba": "#0d9488",
-    "access-lipa-number": "#8b5cf6",
-    "kitambulisho-wakala": "#e11d48",
-    "sme-airtel-mkataba": "#475569",
-    "sme-vodacom": "#e60000",
+    "access-lipa-number": "#2563eb",
+    "kitambulisho-wakala": "#db2777",
+    "sme-airtel-mkataba": "#f59e0b",
+    "sme-vodacom": "#7f1d1d",
     "sme-airtel": "#ed1c24",
-    "change-business-name-airtel-lipa": "#9333ea",
+    "change-business-name-airtel-lipa": "#4338ca",
     "tengeneza-mkataba": "#be185d",
     "brela": "#2563eb",
     "cheti-kuzaliwa": "#ec4899",
@@ -361,16 +362,31 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
   const accent = locked ? "#dc2626" : (serviceColors[service.slug] ?? palette[colorIndex]);
   const serviceIcons: Record<string, string> = { "pata-lipa-namba": "wallet-cards", "access-lipa-number": "smartphone", "cheti-tin": "file-badge", "leseni-biashara": "briefcase-business", "leseni-udereva": "car-front", "stika-lipa": "qr-code", "stika-mawakala": "ticket", "sme-vodacom": "radio", "sme-airtel": "credit-card", "sme-airtel-mkataba": "copy", "change-business-name-airtel-lipa": "file-pen", "brela": "landmark", "mpiga-kura": "vote", "kitambulisho-wakala": "user-round-pen", "cheti-kuzaliwa": "baby", "simba-sc": "trophy", "yanga-africans": "star", "azam-tv": "tv", "pata-pocket-wifi-mabando": "wifi" };
   const iconName = locked ? service.icon : serviceIcons[service.slug] ?? service.icon;
+  const priorityNumber = preferredHomepageServiceSlugs.indexOf(service.slug as (typeof preferredHomepageServiceSlugs)[number]);
+  const cardStyle = {
+    "--service-icon-bg": `linear-gradient(145deg, ${accent}, ${accent}d9)`,
+    background: `linear-gradient(145deg, ${accent}18 0%, #ffffff 78%)`,
+    borderColor: `${accent}55`,
+    boxShadow: `0 5px 18px ${accent}12`,
+  } as React.CSSProperties;
   return <div className="portal-service-card-wrap">
-    <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)} style={{ background: `linear-gradient(145deg, ${accent}18 0%, #ffffff 78%)`, borderColor: `${accent}55`, boxShadow: `0 5px 18px ${accent}12` }}>
-      <div className="service-card-icon" data-service-icon={iconName} style={{ background: `linear-gradient(145deg, #ffffff 12%, ${accent}22 100%)`, color: accent, border: `1px solid ${accent}55`, boxShadow: `0 6px 14px ${accent}22` }}><span className="service-card-icon__ring" aria-hidden="true" /><Icon name={iconName} size={24} /></div>
+    <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)} style={cardStyle}>
+      {priorityNumber >= 0 && <span className="service-card-index" aria-hidden="true">{String(priorityNumber + 1).padStart(2, "0")}</span>}
+      <div className="service-card-icon" data-service-icon={iconName} aria-hidden="true" style={{ background: `linear-gradient(145deg, ${accent}, ${accent}d9)`, color: "#fff", border: `1px solid ${accent}`, boxShadow: `0 8px 18px ${accent}48` }}><span className="service-card-icon__ring" aria-hidden="true" /><Icon name={iconName} size={24} /></div>
       <div className="service-card-copy"><strong>{service.name}</strong><span>{locked ? (service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.") : service.description}</span></div>
       <div className="service-card-foot">{locked ? <span className="locked-label"><LockKeyhole size={14} /> IMEFUNGWA</span> : service.slug === "pata-pocket-wifi-mabando" ? <span className="paid-label"><Wifi size={14} /> Vifaa &amp; Mabando</span> : service.kind === "free" ? <span className="free-label">Bure</span> : <span className="paid-label"><CreditCard size={14} /> Tokeni {service.tokenCost}</span>}{external ? <span className="external-label"><ExternalLink size={13} /> FUNGUA</span> : <ChevronRight size={17} />}</div>
     </button>
   </div>;
 }
 
-function ServiceGrid({ title, services, onUse }: { title: string; services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) { const arrangedServices = [...services].sort((a, b) => Number(a.kind === "locked") - Number(b.kind === "locked") || a.name.localeCompare(b.name, "sw")); const openCount = arrangedServices.filter((service) => service.kind !== "locked").length; return <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>{title}</h2><p className="service-order-hint">{openCount} wazi · {arrangedServices.length - openCount} zimefungwa</p></div><span className="section-count">{services.length}</span></div><div className="portal-service-grid">{arrangedServices.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div></section>; }
+function ServiceGrid({ title, services, onUse }: { title: string; services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {
+  const arrangedServices = prioritizeHomepageServices(services);
+  const openCount = arrangedServices.filter((service) => service.kind !== "locked").length;
+  return <section className="portal-section">
+    <div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>{title}</h2><p className="service-order-hint">{openCount} wazi · {arrangedServices.length - openCount} zimefungwa</p></div><span className="section-count">{services.length}</span></div>
+    <div className="portal-service-grid portal-service-grid--ordered">{arrangedServices.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div>
+  </section>;
+}
 
 function SpecialSection() {
   const open = (item: typeof specialServices[number]) => {
@@ -547,12 +563,20 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const categories = ["Zote", "Zilizohifadhiwa", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))];
   const matches = displayedServices.filter((service) => (category === "Zote" || (category === "Zilizohifadhiwa" ? favoriteSlugs.includes(service.slug) : service.category === category)) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
   const mainBase = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
-  const tinCertificate = mainBase.find((service) => service.slug === "cheti-tin") ?? services.find((service) => service.slug === "cheti-tin") ?? serviceCatalog.find((service) => service.slug === "cheti-tin");
-  const main = [
-    mainBase.find((service) => service.slug === "leseni-biashara"),
-    tinCertificate,
-    ...mainBase.filter((service) => service.slug !== "leseni-biashara" && service.slug !== "cheti-tin"),
-  ].filter(Boolean) as ServiceCatalogItem[];
+  const configuredTin = services.find((service) => service.slug === "cheti-tin");
+  const tinFallback = mainBase.find((service) => service.slug === "cheti-tin") ?? (
+    category === "Zote" && (!lower || "tin certificate cheti tin pata cheti cha tin kwa hatua rahisi huduma za wakala".includes(lower))
+      ? configuredTin
+        ? configuredTin.active !== false && configuredTin.isVisible !== false ? configuredTin : undefined
+        : serviceCatalog.find((service) => service.slug === "cheti-tin")
+      : undefined
+  );
+  const tinCertificate = tinFallback && isServiceLocked("cheti-tin", serviceLockOverrides["cheti-tin"], tinFallback.kind === "locked")
+    ? { ...tinFallback, kind: "locked" as const, description: tinFallback.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye." }
+    : tinFallback;
+  const main = tinCertificate
+    ? [mainBase.find((service) => service.slug === "leseni-biashara"), tinCertificate, ...mainBase.filter((service) => service.slug !== "leseni-biashara" && service.slug !== "cheti-tin")].filter(Boolean) as ServiceCatalogItem[]
+    : mainBase;
   const other = matches.filter((service) => service.category === "HUDUMA ZINGINE");
   const sections: Record<HomepageSectionId, React.ReactNode> = {
     services: <ServiceGrid title="HUDUMA ZA WAKALA" services={main} onUse={onUse} />,
@@ -563,8 +587,8 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   };
   const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
   const freeCount = displayedServices.filter((service) => service.kind === "free").length;
-  const paidCount = displayedServices.filter((service) => service.kind === "paid").length;
   const lockedCount = displayedServices.filter((service) => service.kind === "locked").length;
+  const openCount = displayedServices.length - lockedCount;
   const layoutStyle = { "--home-cols": layout.homeColumns, "--home-tablet-cols": layout.homeTabletColumns, "--home-mobile-cols": layout.homeMobileColumns, "--section-gap": `${layout.sectionGap}px`, "--card-gap": `${layout.cardGap}px`, "--card-radius": `${layout.cardRadius}px`, "--card-padding": `${layout.cardPadding}px`, "--hero-radius": `${layout.heroRadius}px`, "--hero-padding": `${layout.heroPadding}px`, "--content-max": `${layout.contentMaxWidth}px` } as React.CSSProperties;
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
@@ -574,7 +598,20 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
       <div style={{ flex: 1, minWidth: 0 }}><strong style={{ display: "block", fontSize: 13 }}>SmartServicesTZ App</strong><a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" style={{ display: "inline-block", marginTop: 3, color: "#86efac", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Pakua App <ExternalLink size={12} style={{ display: "inline", verticalAlign: "middle" }} /></a></div>
       <button type="button" aria-label="Funga tangazo la App" onClick={() => { setShowAppDownload(false); try { sessionStorage.setItem("stz-app-download-dismissed", "1"); } catch {} }} style={{ border: 0, background: "transparent", color: "#cbd5e1", padding: 4, cursor: "pointer" }}><X size={17} /></button>
     </aside>}
-    <section className="service-discovery"><div><span className="overline">{allServicesPage ? "TAFUTA NA CHUJA" : "SMART SERVICES"}</span><h2>{allServicesPage ? "HUDUMA ZOTE" : "Chagua huduma"}</h2><p>{allServicesPage ? `${matches.length} kati ya ${displayedServices.length} huduma zinaonekana. Tumia utafutaji au makundi kuchuja.` : "Anza hapa — huduma zako zote sehemu moja."}</p></div><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div></section>
+    <section className={`service-discovery ${allServicesPage ? "service-discovery--all" : ""}`}>
+      <div className="service-discovery__intro">
+        <div className="service-discovery__copy">
+          <span className="service-discovery__eyebrow"><Sparkles size={14} aria-hidden="true" /> {allServicesPage ? "ORODHA YA HUDUMA" : "SMARTSERVICESTZ · DIGITAL SERVICE HUB"}</span>
+          <h2>{allServicesPage ? "HUDUMA ZOTE" : <>Huduma kwa biashara,<span> sehemu moja.</span></>}</h2>
+          <p>{allServicesPage ? `${matches.length} kati ya ${displayedServices.length} huduma zinaonekana. Tumia utafutaji au makundi kuchuja.` : "Pata leseni, TIN, Lipa, usajili na mawasiliano ya biashara kwa urahisi."}</p>
+        </div>
+        <div className="service-discovery__stats" aria-label="Muhtasari wa huduma">
+          <div className="service-discovery__stat"><span className="service-discovery__stat-icon service-discovery__stat-icon--open"><BriefcaseBusiness size={17} aria-hidden="true" /></span><span><strong>{openCount}</strong><small>Huduma zilizo wazi</small></span></div>
+          <div className="service-discovery__stat"><span className="service-discovery__stat-icon service-discovery__stat-icon--free"><Zap size={17} aria-hidden="true" /></span><span><strong>{freeCount}</strong><small>Huduma za bure</small></span></div>
+        </div>
+      </div>
+      <div className="service-discovery__filters"><span>CHUJA HUDUMA</span><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item) => <button key={item} type="button" className={category === item ? "active" : ""} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}</div></div>
+    </section>
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
 }
@@ -636,7 +673,28 @@ export default function Home() {
     let cancelled = false;
     void getCollectionOnce("services").then((rows) => {
     if (cancelled) return;
-    setServices(rows.map((item) => ({ slug: ["thibitisha-tin", "verify-tin"].includes(String(item.slug ?? item.id)) ? "verify-tin" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" || String(item.slug ?? item.id) === "verify-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), tokenType: item.tokenType === "nida" ? "nida" : "huduma", category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
+    setServices(rows.map((item) => {
+      const rawSlug = String(item.slug ?? item.id);
+      const slug = ["thibitisha-tin", "verify-tin"].includes(rawSlug) ? "verify-tin" : rawSlug;
+      const fallbackName = slug === "verify-tin" ? "VERIFY TIN" : slug === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : String(item.name ?? "Huduma");
+      return {
+        slug,
+        name: getPortalServiceName(slug, fallbackName),
+        description: String(slug === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""),
+        icon: String(item.icon ?? "sparkles"),
+        tokenCost: Number(item.tokenCost ?? 0),
+        tokenType: item.tokenType === "nida" ? "nida" : "huduma",
+        category: String(item.category ?? "Huduma kuu"),
+        kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"],
+        actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined,
+        order: Number(item.order ?? 9999),
+        fields: Array.isArray(item.fields) ? item.fields : undefined,
+        active: item.active !== false,
+        isVisible: item.isVisible !== false,
+        isLocked: item.isLocked === true,
+        maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined,
+      };
+    }));
     setServicesLoading(false);
     }).catch(() => { if (!cancelled) setServicesLoading(false); });
     return () => { cancelled = true; };

@@ -39,24 +39,35 @@ export type TutorialItem = {
 export const announcementText = "Msaada na huduma kwa wateja: WhatsApp +255 698 232 313.";
 export const whatsappUrl = "https://wa.me/255692287767?text=Habari%20HUDUMA%20ZA%20MTANDAONI%2C%20nahitaji%20msaada.";
 
+const portalServiceNameOverrides: Record<string, string> = {
+  "cheti-tin": "TIN CERTIFICATE",
+  "pata-lipa-namba": "PATA LIPA NAMBA",
+  "access-lipa-number": "PATA ACCESS YA LIPA & USAJILI",
+  "pata-pocket-wifi-mabando": "PATA POCKET WIFI & BANDO",
+};
+
+export function getPortalServiceName(slug: string, fallbackName = "Huduma") {
+  return portalServiceNameOverrides[slug] ?? fallbackName;
+}
+
 const paid = (slug: string, name: string, description: string, icon: string, category: string): ServiceCatalogItem => ({ slug, name, description, icon, category, tokenCost: 2, kind: "paid" });
 const free = (slug: string, name: string, description: string, icon: string, category: string): ServiceCatalogItem => ({ slug, name, description, icon, category, tokenCost: 0, kind: "free" });
 const locked = (slug: string, name: string, description: string, icon: string, category: string): ServiceCatalogItem => ({ slug, name, description, icon, category, tokenCost: 0, kind: "locked" });
 
 export const serviceCatalog: ServiceCatalogItem[] = [
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "HUDUMA ZA WAKALA"),
-  paid("cheti-tin", "TIN NUMBER CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "HUDUMA ZA WAKALA"),
+  paid("cheti-tin", "TIN CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "HUDUMA ZA WAKALA"),
   paid("verify-tin", "VERIFY TIN", "Jaza na hakiki taarifa za TIN yako.", "badge-check", "HUDUMA ZA WAKALA"),
   paid("mpiga-kura", "SOFT COPY YA MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "HUDUMA ZA WAKALA"),
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "HUDUMA ZA WAKALA"),
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "HUDUMA ZA WAKALA"),
-  free("pata-lipa-namba", "PATA LIPA NAMBA BURE", "Omba Lipa Namba ya mtandao unaotumia bila malipo.", "landmark", "HUDUMA ZA WAKALA"),
-  free("access-lipa-number", "PATA ACCESS YA LIPA&USAJILI", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "HUDUMA ZA WAKALA"),
+  free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia bila malipo.", "landmark", "HUDUMA ZA WAKALA"),
+  free("access-lipa-number", "PATA ACCESS YA LIPA & USAJILI", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "HUDUMA ZA WAKALA"),
   paid("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA USAJILI & LIPA", "Tengeneza kitambulisho cha kisasa cha wakala wa usajili na Lipa.", "badge-check", "HUDUMA ZA WAKALA"),
   paid("sme-airtel-mkataba", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "HUDUMA ZA WAKALA"),
   free("sme-vodacom", "SME VODACOM", "Omba kuunganishwa SME Vodacom na uwasilishe cheti cha TIN.", "smartphone", "HUDUMA ZA WAKALA"),
-  free("pata-pocket-wifi-mabando", "PATA POCKET WIFI & MABANDO", "Chagua router na bando la Vodacom Unlimited M2M, kisha tuma oda yako.", "wifi", "HUDUMA ZA WAKALA"),
+  free("pata-pocket-wifi-mabando", "PATA POCKET WIFI & BANDO", "Chagua router na bando la Vodacom Unlimited M2M, kisha tuma oda yako.", "wifi", "HUDUMA ZA WAKALA"),
   { ...free("sme-airtel", "SME AIRTEL", "Sajili laini mpya au ya zamani kwenye SME Airtel. Vocha kuanzia TSh 10,000; zawadi ya TSh 2,000 kwa SME iliyothibitishwa.", "smartphone", "HUDUMA ZA WAKALA"), reward: 2000 },
   free("change-business-name-airtel-lipa", "CHANGE BUSINESS NAME AIRTEL LIPA", "Jaza fomu rasmi ya kubadili jina la biashara kwenye Airtel Lipa bila kuondoka kwenye website au app.", "file-pen", "HUDUMA ZA WAKALA"),
   free("tengeneza-mkataba", "TENGENEZA MKATABA", "Tengeneza mkataba unaoweza kuhariri, kuona na kuhifadhi kama PDF.", "file-badge", "HUDUMA ZA WAKALA"),

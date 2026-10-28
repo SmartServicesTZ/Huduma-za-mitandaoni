@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeServiceCatalogDefaults, serviceCatalog } from "./catalog";
+import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog } from "./catalog";
 
 describe("legacy service catalogue migration fallback", () => {
   it("keeps legacy services visible while the Firestore catalogue is not initialized", () => {
@@ -8,6 +8,13 @@ describe("legacy service catalogue migration fallback", () => {
     expect(services.map((service) => service.slug)).toContain("leseni-biashara");
     expect(services.map((service) => service.slug)).toContain("pata-lipa-namba");
     expect(services.length).toBe(serviceCatalog.length);
+  });
+
+  it("uses the requested storefront names even when stored service labels are older", () => {
+    expect(getPortalServiceName("cheti-tin", "TIN NUMBER CERTIFICATE")).toBe("TIN CERTIFICATE");
+    expect(getPortalServiceName("pata-lipa-namba", "PATA LIPA NAMBA BURE")).toBe("PATA LIPA NAMBA");
+    expect(getPortalServiceName("access-lipa-number", "PATA ACCESS YA LIPA&USAJILI")).toBe("PATA ACCESS YA LIPA & USAJILI");
+    expect(getPortalServiceName("pata-pocket-wifi-mabando", "PATA POCKET WIFI & MABANDO")).toBe("PATA POCKET WIFI & BANDO");
   });
 
   it("uses Firestore records to override defaults and keeps newly configured services", () => {

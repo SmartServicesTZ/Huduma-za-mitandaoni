@@ -2,6 +2,18 @@ export const homepageSectionIds = ["services", "locked", "special", "tools", "tu
 export type HomepageSectionId = (typeof homepageSectionIds)[number];
 export const defaultHomepageSectionOrder: HomepageSectionId[] = [...homepageSectionIds];
 export const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
+export const preferredHomepageServiceSlugs = [
+  "leseni-biashara",
+  "cheti-tin",
+  "pata-lipa-namba",
+  "access-lipa-number",
+  "sme-airtel",
+  "sme-vodacom",
+  "sme-airtel-mkataba",
+  "change-business-name-airtel-lipa",
+  "kitambulisho-wakala",
+  "pata-pocket-wifi-mabando",
+] as const;
 
 export function isServiceLocked(slug: string, override: boolean | undefined, recordLocked = false): boolean {
   if (typeof override === "boolean") return override;
@@ -33,6 +45,17 @@ export function orderByIds<T extends { slug: string }>(items: T[], saved: readon
   return items.map((item, index) => ({ item, index })).sort((a, b) => {
     const rankDifference = (rank.get(a.item.slug) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.item.slug) ?? Number.MAX_SAFE_INTEGER);
     return rankDifference || a.index - b.index;
+  }).map(({ item }) => item);
+}
+
+export function prioritizeHomepageServices<T extends { slug: string; kind?: string }>(items: T[]): T[] {
+  const rank = new Map<string, number>(preferredHomepageServiceSlugs.map((slug, index): [string, number] => [slug, index]));
+  return items.map((item, index) => ({ item, index })).sort((a, b) => {
+    const lockDifference = Number(a.item.kind === "locked") - Number(b.item.kind === "locked");
+    if (lockDifference) return lockDifference;
+    const rankA = rank.get(a.item.slug) ?? Number.MAX_SAFE_INTEGER;
+    const rankB = rank.get(b.item.slug) ?? Number.MAX_SAFE_INTEGER;
+    return rankA === rankB ? a.index - b.index : rankA - rankB;
   }).map(({ item }) => item);
 }
 

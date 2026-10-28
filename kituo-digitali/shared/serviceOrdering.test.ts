@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { completeOrder, isServiceLocked, moveId, orderByIds } from "./serviceOrdering";
+import { completeOrder, isServiceLocked, moveId, orderByIds, preferredHomepageServiceSlugs, prioritizeHomepageServices } from "./serviceOrdering";
 
 describe("service ordering", () => {
   const ids = ["tin", "nida", "leseni-biashara"];
@@ -15,6 +15,19 @@ describe("service ordering", () => {
   it("sorts service records by their saved slug order", () => {
     const rows = ids.map((slug) => ({ slug, name: slug }));
     expect(orderByIds(rows, ["leseni-biashara"]).map((item) => item.slug)).toEqual(["leseni-biashara", "tin", "nida"]);
+  });
+
+  it("shows the requested open services in priority order and keeps locked services last", () => {
+    const rows = [
+      ...[...preferredHomepageServiceSlugs].reverse().map((slug) => ({ slug, kind: "free" })),
+      { slug: "huduma-nyingine", kind: "paid" },
+      { slug: "huduma-imefungwa", kind: "locked" },
+    ];
+    expect(prioritizeHomepageServices(rows).map((item) => item.slug)).toEqual([
+      ...preferredHomepageServiceSlugs,
+      "huduma-nyingine",
+      "huduma-imefungwa",
+    ]);
   });
 
   it("lets an administrator move a service directly to the first position", () => {
