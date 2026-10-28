@@ -122,7 +122,7 @@ export default function PocketWifiPage() {
       await createPocketWifiOrder(applicationId, orderDetails, mobile);
       setLastOrderId(applicationId);
       toast.success("Oda imehifadhiwa. Unaweza kuifuatilia kwenye Historia > Maombi yangu ya huduma.");
-      if (popup) popup.location.href = "https://wa.me/255698232313?text=" + encodeURIComponent(message);
+      if (popup) popup.location.href = "https://wa.me/255692287767?text=" + encodeURIComponent(message);
       else toast.error("Oda imehifadhiwa, lakini WhatsApp haikufunguka. Fungua WhatsApp uwasiliane na support.");
     } catch (error: any) {
       if (popup) popup.close();
