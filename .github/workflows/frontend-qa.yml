@@ -1,0 +1,43 @@
+name: Frontend QA
+
+on:
+  push:
+    branches:
+      - fix/admin-list-date-ordering
+  pull_request:
+    paths:
+      - "kituo-digitali/**"
+      - ".github/workflows/frontend-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Type-check, tests, and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kituo-digitali
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: kituo-digitali/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type-check
+        run: pnpm check
+      - name: Run tests
+        run: pnpm test
+      - name: Build frontend and server bundle
+        run: pnpm build
