@@ -316,16 +316,16 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
     const requestBody = JSON.stringify({
       systemInstruction: { parts: [{ text: "Wewe ni msaidizi wa SmartServicesTZ. Jibu kwa Kiswahili rahisi isipokuwa mtumiaji aombe lugha nyingine. Toa maelezo sahihi na mafupi. Usidai kuwa unaweza kuona akaunti au kufanya miamala. Usitake password, API keys, au taarifa za siri." }] },
       contents: [{ role: "user", parts: [{ text: message.trim() }] }],
-      generationConfig: { maxOutputTokens: 700, thinkingConfig: { thinkingLevel: "LOW" } },
+      generationConfig: { maxOutputTokens: 700, temperature: 0.7, thinkingConfig: { thinkingLevel: "LOW" } },
     });
     let lastStatus = 0;
-    for (const model of ["gemini-3.8-flash", "gemini-3.6-flash"]) {
+    for (const model of ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]) {
       try {
         const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: requestBody,
-          signal: AbortSignal.timeout(22000),
+          signal: AbortSignal.timeout(9000),
         });
         const data = await upstream.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } };
         if (!upstream.ok) {
@@ -341,7 +341,7 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
         console.error("Gemini chat model attempt failed", { model, code: error instanceof Error ? error.name : "unknown" });
       }
     }
-    return jsonResponse({ error: { message: lastStatus === 429 ? "Msaidizi amefikia kikomo cha muda. Jaribu tena baadaye." : "AI ina shughuli nyingi kwa sasa. Jaribu tena baada ya muda mfupi." } }, 502, cors);
+    return jsonResponse({ error: { message: lastStatus === 429 ? "Huduma ya AI imefikia kikomo cha maombi kwa sasa. Jaribu tena baada ya dakika moja." : "Huduma ya AI haijapatikana kwenye miundo iliyojaribiwa. Jaribu tena baada ya muda mfupi." } }, 502, cors);
   } catch (error) {
     console.error("Gemini chat request failed", { code: error instanceof Error ? error.name : "unknown" });
     return jsonResponse({ error: { message: "Imeshindikana kuwasiliana na AI. Kagua mtandao ujaribu tena." } }, 502, cors);
