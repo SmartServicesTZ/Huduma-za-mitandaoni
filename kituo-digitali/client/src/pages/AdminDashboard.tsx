@@ -11,6 +11,7 @@ import { serviceFieldTypes, type ServiceFormField } from "../../../shared/servic
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels";
 import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
+import { UnifiedApplicationsInbox } from "./UnifiedApplicationsInbox";
 import { getRecentSecurityLogs } from "@/lib/securityLogs";
 
 type Panel = "overview" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages";
@@ -126,6 +127,8 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState<any[]>([]);
   const [lipaApplications, setLipaApplications] = useState<LipaApplication[]>([]);
   const [serviceApplications, setServiceApplications] = useState<ServiceApplication[]>([]);
+  const [selectedInboxApplication, setSelectedInboxApplication] = useState<{ kind: "SERVICE" | "LIPA"; id: string } | null>(null);
+  const [selectedInboxSession, setSelectedInboxSession] = useState(0);
   const [applicationInboxTab, setApplicationInboxTab] = useState<"ALL" | "SERVICES" | "LIPA">("ALL");
   const [lipaServices, setLipaServices] = useState<any[]>([]);
   const [audit, setAudit] = useState<any[]>([]);
@@ -292,18 +295,15 @@ export default function AdminDashboard() {
       {panel === "services" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} />}
       {panel === "serviceControl" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} controlOnly onEdit={() => navigate("/admin/services")} />}
       {panel === "applications" && <section className="admin-card admin-unified-applications">
-        <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU</span><h2>MAOMBI YA HUDUMA</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi yote yanaonekana hapa kwa mwonekano mmoja. Aina ya kila ombi inaonyeshwa kwenye taarifa zake.</p></div><ClipboardList size={22}/></div>
-        <div style={{display:"grid",gap:18}}>
-          <section aria-label="Maombi ya huduma na SME">
-            <div className="admin-kicker" style={{marginBottom:8}}>AINA: HUDUMA ZA MFUMO NA SME</div>
-            <ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} />
-          </section>
-          <section aria-label="Maombi ya Pata Lipa namba na Access Lipa">
-            <div className="admin-kicker" style={{marginBottom:8}}>AINA: PATA LIPA NAMBA / ACCESS LIPA</div>
-            <LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} />
-          </section>
-          {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
-        </div>
+        <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU</span><h2>MAOMBI YA HUDUMA</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi ya huduma na LIPA NAMBA yameunganishwa kwenye list moja. Kila ombi lina aina yake na linafunguka kwa vitendo vyake maalum.</p></div><ClipboardList size={22}/></div>
+        <UnifiedApplicationsInbox serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} networks={lipaServices} onSelect={(kind, id) => { setSelectedInboxApplication({ kind, id }); setSelectedInboxSession((value) => value + 1); }} />
+        {selectedInboxApplication && <div style={{marginTop:16}}>
+          <button type="button" className="button button--secondary button--small" onClick={() => setSelectedInboxApplication(null)} style={{marginBottom:12}}>← Rudi kwenye list ya maombi</button>
+          {selectedInboxApplication.kind === "SERVICE"
+            ? <ServiceApplicationsPanel key={`service-${selectedInboxSession}`} applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} hideList initialSelectedId={selectedInboxApplication.id} />
+            : <LipaApplicationsPanel key={`lipa-${selectedInboxSession}`} applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} hideList initialSelectedId={selectedInboxApplication.id} />}
+        </div>}
+        {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16,marginTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
       </section>}
       {panel === "lipaReport" && <LipaGlobalReport applications={lipaApplications} />}
             {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2></div><button type="button" className="button button--green button--small" onClick={() => exportTransactionsCsv(transactions)} disabled={!transactions.length}>Pakua ripoti CSV</button></div><TransactionTable rows={transactions} /></section>}

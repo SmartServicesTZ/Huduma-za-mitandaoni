@@ -29,6 +29,8 @@ type ServiceApplicationsPanelProps = {
   onRun: RunAction;
   adminId: string;
   busy: boolean;
+  hideList?: boolean;
+  initialSelectedId?: string | null;
 };
 
 const BASE_STATUS_TABS: StatusTab[] = ["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"];
@@ -166,7 +168,7 @@ function StatusBadge({ status }: { status: ApplicationStatus }) {
   return <span className={`service-app-admin-status service-app-admin-status-${className}`}>{status}</span>;
 }
 
-export function ServiceApplicationsPanel({ applications, services, onRun, adminId, busy }: ServiceApplicationsPanelProps) {
+export function ServiceApplicationsPanel({ applications, services, onRun, adminId, busy, hideList = false, initialSelectedId = null }: ServiceApplicationsPanelProps) {
   const [tab, setTab] = useState<StatusTab>("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [selected, setSelected] = useState<ServiceApplication | null>(null);
@@ -198,6 +200,12 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     setError("");
     setDocumentPreview(null);
   };
+
+  useEffect(() => {
+    if (!initialSelectedId) return;
+    const application = applications.find((item) => (item.applicationId || item.id) === initialSelectedId);
+    if (application) openApplication(application);
+  }, [initialSelectedId, applications]);
 
   const closeApplication = () => {
     setSelected(null);
@@ -304,6 +312,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   return (
     <section className="service-app-admin-panel" data-admin-id={adminId} aria-labelledby="service-app-admin-title">
       <PanelStyles />
+      {!hideList && <>
       <div className="service-app-admin-heading">
         <div>
           <h2 id="service-app-admin-title">Maombi ya huduma</h2>
@@ -389,6 +398,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
           </>
         )}
       </div>
+      </>}
 
       {selected && !documentPreview && !rejecting && (
         <div className="service-app-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeApplication(); }}>

@@ -280,7 +280,7 @@ function PanelStyles() {
   `}</style>;
 }
 
-export function LipaApplicationsPanel({ applications, networks, onRun, adminId, busy }: { applications: LipaApplication[]; networks: NetworkCollection; onRun: RunAction; adminId: string; busy: boolean }) {
+export function LipaApplicationsPanel({ applications, networks, onRun, adminId, busy, hideList = false, initialSelectedId = null }: { applications: LipaApplication[]; networks: NetworkCollection; onRun: RunAction; adminId: string; busy: boolean; hideList?: boolean; initialSelectedId?: string | null }) {
   const [tab, setTab] = useState<"ALL" | ApplicationStatus>("ALL");
   const [rewardFilter, setRewardFilter] = useState<RewardFilter>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("submittedAt");
@@ -386,6 +386,12 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     setRejecting(false);
   };
 
+  useEffect(() => {
+    if (!initialSelectedId) return;
+    const application = applications.find((item) => (item.applicationId || item.id) === initialSelectedId);
+    if (application) openApplication(application);
+  }, [initialSelectedId, applications]);
+
   const loadDocument = async (field: ServiceFormField, action: "preview" | "download") => {
     if (!selected) return;
     setDocumentBusy(field.fieldName);
@@ -441,6 +447,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
 
   return <section className="lipa-admin-panel" aria-labelledby="lipa-applications-heading">
     <PanelStyles />
+    {!hideList && <>
     <div className="lipa-admin-heading"><div><h2 id="lipa-applications-heading">Maombi ya Pata Lipa Namba</h2><p>Fungua ombi, kagua huduma iliyochaguliwa, taarifa na picha za mwombaji, kisha mjibu hapa.</p></div><span className="lipa-admin-status lipa-admin-status-pending" aria-label={`${pendingCount} maombi yanasubiri`}>{pendingCount} YANASUBIRI</span></div>
     <div className="lipa-admin-stats">{(["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-stat" key={status}><span>{status === "ALL" ? "All applications" : status}</span><strong>{counts[status]}</strong></div>)}</div>
     <div className="lipa-admin-tabs" role="tablist" aria-label="Application status filter">{(["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <button key={status} type="button" role="tab" aria-selected={tab === status} className={`lipa-admin-tab ${tab === status ? "lipa-admin-tab-active" : ""}`} onClick={() => setTab(status)}>{status}<span className="lipa-admin-count">{counts[status]}</span></button>)}</div>
@@ -471,6 +478,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
         <button type="button" className="lipa-admin-mobile-open" disabled={busy} onClick={() => openApplication(application)}>Open</button>
       </article>)}
     </div>
+    </>}
     {selected && <div className="lipa-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="lipa-admin-modal" role="dialog" aria-modal="true" aria-labelledby="lipa-application-detail-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-application-detail-heading">{selected.applicantName || selected.userName || "Ombi la mtumiaji"}</h3><p>{byNetwork[selected.networkId]?.name ?? selected.network ?? selected.serviceId ?? "Huduma haijaainishwa"} · <StatusBadge status={selected.status} /></p></div><button type="button" className="lipa-admin-close" aria-label="Close application details" onClick={() => setSelected(null)}><X size={19} /></button></div>
       <div className="lipa-admin-detail-banner">
         <strong style={{fontSize:"1rem"}}>TAARIFA KAMILI YA OMBI</strong>
