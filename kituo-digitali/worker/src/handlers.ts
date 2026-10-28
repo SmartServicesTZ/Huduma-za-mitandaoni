@@ -1175,6 +1175,8 @@ export const adminDeleteUserAccount = callable(async (request) => {
   const target = targetSnapshot.data() as Profile;
   const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
   if (targetRole === "super_admin") throw new ApiError("permission-denied", "Akaunti ya Super Admin haiwezi kufutwa kupitia sehemu hii.");
+  const normalizedPhone = normalizeTanzaniaPhone(target.phone);
+  const phoneRegistryRef = normalizedPhone ? db.collection("phoneRegistry").doc(normalizedPhone) : null;
 
   const authResponse = await fetch("https://identitytoolkit.googleapis.com/v1/projects/" + encodeURIComponent(getWorkerEnv().FIREBASE_PROJECT_ID) + "/accounts:delete", {
     method: "POST",
@@ -1195,8 +1197,14 @@ export const adminDeleteUserAccount = callable(async (request) => {
     const currentData = current.data() as Profile;
     const currentRole = resolveAuthRole(currentData.role, currentData.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
     if (currentRole === "super_admin") throw new ApiError("permission-denied", "Akaunti ya Super Admin haiwezi kufutwa.");
+    // Clear the phone registry too; otherwise re-registration is blocked even
+    // after both Firebase Auth and the Firestore user profile were deleted.
+    const registrySnapshot = phoneRegistryRef ? await transaction.get(phoneRegistryRef) : null;
     transaction.delete(targetRef);
-    recordAudit(transaction, uid, "super_admin", "DELETE_USER_ACCOUNT", "users", userId, { name: currentData.name, phone: currentData.phone, role: currentRole }, null, { authDeleted: authResponse.ok });
+    if (phoneRegistryRef && registrySnapshot?.exists && registrySnapshot.data()?.uid === userId) {
+      transaction.delete(phoneRegistryRef);
+    }
+    recordAudit(transaction, uid, "super_admin", "DELETE_USER_ACCOUNT", "users", userId, { name: currentData.name, phone: currentData.phone, role: currentRole }, null, { authDeleted: authResponse.ok, phoneRegistryDeleted: Boolean(phoneRegistryRef && registrySnapshot?.exists && registrySnapshot.data()?.uid === userId) });
   });
   return { ok: true, userId };
 });
