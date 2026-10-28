@@ -40,4 +40,5 @@ jobs:
       - name: Run tests
         run: pnpm test
       - name: Build frontend and server bundle
+        if: always()
         run: pnpm build
