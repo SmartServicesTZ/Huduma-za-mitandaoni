@@ -420,6 +420,7 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
     <CardWatermark paid={paid} />
     <div className="idp-hero">
       <div className="idp-ring" />
+      {cfg.logo && <img className="idp-company-logo" src={cfg.logo} alt="" aria-hidden="true" />}
       <div className="idp-top">
         <div className="idp-brand"><Words text="HUDUMA ZA MTANDAONI" /></div>
         <LogoChip cfg={cfg} network={network} />
@@ -568,6 +569,11 @@ const AGENT_ID_CSS = `
 .idl-title{margin-top:4px;font-size:15px;font-weight:900;line-height:1.15}
 .idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
 .idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.40;filter:contrast(1.35) saturate(1.4)}
+/* Nembo kubwa zikae katikati ya sehemu kuu ya mbele kwa Airtel, Vodacom, Halotel na Yas. */
+.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%)}
+/* Nembo kubwa za kampuni kwenye vitambulisho vya kusimama, mbele na nyuma. */
+.idp-company-logo{position:absolute;z-index:1;right:14px;top:34px;width:126px;height:126px;object-fit:contain;opacity:.38;filter:contrast(1.35) saturate(1.4);pointer-events:none}
+.idp-hero--sm .idp-company-logo{top:24px;width:118px;height:118px}
 /* Sogeza watermark za Airtel, Vodacom na Halotel ndani ya kadi ili nembo zisionekane zimekatika. */
 .net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm{right:0}
 .net-airtel .idl-bbody .idl-wm,.net-vodacom .idl-bbody .idl-wm,.net-halotel .idl-bbody .idl-wm{right:150px}
