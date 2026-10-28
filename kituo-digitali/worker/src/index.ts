@@ -313,7 +313,7 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
     return jsonResponse({ error: { message: "Msaidizi wa AI bado hajawashwa. Admin anahitaji kuweka GEMINI_API_KEY kwenye Cloudflare Worker Secrets." } }, 503, cors);
   }
   try {
-    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
+    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
