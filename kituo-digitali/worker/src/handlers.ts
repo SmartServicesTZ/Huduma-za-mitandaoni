@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
-import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot, type Transaction } from "./firestore-rest.js";
+import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot, type Query, type Transaction } from "./firestore-rest.js";
 import { getStorage } from "./storage-rest.js";
 import { ApiError, defineWorkerSecret, callable, httpEndpoint, type ApiRequest } from "./api-adapter.js";
 import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
@@ -82,6 +82,39 @@ async function serviceIsLocked(transaction: Transaction, slug: string) {
 function text(value: unknown, max: number) {
   if (typeof value !== "string" || value.trim().length === 0 || value.length > max) throw new ApiError("invalid-argument", "Taarifa ya request si sahihi.");
   return value.trim();
+}
+
+const DEFAULT_PAGE_SIZE = 25;
+const MAX_PAGE_SIZE = 50;
+
+function pageInput(value: unknown) {
+  const data = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const rawSize = Number(data.pageSize ?? DEFAULT_PAGE_SIZE);
+  const pageSize = Number.isInteger(rawSize) ? Math.min(MAX_PAGE_SIZE, Math.max(1, rawSize)) : DEFAULT_PAGE_SIZE;
+  const cursor = data.cursor === undefined || data.cursor === null || data.cursor === "" ? undefined : text(data.cursor, 240);
+  let startAfter: string | undefined;
+  if (cursor) {
+    try {
+      const decoded = Buffer.from(cursor, "base64url").toString("utf8");
+      const parsed = JSON.parse(decoded) as { id?: unknown };
+      if (typeof parsed.id !== "string" || !/^[A-Za-z0-9_-]{1,160}$/.test(parsed.id)) throw new Error("invalid");
+      startAfter = parsed.id;
+    } catch {
+      throw new ApiError("invalid-argument", "Cursor ya ukurasa si sahihi.");
+    }
+  }
+  const status = typeof data.status === "string" && data.status.trim() ? data.status.trim().slice(0, 80) : undefined;
+  return { pageSize, startAfter, status };
+}
+
+function nextPageCursor(id: string) {
+  return Buffer.from(JSON.stringify({ id }), "utf8").toString("base64url");
+}
+
+function pageResult<T extends { id: string }>(rows: T[], pageSize: number) {
+  const hasMore = rows.length > pageSize;
+  const items = hasMore ? rows.slice(0, pageSize) : rows;
+  return { items, nextCursor: hasMore && items.length ? nextPageCursor(items.at(-1)!.id) : null, hasMore };
 }
 
 function recordAudit(transaction: Transaction, actorId: string, actorRole: string, action: string, targetType: string, targetId: string, before: unknown, after: unknown, details: Record<string, unknown> = {}) {
@@ -739,14 +772,19 @@ export const listLipaApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
-  const snapshot = await db.collection("lipaApplications").limit(500).get();
+  const paging = pageInput(request.data);
+  let query: Query = db.collection("lipaApplications");
+  if (paging.status) query = query.where("status", "==", paging.status);
+  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  const snapshot = await query.limit(paging.pageSize + 1).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => {
     const left = String(a.submittedAt ?? "");
     const right = String(b.submittedAt ?? "");
     return right.localeCompare(left);
   });
-  return { applications: rows };
+  const page = pageResult(rows, paging.pageSize);
+  return { applications: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
 export const markLipaApplicationViewed = callable(async (request) => {
@@ -887,25 +925,28 @@ export const updateNidaRequestPhone = callable(async (request) => {
 
 export const listMyNidaRequests = callable(async (request) => {
   const uid = authUid(request);
-  const snapshot = await db.collection("nidaRequests").where("userId", "==", uid).limit(50).get();
+  const paging = pageInput(request.data);
+  let query: Query = db.collection("nidaRequests").where("userId", "==", uid);
+  if (paging.status) query = query.where("status", "==", paging.status);
+  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  const snapshot = await query.limit(paging.pageSize + 1).get();
   const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  requests.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
-  return { requests };
+  const page = pageResult(requests, paging.pageSize);
+  return { requests: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
 export const listNidaRequests = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  // Firestore REST adapter supports equality filters and limits, but not orderBy().
-  // Fetch requests first, then sort newest-first in the Worker to avoid the admin list failing.
-  const snapshot = await db.collection("nidaRequests").limit(200).get();
+  const paging = pageInput(request.data);
+  let query: Query = db.collection("nidaRequests");
+  if (paging.status) query = query.where("status", "==", paging.status);
+  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  const snapshot = await query.limit(paging.pageSize + 1).get();
   const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  requests.sort((a, b) => {
-    const toMillis = (value: unknown) => value instanceof Date ? value.getTime() : typeof value === "string" ? Date.parse(value) || 0 : value && typeof value === "object" && "seconds" in value ? Number((value as { seconds: unknown }).seconds) * 1000 : 0;
-    return toMillis(b.submittedAt) - toMillis(a.submittedAt);
-  });
-  return { requests };
+  const page = pageResult(requests, paging.pageSize);
+  return { requests: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
 export const setNidaRequestStatus = callable(async (request) => {
@@ -1178,10 +1219,14 @@ export const listServiceApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  const snapshot = await db.collection("serviceApplications").limit(500).get();
+  const paging = pageInput(request.data);
+  let query: Query = db.collection("serviceApplications");
+  if (paging.status) query = query.where("status", "==", paging.status);
+  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  const snapshot = await query.limit(paging.pageSize + 1).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
-  return { applications: rows };
+  const page = pageResult(rows, paging.pageSize);
+  return { applications: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
 export const replyToServiceApplication = callable(async (request) => {
@@ -1256,8 +1301,12 @@ export const listAdminUsers = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "viewUsers");
 
-  const snapshot = await db.collection("users").limit(500).get();
-  return snapshot.docs.map((document) => {
+  const paging = pageInput(request.data);
+  let query: Query = db.collection("users");
+  if (paging.status) query = query.where("accountStatus", "==", paging.status);
+  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  const snapshot = await query.limit(paging.pageSize + 1).get();
+  const rows = snapshot.docs.map((document) => {
     const data = document.data() as Record<string, unknown>;
     const {
       password: _password,
@@ -1269,6 +1318,8 @@ export const listAdminUsers = callable(async (request) => {
     } = data;
     return { id: document.id, ...safeData };
   });
+  const page = pageResult(rows, paging.pageSize);
+  return { users: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
 export const updateUserAccess = callable(async (request) => {

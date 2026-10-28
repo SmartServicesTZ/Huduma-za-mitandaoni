@@ -35,3 +35,18 @@ No production data is copied. Firebase Authentication remains the identity provi
 ## Repository groundwork
 
 `src/d1-poc-repository.ts` contains read-only D1 helpers and `test/d1-poc-repository.test.ts` covers binding and result behavior. The schema is not connected to production handlers. Firebase ID token verification, R2 authorization, backfill, shadow reads, and cutover/rollback controls require a separate review and implementation.
+
+
+## Firestore read optimisation — 2026-10-28
+
+The production Firestore adapter now supports an opaque document-ID cursor through `startAfter()` and bounded `limit()` values. Cursor payloads are base64url encoded, validated server-side, and are never accepted as a raw Firestore path. The paginated Worker list handlers return a consistent shape:
+
+```json
+{ "items": [], "nextCursor": "...", "hasMore": false }
+```
+
+For backwards compatibility, the domain keys remain present (`users`, `applications`, or `requests`) alongside `nextCursor` and `hasMore`. Supported handlers are `listAdminUsers`, `listLipaApplications`, `listServiceApplications`, `listNidaRequests`, and `listMyNidaRequests`. The browser wrappers request at most 50 documents per call and follow cursors sequentially, so the admin views no longer depend on the previous 200/500-document hard limits.
+
+The cursor is based on the Firestore document ID and the adapter applies a deterministic descending document-name order before `startAt`. This avoids offset pagination and prevents a page boundary from changing when earlier records are removed. The client still performs display-only filtering/sorting where legacy screens require it; a future refinement can add indexed `orderBy` fields after production index review.
+
+Verification in this branch must remain local and isolated. Run `pnpm exec tsc --noEmit`, `pnpm test`, and `pnpm run build` from `kituo-digitali/`. Do not run a production migration, copy production Firestore data into D1, or merge this PoC branch into `main`. Remote D1 migration verification still requires Wrangler OAuth and a fresh review of the migration journal.

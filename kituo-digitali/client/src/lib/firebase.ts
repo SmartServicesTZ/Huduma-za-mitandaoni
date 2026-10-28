@@ -508,7 +508,13 @@ export async function adminListAgentRecords() {
 }
 
 export async function adminListUsers() {
-  const users = await invokeWorker<Array<AdminUserRecord & { id: string; createdAt?: unknown; lastLoginAt?: unknown }>>("listAdminUsers", {});
+  const users: Array<AdminUserRecord & { id: string; createdAt?: unknown; lastLoginAt?: unknown }> = [];
+  let cursor: string | undefined;
+  do {
+    const page = await invokeWorker<{ users?: Array<AdminUserRecord & { id: string; createdAt?: unknown; lastLoginAt?: unknown }>; nextCursor?: string | null }>("listAdminUsers", { pageSize: 50, cursor });
+    users.push(...(page.users ?? []));
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
   return users.map((user) => ({
     ...user,
     createdAt: timestampValue(user.createdAt),
@@ -908,8 +914,14 @@ export async function removeLipaUpload(storagePath: string) {
 
 export async function adminListLipaApplications() {
   const callable = createWorkerCall("listLipaApplications");
-  const result = (await callable({})).data as { applications?: Array<Record<string, unknown>> };
-  return (result.applications ?? []).map((item) => ({
+  const rows: Array<Record<string, unknown>> = [];
+  let cursor: string | undefined;
+  do {
+    const result = (await callable({ pageSize: 50, cursor })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null };
+    rows.push(...(result.applications ?? []));
+    cursor = result.nextCursor ?? undefined;
+  } while (cursor);
+  return rows.map((item) => ({
     id: String(item.id ?? item.applicationId ?? ""),
     ...item,
     submittedAt: timestampValue(item.submittedAt),
@@ -959,13 +971,27 @@ export async function updateNidaRequestPhone(requestId: string, phone: string) {
 }
 
 export async function listMyNidaRequests() {
-  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listMyNidaRequests");
-  return (await callable({})).data.requests ?? [];
+  const callable = createWorkerCall<{ pageSize: number; cursor?: string }, { requests: NidaRequest[]; nextCursor?: string | null }>("listMyNidaRequests");
+  const rows: NidaRequest[] = [];
+  let cursor: string | undefined;
+  do {
+    const result = (await callable({ pageSize: 50, cursor })).data;
+    rows.push(...(result.requests ?? []));
+    cursor = result.nextCursor ?? undefined;
+  } while (cursor);
+  return rows;
 }
 
 export async function listNidaRequests() {
-  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listNidaRequests");
-  return (await callable({})).data.requests ?? [];
+  const callable = createWorkerCall<{ pageSize: number; cursor?: string }, { requests: NidaRequest[]; nextCursor?: string | null }>("listNidaRequests");
+  const rows: NidaRequest[] = [];
+  let cursor: string | undefined;
+  do {
+    const result = (await callable({ pageSize: 50, cursor })).data;
+    rows.push(...(result.requests ?? []));
+    cursor = result.nextCursor ?? undefined;
+  } while (cursor);
+  return rows;
 }
 
 export async function setNidaRequestStatus(requestId: string, status: "PROCESSING" | "REJECTED", rejectionReason = "") {
@@ -1041,8 +1067,14 @@ export async function removeServiceUpload(storagePath: string) {
 
 export async function adminListServiceApplications() {
   const callable = createWorkerCall("listServiceApplications");
-  const result = (await callable({})).data as { applications?: Array<Record<string, unknown>> };
-  return (result.applications ?? []).map((item) => ({
+  const rows: Array<Record<string, unknown>> = [];
+  let cursor: string | undefined;
+  do {
+    const result = (await callable({ pageSize: 50, cursor })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null };
+    rows.push(...(result.applications ?? []));
+    cursor = result.nextCursor ?? undefined;
+  } while (cursor);
+  return rows.map((item) => ({
     id: String(item.id ?? item.applicationId ?? ""),
     ...item,
     submittedAt: timestampValue(item.submittedAt),

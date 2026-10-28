@@ -150,16 +150,22 @@ export class Query {
     readonly collectionPath: string,
     protected readonly filter?: { field: string; value: unknown },
     protected readonly maxResults?: number,
+    protected readonly startAfterDocumentId?: string,
   ) {}
 
   where(field: string, operation: "==", value: unknown) {
     if (operation !== "==") throw new Error("The Worker Firestore adapter currently supports equality queries only.");
-    return new Query(this.client, this.collectionPath, { field, value }, this.maxResults);
+    return new Query(this.client, this.collectionPath, { field, value }, this.maxResults, this.startAfterDocumentId);
   }
 
   limit(count: number) {
     if (!Number.isInteger(count) || count < 1 || count > 1000) throw new Error("Invalid Firestore query limit.");
-    return new Query(this.client, this.collectionPath, this.filter, count);
+    return new Query(this.client, this.collectionPath, this.filter, count, this.startAfterDocumentId);
+  }
+
+  startAfter(documentId: string) {
+    if (!/^[A-Za-z0-9_-]{1,160}$/.test(documentId)) throw new Error("Invalid Firestore cursor document ID.");
+    return new Query(this.client, this.collectionPath, this.filter, this.maxResults, documentId);
   }
 
   async get(transactionId?: string) {
@@ -172,6 +178,10 @@ export class Query {
 
   get queryLimit() {
     return this.maxResults;
+  }
+
+  get queryStartAfterDocumentId() {
+    return this.startAfterDocumentId;
   }
 }
 
@@ -290,6 +300,13 @@ export class FirestoreRest {
           op: "EQUAL",
           value: encodeValue(query.queryFilter.value),
         },
+      };
+    }
+    structuredQuery.orderBy = [{ field: { fieldPath: "__name__" }, direction: "DESCENDING" }];
+    if (query.queryStartAfterDocumentId) {
+      structuredQuery.startAt = {
+        before: false,
+        values: [{ referenceValue: documentName(`${query.collectionPath}/${query.queryStartAfterDocumentId}`) }],
       };
     }
     if (query.queryLimit !== undefined) structuredQuery.limit = query.queryLimit;
