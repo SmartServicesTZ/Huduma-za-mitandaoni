@@ -43,7 +43,7 @@ async function profileFor(uid: string) {
 }
 
 const callableAccessAction: Record<string, "admin" | "read" | "profile" | "applications" | "services" | "payments" | "auth"> = {
-  adminDelete: "admin", adminWrite: "admin", adjustTokens: "admin", resetUserPassword: "admin", seedServiceCatalog: "admin",
+  adminDelete: "admin", adminWrite: "admin", adminDeleteUserAccount: "admin", adjustTokens: "admin", resetUserPassword: "admin", seedServiceCatalog: "admin",
   setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", replyToServiceApplication: "admin", 
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
@@ -1160,6 +1160,45 @@ export const listAdminUsers = callable(async (request) => {
     } = data;
     return { id: document.id, ...safeData, role: roleResolution.role };
   }));
+});
+
+export const adminDeleteUserAccount = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid);
+  if (actor.role !== "super_admin") throw new ApiError("permission-denied", "Super Admin pekee ndiye anayeruhusiwa kufuta akaunti kabisa.");
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const userId = text(data.userId, 180);
+  if (userId === uid) throw new ApiError("failed-precondition", "Huwezi kufuta akaunti yako mwenyewe ukiwa umeingia nayo.");
+  const targetRef = db.collection("users").doc(userId);
+  const targetSnapshot = await targetRef.get();
+  if (!targetSnapshot.exists) throw new ApiError("not-found", "Taarifa za mtumiaji hazipo tena kwenye dashboard.");
+  const target = targetSnapshot.data() as Profile;
+  const targetRole = resolveAuthRole(target.role, target.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+  if (targetRole === "super_admin") throw new ApiError("permission-denied", "Akaunti ya Super Admin haiwezi kufutwa kupitia sehemu hii.");
+
+  const authResponse = await fetch("https://identitytoolkit.googleapis.com/v1/projects/" + encodeURIComponent(getWorkerEnv().FIREBASE_PROJECT_ID) + "/accounts:delete", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + await getGoogleAccessToken(), "Content-Type": "application/json" },
+    body: JSON.stringify({ localId: userId }),
+  });
+  if (!authResponse.ok) {
+    const body = await authResponse.json().catch(() => ({})) as { error?: { message?: string } };
+    const code = String(body.error?.message ?? "");
+    if (!/USER_NOT_FOUND|USER_NOT_EXIST/i.test(code)) {
+      throw new ApiError("internal", "Imeshindikana kufuta akaunti kwenye Firebase Authentication. Taarifa za dashboard hazijafutwa.");
+    }
+  }
+
+  await db.runTransaction(async (transaction) => {
+    const current = await transaction.get(targetRef);
+    if (!current.exists) return;
+    const currentData = current.data() as Profile;
+    const currentRole = resolveAuthRole(currentData.role, currentData.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313").role;
+    if (currentRole === "super_admin") throw new ApiError("permission-denied", "Akaunti ya Super Admin haiwezi kufutwa.");
+    transaction.delete(targetRef);
+    recordAudit(transaction, uid, "super_admin", "DELETE_USER_ACCOUNT", "users", userId, { name: currentData.name, phone: currentData.phone, role: currentRole }, null, { authDeleted: authResponse.ok });
+  });
+  return { ok: true, userId };
 });
 
 export const updateUserAccess = callable(async (request) => {
