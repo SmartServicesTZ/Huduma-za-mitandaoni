@@ -127,7 +127,7 @@ function AccountRestrictionGate({ reason, message, onLogout }: { reason?: string
       <h2 id="account-restriction-title">Ufikiaji wa akaunti umezuiwa</h2>
       <p className="restriction-custom-message">{message?.trim() || "Huwezi kutumia huduma za mfumo kwa sasa."}</p>
       <p><strong>Sababu:</strong> {reason?.trim() || "Admin hajaweka sababu maalum."}</p>
-      <p>Wasiliana na admin kwa msaada: <a href="tel:0692287767">0692287767</a></p>
+      <p>Wasiliana na admin kwa msaada: <a href="https://wa.me/255692287767?text=Habari%2C%20nahitaji%20msaada%20wa%20akaunti." target="_blank" rel="noreferrer">WhatsApp: 0692287767</a></p>
       <button className="admin-primary" onClick={() => void onLogout()}>Toka kwenye akaunti</button>
     </section>
   </div>;
