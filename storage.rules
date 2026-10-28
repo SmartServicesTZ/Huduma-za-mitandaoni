@@ -15,11 +15,6 @@ service firebase.storage {
           || (mode == 'limited' && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
             && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('allowedActions', []).hasAny([action])));
     }
-    function canModerateChat() {
-      return accountMay('admin')
-        && ((request.auth.token.get('role', '') == 'super_admin' && request.auth.token.get('isSuperAdmin', false) == true)
-          || request.auth.token.get('permissions', {}).get('manageMessages', false) == true);
-    }
     match /users/{userId}/profile/{fileName} {
       allow read: if accountMayRead();
       allow write: if accountMay('profile')
