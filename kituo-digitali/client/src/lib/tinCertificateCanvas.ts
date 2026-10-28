@@ -165,6 +165,7 @@ export async function renderTinCertificateCanvas(form: TinCertificateForm, canva
     ctx.drawImage(qrImage, 720, Math.round(110 * TIN_Y_SCALE), qrSize, qrSize);
   }
 
-  text(ctx, pos("commissioner"), form.commissioner);
+  const commissionerName = form.commissioner.trim().toLowerCase().replace(/(^|\s)([a-z])/g, (_match, space, letter) => space + letter.toUpperCase());
+  text(ctx, pos("commissioner"), commissionerName);
   return canvas;
 }
