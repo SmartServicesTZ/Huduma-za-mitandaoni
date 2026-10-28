@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, limit, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, Ban, Check, CheckCheck, ChevronDown, Eye, File, HardDrive, LoaderCircle, MessageCircle, Mic, Paperclip, Pencil, Reply, Search, Send, Settings, ShieldAlert, Smile, StopCircle, Trash2, Users, Video, Volume2, X, Camera, UserRound, Phone, PhoneOff, History, PhoneIncoming, PhoneOutgoing, PhoneMissed } from "lucide-react";
@@ -237,7 +237,9 @@ export default function ChatPage() {
   }, [firebaseUser, roomId, groupId, otherUid, view]);
   useEffect(() => {
     if (!firebaseUser || view === "moderation" || view === "groups") return;
-    const stops = conversations.map((conversation) => subscribePrivateChat(conversation.id, (rows) => {
+    // Usifungue listener ya kila conversation: hiyo ingeleta reads za messages zote za kila room.
+    // Unread badges za rooms 20 za hivi karibuni zinatosha bila kuathiri mazungumzo ya active.
+    const stops = conversations.slice(0, 20).map((conversation) => subscribePrivateChat(conversation.id, (rows) => {
       const count = rows.filter((message) => message.senderId !== firebaseUser.uid && !message.readBy?.includes(firebaseUser.uid)).length;
       setUnread((previous) => ({ ...previous, [conversation.id]: count }));
     }, () => undefined));
@@ -342,7 +344,7 @@ export default function ChatPage() {
   const attachCallCandidates = (callId: string, uid: string) => {
     candidateIdsRef.current.clear(); pendingCandidatesRef.current = [];
     candidateUnsubscribeRef.current?.();
-    candidateUnsubscribeRef.current = onSnapshot(collection(firestore, "callSessions", callId, "candidates"), (snapshot) => {
+    candidateUnsubscribeRef.current = onSnapshot(query(collection(firestore, "callSessions", callId, "candidates"), limit(200)), (snapshot) => {
       const pc = peerConnectionRef.current;
       if (!pc) return;
       snapshot.docChanges().forEach((change) => {
@@ -509,7 +511,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!firebaseUser) return;
-    return onSnapshot(query(collection(firestore, "callSessions"), where("participants", "array-contains", firebaseUser.uid)), (snapshot) => {
+    return onSnapshot(query(collection(firestore, "callSessions"), where("participants", "array-contains", firebaseUser.uid), limit(50)), (snapshot) => {
       const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       rows.sort((a: any, b: any) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
       setCallHistory(rows.slice(0, 40));

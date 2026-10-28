@@ -739,7 +739,7 @@ export const listLipaApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
-  const snapshot = await db.collection("lipaApplications").limit(1000).get();
+  const snapshot = await db.collection("lipaApplications").limit(500).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => {
     const left = String(a.submittedAt ?? "");
@@ -1178,7 +1178,7 @@ export const listServiceApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  const snapshot = await db.collection("serviceApplications").limit(1000).get();
+  const snapshot = await db.collection("serviceApplications").limit(500).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
   return { applications: rows };
@@ -1256,7 +1256,7 @@ export const listAdminUsers = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "viewUsers");
 
-  const snapshot = await db.collection("users").get();
+  const snapshot = await db.collection("users").limit(500).get();
   return snapshot.docs.map((document) => {
     const data = document.data() as Record<string, unknown>;
     const {
