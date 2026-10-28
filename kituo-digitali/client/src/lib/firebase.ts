@@ -519,7 +519,7 @@ export async function adminListUsers() {
     ...user,
     createdAt: timestampValue(user.createdAt),
     lastLoginAt: timestampValue(user.lastLoginAt),
-  }));
+  })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
 export async function adminListServices() {
@@ -926,7 +926,7 @@ export async function adminListLipaApplications() {
     ...item,
     submittedAt: timestampValue(item.submittedAt),
     updatedAt: timestampValue(item.updatedAt),
-  } as LipaApplication));
+  } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
@@ -979,7 +979,11 @@ export async function listMyNidaRequests() {
     rows.push(...(result.requests ?? []));
     cursor = result.nextCursor ?? undefined;
   } while (cursor);
-  return rows;
+  return rows.map((item) => ({
+    ...item,
+    submittedAt: timestampValue(item.submittedAt),
+    updatedAt: timestampValue(item.updatedAt),
+  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export async function listNidaRequests() {
@@ -991,7 +995,11 @@ export async function listNidaRequests() {
     rows.push(...(result.requests ?? []));
     cursor = result.nextCursor ?? undefined;
   } while (cursor);
-  return rows;
+  return rows.map((item) => ({
+    ...item,
+    submittedAt: timestampValue(item.submittedAt),
+    updatedAt: timestampValue(item.updatedAt),
+  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export async function setNidaRequestStatus(requestId: string, status: "PROCESSING" | "REJECTED", rejectionReason = "") {
@@ -1079,7 +1087,7 @@ export async function adminListServiceApplications() {
     ...item,
     submittedAt: timestampValue(item.submittedAt),
     updatedAt: timestampValue(item.updatedAt),
-  } as ServiceApplication));
+  } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
 export function subscribeToAdminServiceApplications(callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
