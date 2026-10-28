@@ -65,6 +65,8 @@ function Icon({ name, size = 22 }: { name: string; size?: number }) { const Comp
 
 function Notice({ children, tone = "warning" }: { children: React.ReactNode; tone?: "warning" | "success" | "info" }) { return <div className={`notice notice--${tone}`}><CircleAlert size={17} /> <span>{children}</span></div>; }
 
+function isRetiredNidaRecord(item: any) { return /nida|nin|kitambulisho cha taifa/i.test([item?.serviceName, item?.serviceSlug, item?.slug, item?.description, item?.reason, item?.name, item?.type, item?.title].filter(Boolean).join(" ")); }
+
 function explainAuthError(error: any, mode: "login" | "register") {
   const code = String(error?.code ?? "").replace(/^auth\//, "");
   const messages: Record<string, { title: string; detail: string }> = {
@@ -375,16 +377,16 @@ function HistoryPage() {
   const [serviceApplications, setServiceApplications] = useState<any[]>([]);
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
 
-  const refreshDownloads = () => setDownloads(getDownloadHistory());
+  const refreshDownloads = () => setDownloads(getDownloadHistory().filter((item: any) => !isRetiredNidaRecord(item)));
 
   useEffect(() => {
     if (!firebaseUser) { setRows([]); return; }
-    return subscribeToTokenHistory(firebaseUser.uid, setRows);
+    return subscribeToTokenHistory(firebaseUser.uid, (items) => setRows(items.filter((item) => !isRetiredNidaRecord(item))));
   }, [firebaseUser]);
 
   useEffect(() => {
     if (!firebaseUser?.uid) { setServiceApplications([]); return; }
-    return subscribeUserServiceApplications(firebaseUser.uid, setServiceApplications, (error) => {
+    return subscribeUserServiceApplications(firebaseUser.uid, (items) => setServiceApplications(items.filter((item) => !isRetiredNidaRecord(item))), (error) => {
       console.error("Imeshindikana kupakia historia ya maombi ya huduma", error);
       toast.error("Historia ya maombi haijapakiwa. Jaribu kuingia tena.");
     });
