@@ -343,7 +343,8 @@ const worker = {
     if (!cors) return jsonResponse({ error: { code: "permission-denied", message: "Origin haijaidhinishwa." } }, 403, { "Vary": "Origin", "Cache-Control": "no-store" });
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     const url = new URL(request.url);
-    if (url.pathname === "/chat") return handleGeminiChat(request, cors, env);\n    if (url.pathname === "/health" && request.method === "GET") return jsonResponse({ ok: true }, 200, cors);
+    if (url.pathname === "/chat") return handleGeminiChat(request, cors, env);
+    if (url.pathname === "/health" && request.method === "GET") return jsonResponse({ ok: true }, 200, cors);
     if (url.pathname === "/ready" && request.method === "GET") {
       let validServiceAccount = false;
       try {
