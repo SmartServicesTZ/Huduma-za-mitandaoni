@@ -638,3 +638,9 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
   .app-download-banner__copy span { font-size: 11px; }
   .app-download-banner__button { width: 100%; min-height: 45px; }
 }
+
+
+@keyframes stzAppFloatIn {
+  from { opacity: 0; transform: translate3d(0, 16px, 0) scale(.97); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
