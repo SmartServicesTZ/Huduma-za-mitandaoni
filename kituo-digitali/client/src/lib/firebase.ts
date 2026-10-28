@@ -944,36 +944,6 @@ export function subscribeUserLipaApplications(uid: string, callback: (rows: Lipa
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
 }
 
-export async function listMyNidaRequests() {
-  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listMyNidaRequests");
-  const rows = (await callable({})).data.requests ?? [];
-  return rows.map((item) => ({
-    ...item,
-    submittedAt: timestampValue(item.submittedAt),
-    updatedAt: timestampValue(item.updatedAt),
-  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
-}
-
-export async function listNidaRequests() {
-  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listNidaRequests");
-  const rows = (await callable({})).data.requests ?? [];
-  return rows.map((item) => ({
-    ...item,
-    submittedAt: timestampValue(item.submittedAt),
-    updatedAt: timestampValue(item.updatedAt),
-  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
-}
-
-export async function setNidaRequestStatus(requestId: string, status: "PROCESSING" | "REJECTED", rejectionReason = "") {
-  const callable = createWorkerCall<{ requestId: string; status: string; rejectionReason: string }, { requestId: string; status: string }>("setNidaRequestStatus");
-  return (await callable({ requestId, status, rejectionReason })).data;
-}
-
-export async function completeNidaRequest(requestId: string, nidaNumber: string) {
-  const callable = createWorkerCall<{ requestId: string; nidaNumber: string }, { requestId: string; status: string }>("completeNidaRequest");
-  return (await callable({ requestId, nidaNumber })).data;
-}
-
 export async function createPocketWifiOrder(applicationId: string, details: string, phone: string) {
   const callable = createWorkerCall<{ applicationId: string; details: string; phone: string }, { applicationId: string; status: string; duplicate: boolean }>("createPocketWifiOrder");
   return (await callable({ applicationId, details, phone })).data;
