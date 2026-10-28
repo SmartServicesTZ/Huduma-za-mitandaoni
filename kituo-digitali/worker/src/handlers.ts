@@ -35,7 +35,7 @@ async function profileFor(uid: string) {
   return { ...profile, role };
 }
 
-const callableAccessAction: Record<string, "admin" | "read" | "profile" | "chat" | "applications" | "services" | "payments" | "auth"> = {
+const callableAccessAction: Record<string, "admin" | "read" | "profile" | "applications" | "services" | "payments" | "auth"> = {
   adminDelete: "admin", adminWrite: "admin", adjustTokens: "admin", resetUserPassword: "admin", seedServiceCatalog: "admin",
   setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", replyToServiceApplication: "admin", 
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
