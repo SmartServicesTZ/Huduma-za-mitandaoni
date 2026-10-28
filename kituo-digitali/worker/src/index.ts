@@ -321,7 +321,7 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
         contents: [{ role: "user", parts: [{ text: message.trim() }] }],
         generationConfig: { maxOutputTokens: 700, temperature: 0.7 },
       }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(55000),
     });
     const data = await upstream.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } };
     if (!upstream.ok) {
