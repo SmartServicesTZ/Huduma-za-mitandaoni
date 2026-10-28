@@ -502,3 +502,47 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .portal-service-card.service-locked .service-card-icon{filter:none!important;opacity:1!important}
 .portal-service-card .locked-label{display:inline-flex;align-items:center;justify-content:center;padding:5px 9px;border-radius:999px;background:#fff1f2;color:#be123c;font-size:9px;font-weight:900;letter-spacing:.08em}
 @media(max-width:480px){html body .portal-shell .portal-content .portal-main .token-card:not(.token-card--compact){padding:18px!important;border-radius:21px!important}.wallet-fashion-balance{padding:19px 16px}.wallet-fashion-orbit{width:52px;height:52px;flex-basis:52px}.wallet-fashion-orbit span:nth-child(2){top:29px;left:32px}.wallet-fashion-status{max-width:85px}}
+
+
+/* Strong contrast for account identity and verified tick */
+.wallet-fashion-account {
+  background: linear-gradient(125deg, #102a50 0%, #173c70 58%, #164e63 100%) !important;
+  border: 1px solid rgba(147, 197, 253, .42) !important;
+  box-shadow: 0 10px 24px rgba(15, 39, 75, .18);
+}
+.wallet-fashion-account .wallet-fashion-account-copy small { color: #b8d8ff !important; }
+.wallet-fashion-account .wallet-fashion-account-copy .token-account-name { color: #ffffff !important; }
+.wallet-fashion-account .wallet-fashion-phone { color: #d8eaff !important; font-size: 12px !important; font-weight: 650; letter-spacing: .025em; }
+.wallet-fashion-account .verified-tick,
+.sidebar-user .verified-tick {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  border-radius: 50%;
+  color: #ffffff !important;
+  background: #1685ff !important;
+  border: 2px solid #dbeafe;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  vertical-align: middle;
+  box-shadow: 0 0 0 2px rgba(22, 133, 255, .16);
+}
+.sidebar-user {
+  background: linear-gradient(125deg, #102a50 0%, #173c70 58%, #164e63 100%) !important;
+  border: 1px solid rgba(147, 197, 253, .4) !important;
+  border-radius: 16px;
+  color: #fff !important;
+}
+.sidebar-user strong { color: #fff !important; }
+.sidebar-user small { color: #d8eaff !important; }
+.sidebar-user .user-avatar {
+  display: grid;
+  place-items: center;
+  color: #fff !important;
+  background: linear-gradient(145deg, #1685ff, #0d9488) !important;
+  border: 1px solid rgba(255,255,255,.35);
+  font-weight: 900;
+}
