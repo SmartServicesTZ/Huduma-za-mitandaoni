@@ -613,6 +613,11 @@ export async function adminResetUserPassword(adminId: string, userId: string, te
   return (await callable({ userId, temporaryPassword })).data as { ok: boolean; mustChangePassword: boolean };
 }
 
+export async function adminDeleteUserAccount(userId: string) {
+  const callable = createWorkerCall<{ userId: string }, { ok: boolean; userId: string }>("adminDeleteUserAccount");
+  return (await callable({ userId })).data;
+}
+
 export async function adminUpdateUser(adminId: string, userId: string, values: Partial<AdminUserRecord>) {
   if (values.role !== undefined || values.permissions !== undefined) {
     const callable = createWorkerCall("updateUserAccess");
