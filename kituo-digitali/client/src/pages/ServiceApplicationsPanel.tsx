@@ -166,7 +166,7 @@ function StatusBadge({ status }: { status: ApplicationStatus }) {
   return <span className={`service-app-admin-status service-app-admin-status-${className}`}>{status}</span>;
 }
 
-export function ServiceApplicationsPanel({ applications, services, onRun, adminId, busy }: ServiceApplicationsPanelProps) {
+export function ServiceApplicationsPanel({ applications, services, onRun, adminId, busy, hasPrevious = false, hasNext = false, onPrevious, onNext }: ServiceApplicationsPanelProps & { hasPrevious?: boolean; hasNext?: boolean; onPrevious?: () => void; onNext?: () => void }) {
   const [tab, setTab] = useState<StatusTab>("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [selected, setSelected] = useState<ServiceApplication | null>(null);
@@ -389,6 +389,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
           </>
         )}
       </div>
+      {(hasPrevious || hasNext) && <nav aria-label="Pagination ya maombi ya huduma" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:14}}><button type="button" className="service-app-admin-button service-app-admin-button-secondary" disabled={!hasPrevious} onClick={onPrevious}>← Previous</button><button type="button" className="service-app-admin-button" disabled={!hasNext} onClick={onNext}>Next →</button></nav>}
 
       {selected && !documentPreview && !rejecting && (
         <div className="service-app-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeApplication(); }}>

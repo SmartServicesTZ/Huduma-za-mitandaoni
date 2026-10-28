@@ -93,28 +93,38 @@ function pageInput(value: unknown) {
   const pageSize = Number.isInteger(rawSize) ? Math.min(MAX_PAGE_SIZE, Math.max(1, rawSize)) : DEFAULT_PAGE_SIZE;
   const cursor = data.cursor === undefined || data.cursor === null || data.cursor === "" ? undefined : text(data.cursor, 240);
   let startAfter: string | undefined;
+  let startAfterTimestamp: Date | undefined;
   if (cursor) {
     try {
       const decoded = Buffer.from(cursor, "base64url").toString("utf8");
-      const parsed = JSON.parse(decoded) as { id?: unknown };
+      const parsed = JSON.parse(decoded) as { id?: unknown; timestamp?: unknown };
       if (typeof parsed.id !== "string" || !/^[A-Za-z0-9_-]{1,160}$/.test(parsed.id)) throw new Error("invalid");
       startAfter = parsed.id;
+      if (parsed.timestamp !== undefined) {
+        if (typeof parsed.timestamp !== "string") throw new Error("invalid");
+        const timestamp = new Date(parsed.timestamp);
+        if (Number.isNaN(timestamp.getTime())) throw new Error("invalid");
+        startAfterTimestamp = timestamp;
+      }
     } catch {
       throw new ApiError("invalid-argument", "Cursor ya ukurasa si sahihi.");
     }
   }
   const status = typeof data.status === "string" && data.status.trim() ? data.status.trim().slice(0, 80) : undefined;
-  return { pageSize, startAfter, status };
+  return { pageSize, startAfter, startAfterTimestamp, status };
 }
 
-function nextPageCursor(id: string) {
-  return Buffer.from(JSON.stringify({ id }), "utf8").toString("base64url");
+function nextPageCursor(id: string, timestamp?: unknown) {
+  const value = timestamp instanceof Date ? timestamp : new Date(String(timestamp ?? ""));
+  const payload = Number.isNaN(value.getTime()) ? { id } : { id, timestamp: value.toISOString() };
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
 }
 
-function pageResult<T extends { id: string }>(rows: T[], pageSize: number) {
+function pageResult<T extends Record<string, unknown> & { id: string }>(rows: T[], pageSize: number, timestampField?: keyof T) {
   const hasMore = rows.length > pageSize;
   const items = hasMore ? rows.slice(0, pageSize) : rows;
-  return { items, nextCursor: hasMore && items.length ? nextPageCursor(items.at(-1)!.id) : null, hasMore };
+  const last = items.at(-1);
+  return { items, nextCursor: hasMore && last ? nextPageCursor(last.id, timestampField ? last[timestampField] : undefined) : null, hasMore };
 }
 
 function recordAudit(transaction: Transaction, actorId: string, actorRole: string, action: string, targetType: string, targetId: string, before: unknown, after: unknown, details: Record<string, unknown> = {}) {
@@ -775,13 +785,14 @@ export const listLipaApplications = callable(async (request) => {
   const paging = pageInput(request.data);
   let query: Query = db.collection("lipaApplications");
   if (paging.status) query = query.where("status", "==", paging.status);
-  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  query = query.orderBy("submittedAt", "desc");
+  if (paging.startAfter) {
+    if (!paging.startAfterTimestamp) throw new ApiError("invalid-argument", "Cursor ya ukurasa wa maombi imepitwa na wakati. Fungua ukurasa tena.");
+    query = query.startAfterValues([paging.startAfterTimestamp, paging.startAfter]);
+  }
   const snapshot = await query.limit(paging.pageSize + 1).get();
-  // Keep the adapter's document-ID order intact until after cursor pagination.
-  // Sorting by submittedAt before pageResult makes the next cursor point at a
-  // non-terminal document in the query order, which can skip or repeat records.
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(rows, paging.pageSize);
+  const page = pageResult(rows, paging.pageSize, "submittedAt");
   return { applications: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -926,10 +937,14 @@ export const listMyNidaRequests = callable(async (request) => {
   const paging = pageInput(request.data);
   let query: Query = db.collection("nidaRequests").where("userId", "==", uid);
   if (paging.status) query = query.where("status", "==", paging.status);
-  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  query = query.orderBy("submittedAt", "desc");
+  if (paging.startAfter) {
+    if (!paging.startAfterTimestamp) throw new ApiError("invalid-argument", "Cursor ya ukurasa wa NIDA imepitwa na wakati. Fungua ukurasa tena.");
+    query = query.startAfterValues([paging.startAfterTimestamp, paging.startAfter]);
+  }
   const snapshot = await query.limit(paging.pageSize + 1).get();
   const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(requests, paging.pageSize);
+  const page = pageResult(requests, paging.pageSize, "submittedAt");
   return { requests: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -940,10 +955,14 @@ export const listNidaRequests = callable(async (request) => {
   const paging = pageInput(request.data);
   let query: Query = db.collection("nidaRequests");
   if (paging.status) query = query.where("status", "==", paging.status);
-  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  query = query.orderBy("submittedAt", "desc");
+  if (paging.startAfter) {
+    if (!paging.startAfterTimestamp) throw new ApiError("invalid-argument", "Cursor ya ukurasa wa NIDA imepitwa na wakati. Fungua ukurasa tena.");
+    query = query.startAfterValues([paging.startAfterTimestamp, paging.startAfter]);
+  }
   const snapshot = await query.limit(paging.pageSize + 1).get();
   const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(requests, paging.pageSize);
+  const page = pageResult(requests, paging.pageSize, "submittedAt");
   return { requests: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -1220,10 +1239,14 @@ export const listServiceApplications = callable(async (request) => {
   const paging = pageInput(request.data);
   let query: Query = db.collection("serviceApplications");
   if (paging.status) query = query.where("status", "==", paging.status);
-  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  query = query.orderBy("submittedAt", "desc");
+  if (paging.startAfter) {
+    if (!paging.startAfterTimestamp) throw new ApiError("invalid-argument", "Cursor ya ukurasa wa maombi imepitwa na wakati. Fungua ukurasa tena.");
+    query = query.startAfterValues([paging.startAfterTimestamp, paging.startAfter]);
+  }
   const snapshot = await query.limit(paging.pageSize + 1).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(rows, paging.pageSize);
+  const page = pageResult(rows, paging.pageSize, "submittedAt");
   return { applications: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -1302,9 +1325,13 @@ export const listAdminUsers = callable(async (request) => {
   const paging = pageInput(request.data);
   let query: Query = db.collection("users");
   if (paging.status) query = query.where("accountStatus", "==", paging.status);
-  if (paging.startAfter) query = query.startAfter(paging.startAfter);
+  query = query.orderBy("createdAt", "desc");
+  if (paging.startAfter) {
+    if (!paging.startAfterTimestamp) throw new ApiError("invalid-argument", "Cursor ya ukurasa wa watumiaji imepitwa na wakati. Fungua ukurasa tena.");
+    query = query.startAfterValues([paging.startAfterTimestamp, paging.startAfter]);
+  }
   const snapshot = await query.limit(paging.pageSize + 1).get();
-  const rows = snapshot.docs.map((document) => {
+  const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((document) => {
     const data = document.data() as Record<string, unknown>;
     const {
       password: _password,
@@ -1316,7 +1343,7 @@ export const listAdminUsers = callable(async (request) => {
     } = data;
     return { id: document.id, ...safeData };
   });
-  const page = pageResult(rows, paging.pageSize);
+  const page = pageResult(rows, paging.pageSize, "createdAt");
   return { users: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 

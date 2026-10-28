@@ -151,21 +151,36 @@ export class Query {
     protected readonly filter?: { field: string; value: unknown },
     protected readonly maxResults?: number,
     protected readonly startAfterDocumentId?: string,
+    protected readonly ordering: Array<{ field: string; direction: "ASCENDING" | "DESCENDING" }> = [{ field: "__name__", direction: "DESCENDING" }],
+    protected readonly startAfterCursorValues?: unknown[],
   ) {}
 
   where(field: string, operation: "==", value: unknown) {
     if (operation !== "==") throw new Error("The Worker Firestore adapter currently supports equality queries only.");
-    return new Query(this.client, this.collectionPath, { field, value }, this.maxResults, this.startAfterDocumentId);
+    return new Query(this.client, this.collectionPath, { field, value }, this.maxResults, this.startAfterDocumentId, this.ordering, this.startAfterCursorValues);
   }
 
   limit(count: number) {
     if (!Number.isInteger(count) || count < 1 || count > 1000) throw new Error("Invalid Firestore query limit.");
-    return new Query(this.client, this.collectionPath, this.filter, count, this.startAfterDocumentId);
+    return new Query(this.client, this.collectionPath, this.filter, count, this.startAfterDocumentId, this.ordering, this.startAfterCursorValues);
   }
 
   startAfter(documentId: string) {
     if (!/^[A-Za-z0-9_-]{1,160}$/.test(documentId)) throw new Error("Invalid Firestore cursor document ID.");
-    return new Query(this.client, this.collectionPath, this.filter, this.maxResults, documentId);
+    return new Query(this.client, this.collectionPath, this.filter, this.maxResults, documentId, this.ordering, undefined);
+  }
+
+  orderBy(field: string, direction: "asc" | "desc" = "asc") {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(field) || field === "__name__") throw new Error("Invalid Firestore order field.");
+    return new Query(this.client, this.collectionPath, this.filter, this.maxResults, undefined, [
+      { field, direction: direction === "desc" ? "DESCENDING" : "ASCENDING" },
+      { field: "__name__", direction: direction === "desc" ? "DESCENDING" : "ASCENDING" },
+    ], this.startAfterCursorValues);
+  }
+
+  startAfterValues(values: unknown[]) {
+    if (!Array.isArray(values) || values.length !== this.ordering.length) throw new Error("Invalid Firestore cursor values.");
+    return new Query(this.client, this.collectionPath, this.filter, this.maxResults, undefined, this.ordering, values);
   }
 
   async get(transactionId?: string) {
@@ -182,6 +197,14 @@ export class Query {
 
   get queryStartAfterDocumentId() {
     return this.startAfterDocumentId;
+  }
+
+  get queryOrdering() {
+    return this.ordering;
+  }
+
+  get queryStartAfterValues() {
+    return this.startAfterCursorValues;
   }
 }
 
@@ -302,8 +325,15 @@ export class FirestoreRest {
         },
       };
     }
-    structuredQuery.orderBy = [{ field: { fieldPath: "__name__" }, direction: "DESCENDING" }];
-    if (query.queryStartAfterDocumentId) {
+    structuredQuery.orderBy = query.queryOrdering.map((item) => ({ field: { fieldPath: item.field }, direction: item.direction }));
+    if (query.queryStartAfterValues) {
+      structuredQuery.startAt = {
+        before: false,
+        values: query.queryStartAfterValues.map((value, index) => index === query.queryOrdering.length - 1
+          ? { referenceValue: documentName(`${query.collectionPath}/${String(value)}`) }
+          : encodeValue(value)),
+      };
+    } else if (query.queryStartAfterDocumentId) {
       structuredQuery.startAt = {
         before: false,
         values: [{ referenceValue: documentName(`${query.collectionPath}/${query.queryStartAfterDocumentId}`) }],

@@ -280,7 +280,7 @@ function PanelStyles() {
   `}</style>;
 }
 
-export function LipaApplicationsPanel({ applications, networks, onRun, adminId, busy }: { applications: LipaApplication[]; networks: NetworkCollection; onRun: RunAction; adminId: string; busy: boolean }) {
+export function LipaApplicationsPanel({ applications, networks, onRun, adminId, busy, hasPrevious = false, hasNext = false, onPrevious, onNext }: { applications: LipaApplication[]; networks: NetworkCollection; onRun: RunAction; adminId: string; busy: boolean; hasPrevious?: boolean; hasNext?: boolean; onPrevious?: () => void; onNext?: () => void }) {
   const [tab, setTab] = useState<"ALL" | ApplicationStatus>("ALL");
   const [rewardFilter, setRewardFilter] = useState<RewardFilter>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("submittedAt");
@@ -471,6 +471,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
         <button type="button" className="lipa-admin-mobile-open" disabled={busy} onClick={() => openApplication(application)}>Open</button>
       </article>)}
     </div>
+    {(hasPrevious || hasNext) && <nav aria-label="Pagination ya maombi ya Lipa" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:14}}><button type="button" className="lipa-admin-button lipa-admin-button-secondary" disabled={!hasPrevious} onClick={onPrevious}>← Previous</button><button type="button" className="lipa-admin-button" disabled={!hasNext} onClick={onNext}>Next →</button></nav>}
     {selected && <div className="lipa-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="lipa-admin-modal" role="dialog" aria-modal="true" aria-labelledby="lipa-application-detail-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-application-detail-heading">{selected.applicantName || selected.userName || "Ombi la mtumiaji"}</h3><p>{byNetwork[selected.networkId]?.name ?? selected.network ?? selected.serviceId ?? "Huduma haijaainishwa"} · <StatusBadge status={selected.status} /></p></div><button type="button" className="lipa-admin-close" aria-label="Close application details" onClick={() => setSelected(null)}><X size={19} /></button></div>
       <div className="lipa-admin-detail-banner">
         <strong style={{fontSize:"1rem"}}>TAARIFA KAMILI YA OMBI</strong>

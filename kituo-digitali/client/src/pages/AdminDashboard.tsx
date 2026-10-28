@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowDown, ArrowUp, BarChart3, Download, Bell, Boxes, ChevronRight, ClipboardList, FileKey2, LayoutDashboard, LogOut, Menu, MessageSquare, Palette, PlaySquare, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Trash2, UserCog, Users, WalletCards, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminSendPushNotification, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminListAgentRecords, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, subscribeToAdminServiceApplications, subscribeAdminWebsiteHealthReports, resolveWebsiteHealthReport, type AdminUserRecord, type LipaApplication, type ServiceApplication, type WebsiteHealthReport } from "@/lib/firebase";
+import { adminAdjustTokens, adminSendPushNotification, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminListAgentRecords, adminListLipaApplications, adminListServiceApplications, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, subscribeToAdminServiceApplications, subscribeAdminWebsiteHealthReports, resolveWebsiteHealthReport, type AdminUserRecord, type LipaApplication, type ServiceApplication, type WebsiteHealthReport } from "@/lib/firebase";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, moveId } from "../../../shared/serviceOrdering";
 import { mergeServiceCatalogDefaults } from "../../../shared/catalog";
 import { accountRestrictionActionLabels, accountRestrictionActions, resolveAccountAccessMode, type AccountAccessMode, type AccountRestrictionAction } from "../../../shared/accountAccess";
@@ -130,7 +130,13 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState<any[]>([]);
   const [licenses, setLicenses] = useState<any[]>([]);
   const [lipaApplications, setLipaApplications] = useState<LipaApplication[]>([]);
+  const [lipaNextCursor, setLipaNextCursor] = useState<string | null>(null);
+  const [lipaPreviousCursors, setLipaPreviousCursors] = useState<Array<string | undefined>>([]);
+  const [lipaCurrentCursor, setLipaCurrentCursor] = useState<string | undefined>(undefined);
   const [serviceApplications, setServiceApplications] = useState<ServiceApplication[]>([]);
+  const [serviceNextCursor, setServiceNextCursor] = useState<string | null>(null);
+  const [servicePreviousCursors, setServicePreviousCursors] = useState<Array<string | undefined>>([]);
+  const [serviceCurrentCursor, setServiceCurrentCursor] = useState<string | undefined>(undefined);
   const [applicationInboxTab, setApplicationInboxTab] = useState<"ALL" | "SERVICES" | "LIPA">("ALL");
   const [lipaServices, setLipaServices] = useState<any[]>([]);
   const [audit, setAudit] = useState<any[]>([]);
@@ -228,14 +234,32 @@ export default function AdminDashboard() {
     // Paneli ya Lipa ndiyo pekee inayohitaji inbox ya Lipa iwe hai.
     if (!canManageLipaApplications) { setLipaApplications([]); return; }
     if (panel !== "lipa") return;
-    return subscribeToAdminLipaApplications(setLipaApplications, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
+    return subscribeToAdminLipaApplications((page) => { setLipaApplications(page.rows); setLipaNextCursor(page.nextCursor); setLipaPreviousCursors([]); setLipaCurrentCursor(undefined); }, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
   }, [canManageLipaApplications, panel, firebaseUser?.uid]);
   useEffect(() => {
     // Maombi ya huduma hupakiwa tu admin anapofungua paneli ya Applications.
     if (!hasPermission("manageServices")) { setServiceApplications([]); return; }
     if (panel !== "applications") return;
-    return subscribeToAdminServiceApplications(setServiceApplications, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
+    return subscribeToAdminServiceApplications((page) => { setServiceApplications(page.rows); setServiceNextCursor(page.nextCursor); setServicePreviousCursors([]); setServiceCurrentCursor(undefined); }, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
   }, [canManage, isAdmin, isSuper, panel, firebaseUser?.uid]);
+  const loadLipaPage = async (cursor: string | undefined, previous: boolean) => {
+    const page = await adminListLipaApplications(cursor);
+    setLipaApplications(page.rows);
+    setLipaNextCursor(page.nextCursor);
+    setLipaPreviousCursors((current) => previous ? current.slice(0, -1) : [...current, lipaCurrentCursor]);
+    setLipaCurrentCursor(cursor);
+  };
+  const loadServicePage = async (cursor: string | undefined, previous: boolean) => {
+    const page = await adminListServiceApplications(cursor);
+    setServiceApplications(page.rows);
+    setServiceNextCursor(page.nextCursor);
+    setServicePreviousCursors((current) => previous ? current.slice(0, -1) : [...current, serviceCurrentCursor]);
+    setServiceCurrentCursor(cursor);
+  };
+  const goLipaNext = () => lipaNextCursor ? void loadLipaPage(lipaNextCursor, false) : undefined;
+  const goLipaPrevious = () => { const cursor = lipaPreviousCursors.at(-1); return cursor !== undefined || lipaPreviousCursors.length ? void loadLipaPage(cursor, true) : undefined; };
+  const goServiceNext = () => serviceNextCursor ? void loadServicePage(serviceNextCursor, false) : undefined;
+  const goServicePrevious = () => { const cursor = servicePreviousCursors.at(-1); return cursor !== undefined || servicePreviousCursors.length ? void loadServicePage(cursor, true) : undefined; };
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
   const visibleUsers = useMemo(() => users.filter((item) => `${item.name} ${item.phone} ${item.username}`.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const totalIssued = transactions.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);
@@ -266,11 +290,11 @@ export default function AdminDashboard() {
         <div style={{display:"grid",gap:18}}>
           <section aria-label="Maombi ya huduma na SME">
             <div className="admin-kicker" style={{marginBottom:8}}>AINA: HUDUMA ZA MFUMO NA SME</div>
-            <ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} />
+            <ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} hasPrevious={servicePreviousCursors.length > 0} hasNext={Boolean(serviceNextCursor)} onPrevious={goServicePrevious} onNext={goServiceNext} />
           </section>
           <section aria-label="Maombi ya Pata Lipa namba na Access Lipa">
             <div className="admin-kicker" style={{marginBottom:8}}>AINA: PATA LIPA NAMBA / ACCESS LIPA</div>
-            <LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} />
+            <LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} hasPrevious={lipaPreviousCursors.length > 0} hasNext={Boolean(lipaNextCursor)} onPrevious={goLipaPrevious} onNext={goLipaNext} />
           </section>
           {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
         </div>
@@ -793,4 +817,3 @@ function AgentRecordsPanel({ rows, onRefresh, loading }: { rows: any[]; onRefres
     {selected && <div className="admin-modal-backdrop" onClick={() => setSelected(null)}><div className="admin-modal" onClick={(event) => event.stopPropagation()}><button className="admin-modal-close" onClick={() => setSelected(null)}><X size={18}/></button><span className="admin-kicker">TAARIFA KAMILI ZA WAKALA</span><h2>{selected.agentId}</h2><div className="form-grid">{[["Jina kamili",selected.name],["Simu",selected.phone],["Mtandao",selected.network],["Aina ya wakala",selected.type],["Mkoa",selected.region],["Msimbo wa mkoa",selected.regionCode],["Wilaya",selected.district],["Kata / Eneo",selected.area],["Tarehe ya kutolewa",selected.issueDate],["Tarehe ya kuisha",selected.expiryDate],["User ID",selected.userId],["Hali",selected.status],["Tarehe ya usajili",dateText(selected.createdAt)],["Imesasishwa",dateText(selected.updatedAt)]].map(([label,value]) => <div key={label} className="control-field"><span>{label}</span><strong style={{overflowWrap:"anywhere"}}>{String(value || "—")}</strong></div>)}</div><h3 style={{marginTop:20}}>Historia ya mabadiliko</h3>{Array.isArray(selected.history) && selected.history.length ? <ul>{selected.history.map((entry: any,index: number) => <li key={index}>{entry.action || "Mabadiliko"} · {entry.details || ""} · {entry.at || ""} · {entry.by || ""}</li>)}</ul> : <p>Hakuna historia ya ziada iliyohifadhiwa.</p>}<p style={{fontSize:12,color:"var(--muted,#64748b)"}}>Rekodi hii ni ya usimamizi wa ndani. Taarifa binafsi zionekane kwa watumishi walioidhinishwa pekee.</p></div></div>}
   </section>;
 }
-

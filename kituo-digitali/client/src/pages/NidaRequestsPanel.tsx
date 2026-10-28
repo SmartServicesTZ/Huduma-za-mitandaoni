@@ -30,12 +30,18 @@ export default function NidaRequestsPanel() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"OPEN" | "PENDING" | "PROCESSING" | "ALL" | "DONE">("ALL");
   const [showRecentNida, setShowRecentNida] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
+  const [previousCursors, setPreviousCursors] = useState<Array<string | undefined>>([]);
 
-  const refresh = async (silent = false) => {
+  const refresh = async (silent = false, cursor = currentCursor, previous = false) => {
     if (!silent) setLoading(true);
     try {
-      const rows = await listNidaRequests();
-      setRequests(rows);
+      const page = await listNidaRequests(cursor);
+      setRequests(page.rows);
+      setNextCursor(page.nextCursor);
+      setPreviousCursors((old) => previous ? old.slice(0, -1) : cursor === currentCursor ? old : [...old, currentCursor]);
+      setCurrentCursor(cursor);
       setError("");
     } catch (e) {
       const message = e instanceof Error ? e.message : "Imeshindikana kupakia maombi ya NIDA.";
@@ -137,6 +143,7 @@ export default function NidaRequestsPanel() {
       <div className="nida-admin-filters" aria-label="Chuja maombi">
         {([{value:"OPEN",label:"Yanayosubiri / kazi"},{value:"PENDING",label:"Mapya"},{value:"PROCESSING",label:"Inafanyiwa kazi"},{value:"DONE",label:"Yaliyofungwa"},{value:"ALL",label:"Yote"}] as const).map((option) => <button type="button" key={option.value} className={filter === option.value ? "is-active" : ""} onClick={() => setFilter(option.value)}>{option.label}</button>)}
       </div>
+      {(previousCursors.length > 0 || nextCursor) && <nav aria-label="Pagination ya maombi ya NIDA" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:12}}><button type="button" className="button button--small" disabled={!previousCursors.length || loading} onClick={() => { const cursor = previousCursors.at(-1); void refresh(false, cursor, true); }}>← Previous</button><button type="button" className="button button--small" disabled={!nextCursor || loading} onClick={() => void refresh(false, nextCursor ?? undefined, false)}>Next →</button></nav>}
     </section>
     <section className="admin-card nida-recent-toggle">
       <button type="button" className="nida-recent-toggle-button" aria-expanded={showRecentNida} onClick={() => setShowRecentNida((shown) => !shown)}>

@@ -782,6 +782,7 @@ export type LipaApplication = {
   submittedAt?: unknown;
   updatedAt?: unknown;
 };
+export type AdminPage<T> = { rows: T[]; nextCursor: string | null; hasMore: boolean };
 export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
 export type NidaRequest = { id: string; requestId: string; userId: string; userName?: string; phone: string; status: "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED"; nidaNumber?: string; rejectionReason?: string; submittedAt?: unknown; updatedAt?: unknown };
 
@@ -912,31 +913,26 @@ export async function removeLipaUpload(storagePath: string) {
   await deleteObject(storageRef(firebaseStorage, storagePath));
 }
 
-export async function adminListLipaApplications() {
+export async function adminListLipaApplications(cursor?: string) {
   const callable = createWorkerCall("listLipaApplications");
-  const rows: Array<Record<string, unknown>> = [];
-  let cursor: string | undefined;
-  do {
-    const result = (await callable({ pageSize: 50, cursor })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null };
-    rows.push(...(result.applications ?? []));
-    cursor = result.nextCursor ?? undefined;
-  } while (cursor);
-  return rows.map((item) => ({
+  const result = (await callable({ pageSize: 50, cursor })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null; hasMore?: boolean };
+  const rows = (result.applications ?? []).map((item) => ({
     id: String(item.id ?? item.applicationId ?? ""),
     ...item,
     submittedAt: timestampValue(item.submittedAt),
     updatedAt: timestampValue(item.updatedAt),
   } as LipaApplication));
+  return { rows, nextCursor: result.nextCursor ?? null, hasMore: result.hasMore === true } satisfies AdminPage<LipaApplication>;
 }
 
-export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
+export function subscribeToAdminLipaApplications(callback: (page: AdminPage<LipaApplication>) => void, onError?: (error: unknown) => void) {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let retryDelay = 60_000;
   const load = async () => {
     try {
-      const rows = await adminListLipaApplications();
-      if (!stopped) callback(rows);
+      const page = await adminListLipaApplications();
+      if (!stopped) callback(page);
       retryDelay = 120_000;
     } catch (error) {
       if (!stopped) onError?.(error);
@@ -982,16 +978,10 @@ export async function listMyNidaRequests() {
   return rows;
 }
 
-export async function listNidaRequests() {
+export async function listNidaRequests(cursor?: string) {
   const callable = createWorkerCall<{ pageSize: number; cursor?: string }, { requests: NidaRequest[]; nextCursor?: string | null }>("listNidaRequests");
-  const rows: NidaRequest[] = [];
-  let cursor: string | undefined;
-  do {
-    const result = (await callable({ pageSize: 50, cursor })).data;
-    rows.push(...(result.requests ?? []));
-    cursor = result.nextCursor ?? undefined;
-  } while (cursor);
-  return rows;
+  const result = (await callable({ pageSize: 50, cursor })).data;
+  return { rows: result.requests ?? [], nextCursor: result.nextCursor ?? null, hasMore: Boolean(result.nextCursor) } satisfies AdminPage<NidaRequest>;
 }
 
 export async function setNidaRequestStatus(requestId: string, status: "PROCESSING" | "REJECTED", rejectionReason = "") {
@@ -1065,31 +1055,26 @@ export async function removeServiceUpload(storagePath: string) {
   }
 }
 
-export async function adminListServiceApplications() {
+export async function adminListServiceApplications(cursor?: string) {
   const callable = createWorkerCall("listServiceApplications");
-  const rows: Array<Record<string, unknown>> = [];
-  let cursor: string | undefined;
-  do {
-    const result = (await callable({ pageSize: 50, cursor })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null };
-    rows.push(...(result.applications ?? []));
-    cursor = result.nextCursor ?? undefined;
-  } while (cursor);
-  return rows.map((item) => ({
+  const result = (await callable({ pageSize: 50, cursor })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null; hasMore?: boolean };
+  const rows = (result.applications ?? []).map((item) => ({
     id: String(item.id ?? item.applicationId ?? ""),
     ...item,
     submittedAt: timestampValue(item.submittedAt),
     updatedAt: timestampValue(item.updatedAt),
   } as ServiceApplication));
+  return { rows, nextCursor: result.nextCursor ?? null, hasMore: result.hasMore === true } satisfies AdminPage<ServiceApplication>;
 }
 
-export function subscribeToAdminServiceApplications(callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
+export function subscribeToAdminServiceApplications(callback: (page: AdminPage<ServiceApplication>) => void, onError?: (error: unknown) => void) {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let retryDelay = 60_000;
   const load = async () => {
     try {
-      const rows = await adminListServiceApplications();
-      if (!stopped) callback(rows);
+      const page = await adminListServiceApplications();
+      if (!stopped) callback(page);
       retryDelay = 120_000;
     } catch (error) {
       if (!stopped) onError?.(error);
