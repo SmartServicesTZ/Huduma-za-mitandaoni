@@ -317,7 +317,7 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
 
   // Jaribu watoa huduma tofauti. Funguo zote ni hiari; angalau moja lazima iwekwe kwenye Worker Secrets.
   const compatibleProviders: Array<{ name: string; key?: string; url: string; model: string; headers?: Record<string, string> }> = [
-    { name: "Groq", key: keys.GROQ_API_KEY, url: "https://api.groq.com/openai/v1/chat/completions", model: "llama-3.3-70b-versatile" },
+    { name: "Groq", key: keys.GROQ_API_KEY, url: "https://api.groq.com/openai/v1/chat/completions", model: "openai/gpt-oss-120b" },
     { name: "OpenRouter", key: keys.OPENROUTER_API_KEY, url: "https://openrouter.ai/api/v1/chat/completions", model: "openrouter/free", headers: { "HTTP-Referer": "https://smartservicestz.github.io/Huduma-za-mitandaoni/", "X-Title": "SmartServicesTZ" } },
   ];
 
