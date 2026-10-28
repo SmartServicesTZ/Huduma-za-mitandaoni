@@ -3,8 +3,8 @@ export type HomepageSectionId = (typeof homepageSectionIds)[number];
 export const defaultHomepageSectionOrder: HomepageSectionId[] = [...homepageSectionIds];
 export const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
 export const preferredHomepageServiceSlugs = [
-  "leseni-biashara",
   "cheti-tin",
+  "leseni-biashara",
   "pata-lipa-namba",
   "access-lipa-number",
   "sme-airtel",
