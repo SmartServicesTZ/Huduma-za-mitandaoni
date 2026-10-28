@@ -62,7 +62,7 @@ const icons: Record<string, React.ElementType> = { "file-badge": FileBadge, "bad
 
 function Icon({ name, size = 22 }: { name: string; size?: number }) { const Component = icons[name] ?? Sparkles; return <Component size={size} strokeWidth={1.9} />; }
 
-function Notice({ children, tone = "warning" }: { children: React.ReactNode; tone?: "warning" | "success" | "info" }) { return <div className={`notice notice--${tone}`}><CircleAlert size={17} /> <span>{children}</span></div>; }
+function shuffleYangaArray<T>(items: T[]): T[] { const copy = [...items]; for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }\n\nfunction Notice({ children, tone = "warning" }: { children: React.ReactNode; tone?: "warning" | "success" | "info" }) { return <div className={`notice notice--${tone}`}><CircleAlert size={17} /> <span>{children}</span></div>; }
 
 function isRetiredNidaRecord(item: any) { return /nida|nin|kitambulisho cha taifa/i.test([item?.serviceName, item?.serviceSlug, item?.slug, item?.description, item?.reason, item?.name, item?.type, item?.title].filter(Boolean).join(" ")); }
 
@@ -675,13 +675,13 @@ export default function Home() {
   const [serviceNotice, setServiceNotice] = useState("");
   const [showYangaRules, setShowYangaRules] = useState(false);
   const [yangaRulesAccepted, setYangaRulesAccepted] = useState(false);
-  const [yangaQuizPassed, setYangaQuizPassed] = useState(false);
+  const [yangaQuizPassed, setYangaQuizPassed] = useState(false);\n  const [yangaEntryStep, setYangaEntryStep] = useState<"choice" | "quiz" | "rules">("choice");\n  const [yangaPaymentBusy, setYangaPaymentBusy] = useState(false);
   const [yangaFanConfirm, setYangaFanConfirm] = useState("");
   const [yangaLoveConfirm, setYangaLoveConfirm] = useState("");
   const [yangaAnswers, setYangaAnswers] = useState<Record<number, string>>({});
   const [yangaPlayers, setYangaPlayers] = useState<string[]>([]);
   const [yangaQuizError, setYangaQuizError] = useState("");
-  const yangaQuizQuestions = [
+  const yangaQuestionPool = [
     { q: "Yanga SC ilianzishwa mwaka gani?", options: ["1935", "1938", "1945", "1961"], answer: "1935" },
     { q: "Rangi zinazotambulisha Yanga ni zipi?", options: ["Nyekundu na nyeupe", "Kijani na njano", "Bluu na nyeupe", "Nyeusi na njano"], answer: "Kijani na njano" },
     { q: "Jina maarufu la mashabiki wa Yanga ni lipi?", options: ["Wananchi", "Wekundu wa Msimbazi", "Azam Family", "Mabingwa wa Jangwani"], answer: "Wananchi" },
@@ -692,7 +692,38 @@ export default function Home() {
     { q: "Yanga ilifika fainali ya Kombe la Shirikisho la CAF mwaka gani?", options: ["2018", "2020", "2023", "2025"], answer: "2023" },
     { q: "Jina kamili la Yanga SC ni lipi?", options: ["Young Africans Sports Club", "Youth Africa Simba Club", "Young Athletic Society", "Yellow Africans Club"], answer: "Young Africans Sports Club" },
     { q: "Yanga SC imetwaa mataji mangapi ya Ligi Kuu Tanzania hadi msimu wa 2025/26?", options: ["22", "27", "32", "35"], answer: "32" },
+    { q: "Yanga ni klabu ya nchi gani?", options: ["Kenya", "Tanzania", "Uganda", "Rwanda"], answer: "Tanzania" },
+    { q: "Yanga inashiriki ligi kuu ya nchi gani?", options: ["Tanzania", "Kenya", "Zambia", "Malawi"], answer: "Tanzania" },
+    { q: "Mashabiki wa Yanga mara nyingi huitwa nini?", options: ["Wananchi", "Mnyama", "Wanalambalamba", "Jangwani Boys"], answer: "Wananchi" },
+    { q: "Ni timu ipi inayotambulika kwa rangi ya kijani na njano?", options: ["Yanga SC", "Simba SC", "Azam FC", "KMC FC"], answer: "Yanga SC" },
+    { q: "Mechi kubwa ya jadi kati ya Yanga na Simba hujulikana kama nini?", options: ["Dar Derby", "Zanzibar Derby", "Kariakoo Derby", "Jangwani Cup"], answer: "Kariakoo Derby" },
+    { q: "Yanga SC ni aina gani ya taasisi ya michezo?", options: ["Klabu ya mpira wa miguu", "Chama cha riadha pekee", "Klabu ya kriketi", "Timu ya taifa"], answer: "Klabu ya mpira wa miguu" },
+    { q: "Mpinzani wa jadi wa Yanga katika soka la Tanzania ni nani?", options: ["Simba SC", "Arsenal", "Gor Mahia", "Al Ahly"], answer: "Simba SC" },
+    { q: "Mashabiki wa Yanga hujivunia kauli mbiu ipi?", options: ["Daima mbele, nyuma mwiko", "Mnyama mkali", "Nguvu ya wananchi wote", "Mbele kwa mbele tu"], answer: "Daima mbele, nyuma mwiko" },
+    { q: "Yanga ilicheza fainali ya CAF Confederation Cup mwaka 2023 dhidi ya klabu ipi?", options: ["USM Alger", "Al Ahly", "Wydad Casablanca", "TP Mazembe"], answer: "USM Alger" },
+    { q: "Yanga ilipoteza fainali ya CAF Confederation Cup 2023 kwa sheria ipi?", options: ["Mikwaju ya penalti", "Bao la dhahabu", "Bao la ugenini", "Mechi haikuchezwa"], answer: "Bao la ugenini" },
+    { q: "Klabu ya Yanga inatoka mji gani?", options: ["Dar es Salaam", "Arusha", "Mwanza", "Dodoma"], answer: "Dar es Salaam" },
+    { q: "Ni mchezo gani unaohusishwa zaidi na Yanga SC?", options: ["Mpira wa miguu", "Rugby", "Hockey", "Volleyball"], answer: "Mpira wa miguu" },
+    { q: "Jina fupi linalotumika kwa Young Africans Sports Club ni lipi?", options: ["Yanga SC", "YSC United", "Young Simba", "African Stars FC"], answer: "Yanga SC" },
+    { q: "Yanga na Simba ni wapinzani wa jadi katika nchi gani?", options: ["Tanzania", "Uganda", "Burundi", "Ethiopia"], answer: "Tanzania" },
+    { q: "Kombe la Shirikisho la CAF ni mashindano ya bara gani?", options: ["Afrika", "Ulaya", "Asia", "Amerika Kusini"], answer: "Afrika" },
+    { q: "Yanga ilitwaa ubingwa wa CAF Champions League mwaka 2023?", options: ["Ndiyo", "Hapana", "Haikushiriki mashindano yoyote", "Mashindano hayakuwepo"], answer: "Hapana" },
+    { q: "Ni klabu ipi ya Tanzania ilicheza na Yanga katika Kariakoo Derby?", options: ["Simba SC", "Gor Mahia", "APR FC", "Zamalek"], answer: "Simba SC" },
+    { q: "Je, Yanga SC ni klabu ya Tanzania?", options: ["Ndiyo", "Hapana", "Ni ya Kenya", "Ni ya Uganda"], answer: "Ndiyo" },
+    { q: "Rangi ya njano ni sehemu ya utambulisho wa klabu ipi?", options: ["Yanga SC", "Simba SC", "Kagera Sugar", "Singida Black Stars"], answer: "Yanga SC" },
+    { q: "Msimu wa 2025/26, Yanga iliendeleza mfululizo wa ubingwa wa ligi kuu kwa mara ya tano mfululizo?", options: ["Ndiyo", "Hapana", "Kwa mara ya kwanza", "Haikushiriki"], answer: "Ndiyo" },
+    { q: "Neno 'Wananchi' linahusishwa na mashabiki wa klabu ipi?", options: ["Yanga SC", "Simba SC", "Azam FC", "Dodoma Jiji"], answer: "Yanga SC" },
+    { q: "Ni jina lipi linalomaanisha Young Africans Sports Club?", options: ["Yanga SC", "Simba SC", "Azam FC", "Coastal Union"], answer: "Yanga SC" },
+    { q: "Kariakoo Derby ni mechi inayohusisha klabu zipi?", options: ["Yanga na Simba", "Yanga na Azam", "Simba na KMC", "Azam na Coastal Union"], answer: "Yanga na Simba" },
+    { q: "Yanga SC ina rangi zipi katika utambulisho wake wa kawaida?", options: ["Kijani na njano", "Nyekundu na nyeupe", "Bluu na nyeusi", "Zambarau na nyeupe"], answer: "Kijani na njano" },
+    { q: "Yanga ilifika fainali ya mashindano gani ya CAF mwaka 2023?", options: ["CAF Confederation Cup", "CAF Champions League", "CAF Super Cup", "CHAN"], answer: "CAF Confederation Cup" },
+    { q: "Je, Yanga ni timu ya taifa ya Tanzania?", options: ["Hapana, ni klabu", "Ndiyo, ni timu ya taifa", "Ni timu ya shule", "Ni timu ya mkoa pekee"], answer: "Hapana, ni klabu" },
+    { q: "Klabu pinzani ya Yanga yenye jina la Simba inajulikana kama nini?", options: ["Simba SC", "Simba Queens pekee", "Simba Stars FC", "Simba United"], answer: "Simba SC" },
+    { q: "Mchezo wa soka wa Yanga dhidi ya Simba mara nyingi huvuta hisia za mashabiki wa mji gani?", options: ["Dar es Salaam", "Kigali", "Nairobi", "Kampala"], answer: "Dar es Salaam" },
+    { q: "Ni mashindano yapi yanayosimamiwa na CAF?", options: ["Mashindano ya klabu za Afrika", "Ligi ya England pekee", "Kombe la Dunia pekee", "Ligi ya Marekani pekee"], answer: "Mashindano ya klabu za Afrika" },
+    { q: "Yanga SC ina jina la 'Young Africans' katika jina lake rasmi?", options: ["Ndiyo", "Hapana", "Ina 'Young Simba'", "Ina 'African Lions'"], answer: "Ndiyo" },
   ];
+  const [yangaQuizQuestions, setYangaQuizQuestions] = useState<typeof yangaQuestionPool>([]);
   const yangaPlayerChoices = [
     { name: "Djigui Diarra", team: "YANGA" }, { name: "Abdul Juma Mshery", team: "YANGA" },
     { name: "Dickson Job", team: "YANGA" }, { name: "Bakari Mwamnyeto", team: "YANGA" },
@@ -779,7 +810,7 @@ export default function Home() {
   const appAccent = profile?.settings?.accent ?? "green";
   const compactMode = profile?.settings?.compactMode === true;
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.location.href = service.actionUrl; else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
-  const handleUse = (service: ServiceCatalogItem) => { if (!isAuthenticated) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); toast("Jisajili au ingia kwanza ili kuendelea kutumia huduma."); return; } if (service.slug === "simba-sc") { setServiceNotice("SIMBA SC WHATSAPP GROUP bado haijaandaliwa. Kipengele hiki kimefungwa kwa muda hadi kiungo rasmi cha WhatsApp na maudhui yake yatakapowekwa."); return; } if (service.slug === "yanga-africans") { setYangaRulesAccepted(false); setYangaQuizPassed(false); setYangaFanConfirm(""); setYangaLoveConfirm(""); setYangaAnswers({}); setYangaPlayers([]); setYangaQuizError(""); setShowYangaRules(true); return; } if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
+  const handleUse = (service: ServiceCatalogItem) => { if (!isAuthenticated) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); toast("Jisajili au ingia kwanza ili kuendelea kutumia huduma."); return; } if (service.slug === "simba-sc") { setServiceNotice("SIMBA SC WHATSAPP GROUP bado haijaandaliwa. Kipengele hiki kimefungwa kwa muda hadi kiungo rasmi cha WhatsApp na maudhui yake yatakapowekwa."); return; } if (service.slug === "yanga-africans") { setYangaRulesAccepted(false); setYangaQuizPassed(false); setYangaEntryStep("choice"); setYangaFanConfirm(""); setYangaLoveConfirm(""); setYangaAnswers({}); setYangaPlayers([]); setYangaQuizError(""); setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) }))); setShowYangaRules(true); return; } if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
   const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
@@ -801,7 +832,7 @@ export default function Home() {
         <div className="yanga-rules-kicker">💚💛 YANGA SC WHATSAPP GROUP</div>
         {!yangaQuizPassed ? <>
           <h2 id="yanga-rules-title">Thibitisha kuwa shabiki wa Yanga</h2>
-          <p className="yanga-rules-motto">Jibu maswali yote 10 na uchague wachezaji 11 wa Yanga kutoka kwenye orodha ya Yanga na Simba.</p>
+          <p className="yanga-rules-motto">Maswali 10 yamechaguliwa kwa bahati nasibu kutoka kwenye hifadhi ya maswali. Kila jaribio linaweza kuwa tofauti.</p>
           <div className="yanga-quiz-content">
             <div className="yanga-quiz-questions">
               {yangaQuizQuestions.map((question, i) => <fieldset className="yanga-quiz-question" key={i}>
@@ -811,8 +842,8 @@ export default function Home() {
             </div>
             <div className="yanga-player-picker">
               <h3>Chagua wachezaji 11 wa Yanga ({yangaPlayers.length}/11)</h3>
-              <p>Orodha ina majina ya wachezaji wa Yanga na Simba. Chagua majina ya Yanga pekee.</p>
-              <div className="yanga-player-grid">{yangaPlayerChoices.map((player) => <label className={`yanga-player-option ${player.team === "SIMBA" ? "is-simba" : "is-yanga"}`} key={player.name}><input type="checkbox" checked={yangaPlayers.includes(player.name)} onChange={(event) => { setYangaPlayers((prev) => event.target.checked ? (prev.length < 11 ? [...prev, player.name] : prev) : prev.filter((name) => name !== player.name)); setYangaQuizError(""); }} /><span>{player.name}</span><small>{player.team}</small></label>)}</div>
+              <p>Chagua majina 11 unayoamini ni wachezaji wa Yanga pekee.</p>
+              <div className="yanga-player-grid">{yangaPlayerChoices.map((player) => <label className="yanga-player-option" key={player.name}><input type="checkbox" checked={yangaPlayers.includes(player.name)} onChange={(event) => { setYangaPlayers((prev) => event.target.checked ? (prev.length < 11 ? [...prev, player.name] : prev) : prev.filter((name) => name !== player.name)); setYangaQuizError(""); }} /><span>{player.name}</span></label>)}</div>
             </div>
           </div>
           {yangaQuizError && <p className="yanga-quiz-error" role="alert">{yangaQuizError}</p>}
