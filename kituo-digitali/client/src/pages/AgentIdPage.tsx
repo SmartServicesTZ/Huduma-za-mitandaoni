@@ -526,7 +526,7 @@ const AGENT_ID_CSS = `
 /* ===== KITAMBULISHO CHA KULALA (560x350) ===== */
 .idl{width:560px;height:350px;box-sizing:border-box;position:relative;overflow:hidden;border-radius:22px;background:#fff;color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 18px 40px rgba(15,23,42,.22)}
 .idl small{display:block;font-size:7.5px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
-.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.15;filter:contrast(1.18) saturate(1.12)}
+.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.28;filter:contrast(1.3) saturate(1.25)}
 .idl-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
 
 /* mbele: safu mbili */
@@ -567,7 +567,7 @@ const AGENT_ID_CSS = `
 .idl-brand{font-size:8px;font-weight:800;letter-spacing:.14em;line-height:1.35;opacity:.9}
 .idl-title{margin-top:4px;font-size:15px;font-weight:900;line-height:1.15}
 .idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
-.idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.12;filter:contrast(1.18) saturate(1.12)}
+.idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.24;filter:contrast(1.3) saturate(1.25)}
 .idl-rules{position:relative;flex:1;min-width:0}
 .idl-rules h4{margin:2px 0 10px;font-size:10px;font-weight:900;letter-spacing:.04em;color:var(--d)}
 .idl-rl{display:flex;align-items:flex-start;gap:8px;margin:0 0 9px;font-size:9.4px;line-height:1.38;color:#475569}
