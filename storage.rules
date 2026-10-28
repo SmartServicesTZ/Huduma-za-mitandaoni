@@ -15,11 +15,6 @@ service firebase.storage {
           || (mode == 'limited' && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
             && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('allowedActions', []).hasAny([action])));
     }
-    function canModerateChat() {
-      return accountMay('admin')
-        && ((request.auth.token.get('role', '') == 'super_admin' && request.auth.token.get('isSuperAdmin', false) == true)
-          || request.auth.token.get('permissions', {}).get('manageMessages', false) == true);
-    }
     match /users/{userId}/profile/{fileName} {
       allow read: if accountMayRead();
       allow write: if accountMay('profile')
@@ -61,45 +56,7 @@ service firebase.storage {
       allow read, write, delete: if false;
     }
 
-    match /publicChatFiles/{userId}/{fileName} {
-      allow read: if accountMayRead();
-      allow write: if accountMay('chat')
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
-      allow delete: if (accountMay('chat') && request.auth.uid == userId) || canModerateChat();
-    }
-
-    match /chatFiles/{roomId}/{userId}/{fileName} {
-      function isMember() {
-        return request.auth != null
-          && firestore.exists(/databases/(default)/documents/conversations/$(roomId))
-          && request.auth.uid in firestore.get(/databases/(default)/documents/conversations/$(roomId)).data.participants;
-      }
-      allow read: if accountMayRead() && (isMember() || canModerateChat());
-      allow write: if accountMay('chat')
-        && isMember()
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
-      allow delete: if (accountMay('chat') && isMember() && request.auth.uid == userId) || canModerateChat();
-    }
-
-    match /chatGroupFiles/{groupId}/{userId}/{fileName} {
-      function isGroupMember() {
-        return request.auth != null
-          && firestore.exists(/databases/(default)/documents/chatGroups/$(groupId))
-          && request.auth.uid in firestore.get(/databases/(default)/documents/chatGroups/$(groupId)).data.memberIds;
-      }
-      allow read: if accountMayRead() && (isGroupMember() || canModerateChat());
-      allow write: if accountMay('chat')
-        && isGroupMember()
-        && request.auth.uid == userId
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('(image/(jpeg|png|webp|gif)|application/pdf|text/plain|audio/(webm|ogg|mp4|mpeg))');
-      allow delete: if (accountMay('chat') && isGroupMember() && request.auth.uid == userId) || canModerateChat();
-    }
-
+    // Chat attachments are retired; the catch-all rule below denies access.
     match /{allPaths=**} {
       allow read, write: if false;
     }

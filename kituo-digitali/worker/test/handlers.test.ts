@@ -184,8 +184,8 @@ test("read-only accounts may use read callables but cannot submit or perform act
 
 test("limited accounts can call only the selected action categories", async () => {
   const env = environment();
-  await withMockedGoogleFetch({ accessMode: "limited", allowedActions: ["chat"] }, null, async () => {
-    await assert.doesNotReject(withWorkerEnv(env, () => enforceAccountRestriction(uid, "findChatUser")));
+  await withMockedGoogleFetch({ accessMode: "limited", allowedActions: ["services"] }, null, async () => {
+    await assert.doesNotReject(withWorkerEnv(env, () => enforceAccountRestriction(uid, "consumeTokens")));
     await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "submitLipaApplication")), { code: "permission-denied" });
     await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "createTokenPurchaseOrder")), { code: "permission-denied" });
   });

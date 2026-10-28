@@ -48,7 +48,6 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("cheti-tin", "TIN NUMBER CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "HUDUMA ZA WAKALA"),
   paid("verify-tin", "VERIFY TIN", "Jaza na hakiki taarifa za TIN yako.", "badge-check", "HUDUMA ZA WAKALA"),
-  { ...paid("nakala-nida", "NIDA SOFT COPY", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "HUDUMA ZA WAKALA"), tokenType: "nida" },
   paid("mpiga-kura", "SOFT COPY YA MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "HUDUMA ZA WAKALA"),
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "HUDUMA ZA WAKALA"),
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "HUDUMA ZA WAKALA"),
@@ -80,7 +79,6 @@ export const tutorials: TutorialItem[] = [
 
 export const activitySeed: ActivityItem[] = [
   { service: "TIN NUMBER CERTIFICATE", type: "Matumizi ya huduma", credits: 2, status: "Imekamilika", reference: "HM-81A2", createdAt: "2026-09-09T16:25:00.000Z" },
-  { service: "NAKALA LAINI YA NIDA", type: "Matumizi ya huduma", credits: 2, status: "Imekamilika", reference: "HM-80F4", createdAt: "2026-09-07T09:10:00.000Z" },
 ];
 
 export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], initialized: boolean): ServiceCatalogItem[] {

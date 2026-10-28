@@ -30,11 +30,9 @@ const PocketWifiPage = lazy(() => import("./PocketWifiPage"));
 const AccountSettingsPage = lazy(() => import("./AccountPage"));
 
 const appEnglish: Record<string, string> = {
-  "Mwanzo":"Home","Huduma zote":"All services","Chat":"Chat","Tokeni":"Tokens","Historia":"History","Settings":"Settings","Paneli ya Admin":"Admin panel",
-  "Akaunti yangu":"My account","Ingia kuanza":"Sign in to start","Huduma salama":"Secure services","Ujumbe na mazungumzo":"Messages & chats",
-  "Ujumbe":"Messages","Jumuiya":"Community","Binafsi":"Private","Magroup":"Groups","Usimamizi":"Moderation","Public chat":"Public chat",
-  "Anzisha mazungumzo":"Start conversation","Tafuta mazungumzo":"Search conversations","Namba ya simu":"Phone number","Tafuta mtumiaji":"Find user",
-  "Tengeneza group":"+ Create group","Chagua group":"Choose a group","Hakuna ujumbe bado":"No messages yet","Tuma ujumbe":"Send message",
+  "Mwanzo":"Home","Huduma zote":"All services","Tokeni":"Tokens","Historia":"History","Settings":"Settings","Paneli ya Admin":"Admin panel",
+  "Akaunti yangu":"My account","Ingia kuanza":"Sign in to start","Huduma salama":"Secure services",
+  "Ujumbe":"Messages",
   "SETTINGS":"SETTINGS","Settings za App":"App Settings","Account / Wasifu wangu":"Account / My profile","Hifadhi wasifu":"Save profile",
   "Jina la kwanza":"First name","Jina la mwisho":"Last name","Kuhusu mimi":"About me","Lugha ya matumizi":"Language",
   "Kiswahili":"Swahili","English":"English","Salio la tokeni":"Token balance","Uthibitisho":"Verification","Imeidhinishwa":"Verified","Inasubiri":"Pending",
@@ -42,7 +40,7 @@ const appEnglish: Record<string, string> = {
   "Theme":"Theme","Accent color":"Accent color","Arifa za akaunti":"Account notifications","Onyesha salio la tokeni":"Show token balance",
   "Compact mode":"Compact mode","Reduce motion":"Reduce motion","Sauti za app":"App sounds","Refresh ya moja kwa moja":"Automatic refresh",
   "Onyesha hali ya online":"Show online status","Thibitisha vitendo muhimu":"Confirm important actions","Data saver":"Data saver",
-  "Historia ya shughuli":"Activity history","Chat na Magroup":"Chat & Groups","ONGEZA TOKENI":"ADD TOKENS","CHEKI NIDA":"CHECK NIDA",
+  "Historia ya shughuli":"Activity history","ONGEZA TOKENI":"ADD TOKENS",
   "HUDUMA NYINGINE":"OTHER SERVICES","Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.":"This service is under maintenance. Please try again later.",
   "Bure":"Free","IMEFUNGWA":"CLOSED","Huduma kuu":"Main services"
 };
@@ -64,6 +62,8 @@ const icons: Record<string, React.ElementType> = { "file-badge": FileBadge, "bad
 function Icon({ name, size = 22 }: { name: string; size?: number }) { const Component = icons[name] ?? Sparkles; return <Component size={size} strokeWidth={1.9} />; }
 
 function Notice({ children, tone = "warning" }: { children: React.ReactNode; tone?: "warning" | "success" | "info" }) { return <div className={`notice notice--${tone}`}><CircleAlert size={17} /> <span>{children}</span></div>; }
+
+function isRetiredNidaRecord(item: any) { return /nida|nin|kitambulisho cha taifa/i.test([item?.serviceName, item?.serviceSlug, item?.slug, item?.description, item?.reason, item?.name, item?.type, item?.title].filter(Boolean).join(" ")); }
 
 function explainAuthError(error: any, mode: "login" | "register") {
   const code = String(error?.code ?? "").replace(/^auth\//, "");
@@ -215,7 +215,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
       try { await markUserMessageRead(item.id, user.uid); setNotifications((rows) => rows.map((row) => row.id === item.id ? { ...row, readBy: [...(Array.isArray(row.readBy) ? row.readBy as string[] : []), user.uid] } : row)); }
       catch { toast.error("Imeshindikana kuweka arifa kuwa imesomwa."); }
     }
-    const target = typeof item.targetPath === "string" ? item.targetPath : typeof item.href === "string" ? item.href : String(item.type ?? "").toLowerCase().includes("nida") ? "/#cheki-nida" : "/";
+    const target = typeof item.targetPath === "string" ? item.targetPath : typeof item.href === "string" ? item.href : "/";
     setNotificationsOpen(false);
     navigate(target);
   };
@@ -254,7 +254,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
   const [otherTokens, setOtherTokens] = useState("0");
   const [paidFromPhone, setPaidFromPhone] = useState(profile?.phone ?? "");
-  const totalBalance = (profile?.tokenBalanceNida ?? 0) + (profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0);
+  const totalBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
   const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
   const otherAmount = otherCount * 500;
@@ -311,7 +311,6 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
     "cheti-tin": "#7c3aed",
     "leseni-udereva": "#ea580c",
     "verify-tin": "#16a34a",
-    "nakala-nida": "#4f46e5",
     "mpiga-kura": "#0891b2",
     "stika-lipa": "#db2777",
     "stika-mawakala": "#d97706",
@@ -333,7 +332,7 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
   const palette = ["#0f766e", "#c2410c", "#7e22ce", "#be123c", "#047857", "#b45309", "#4338ca", "#0e7490", "#a21caf", "#4d7c0f"];
   const colorIndex = [...service.slug].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
   const accent = locked ? "#dc2626" : (serviceColors[service.slug] ?? palette[colorIndex]);
-  const serviceIcons: Record<string, string> = { "pata-lipa-namba": "wallet-cards", "access-lipa-number": "smartphone", "nakala-nida": "contact", "cheti-tin": "file-badge", "leseni-biashara": "briefcase-business", "leseni-udereva": "car-front", "stika-lipa": "qr-code", "stika-mawakala": "ticket", "sme-vodacom": "radio", "sme-airtel": "credit-card", "sme-airtel-mkataba": "copy", "change-business-name-airtel-lipa": "file-pen", "brela": "landmark", "mpiga-kura": "vote", "kitambulisho-wakala": "user-round-pen", "cheti-kuzaliwa": "baby", "simba-sc": "trophy", "yanga-africans": "star", "azam-tv": "tv", "pata-pocket-wifi-mabando": "wifi" };
+  const serviceIcons: Record<string, string> = { "pata-lipa-namba": "wallet-cards", "access-lipa-number": "smartphone", "cheti-tin": "file-badge", "leseni-biashara": "briefcase-business", "leseni-udereva": "car-front", "stika-lipa": "qr-code", "stika-mawakala": "ticket", "sme-vodacom": "radio", "sme-airtel": "credit-card", "sme-airtel-mkataba": "copy", "change-business-name-airtel-lipa": "file-pen", "brela": "landmark", "mpiga-kura": "vote", "kitambulisho-wakala": "user-round-pen", "cheti-kuzaliwa": "baby", "simba-sc": "trophy", "yanga-africans": "star", "azam-tv": "tv", "pata-pocket-wifi-mabando": "wifi" };
   const iconName = locked ? service.icon : serviceIcons[service.slug] ?? service.icon;
   return <div className="portal-service-card-wrap">
     <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)} style={{ background: `linear-gradient(145deg, ${accent}18 0%, #ffffff 78%)`, borderColor: `${accent}55`, boxShadow: `0 5px 18px ${accent}12` }}>
@@ -375,16 +374,16 @@ function HistoryPage() {
   const [serviceApplications, setServiceApplications] = useState<any[]>([]);
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
 
-  const refreshDownloads = () => setDownloads(getDownloadHistory());
+  const refreshDownloads = () => setDownloads(getDownloadHistory().filter((item: any) => !isRetiredNidaRecord(item)));
 
   useEffect(() => {
     if (!firebaseUser) { setRows([]); return; }
-    return subscribeToTokenHistory(firebaseUser.uid, setRows);
+    return subscribeToTokenHistory(firebaseUser.uid, (items) => setRows(items.filter((item) => !isRetiredNidaRecord(item))));
   }, [firebaseUser]);
 
   useEffect(() => {
     if (!firebaseUser?.uid) { setServiceApplications([]); return; }
-    return subscribeUserServiceApplications(firebaseUser.uid, setServiceApplications, (error) => {
+    return subscribeUserServiceApplications(firebaseUser.uid, (items) => setServiceApplications(items.filter((item) => !isRetiredNidaRecord(item))), (error) => {
       console.error("Imeshindikana kupakia historia ya maombi ya huduma", error);
       toast.error("Historia ya maombi haijapakiwa. Jaribu kuingia tena.");
     });
@@ -517,7 +516,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const lower = search.toLowerCase();
   const categories = ["Zote", "Zilizohifadhiwa", ...Array.from(new Set(displayedServices.map((service) => service.category).filter(Boolean)))];
   const matches = displayedServices.filter((service) => (category === "Zote" || (category === "Zilizohifadhiwa" ? favoriteSlugs.includes(service.slug) : service.category === category)) && `${service.name} ${service.description} ${service.category}`.toLowerCase().includes(lower));
-  const mainBase = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && service.slug !== "utafutaji-nida");
+  const mainBase = matches.filter((service) => service.category === "HUDUMA ZA WAKALA" && !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const tinCertificate = mainBase.find((service) => service.slug === "cheti-tin") ?? services.find((service) => service.slug === "cheti-tin") ?? serviceCatalog.find((service) => service.slug === "cheti-tin");
   const main = [
     mainBase.find((service) => service.slug === "leseni-biashara"),
@@ -607,7 +606,7 @@ export default function Home() {
     let cancelled = false;
     void getCollectionOnce("services").then((rows) => {
     if (cancelled) return;
-    setServices(rows.map((item) => ({ slug: ["thibitisha-tin", "verify-tin"].includes(String(item.slug ?? item.id)) ? "verify-tin" : String(item.slug ?? item.id) === "nakala-nida-2" ? "sme-airtel-mkataba" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" || String(item.slug ?? item.id) === "verify-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "nakala-nida-2" || String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "nakala-nida-2" || String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), tokenType: item.tokenType === "nida" ? "nida" : "huduma", category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
+    setServices(rows.map((item) => ({ slug: ["thibitisha-tin", "verify-tin"].includes(String(item.slug ?? item.id)) ? "verify-tin" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" || String(item.slug ?? item.id) === "verify-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), tokenType: item.tokenType === "nida" ? "nida" : "huduma", category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
     setServicesLoading(false);
     }).catch(() => { if (!cancelled) setServicesLoading(false); });
     return () => { cancelled = true; };
@@ -631,17 +630,17 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [firebaseUser?.uid, canManageServices]);
   const tokenOperationKeys = useRef(new Map<string, string>());
-  const totalTokenBalance = (profile?.tokenBalanceNida ?? 0) + (profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0);
+  const totalTokenBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const appTheme = profile?.settings?.theme ?? "dark";
   const appAccent = profile?.settings?.accent ?? "green";
   const compactMode = profile?.settings?.compactMode === true;
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.location.href = service.actionUrl; else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
   const handleUse = (service: ServiceCatalogItem) => { if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
-  const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => service.slug !== "utafutaji-nida" && !/\bnida\b/i.test(`${service.name} ${service.slug}`));
+  const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
   const serviceFields = Array.isArray(selectedService?.fields) ? selectedService.fields : [];
-  const page = serviceSlug && (!isAuthenticated || totalTokenBalance <= 0) ? <main className="portal-main"><section className="license-form-card" style={{ maxWidth: 620, margin: "40px auto", textAlign: "center" }}><div className="token-icon" style={{ margin: "0 auto 16px" }}><WalletCards size={30} /></div><h1>{!isAuthenticated ? "Ingia kwanza" : "Huna tokeni"}</h1><p>{!isAuthenticated ? "Ingia kwenye akaunti yako ili kutumia huduma." : "Huna tokeni zilizobaki. Ongeza tokeni kwanza; huduma hazitafunguka mpaka salio liwe zaidi ya sifuri."}</p><button type="button" className="button button--green" onClick={() => navigate(!isAuthenticated ? "/" : "/tokens")}>{!isAuthenticated ? "RUDI KUINGIA" : "ONGEZA TOKENI"}</button></section></main> : location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "pata-pocket-wifi-mabando" ? <PocketWifiPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "sme-vodacom" ? <SmeVodacomPage /> : serviceSlug === "sme-airtel" ? <SmeAirtelPage /> : serviceSlug === "change-business-name-airtel-lipa" ? <ChangeBusinessNameAirtelLipaPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <VerifyTinPage /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : serviceSlug === "tengeneza-mkataba" ? <ContractMakerPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/chat" ? <main className="portal-main"><section className="account-panel" style={{maxWidth:620,margin:"40px auto",textAlign:"center"}}><h1>Chat imezimwa kwa sasa</h1><p>Huduma hii imesitishwa kwa muda ili kupunguza matumizi ya mfumo.</p><button type="button" className="button button--green" onClick={() => navigate("/")}>Rudi Mwanzo</button></section></main> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa taarifa kuhusu salio lililopo, wasiliana na support kupitia WhatsApp +255 698 232 313.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} userName={user?.name} isAuthenticated={isAuthenticated} allServicesPage={location === "/services"} />;
+  const page = serviceSlug && (!isAuthenticated || totalTokenBalance <= 0) ? <main className="portal-main"><section className="license-form-card" style={{ maxWidth: 620, margin: "40px auto", textAlign: "center" }}><div className="token-icon" style={{ margin: "0 auto 16px" }}><WalletCards size={30} /></div><h1>{!isAuthenticated ? "Ingia kwanza" : "Huna tokeni"}</h1><p>{!isAuthenticated ? "Ingia kwenye akaunti yako ili kutumia huduma." : "Huna tokeni zilizobaki. Ongeza tokeni kwanza; huduma hazitafunguka mpaka salio liwe zaidi ya sifuri."}</p><button type="button" className="button button--green" onClick={() => navigate(!isAuthenticated ? "/" : "/tokens")}>{!isAuthenticated ? "RUDI KUINGIA" : "ONGEZA TOKENI"}</button></section></main> : location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "pata-pocket-wifi-mabando" ? <PocketWifiPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "sme-vodacom" ? <SmeVodacomPage /> : serviceSlug === "sme-airtel" ? <SmeAirtelPage /> : serviceSlug === "change-business-name-airtel-lipa" ? <ChangeBusinessNameAirtelLipaPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <VerifyTinPage /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : serviceSlug === "tengeneza-mkataba" ? <ContractMakerPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa taarifa kuhusu salio lililopo, wasiliana na support kupitia WhatsApp +255 698 232 313.</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} userName={user?.name} isAuthenticated={isAuthenticated} allServicesPage={location === "/services"} />;
   const accessMode = resolveAccountAccessMode(user);
   const fullAccessBlocked = isAuthenticated && accessMode === "denied";
   const restrictionNotice = accessMode === "read_only"

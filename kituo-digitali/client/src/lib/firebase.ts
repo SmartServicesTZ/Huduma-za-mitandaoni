@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBlob, deleteObject } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
@@ -15,17 +15,14 @@ import {
 } from "firebase/auth";
 import {
   addDoc,
-  arrayUnion,
   collection,
   connectFirestoreEmulator,
-  deleteDoc,
   deleteField,
   doc,
   getDoc,
   getDocFromServer,
   getDocs,
   getFirestore,
-  increment,
   limit,
   onSnapshot,
   orderBy,
@@ -778,8 +775,6 @@ export type LipaApplication = {
   updatedAt?: unknown;
 };
 export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
-export type NidaRequest = { id: string; requestId: string; userId: string; userName?: string; phone: string; status: "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED"; nidaNumber?: string; rejectionReason?: string; submittedAt?: unknown; updatedAt?: unknown };
-
 export async function seedServiceCatalog() {
   const callable = createWorkerCall("seedServiceCatalog");
   return (await callable({})).data as { createdServices: number; createdNetworks: number };
@@ -949,46 +944,6 @@ export function subscribeUserLipaApplications(uid: string, callback: (rows: Lipa
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
 }
 
-export async function submitNidaRequest(phone: string) {
-  const callable = createWorkerCall<{ phone: string }, { requestId: string; status: string }>("submitNidaRequest");
-  return (await callable({ phone })).data;
-}
-
-export async function updateNidaRequestPhone(requestId: string, phone: string) {
-  const callable = createWorkerCall<{ requestId: string; phone: string }, { requestId: string; status: string; phone: string }>("updateNidaRequestPhone");
-  return (await callable({ requestId, phone })).data;
-}
-
-export async function listMyNidaRequests() {
-  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listMyNidaRequests");
-  const rows = (await callable({})).data.requests ?? [];
-  return rows.map((item) => ({
-    ...item,
-    submittedAt: timestampValue(item.submittedAt),
-    updatedAt: timestampValue(item.updatedAt),
-  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
-}
-
-export async function listNidaRequests() {
-  const callable = createWorkerCall<Record<string, never>, { requests: NidaRequest[] }>("listNidaRequests");
-  const rows = (await callable({})).data.requests ?? [];
-  return rows.map((item) => ({
-    ...item,
-    submittedAt: timestampValue(item.submittedAt),
-    updatedAt: timestampValue(item.updatedAt),
-  })).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
-}
-
-export async function setNidaRequestStatus(requestId: string, status: "PROCESSING" | "REJECTED", rejectionReason = "") {
-  const callable = createWorkerCall<{ requestId: string; status: string; rejectionReason: string }, { requestId: string; status: string }>("setNidaRequestStatus");
-  return (await callable({ requestId, status, rejectionReason })).data;
-}
-
-export async function completeNidaRequest(requestId: string, nidaNumber: string) {
-  const callable = createWorkerCall<{ requestId: string; nidaNumber: string }, { requestId: string; status: string }>("completeNidaRequest");
-  return (await callable({ requestId, nidaNumber })).data;
-}
-
 export async function createPocketWifiOrder(applicationId: string, details: string, phone: string) {
   const callable = createWorkerCall<{ applicationId: string; details: string; phone: string }, { applicationId: string; status: string; duplicate: boolean }>("createPocketWifiOrder");
   return (await callable({ applicationId, details, phone })).data;
@@ -1130,295 +1085,3 @@ export function subscribeUserMessages(uid: string, callback: (rows: Array<Record
   const unsubscribeBroadcast = onSnapshot(broadcastQuery, (snapshot) => updateRows(broadcastRows, snapshot), onError);
   return () => { unsubscribePersonal(); unsubscribeBroadcast(); };
 }
-
-export type ChatUser = { uid: string; name: string; phone: string; profileImageUrl?: string; verificationStatus?: "pending" | "approved" | "rejected" };
-export type ChatPreferences = { theme?: "green" | "light" | "dark"; lastSeen?: boolean; readReceipts?: boolean; sound?: boolean; desktop?: boolean; reduceMotion?: boolean; disappearing?: boolean; chatLock?: boolean };
-
-export function subscribeChatPreferences(uid: string, callback: (preferences: ChatPreferences) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(doc(firestore, "users", uid), (snapshot) => {
-    const settings = snapshot.data()?.settings;
-    callback((settings && typeof settings === "object" ? settings.chatPreferences : {}) || {});
-  }, (error) => onError?.(error));
-}
-
-export async function saveChatPreferences(uid: string, preferences: Partial<ChatPreferences>) {
-  const ref = doc(firestore, "users", uid);
-  const updates: Record<string, unknown> = { updatedAt: serverTimestamp() };
-  for (const [key, value] of Object.entries(preferences)) updates[`settings.chatPreferences.${key}`] = value;
-  await updateDoc(ref, updates);
-}
-
-export type ChatMessage = { id: string; senderId: string; senderName?: string; text?: string; filePath?: string; fileName?: string; fileType?: string; replyTo?: { id: string; text: string; senderId: string }; createdAt?: unknown; editedAt?: unknown; deliveredTo?: string[]; readBy?: string[] };
-export type PrivateConversation = { id: string; participants: string[]; names: Record<string, string>; phones: Record<string, string>; profileImages?: Record<string, string>; lastMessage?: string; updatedAt?: unknown };
-export type ChatGroup = { id: string; name: string; description?: string; ownerId: string; visibility: "private" | "public"; memberIds: string[]; memberNames: Record<string, string>; memberPhones: Record<string, string>; memberImages?: Record<string, string>; avatarUrl?: string; lastMessage?: string; updatedAt?: unknown; createdAt?: unknown };
-export type ChatGroupJoinRequest = { id: string; groupId: string; userId: string; userName: string; userPhone: string; userImage?: string; status: "pending" | "approved" | "rejected"; createdAt?: unknown };
-
-export function subscribeChatMembers(callback: (rows: ChatUser[]) => void, onError?: (error: unknown) => void) {
-  let active = true;
-  void invokeWorker<ChatUser[]>("listChatMembers", {}).then((rows) => {
-    if (active) callback(rows);
-  }).catch((error) => {
-    if (active) onError?.(error);
-  });
-  return () => { active = false; };
-}
-
-export async function findChatUser(phone: string) {
-  return invokeWorker<ChatUser>("findChatUser", { phone });
-}
-
-export async function openPrivateConversation(current: ChatUser, other: ChatUser) {
-  const participants = [current.uid, other.uid].sort();
-  const id = participants.join("__");
-  const ref = doc(firestore, "conversations", id);
-  if (!(await getDoc(ref)).exists()) await setDoc(ref, {
-    participants,
-    names: { [current.uid]: current.name, [other.uid]: other.name },
-    phones: { [current.uid]: current.phone, [other.uid]: other.phone },
-    profileImages: { [current.uid]: current.profileImageUrl ?? "", [other.uid]: other.profileImageUrl ?? "" },
-    createdAt: serverTimestamp(), updatedAt: serverTimestamp(), lastMessage: "",
-  });
-  return id;
-}
-
-function subscribeChatRows(collectionRef: ReturnType<typeof collection>, callback: (rows: any[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collectionRef, orderBy("createdAt", "asc")), (snapshot) => {
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as any)));
-  }, onError);
-}
-export function subscribePublicChat(callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
-  return subscribeChatRows(collection(firestore, "publicChatMessages"), callback, onError);
-}
-export function subscribeConversations(uid: string, callback: (rows: PrivateConversation[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "conversations"), where("participants", "array-contains", uid)), (snapshot) => {
-    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as PrivateConversation));
-    rows.sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
-    callback(rows);
-  }, onError);
-}
-export function subscribeAllConversations(callback: (rows: PrivateConversation[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "conversations"), orderBy("updatedAt", "desc")), (snapshot) => {
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as PrivateConversation)));
-  }, onError);
-}
-export function subscribeChatGroups(uid: string, callback: (rows: ChatGroup[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "chatGroups"), where("memberIds", "array-contains", uid)), (snapshot) => {
-    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroup));
-    rows.sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
-    callback(rows);
-  }, onError);
-}
-export async function createChatGroup(current: ChatUser, members: ChatUser[], name: string, description = "", visibility: "private" | "public" = "private") {
-  const cleanName = name.trim().slice(0, 80);
-  const unique = [current, ...members].filter((item, index, all) => all.findIndex((candidate) => candidate.uid === item.uid) === index);
-  if (!cleanName) throw new Error("Weka jina la group.");
-  if (unique.length < 2) throw new Error("Ongeza angalau mtu mmoja kwenye group.");
-  if (unique.length > 5000) throw new Error("Group linaweza kuwa na hadi washiriki 5,000.");
-  const groupRef = doc(collection(firestore, "chatGroups"));
-  const memberIds = unique.map((item) => item.uid).sort();
-  const memberNames = Object.fromEntries(unique.map((item) => [item.uid, item.name]));
-  const memberPhones = Object.fromEntries(unique.map((item) => [item.uid, item.phone]));
-  const memberImages = Object.fromEntries(unique.map((item) => [item.uid, item.profileImageUrl ?? ""]));
-  await setDoc(groupRef, { name: cleanName, description: description.trim().slice(0, 240), ownerId: current.uid, visibility, memberIds, memberNames, memberPhones, memberImages, lastMessage: "", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-  return groupRef.id;
-}
-export async function updateChatGroupSettings(groupId: string, uid: string, values: { name?: string; description?: string; visibility?: "private" | "public" }) {
-  const groupRef = doc(firestore, "chatGroups", groupId);
-  const snapshot = await getDoc(groupRef);
-  if (!snapshot.exists()) throw new Error("Group halipatikani.");
-  const group = snapshot.data() as ChatGroup;
-  if (group.ownerId !== uid) throw new Error("Msimamizi wa group pekee ndiye anayeweza kubadilisha mipangilio.");
-  const updates: Record<string, unknown> = { updatedAt: serverTimestamp() };
-  if (values.name !== undefined) {
-    const name = values.name.trim().slice(0, 80);
-    if (!name) throw new Error("Jina la group haliwezi kuwa tupu.");
-    updates.name = name;
-  }
-  if (values.description !== undefined) updates.description = values.description.trim().slice(0, 240);
-  if (values.visibility !== undefined) updates.visibility = values.visibility;
-  await updateDoc(groupRef, updates);
-}
-export async function addChatGroupMember(groupId: string, actorUid: string, member: ChatUser) {
-  const ref = doc(firestore, "chatGroups", groupId);
-  await runTransaction(firestore, async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error("Group halipatikani.");
-    const group = snap.data() as ChatGroup;
-    if (group.ownerId !== actorUid) throw Object.assign(new Error("Admin wa group pekee ndiye anaweza kuongeza washiriki."), { code: "permission-denied" });
-    if (group.memberIds.includes(member.uid)) throw new Error("Mtumiaji huyu tayari yupo kwenye group.");
-    if (group.memberIds.length >= 5000) throw new Error("Group limefikia kikomo cha washiriki.");
-    tx.update(ref, {
-      memberIds: arrayUnion(member.uid),
-      [`memberNames.${member.uid}`]: member.name,
-      [`memberPhones.${member.uid}`]: member.phone,
-      [`memberImages.${member.uid}`]: member.profileImageUrl ?? "",
-      updatedAt: serverTimestamp(),
-    });
-  });
-}
-export async function leaveChatGroup(groupId: string, uid: string) {
-  const ref = doc(firestore, "chatGroups", groupId);
-  await runTransaction(firestore, async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error("Group halipatikani.");
-    const group = snap.data() as ChatGroup;
-    if (group.ownerId === uid) throw new Error("Admin mkuu hawezi kutoka kabla hajahamisha umiliki wa group.");
-    if (!group.memberIds.includes(uid)) throw new Error("Wewe si mwanachama wa group hili.");
-    tx.update(ref, {
-      memberIds: group.memberIds.filter((id) => id !== uid),
-      [`memberNames.${uid}`]: deleteField(),
-      [`memberPhones.${uid}`]: deleteField(),
-      [`memberImages.${uid}`]: deleteField(),
-      updatedAt: serverTimestamp(),
-    });
-  });
-}
-export async function reportChatGroup(reporterId: string, groupId: string, groupName: string, reason: string) {
-  const cleanReason = reason.trim().slice(0, 500);
-  if (!cleanReason) throw new Error("Eleza sababu ya kuripoti group.");
-  await addDoc(collection(firestore, "chatReports"), {
-    reporterId, targetType: "group", groupId, groupName: groupName.slice(0, 80),
-    reason: cleanReason, status: "open", createdAt: serverTimestamp(),
-  });
-}
-export function subscribeGroupTyping(groupId: string, callback: (uids: string[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(collection(firestore, "chatGroups", groupId, "typing"), (snapshot) => callback(snapshot.docs.map((item) => item.id)), onError);
-}
-export async function setChatGroupTyping(groupId: string, uid: string, typing: boolean) {
-  const ref = doc(firestore, "chatGroups", groupId, "typing", uid);
-  if (typing) await setDoc(ref, { updatedAt: serverTimestamp() });
-  else await deleteDoc(ref);
-}
-
-export async function uploadChatGroupAvatar(groupId: string, uid: string, file: File) {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Chagua picha ya JPG, PNG au WebP.");
-  if (file.size > 2 * 1024 * 1024) throw new Error("Picha ya group isizidi MB 2.");
-  const snapshot = await getDoc(doc(firestore, "chatGroups", groupId));
-  if (!snapshot.exists()) throw new Error("Group halipatikani.");
-  const group = snapshot.data() as ChatGroup;
-  if (group.ownerId !== uid) throw new Error("Msimamizi wa group pekee ndiye anayeweza kubadilisha picha.");
-  const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const path = `chatGroupFiles/${groupId}/${uid}/avatar-${Date.now()}-${crypto.randomUUID()}.${extension}`;
-  const objectRef = storageRef(firebaseStorage, path);
-  await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: "private,max-age=300" });
-  const url = await getDownloadURL(objectRef);
-  await updateDoc(doc(firestore, "chatGroups", groupId), { avatarUrl: url, avatarPath: path, updatedAt: serverTimestamp() });
-  return url;
-}
-export function subscribePublicChatGroups(callback: (rows: ChatGroup[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "chatGroups"), where("visibility", "==", "public")), (snapshot) => {
-    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroup));
-    rows.sort((a, b) => String(b.updatedAt ?? b.createdAt ?? "").localeCompare(String(a.updatedAt ?? a.createdAt ?? "")));
-    callback(rows);
-  }, onError);
-}
-export async function requestToJoinChatGroup(groupId: string, user: ChatUser) {
-  const group = await getDoc(doc(firestore, "chatGroups", groupId));
-  if (!group.exists()) throw new Error("Group halipatikani.");
-  const data = group.data() as ChatGroup;
-  if (data.visibility !== "public") throw new Error("Group hili ni private.");
-  if (data.memberIds.includes(user.uid)) throw new Error("Tayari uko kwenye group.");
-  const ref = doc(firestore, "chatGroups", groupId, "joinRequests", user.uid);
-  await setDoc(ref, { groupId, userId: user.uid, userName: user.name, userPhone: user.phone, userImage: user.profileImageUrl ?? "", status: "pending", createdAt: serverTimestamp() }, { merge: true });
-}
-export function subscribeGroupJoinRequests(groupId: string, callback: (rows: ChatGroupJoinRequest[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "chatGroups", groupId, "joinRequests"), where("status", "==", "pending")), (snapshot) => {
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroupJoinRequest)));
-  }, onError);
-}
-export async function approveChatGroupJoinRequest(groupId: string, request: ChatGroupJoinRequest) {
-  const groupRef = doc(firestore, "chatGroups", groupId);
-  const requestRef = doc(firestore, "chatGroups", groupId, "joinRequests", request.id);
-  await runTransaction(firestore, async (tx) => {
-    const groupSnap = await tx.get(groupRef);
-    if (!groupSnap.exists()) throw new Error("Group halipatikani.");
-    const group = groupSnap.data() as ChatGroup;
-    if (group.ownerId !== firebaseAuth.currentUser?.uid) throw Object.assign(new Error("Ni admin wa group pekee anaweza kukubali."), { code: "permission-denied" });
-    if (group.memberIds.includes(request.userId)) return;
-    if (group.memberIds.length >= 5000) throw new Error("Group limefikia washiriki 5,000.");
-    tx.update(groupRef, { memberIds: arrayUnion(request.userId), memberNames: { ...group.memberNames, [request.userId]: request.userName }, memberPhones: { ...group.memberPhones, [request.userId]: request.userPhone }, memberImages: { ...(group.memberImages ?? {}), [request.userId]: request.userImage ?? "" }, updatedAt: serverTimestamp() });
-    tx.update(requestRef, { status: "approved", updatedAt: serverTimestamp() });
-  });
-}
-export function subscribeGroupChat(groupId: string, callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
-  return subscribeChatRows(collection(firestore, "chatGroups", groupId, "messages"), callback, onError);
-}
-export async function sendGroupChatMessage(groupId: string, senderId: string, text: string, replyTo?: ChatMessage, attachment?: { filePath: string; fileName: string; fileType: string }, senderName?: string) {
-  const content = text.trim();
-  if (!content && !attachment) throw new Error("Andika ujumbe au chagua faili.");
-  const message = { senderId, ...(senderName ? { senderName: senderName.slice(0, 80) } : {}), ...(content ? { text: content } : {}), ...(attachment ?? {}), ...(replyTo ? { replyTo: { id: replyTo.id, text: String(replyTo.text ?? replyTo.fileName ?? "Kiambatisho"), senderId: replyTo.senderId } } : {}), deliveredTo: [senderId], readBy: [senderId], createdAt: serverTimestamp() };
-  await addDoc(collection(firestore, "chatGroups", groupId, "messages"), message);
-  await updateDoc(doc(firestore, "chatGroups", groupId), { lastMessage: content || attachment?.fileName || "Kiambatisho", updatedAt: serverTimestamp() });
-}
-export function subscribePrivateChat(roomId: string, callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
-  return subscribeChatRows(collection(firestore, "conversations", roomId, "messages"), callback, onError);
-}
-export function subscribeTyping(roomId: string, callback: (uids: string[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(collection(firestore, "conversations", roomId, "typing"), (snapshot) => callback(snapshot.docs.map((item) => item.id)), onError);
-}
-export function subscribePresence(uid: string, callback: (presence: { online: boolean; lastSeen?: unknown } | null) => void) {
-  return onSnapshot(doc(firestore, "userPresence", uid), (snapshot) => callback(snapshot.exists() ? snapshot.data() as { online: boolean; lastSeen?: unknown } : null));
-}
-export async function updatePresence(uid: string, online: boolean) {
-  await setDoc(doc(firestore, "userPresence", uid), { online, lastSeen: online ? null : serverTimestamp() }, { merge: true });
-}
-export async function setChatTyping(roomId: string, uid: string, typing: boolean) {
-  const ref = doc(firestore, "conversations", roomId, "typing", uid);
-  if (typing) await setDoc(ref, { updatedAt: serverTimestamp() });
-  else await deleteDoc(ref);
-}
-export async function sendChatMessage(roomId: string | null, senderId: string, text: string, replyTo?: ChatMessage, isPublic = false, attachment?: { filePath: string; fileName: string; fileType: string }, senderName?: string) {
-  const collectionRef = isPublic ? collection(firestore, "publicChatMessages") : collection(firestore, "conversations", roomId!, "messages");
-  const content = text.trim();
-  if (!content && !attachment) throw new Error("Andika ujumbe au chagua faili.");
-  const message = {
-    senderId,
-    ...(senderName ? { senderName: senderName.slice(0, 80) } : {}),
-    ...(content ? { text: content } : {}),
-    ...(attachment ?? {}),
-    ...(replyTo ? { replyTo: { id: replyTo.id, text: String(replyTo.text ?? replyTo.fileName ?? "Kiambatisho"), senderId: replyTo.senderId } } : {}),
-    deliveredTo: [senderId], readBy: [senderId], createdAt: serverTimestamp(),
-  };
-  await addDoc(collectionRef, message);
-  if (!isPublic && roomId) await updateDoc(doc(firestore, "conversations", roomId), { lastMessage: content || attachment?.fileName || "Kiambatisho", updatedAt: serverTimestamp() });
-}
-export async function markChatMessageRead(roomId: string | null, message: ChatMessage, uid: string, isPublic = false) {
-  if (message.senderId === uid || message.readBy?.includes(uid)) return;
-  const ref = isPublic ? doc(firestore, "publicChatMessages", message.id) : doc(firestore, "conversations", roomId!, "messages", message.id);
-  await updateDoc(ref, { deliveredTo: arrayUnion(uid), readBy: arrayUnion(uid) });
-}
-export async function editChatMessage(roomId: string | null, message: ChatMessage, text: string, isPublic = false) {
-  const content = text.trim();
-  if (!content) throw new Error("Ujumbe hauwezi kuwa tupu.");
-  if (content.length > 5000) throw new Error("Ujumbe usizidi herufi 5,000.");
-  const ref = isPublic ? doc(firestore, "publicChatMessages", message.id) : doc(firestore, "conversations", roomId!, "messages", message.id);
-  await updateDoc(ref, { text: content, editedAt: serverTimestamp() });
-}
-export async function deleteChatMessage(roomId: string | null, message: ChatMessage, isPublic = false) {
-  const ref = isPublic ? doc(firestore, "publicChatMessages", message.id) : doc(firestore, "conversations", roomId!, "messages", message.id);
-  await deleteDoc(ref);
-  if (message.filePath) {
-    try { await deleteObject(storageRef(firebaseStorage, message.filePath)); } catch { /* The message is removed; an orphaned file can be cleaned up later. */ }
-  }
-}
-export async function uploadChatFile(roomId: string | null, senderId: string, file: File, isPublic = false, isGroup = false) {
-  if (file.size > 10 * 1024 * 1024) throw new Error("Faili isizidi MB 10.");
-  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf", "text/plain", "audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg"];
-  if (!allowed.includes(file.type)) throw new Error("Aina hii ya faili hairuhusiwi.");
-  const safeName = file.name.replace(/[^\w.-]/g, "_").slice(0, 100) || "attachment";
-  const path = isPublic ? `publicChatFiles/${senderId}/${Date.now()}_${safeName}` : isGroup ? `chatGroupFiles/${roomId}/${senderId}/${Date.now()}_${safeName}` : `chatFiles/${roomId}/${senderId}/${Date.now()}_${safeName}`;
-  const reference = storageRef(firebaseStorage, path);
-  await uploadBytes(reference, file, { contentType: file.type });
-  return { filePath: path, fileName: safeName, fileType: file.type };
-}
-export async function loadChatAttachment(path: string) {
-  return getBlob(storageRef(firebaseStorage, path));
-}
-export async function blockChatUser(uid: string, targetUid: string) {
-  await setDoc(doc(firestore, "userBlocks", uid, "blocked", targetUid), { createdAt: serverTimestamp() });
-}
-export async function reportChatUser(uid: string, targetUid: string, roomId: string, reason: string) {
-  await addDoc(collection(firestore, "chatReports"), { reporterId: uid, targetUid, roomId, reason: reason.slice(0, 500), createdAt: serverTimestamp(), status: "open" });
-}
-
-
