@@ -62,7 +62,9 @@ const icons: Record<string, React.ElementType> = { "file-badge": FileBadge, "bad
 
 function Icon({ name, size = 22 }: { name: string; size?: number }) { const Component = icons[name] ?? Sparkles; return <Component size={size} strokeWidth={1.9} />; }
 
-function shuffleYangaArray<T>(items: T[]): T[] { const copy = [...items]; for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }\n\nfunction Notice({ children, tone = "warning" }: { children: React.ReactNode; tone?: "warning" | "success" | "info" }) { return <div className={`notice notice--${tone}`}><CircleAlert size={17} /> <span>{children}</span></div>; }
+function shuffleYangaArray<T>(items: T[]): T[] { const copy = [...items]; for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }
+
+function Notice({ children, tone = "warning" }: { children: React.ReactNode; tone?: "warning" | "success" | "info" }) { return <div className={`notice notice--${tone}`}><CircleAlert size={17} /> <span>{children}</span></div>; }
 
 function isRetiredNidaRecord(item: any) { return /nida|nin|kitambulisho cha taifa/i.test([item?.serviceName, item?.serviceSlug, item?.slug, item?.description, item?.reason, item?.name, item?.type, item?.title].filter(Boolean).join(" ")); }
 
@@ -675,7 +677,9 @@ export default function Home() {
   const [serviceNotice, setServiceNotice] = useState("");
   const [showYangaRules, setShowYangaRules] = useState(false);
   const [yangaRulesAccepted, setYangaRulesAccepted] = useState(false);
-  const [yangaQuizPassed, setYangaQuizPassed] = useState(false);\n  const [yangaEntryStep, setYangaEntryStep] = useState<"choice" | "quiz" | "rules">("choice");\n  const [yangaPaymentBusy, setYangaPaymentBusy] = useState(false);
+  const [yangaQuizPassed, setYangaQuizPassed] = useState(false);
+  const [yangaEntryStep, setYangaEntryStep] = useState<"choice" | "quiz" | "rules">("choice");
+  const [yangaPaymentBusy, setYangaPaymentBusy] = useState(false);
   const [yangaFanConfirm, setYangaFanConfirm] = useState("");
   const [yangaLoveConfirm, setYangaLoveConfirm] = useState("");
   const [yangaAnswers, setYangaAnswers] = useState<Record<number, string>>({});
@@ -749,6 +753,18 @@ export default function Home() {
     if (!correct) { setYangaQuizError("Baadhi ya majibu si sahihi. Kagua majibu yako na ujaribu tena."); return; }
     setYangaQuizError("");
     setYangaQuizPassed(true);
+    setYangaEntryStep("rules");
+  };
+  const payYangaEntry = async () => {
+    if (!firebaseUser) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); return; }
+    setYangaPaymentBusy(true);
+    try {
+      const result = await consumeFirebaseTokens(firebaseUser.uid, { slug: "yanga-africans", name: "YANGA SC WHATSAPP GROUP", tokenCost: 6, kind: "paid", tokenType: "huduma" }, crypto.randomUUID());
+      setYangaQuizPassed(true); setYangaEntryStep("rules"); setYangaQuizError("");
+      toast.success("Tokeni 6 zimekatwa. Soma sheria za group ili kuendelea.", { description: `Rejea: ${result.reference}` });
+    } catch (error: any) {
+      toast.error(error?.message ?? "Imeshindikana kutumia tokeni 6.");
+    } finally { setYangaPaymentBusy(false); }
   };
   const { isAuthenticated, firebaseUser, user, profile, logout } = useAuth();
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
@@ -833,6 +849,14 @@ export default function Home() {
         {!yangaQuizPassed ? <>
           <h2 id="yanga-rules-title">Thibitisha kuwa shabiki wa Yanga</h2>
           <p className="yanga-rules-motto">Maswali 10 yamechaguliwa kwa bahati nasibu kutoka kwenye hifadhi ya maswali. Kila jaribio linaweza kuwa tofauti.</p>
+          <div className="yanga-fan-confirm">
+            <label>Je, wewe ni mshabiki wa Yanga?
+              <select value={yangaFanConfirm} onChange={(event) => setYangaFanConfirm(event.target.value)}><option value="">Chagua jibu</option><option>Ndiyo</option><option>Hapana</option></select>
+            </label>
+            <label>Je, unaipenda Yanga?
+              <select value={yangaLoveConfirm} onChange={(event) => setYangaLoveConfirm(event.target.value)}><option value="">Chagua jibu</option><option>Ndiyo</option><option>Hapana</option></select>
+            </label>
+          </div>
           <div className="yanga-quiz-content">
             <div className="yanga-quiz-questions">
               {yangaQuizQuestions.map((question, i) => <fieldset className="yanga-quiz-question" key={i}>
