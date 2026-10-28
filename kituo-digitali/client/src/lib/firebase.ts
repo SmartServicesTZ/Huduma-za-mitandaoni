@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBlob, deleteObject } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
@@ -15,17 +15,14 @@ import {
 } from "firebase/auth";
 import {
   addDoc,
-  arrayUnion,
   collection,
   connectFirestoreEmulator,
-  deleteDoc,
   deleteField,
   doc,
   getDoc,
   getDocFromServer,
   getDocs,
   getFirestore,
-  increment,
   limit,
   onSnapshot,
   orderBy,
