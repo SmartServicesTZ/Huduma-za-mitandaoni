@@ -672,6 +672,8 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [serviceNotice, setServiceNotice] = useState("");
+  const [showYangaRules, setShowYangaRules] = useState(false);
+  const [yangaRulesAccepted, setYangaRulesAccepted] = useState(false);
   const { isAuthenticated, firebaseUser, user, profile, logout } = useAuth();
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
@@ -732,7 +734,7 @@ export default function Home() {
   const appAccent = profile?.settings?.accent ?? "green";
   const compactMode = profile?.settings?.compactMode === true;
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.location.href = service.actionUrl; else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
-  const handleUse = (service: ServiceCatalogItem) => { if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
+  const handleUse = (service: ServiceCatalogItem) => { if (service.slug === "yanga-africans") { setYangaRulesAccepted(false); setShowYangaRules(true); return; } if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (!isAuthenticated) { toast("Ingia kwanza ili kutumia huduma kwa kutumia kitufe cha Ingia / Jisajili."); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
   const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
@@ -747,6 +749,34 @@ export default function Home() {
       : null;
   return <div className={`portal-shell ${compactMode ? "app-compact-mode" : ""}`} data-theme={appTheme} data-accent={appAccent} style={{ "--navy": "#071a36", "--green": appAccent === "blue" ? "#3b82f6" : appAccent === "purple" ? "#8b5cf6" : "#18b969", "--navy-2": "#0b2447" } as React.CSSProperties}>
 
+
+    {showYangaRules && <div className="yanga-rules-backdrop" role="presentation" onClick={() => setShowYangaRules(false)}>
+      <section className="yanga-rules-modal" role="dialog" aria-modal="true" aria-labelledby="yanga-rules-title" onClick={(event) => event.stopPropagation()}>
+        <button type="button" className="yanga-rules-close" aria-label="Funga sheria" onClick={() => setShowYangaRules(false)}><X size={20} /></button>
+        <div className="yanga-rules-kicker">💚💛 YANGA SC WHATSAPP GROUP</div>
+        <h2 id="yanga-rules-title">💚 SHERIA ZA GROUP LA WANANCHI 💚</h2>
+        <p className="yanga-rules-motto">Daima Mbele, Nyuma Mwiko! 💪💚💛</p>
+        <ol className="yanga-rules-list">
+          <li>Heshimu kila mwanachama wa group bila kujali umri, jinsia au nafasi yake.</li>
+          <li>Matusi, lugha za kejeli, uchochezi, ubaguzi na ugomvi haviruhusiwi.</li>
+          <li>Taarifa zote zinazotumwa ziwe za uhakika na zihusiane na Yanga au shughuli za group.</li>
+          <li>Hairuhusiwi kutuma link, matangazo au kufanya biashara yoyote bila ruhusa ya Admin.</li>
+          <li>Hairuhusiwi kutuma picha, video au maudhui yoyote yasiyo na maadili.</li>
+          <li>Hairuhusiwi kumfuata mwanachama inbox bila ridhaa yake.</li>
+          <li>Mambo ya inbox hayaruhusiwi kuletwa au kujadiliwa kwenye group. Toa taarifa kwa Admin endapo kuna tatizo.</li>
+          <li>Voice note haziruhusiwi isipokuwa kwa ruhusa maalum ya Admin.</li>
+          <li>Sticker, picha na video zinazotumwa ziheshimu maadili na zisiwe za kuudhi.</li>
+          <li>Epuka siasa, dini na mijadala inayoweza kuleta mgawanyiko ndani ya group.</li>
+          <li>Wakati wa mechi, tuzingatie mjadala wa mechi na tuepuke spam zisizo na umuhimu.</li>
+          <li>Maamuzi ya Admin yaheshimiwe. Malalamiko yote yawasilishwe kwa Admin kwa utaratibu.</li>
+          <li>Yeyote atakayekiuka sheria za group ataonywa au kuondolewa kulingana na uzito wa kosa.</li>
+          <li>Ukijiunga kwenye group, tafadhali jitambulishe kwa jina lako na eneo unapotokea.</li>
+        </ol>
+        <p className="yanga-rules-closing">💚 Sisi ni familia moja ya Wananchi.<br />💛 Tuidumishe umoja, heshima na upendo ndani ya group letu.<br /><strong>💚 DAIMA MBELE, NYUMA MWIKO! 💚💛</strong></p>
+        <label className="yanga-rules-accept"><input type="checkbox" checked={yangaRulesAccepted} onChange={(event) => setYangaRulesAccepted(event.target.checked)} /><span>Nimesoma na kukubali sheria zote za group la mashabiki wa Yanga.</span></label>
+        <button type="button" className="yanga-rules-join" disabled={!yangaRulesAccepted} onClick={() => { window.open("https://chat.whatsapp.com/In0wFjXWfVO516H9J9wah3?s=cl&p=a&iam=2", "_blank", "noopener,noreferrer"); setShowYangaRules(false); }}> <MessageCircle size={18} /> Jiunge na YANGA SC WhatsApp Group </button>
+      </section>
+    </div>}
     {fullAccessBlocked ? <AccountRestrictionGate reason={user?.restrictionReason} message={user?.restrictionMessage} onLogout={logout} /> : <>
       <div className={`portal-overlay ${menuOpen ? "show" : ""}`} onClick={() => setMenuOpen(false)} />
       <div className={`portal-sidebar-wrap ${menuOpen ? "open" : ""}`}><Sidebar onClose={() => setMenuOpen(false)} /></div>
