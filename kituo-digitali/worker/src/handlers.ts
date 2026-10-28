@@ -295,7 +295,9 @@ export const claimDailyTokenBonus = callable(async (request) => {
   const uid = authUid(request);
   const userRef = db.collection("users").doc(uid);
   const settingsRef = db.collection("siteSettings").doc("public");
-  const today = new Date().toISOString().slice(0, 10);
+  // Tarehe ya bonus hutumia siku ya Tanzania (EAT), si UTC.
+  const now = new Date();
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Dar_es_Salaam", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
   return db.runTransaction(async (transaction) => {
     const userSnap = await transaction.get(userRef);
     if (!userSnap.exists) throw new ApiError("not-found", "Profile ya akaunti haijapatikana.");
@@ -304,7 +306,12 @@ export const claimDailyTokenBonus = callable(async (request) => {
     const config = (settings.tokenBonusConfig ?? {}) as Record<string, unknown>;
     const dailyBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.dailyBonus ?? 6))));
     const profile = userSnap.data() as Profile;
-    if (profile.lastDailyTokenBonusDate === today || dailyBonus === 0) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0) };
+    // Usajili siku hii unatoa tokeni za usajili pekee; bonus ya kila siku huanza siku inayofuata.
+    const createdAt = profile.createdAt;
+    const createdDate = createdAt && typeof createdAt === "object" && "toDate" in createdAt && typeof (createdAt as {toDate?: unknown}).toDate === "function"
+      ? new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Dar_es_Salaam", year: "numeric", month: "2-digit", day: "2-digit" }).format((createdAt as {toDate: () => Date}).toDate())
+      : typeof createdAt === "string" ? createdAt.slice(0, 10) : "";
+    if (!createdDate || createdDate >= today || profile.lastDailyTokenBonusDate === today || dailyBonus === 0) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0) };
     const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
     const after = before + dailyBonus;
     transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, lastDailyTokenBonusDate: today, updatedAt: FieldValue.serverTimestamp() });
@@ -1234,7 +1241,7 @@ export const claimRegistrationPhone = callable(async (request) => {
     }
 
     const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};
-    const registrationBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.registrationBonus ?? 15))));
+    const registrationBonus = 12; // Kiasi kilichowekwa: akaunti mpya hupata tokeni 12 mara moja.
     const existingProfile = profileSnap.exists ? profileSnap.data() as Profile : null;
     const currentOther = Number(existingProfile?.tokenBalanceOther ?? existingProfile?.tokenBalance ?? 0);
     const shouldGrantBonus = registrationBonus > 0 && existingProfile?.tokenBonusRegistrationGranted !== true;
@@ -1247,7 +1254,7 @@ export const claimRegistrationPhone = callable(async (request) => {
         uid, firstName, lastName, phone, name: name || "Mwanachama", username,
         tokenBalance: bonus, tokenBalanceOther: bonus, tokenBalanceNida: 0,
         ...(bonus > 0 ? { tokenBonusRegistrationGranted: true } : {}),
-        verificationStatus: "pending", role: "user", permissions: {},
+        verificationStatus: "approved", role: "user", permissions: {},
         createdAt: FieldValue.serverTimestamp(), language: "sw", updatedAt: FieldValue.serverTimestamp(),
       });
     } else if (shouldGrantBonus) {
