@@ -40,6 +40,35 @@ export const tanzaniaServiceKnowledge: TanzaniaKnowledgeEntry[] = [
     refreshAfterDays: 90,
   },
   {
+    id: "airtel-tz-airtel-money-cash-out",
+    jurisdiction: "TZ",
+    topic: "Airtel Money Tanzania cash-out at a dealer",
+    matchAny: [
+      ["airtel", "kutoa pesa"],
+      ["airtel", "kutoa hela"],
+      ["airtel", "kutoa fedha"],
+      ["airtel", "toa pesa"],
+      ["airtel", "toa hela"],
+      ["airtel", "withdraw"],
+      ["airtel", "cash out"],
+      ["airtel", "cash-out"],
+      ["airtel", "cashout"],
+      ["airtel", "wakala", "toa"],
+      ["airtel", "agent", "withdraw"],
+      ["airtel", "dealer", "withdraw"],
+    ],
+    directAnswerSw: "Kama unamaanisha kutoa pesa kwa wakala, masharti rasmi ya Airtel Money yanathibitisha cash-out kwa kubadilisha salio la akaunti kuwa fedha taslimu kutoka kwa dealer (wakala) wa Airtel Money. Sijapata chanzo rasmi kinachothibitisha namba ya USSD au hatua za menyu kwa akaunti ya kawaida ya mteja; hatua zilizochapishwa kwenye ukurasa wa Lipa Kwa Simu ni za akaunti ya merchant, si utaratibu wa kawaida wa cash-out. Kwa hiyo sitabuni code wala kutumia hatua za kutuma pesa. Thibitisha utaratibu wa sasa kwa 100 (Kiswahili) au 101 (English). Ushahidi huu unahusu kutoa kwa wakala tu; sijaweza kuthibitisha utaratibu wa ATM au benki.",
+    directAnswerEn: "If you mean withdrawing through an agent, Airtel Money's official terms confirm cash-out as redeeming value in your account for cash from an Airtel Money dealer (agent). I could not verify an official USSD code or menu sequence for an ordinary customer's cash-out; the steps published on Airtel's Lipa Kwa Simu page are for merchant accounts, not the ordinary wallet cash-out flow. I will not invent a code or substitute send-money steps. Confirm the current process with Airtel on 101 (English) or 100 (Swahili). This evidence covers agent cash-out only; I could not verify an ATM or bank withdrawal procedure.",
+    sourceTitle: "Airtel Tanzania — Airtel Money Customer Terms Of Use",
+    sourceUrl: "https://www.airtel.co.tz/airtelMoneyTandC",
+    relatedSources: [
+      { title: "Airtel Tanzania — Contact Us", url: "https://www.airtel.co.tz/contact-us", verifiedAt: "2026-10-28" },
+      { title: "Airtel Tanzania — Lipa Kwa Simu Mitandao Yote", url: "https://www.airtel.co.tz/LIPA-KWA-SIMU-MITANDAO-YOTE", verifiedAt: "2026-10-28" },
+    ],
+    verifiedAt: "2026-10-28",
+    refreshAfterDays: 90,
+  },
+  {
     id: "airtel-tz-customer-care",
     jurisdiction: "TZ",
     topic: "Official Airtel Tanzania prepaid support contact",
@@ -63,6 +92,8 @@ const foreignCountryTerms = [
 ];
 const operatorTerms = ["airtel", "vodacom", "tigo", "yas", "halotel", "ttcl", "zantel", "mixx", "mpesa", "m-pesa", "tigopesa", "halo pesa", "halopesa", "tpesa", "t-pesa"];
 const tanzaniaServiceTerms = ["nida", "brela", "tra", "nhif", "nssf", "crdb", "nmb", "tanesco", "selcom", "neec", "tanroads"];
+const withdrawalTerms = ["withdraw", "cash out", "cash-out", "cashout", "kutoa pesa", "kutoa hela", "kutoa fedha", "toa pesa", "toa hela", "toa fedha"];
+const sendMoneyTerms = ["send money", "sending money", "transfer money", "money transfer", "kutuma pesa", "kutuma hela", "kutuma fedha", "tuma pesa", "tuma hela", "tuma fedha"];
 const changeableServiceTerms = [
   "ussd", "salio", "saldo", "balance", "sms", "ada", "gharama", "fee", "fees", "tariff", "kifurushi", "bundle", "menu", "huduma kwa wateja", "customer care", "utaratibu", "limit", "kikomo", "commission",
 ];
@@ -82,6 +113,17 @@ export function isEnglishQuestion(query: string) {
   return markers.length >= 2 || /^(how|what|where|can|please|help|tell|show)\b/.test(normalized);
 }
 
+export function detectMoneyMovementIntent(query: string): "withdraw" | "send" | null {
+  const normalized = normalizeKnowledgeQuery(query);
+  const hasWithdrawalVerb = withdrawalTerms.some((term) => normalized.includes(normalizeKnowledgeQuery(term)));
+  const mentionsAgent = ["wakala", "agent", "dealer"].some((term) => normalized.includes(term));
+  const mentionsMoney = ["pesa", "hela", "fedha", "money", "cash"].some((term) => normalized.includes(term));
+  if (hasWithdrawalVerb || mentionsAgent && mentionsMoney && /\b(toa|kutoa|withdraw|cashout|cash-out)\b/.test(normalized)) return "withdraw";
+  const hasSendVerb = ["send", "sending", "transfer", "transferring", "kutuma", "tuma", "hamisha"].some((term) => normalized.includes(term));
+  if (sendMoneyTerms.some((term) => normalized.includes(normalizeKnowledgeQuery(term))) || hasSendVerb && mentionsMoney) return "send";
+  return null;
+}
+
 export function needsVerifiedTanzaniaSource(query: string) {
   const normalized = normalizeKnowledgeQuery(query);
   const mentionsOperator = operatorTerms.some((term) => normalized.includes(term));
@@ -89,7 +131,7 @@ export function needsVerifiedTanzaniaSource(query: string) {
   const asksForChangingFact = changeableServiceTerms.some((term) => normalized.includes(term));
   const asksForUssd = normalized.includes("ussd") || /\*[0-9*]{2,}#/.test(normalized);
   const asksForSmsBalance = normalized.includes("sms") && /\b(bal|balance|salio|saldo)\b/.test(normalized);
-  return mentionsOperator || mentionsTanzaniaService || normalized.includes("tanzania") && asksForChangingFact || asksForUssd || asksForSmsBalance;
+  return mentionsOperator || mentionsTanzaniaService || normalized.includes("tanzania") && asksForChangingFact || asksForUssd || asksForSmsBalance || detectMoneyMovementIntent(query) !== null;
 }
 
 function isFresh(entry: TanzaniaKnowledgeEntry, now: number) {
@@ -103,6 +145,7 @@ export function findTanzaniaKnowledge(query: string, now = Date.now()) {
   if (mentionsForeignCountry(query)) return [];
   const normalized = normalizeKnowledgeQuery(query);
   return tanzaniaServiceKnowledge.filter((entry) => entry.jurisdiction === "TZ" && isFresh(entry, now)
+    && (entry.id !== "airtel-tz-airtel-money-cash-out" || detectMoneyMovementIntent(query) === "withdraw")
     && entry.matchAny.some((group) => group.every((term) => normalized.includes(normalizeKnowledgeQuery(term)))));
 }
 
