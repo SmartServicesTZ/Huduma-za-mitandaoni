@@ -550,7 +550,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     };
     void getPublicSiteSettingsOnce().then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined);
     const refreshTimer = window.setInterval(() => { void getPublicSiteSettingsOnce({ force: true }).then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined); }, 45_000);
-    const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true]))));
+    const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides({ ...Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true])), "cheti-tin": false }));
     return () => { active = false; window.clearInterval(refreshTimer); stopLocks(); };
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
@@ -572,11 +572,9 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
         : serviceCatalog.find((service) => service.slug === "cheti-tin")
       : undefined
   );
-  const tinCertificate = tinFallback && isServiceLocked("cheti-tin", serviceLockOverrides["cheti-tin"], tinFallback.kind === "locked")
-    ? { ...tinFallback, kind: "locked" as const, description: tinFallback.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye." }
-    : tinFallback;
+  const tinCertificate = tinFallback ? { ...tinFallback, kind: tinFallback.kind === "locked" ? (Number(tinFallback.tokenCost ?? 0) <= 0 ? "free" as const : "paid" as const) : tinFallback.kind } : undefined;
   const main = tinCertificate
-    ? [mainBase.find((service) => service.slug === "leseni-biashara"), tinCertificate, ...mainBase.filter((service) => service.slug !== "leseni-biashara" && service.slug !== "cheti-tin")].filter(Boolean) as ServiceCatalogItem[]
+    ? [tinCertificate, mainBase.find((service) => service.slug === "leseni-biashara"), ...mainBase.filter((service) => service.slug !== "leseni-biashara" && service.slug !== "cheti-tin")].filter(Boolean) as ServiceCatalogItem[]
     : mainBase;
   const other = matches.filter((service) => service.category === "HUDUMA ZINGINE");
   const sections: Record<HomepageSectionId, React.ReactNode> = {
