@@ -313,24 +313,35 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
     return jsonResponse({ error: { message: "Msaidizi wa AI bado hajawashwa. Admin anahitaji kuweka GEMINI_API_KEY kwenye Cloudflare Worker Secrets." } }, 503, cors);
   }
   try {
-    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: "Wewe ni msaidizi wa SmartServicesTZ. Jibu kwa Kiswahili rahisi isipokuwa mtumiaji aombe lugha nyingine. Toa maelezo sahihi na mafupi. Usidai kuwa unaweza kuona akaunti au kufanya miamala. Usitake password, API keys, au taarifa za siri." }] },
-        contents: [{ role: "user", parts: [{ text: message.trim() }] }],
-        generationConfig: { maxOutputTokens: 700, thinkingConfig: { thinkingLevel: "LOW" } },
-      }),
-      signal: AbortSignal.timeout(55000),
+    const requestBody = JSON.stringify({
+      systemInstruction: { parts: [{ text: "Wewe ni msaidizi wa SmartServicesTZ. Jibu kwa Kiswahili rahisi isipokuwa mtumiaji aombe lugha nyingine. Toa maelezo sahihi na mafupi. Usidai kuwa unaweza kuona akaunti au kufanya miamala. Usitake password, API keys, au taarifa za siri." }] },
+      contents: [{ role: "user", parts: [{ text: message.trim() }] }],
+      generationConfig: { maxOutputTokens: 700, thinkingConfig: { thinkingLevel: "LOW" } },
     });
-    const data = await upstream.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } };
-    if (!upstream.ok) {
-      console.error("Gemini chat upstream error", { status: upstream.status, providerMessage: String(data.error?.message ?? "No provider message").slice(0, 240) });
-      return jsonResponse({ error: { message: upstream.status === 429 ? "Msaidizi amefikia kikomo cha muda. Jaribu tena baadaye." : "Msaidizi wa AI hapatikani kwa sasa. Jaribu tena baadaye." } }, upstream.status === 429 ? 429 : 502, cors);
+    let lastStatus = 0;
+    for (const model of ["gemini-3.8-flash", "gemini-3.6-flash"]) {
+      try {
+        const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: requestBody,
+          signal: AbortSignal.timeout(22000),
+        });
+        const data = await upstream.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } };
+        if (!upstream.ok) {
+          lastStatus = upstream.status;
+          console.error("Gemini chat upstream error", { model, status: upstream.status, providerMessage: String(data.error?.message ?? "No provider message").slice(0, 240) });
+          if ([404, 429, 500, 502, 503, 504].includes(upstream.status)) continue;
+          return jsonResponse({ error: { message: "Msaidizi wa AI hapatikani kwa sasa. Jaribu tena baadaye." } }, 502, cors);
+        }
+        const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
+        if (reply) return jsonResponse({ reply }, 200, cors);
+        console.error("Gemini returned an empty reply", { model });
+      } catch (error) {
+        console.error("Gemini chat model attempt failed", { model, code: error instanceof Error ? error.name : "unknown" });
+      }
     }
-    const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
-    if (!reply) return jsonResponse({ error: { message: "AI haikurudisha jibu. Jaribu tena." } }, 502, cors);
-    return jsonResponse({ reply }, 200, cors);
+    return jsonResponse({ error: { message: lastStatus === 429 ? "Msaidizi amefikia kikomo cha muda. Jaribu tena baadaye." : "AI ina shughuli nyingi kwa sasa. Jaribu tena baada ya muda mfupi." } }, 502, cors);
   } catch (error) {
     console.error("Gemini chat request failed", { code: error instanceof Error ? error.name : "unknown" });
     return jsonResponse({ error: { message: "Imeshindikana kuwasiliana na AI. Kagua mtandao ujaribu tena." } }, 502, cors);
