@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
 import { mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
