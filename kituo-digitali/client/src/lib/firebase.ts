@@ -944,11 +944,6 @@ export function subscribeUserLipaApplications(uid: string, callback: (rows: Lipa
   return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
 }
 
-export async function submitNidaRequest(phone: string) {
-  const callable = createWorkerCall<{ phone: string }, { requestId: string; status: string }>("submitNidaRequest");
-  return (await callable({ phone })).data;
-}
-
 export async function updateNidaRequestPhone(requestId: string, phone: string) {
   const callable = createWorkerCall<{ requestId: string; phone: string }, { requestId: string; status: string; phone: string }>("updateNidaRequestPhone");
   return (await callable({ requestId, phone })).data;
