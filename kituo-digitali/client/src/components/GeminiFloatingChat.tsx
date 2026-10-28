@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Bot, MessageCircle, Minimize2, Send, Sparkles, X } from "lucide-react";
 
-type ChatMessage = { role: "user" | "assistant"; text: string };
+type ChatSource = { title: string; url: string; verifiedAt: string };
+type ChatMessage = { role: "user" | "assistant"; text: string; sources?: ChatSource[] };
 
 const workerBase = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "https://huduma-za-mtandao-api.stewardjackson999.workers.dev").trim().replace(/\/+$/, "");
 
@@ -31,12 +32,18 @@ export default function GeminiFloatingChat() {
       const response = await fetch(`${workerBase}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, history: messages.slice(-6).map(({ role, text }) => ({ role, text })) }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error?.message || data?.error || "Imeshindikana kupata jibu. Jaribu tena.");
       if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Bot haijarudisha jibu. Jaribu tena.");
-      setMessages((current) => [...current, { role: "assistant", text: data.reply }]);
+      const sources: ChatSource[] = Array.isArray(data.sources) ? data.sources.flatMap((item: unknown) => {
+        if (!item || typeof item !== "object") return [];
+        const source = item as Partial<ChatSource>;
+        if (typeof source.title !== "string" || typeof source.url !== "string" || !source.url.startsWith("https://") || typeof source.verifiedAt !== "string") return [];
+        return [{ title: source.title, url: source.url, verifiedAt: source.verifiedAt }];
+      }) : [];
+      setMessages((current) => [...current, { role: "assistant", text: data.reply, ...(sources.length ? { sources } : {}) }]);
     } catch (error) {
       setMessages((current) => [...current, { role: "assistant", text: error instanceof Error ? error.message : "Kuna hitilafu ya mtandao. Jaribu tena." }]);
     } finally {
@@ -58,6 +65,7 @@ export default function GeminiFloatingChat() {
             {messages.map((message, index) => (
               <div key={index} style={{ maxWidth: "88%", alignSelf: message.role === "user" ? "flex-end" : "flex-start", padding: "10px 12px", borderRadius: message.role === "user" ? "15px 15px 4px 15px" : "15px 15px 15px 4px", background: message.role === "user" ? "#d9fdd3" : "#fff", color: "#172033", boxShadow: "0 1px 2px rgba(15,23,42,.08)", fontSize: 13.5, lineHeight: 1.55, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
                 {message.text}
+                {message.sources?.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" style={{ display: "block", marginTop: 8, color: "#075e54", fontSize: 11, fontWeight: 700 }}>Chanzo: {source.title} · Hakiki: {source.verifiedAt}</a>)}
               </div>
             ))}
             {busy && <div style={{ alignSelf: "flex-start", background: "#fff", color: "#64748b", borderRadius: 14, padding: "10px 12px", fontSize: 13 }}><Sparkles size={14} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />Inatafuta jibu...</div>}

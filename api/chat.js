@@ -1,53 +1,23 @@
+const defaultWorkerUrl = "https://huduma-za-mtandao-api.stewardjackson999.workers.dev";
+
 export default async function handler(req, res) {
-  // Ruhusu njia ya POST pekee (maombi ya kutuma ujumbe)
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Njia hairuhusiwi' });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Njia hairuhusiwi" });
+  const { message, history } = req.body ?? {};
+  if (typeof message !== "string" || !message.trim()) return res.status(400).json({ error: "Tafadhali weka ujumbe" });
+  if (message.length > 4000) return res.status(400).json({ error: "Ujumbe usizidi herufi 4,000." });
 
+  const baseUrl = String(process.env.SMARTSERVICESTZ_WORKER_URL ?? process.env.VITE_CLOUDFLARE_WORKER_URL ?? defaultWorkerUrl).trim().replace(/\/+$/, "");
   try {
-    const { message } = req.body;
-
-    if (!message) {
-      return res.status(400).json({ error: 'Tafadhali weka ujumbe' });
-    }
-
-    // Kuchukua API Key kutoka kwenye Secrets uliyohifadhi
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({ error: 'API Key haijapatikana' });
-    }
-
-    // Kutuma ujumbe kwenda kwa Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: message }],
-            },
-          ],
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || 'Kuna tatizo limetokea' });
-    }
-
-    // Kuchukua jibu la Gemini
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sikuweza kupata jibu.';
-
-    // Kumrudishia mtumiaji jibu
-    return res.status(200).json({ reply });
-  } catch (error) {
-    return res.status(500).json({ error: 'Kuna tatizo kwenye mfumo: ' + error.message });
+    const response = await fetch(`${baseUrl}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: message.trim(), history: Array.isArray(history) ? history.slice(-6) : [] }),
+      signal: AbortSignal.timeout(12_000),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return res.status(response.status).json({ error: data?.error?.message ?? "Huduma ya AI haipatikani kwa sasa." });
+    return res.status(200).json({ reply: data.reply, sources: Array.isArray(data.sources) ? data.sources : [] });
+  } catch {
+    return res.status(503).json({ error: "Huduma ya AI haipatikani kwa sasa. Jaribu tena baadaye." });
   }
 }
