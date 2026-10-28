@@ -11,6 +11,7 @@ import { serviceFieldTypes, type ServiceFormField } from "../../../shared/servic
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
 import { LipaApplicationsPanel, LipaNetworkConfigPanel } from "./LipaAdminPanels";
 import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
+import { getRecentSecurityLogs } from "@/lib/securityLogs";
 
 type Panel = "overview" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
@@ -179,7 +180,7 @@ export default function AdminDashboard() {
         hasPermission("manageServices") && needs("services", "serviceControl") ? adminListServices() : Promise.resolve([]),
         hasPermission("manageReports") && needs("overview", "transactions", "reports") ? adminListTransactions() : Promise.resolve([]),
         hasPermission("manageMessages") && needs("messages") ? adminListCollection("messages") : Promise.resolve([]),
-        hasPermission("viewAuditLogs") && needs("security") ? adminListCollection("adminActions") : Promise.resolve([]),
+        hasPermission("viewAuditLogs") && needs("security") ? getRecentSecurityLogs("adminActions") : Promise.resolve([]),
         hasPermission("manageSettings") && needs("services", "serviceControl") ? adminGetSiteSettings() : Promise.resolve(null),
         hasPermission("manageServices") && needs("services", "serviceControl") ? adminListCollection("serviceLocks") : Promise.resolve([]),
         hasPermission("manageServices") && needs("applications", "lipa") ? adminListCollection("lipaServices") : Promise.resolve([]),
