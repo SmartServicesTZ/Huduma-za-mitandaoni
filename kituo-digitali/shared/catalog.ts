@@ -118,7 +118,9 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
       if (fallback && !configured.some((service) => service.slug === slug)) merged.set(slug, fallback);
     });
   }
-  const yangaService = merged.get("yanga-africans");\n  if (yangaService) merged.set("yanga-africans", { ...yangaService, name: "YANGA SC WHATSAPP GROUP", tokenCost: 6, kind: "paid" });\n  return Array.from(merged.values());
+  const yangaService = merged.get("yanga-africans");
+  if (yangaService) merged.set("yanga-africans", { ...yangaService, name: "YANGA SC WHATSAPP GROUP", tokenCost: 6, kind: "paid" });
+  return Array.from(merged.values());
 }
 
 export function findService(slug: string) {
