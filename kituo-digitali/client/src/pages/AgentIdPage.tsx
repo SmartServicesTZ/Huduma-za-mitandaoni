@@ -264,30 +264,11 @@ export default function AgentIdPage() {
         setPaid(true);
         toast.success("Tokeni zimekatwa. Watermark imeondolewa; kitambulisho kiko tayari.");
       }
-      // Pakua faili moja lenye pande zote mbili. Simu nyingi huzuia download ya pili
-      // inapoanzishwa na click ileile, ndiyo maana awali mbele pekee ndiyo ilihifadhiwa.
-      const blobs: Blob[] = [];
-      for (const job of jobs) blobs.push(await exportCard(job.el, job.size, job.filename));
-      // Hifadhi mbele na nyuma kwenye PNG moja, zikiwa na nafasi nyeupe
-      // kati yake ili mipaka ya kadi zisibandikane na kuonekana zimeungana.
-      const scale = 3;
-      const gap = 48;
-      const cardWidth = set.size.w * scale;
-      const cardHeight = set.size.h * scale;
-      const combined = document.createElement("canvas");
-      combined.width = cardWidth;
-      combined.height = cardHeight * blobs.length + gap * Math.max(0, blobs.length - 1);
-      const context = combined.getContext("2d");
-      if (!context) throw new Error("Imeshindikana kuunganisha mbele na nyuma ya kitambulisho.");
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, combined.width, combined.height);
+      // Pakua mbele na nyuma kama faili mbili tofauti ili pande zisishikane kwenye picha moja.
       for (let index = 0; index < blobs.length; index++) {
-        const bitmap = await createImageBitmap(blobs[index]);
-        context.drawImage(bitmap, 0, index * (cardHeight + gap), cardWidth, cardHeight);
-        bitmap.close();
+        triggerDownload(blobs[index], jobs[index].filename, "PNG");
+        if (index < blobs.length - 1) await new Promise<void>((resolve) => window.setTimeout(resolve, 350));
       }
-      const finalBlob = await new Promise<Blob>((resolve, reject) => combined.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi pande zote za kitambulisho.")), "image/png"));
-      triggerDownload(finalBlob, `kitambulisho-${set.label}-mbele-na-nyuma.png`, "PNG");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
     } finally { setBusy(false); }
