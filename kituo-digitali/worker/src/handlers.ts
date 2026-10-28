@@ -19,6 +19,7 @@ const roles = ["user", "admin", "moderator", "support", "super_admin"] as const;
 type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
+const ADMIN_LIST_LIMIT = 250;
 
 type Profile = { role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBonusRegistrationGranted?: boolean; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; firstName?: string; phone?: string; profileImageUrl?: string; mustChangePassword?: boolean };
 
@@ -739,7 +740,7 @@ export const listLipaApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
-  const snapshot = await db.collection("lipaApplications").limit(1000).get();
+  const snapshot = await db.collection("lipaApplications").limit(ADMIN_LIST_LIMIT).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => {
     const left = String(a.submittedAt ?? "");
@@ -1040,7 +1041,7 @@ export const listServiceApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  const snapshot = await db.collection("serviceApplications").limit(1000).get();
+  const snapshot = await db.collection("serviceApplications").limit(ADMIN_LIST_LIMIT).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
   return { applications: rows };
@@ -1118,7 +1119,7 @@ export const listAdminUsers = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "viewUsers");
 
-  const snapshot = await db.collection("users").get();
+  const snapshot = await db.collection("users").limit(ADMIN_LIST_LIMIT).get();
   return snapshot.docs.map((document) => {
     const data = document.data() as Record<string, unknown>;
     const {

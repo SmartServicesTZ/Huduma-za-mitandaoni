@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowDown, ArrowUp, BarChart3, Download, Bell, Boxes, ChevronRight, ClipboardList, LayoutDashboard, LogOut, Menu, MessageSquare, Palette, Plus, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Trash2, UserCog, Users, WalletCards, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminListAgentRecords, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, subscribeToAdminServiceApplications, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListLipaApplications, adminListServiceApplications, adminListServices, adminListTransactions, adminListUsers, adminListAgentRecords, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, type AdminUserRecord, type LipaApplication, type ServiceApplication } from "@/lib/firebase";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, moveId } from "../../../shared/serviceOrdering";
 import { mergeServiceCatalogDefaults } from "../../../shared/catalog";
 import { accountRestrictionActionLabels, accountRestrictionActions, resolveAccountAccessMode, type AccountAccessMode, type AccountRestrictionAction } from "../../../shared/accountAccess";
@@ -198,16 +198,16 @@ export default function AdminDashboard() {
       // makusanyo mengi ya Firestore hata kama admin alikuwa kwenye panel moja tu.
       const needs = (...panels: Panel[]) => panels.includes(panel);
       const results = await Promise.allSettled([
-        cachedRead("users", hasPermission("viewUsers") && needs("overview", "users", "tokens"), adminListUsers, [], force),
-        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl"), adminListServices, [], force),
+        cachedRead("users", hasPermission("viewUsers") && needs("overview", "users", "tokens", "reports", "security"), adminListUsers, [], force),
+        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl", "applications", "reports"), adminListServices, [], force),
         cachedRead("transactions", hasPermission("manageReports") && needs("overview", "transactions", "reports"), adminListTransactions, [], force),
         cachedRead("messages", hasPermission("manageMessages") && needs("messages"), () => adminListCollection("messages"), [], force),
         cachedRead(`security:${auditCollection}`, hasPermission("viewAuditLogs") && needs("security"), () => getRecentSecurityLogs(auditCollection), { rows: [], cursor: null, hasMore: false }, force),
         cachedRead("siteSettings", hasPermission("manageSettings") && needs("services", "serviceControl"), adminGetSiteSettings, null, force),
         cachedRead("serviceLocks", hasPermission("manageServices") && needs("services", "serviceControl"), () => adminListCollection("serviceLocks"), [], force),
-        cachedRead("lipaServices", hasPermission("manageServices") && needs("applications", "lipa"), () => adminListCollection("lipaServices"), [], force),
-        Promise.resolve(null), // Maombi ya Lipa hupakiwa na subscription paneli husika tu.
-        Promise.resolve(null), // Maombi ya huduma hupakiwa na subscription paneli husika tu.
+        cachedRead("lipaServices", hasPermission("manageServices") && needs("applications"), () => adminListCollection("lipaServices"), [], force),
+        cachedRead("lipaApplications", canManageLipaApplications && needs("applications", "lipaReport", "lipa"), adminListLipaApplications, [], force),
+        cachedRead("serviceApplications", hasPermission("manageServices") && needs("applications", "reports"), adminListServiceApplications, [], force),
         cachedRead("agentRecords", hasPermission("manageUsers") && needs("agents"), adminListAgentRecords, [], force),
       ]);
       const [u, s, t, m, logs, settings, locks, networkConfigs, applications, genericApplications, agentRows] = results;
@@ -222,8 +222,8 @@ export default function AdminDashboard() {
       } else setDataError((current) => current || "Audit: " + safeError(logs.reason));
       if (locks.status === "fulfilled") setServiceLocks(locks.value); else setDataError((current) => current || "Locks za huduma: " + safeError(locks.reason));
       if (networkConfigs.status === "fulfilled") setLipaServices(networkConfigs.value); else setDataError((current) => current || "Mipangilio ya Lipa: " + safeError(networkConfigs.reason));
-      if (applications.status === "rejected") setDataError((current) => current || "Maombi ya Lipa: " + safeError(applications.reason));
-      if (genericApplications.status === "rejected") setDataError((current) => current || "Maombi ya huduma: " + safeError(genericApplications.reason));
+      if (applications.status === "fulfilled") setLipaApplications(applications.value); else setDataError((current) => current || "Maombi ya Lipa: " + safeError(applications.reason));
+      if (genericApplications.status === "fulfilled") setServiceApplications(genericApplications.value); else setDataError((current) => current || "Maombi ya huduma: " + safeError(genericApplications.reason));
       if (agentRows.status === "fulfilled") setAgentRecords(agentRows.value); else setDataError((current) => current || "Mawakala: " + safeError(agentRows.reason));
       if (settings.status === "fulfilled" && settings.value) {
         const saved = settings.value as Record<string, unknown>;
@@ -268,19 +268,6 @@ export default function AdminDashboard() {
       setAuditLoadingMore(false);
     }
   };
-  useEffect(() => {
-    // Usipoll makusanyo ya maombi wakati admin yuko kwenye paneli nyingine.
-    // Paneli ya Lipa ndiyo pekee inayohitaji inbox ya Lipa iwe hai.
-    if (!canManageLipaApplications) { setLipaApplications([]); return; }
-    if (panel !== "lipa") return;
-    return subscribeToAdminLipaApplications(setLipaApplications, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
-  }, [canManageLipaApplications, panel, firebaseUser?.uid]);
-  useEffect(() => {
-    // Maombi ya huduma hupakiwa tu admin anapofungua paneli ya Applications.
-    if (!hasPermission("manageServices")) { setServiceApplications([]); return; }
-    if (panel !== "applications") return;
-    return subscribeToAdminServiceApplications(setServiceApplications, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
-  }, [canManage, isAdmin, isSuper, panel, firebaseUser?.uid]);
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(true); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
   const visibleUsers = useMemo(() => users.filter((item) => `${item.name} ${item.phone} ${item.username}`.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const totalIssued = transactions.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);

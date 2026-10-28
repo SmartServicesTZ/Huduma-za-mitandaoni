@@ -25,6 +25,7 @@ import {
   getFirestore,
   limit,
   onSnapshot,
+  or,
   orderBy,
   query,
   runTransaction,
@@ -33,7 +34,6 @@ import {
   updateDoc,
   where,
   type DocumentData,
-  type QuerySnapshot,
 } from "firebase/firestore";
 import type { ServiceFormField, ServiceFormValues } from "../../../shared/serviceForms";
 import { omitUndefinedFields } from "../../../shared/omitUndefinedFields";
@@ -119,13 +119,21 @@ const collectionListenerCache = new Map<string, CollectionListener>();
 const collectionReadLimits: Record<string, number> = {
   announcements: 50,
   siteSettings: 10,
-  serviceLocks: 250,
-  services: 250,
+  serviceLocks: 100,
+  services: 100,
   lipaServices: 50,
+  agentRecords: 100,
+  tokenTransactions: 100,
+  adminActions: 100,
+  auditLogs: 100,
+  advertisements: 100,
+  tutorialVideos: 100,
+  licenseTemplates: 100,
+  messages: 100,
+  systemSettings: 50,
+  tokenPurchaseOrders: 100,
+  websiteHealthReports: 100,
 };
-function adminPollDelay() {
-  return typeof document !== "undefined" && document.visibilityState === "hidden" ? 120_000 : 30_000;
-}
 export type AdminPermissions = {
   viewUsers?: boolean;
   manageUsers?: boolean;
@@ -409,9 +417,13 @@ export async function createServiceRequest(uid: string, service: { slug: string;
   return requestRef.id;
 }
 
-export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void) {
-  const tokenQuery = query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), limit(100));
-  return onSnapshot(tokenQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData) as DocumentData).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")))));
+export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
+  let active = true;
+  void getDocs(query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), limit(100))).then((snapshot) => {
+    if (!active) return;
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData)).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))));
+  }).catch((error) => { if (active) onError?.(error); });
+  return () => { active = false; };
 }
 
 
@@ -491,11 +503,8 @@ export async function createAgentRecord(input: Omit<AgentRecord, "id" | "agentId
 }
 
 export async function adminListAgentRecords() {
-  const snapshot = await getDocs(collection(firestore, "agentRecords"));
-  return snapshot.docs.map((item) => {
-    const data = item.data();
-    return { id: item.id, ...data, createdAt: timestampValue(data.createdAt), updatedAt: timestampValue(data.updatedAt) } as AgentRecord;
-  }).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+  const rows = await getCollectionOnce("agentRecords");
+  return rows.map((item) => ({ ...item, createdAt: timestampValue(item.createdAt), updatedAt: timestampValue(item.updatedAt) } as AgentRecord)).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
 export async function adminListUsers() {
@@ -508,8 +517,7 @@ export async function adminListUsers() {
 }
 
 export async function adminListServices() {
-  const snapshot = await getDocs(collection(firestore, "services"));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  return getCollectionOnce("services");
 }
 
 export type WebsiteHealthReport = {
@@ -558,13 +566,13 @@ export async function resolveWebsiteHealthReport(id: string, note = "Imekaguliwa
 }
 
 export async function adminListTransactions() {
-  const snapshot = await getDocs(collection(firestore, "tokenTransactions"));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+  const rows = await getCollectionOnce("tokenTransactions");
+  return rows.map((item) => ({ ...item, createdAt: timestampValue(item.createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
 export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings" | "serviceLocks" | "lipaServices" | "tokenPurchaseOrders") {
-  const snapshot = await getDocs(collection(firestore, name));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
+  const rows = await getCollectionOnce(name);
+  return rows.map((item) => ({ ...item, createdAt: timestampValue(item.createdAt) }));
 }
 
 export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string, tokenType: "nida" | "huduma" = "huduma") {
@@ -913,35 +921,13 @@ export async function adminListLipaApplications() {
   } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
-export function subscribeToAdminLipaApplications(callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
-  let stopped = false;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let retryDelay = 60_000;
-  const load = async () => {
-    try {
-      const rows = await adminListLipaApplications();
-      if (!stopped) callback(rows);
-      retryDelay = 120_000;
-    } catch (error) {
-      if (!stopped) onError?.(error);
-      // Back off during quota/network failures instead of hammering Firestore.
-      retryDelay = Math.min(retryDelay * 2, 10 * 60_000);
-    } finally {
-
-      if (!stopped) timer = setTimeout(load, retryDelay);
-
-    }
-  };
-  void load();
-  return () => {
-    stopped = true;
-    if (timer) clearTimeout(timer);
-  };
-}
-
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
-  const userQuery = query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(50));
-  return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
+  let active = true;
+  void getDocs(query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(50))).then((snapshot) => {
+    if (!active) return;
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
+  }).catch((error) => { if (active) onError?.(error); });
+  return () => { active = false; };
 }
 
 export async function createPocketWifiOrder(applicationId: string, details: string, phone: string) {
@@ -1016,29 +1002,6 @@ export async function adminListServiceApplications() {
   } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
-export function subscribeToAdminServiceApplications(callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
-  let stopped = false;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let retryDelay = 60_000;
-  const load = async () => {
-    try {
-      const rows = await adminListServiceApplications();
-      if (!stopped) callback(rows);
-      retryDelay = 120_000;
-    } catch (error) {
-      if (!stopped) onError?.(error);
-      // Back off during quota/network failures instead of hammering Firestore.
-      retryDelay = Math.min(retryDelay * 2, 10 * 60_000);
-    } finally {
-
-      if (!stopped) timer = setTimeout(load, retryDelay);
-
-    }
-  };
-  void load();
-  return () => { stopped = true; if (timer) clearTimeout(timer); };
-}
-
 export async function replyToServiceApplication(applicationId: string, subject: string, body: string, messageType: "reply" | "request-info" = "reply") {
   const callable = createWorkerCall("replyToServiceApplication");
   return (await callable({ applicationId, subject, body, messageType })).data;
@@ -1055,8 +1018,12 @@ export async function getServiceApplicationDocument(applicationId: string, field
 }
 
 export function subscribeUserServiceApplications(uid: string, callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
-  const userQuery = query(collection(firestore, "serviceApplications"), where("userId", "==", uid), limit(50));
-  return onSnapshot(userQuery, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")))), onError);
+  let active = true;
+  void getDocs(query(collection(firestore, "serviceApplications"), where("userId", "==", uid), limit(50))).then((snapshot) => {
+    if (!active) return;
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
+  }).catch((error) => { if (active) onError?.(error); });
+  return () => { active = false; };
 }
 
 export async function markUserMessageRead(messageId: string, uid: string) {
@@ -1065,23 +1032,24 @@ export async function markUserMessageRead(messageId: string, uid: string) {
   return (await callable({ messageId })).data;
 }
 
+const userMessagesCache = new Map<string, { loadedAt: number; rows: Array<Record<string, unknown> & { id: string }> }>();
+const userMessagesPending = new Map<string, Promise<Array<Record<string, unknown> & { id: string }>>>();
+async function getUserMessagesOnce(uid: string) {
+  const cached = userMessagesCache.get(uid);
+  if (cached && Date.now() - cached.loadedAt < 30_000) return cached.rows;
+  const pending = userMessagesPending.get(uid);
+  if (pending) return pending;
+  const request = getDocs(query(collection(firestore, "messages"), or(where("recipientId", "==", uid), where("broadcast", "==", true)), limit(100))).then((snapshot) => {
+    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+    userMessagesCache.set(uid, { loadedAt: Date.now(), rows });
+    return rows;
+  }).finally(() => { if (userMessagesPending.get(uid) === request) userMessagesPending.delete(uid); });
+  userMessagesPending.set(uid, request);
+  return request;
+}
+
 export function subscribeUserMessages(uid: string, callback: (rows: Array<Record<string, unknown> & { id: string }>) => void, onError?: (error: unknown) => void) {
-  const messages = collection(firestore, "messages");
-  const personalQuery = query(messages, where("recipientId", "==", uid), limit(100));
-  const broadcastQuery = query(messages, where("broadcast", "==", true), limit(50));
-  const personalRows = new Map<string, Record<string, unknown> & { id: string }>();
-  const broadcastRows = new Map<string, Record<string, unknown> & { id: string }>();
-  const emit = () => {
-    const rows = new Map(personalRows);
-    broadcastRows.forEach((row, id) => { if (!rows.has(id)) rows.set(id, row); });
-    callback(Array.from(rows.values()).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))));
-  };
-  const updateRows = (target: Map<string, Record<string, unknown> & { id: string }>, snapshot: QuerySnapshot<DocumentData>) => {
-    target.clear();
-    for (const item of snapshot.docs) target.set(item.id, { id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) });
-    emit();
-  };
-  const unsubscribePersonal = onSnapshot(personalQuery, (snapshot) => updateRows(personalRows, snapshot), onError);
-  const unsubscribeBroadcast = onSnapshot(broadcastQuery, (snapshot) => updateRows(broadcastRows, snapshot), onError);
-  return () => { unsubscribePersonal(); unsubscribeBroadcast(); };
+  let active = true;
+  void getUserMessagesOnce(uid).then((rows) => { if (active) callback(rows); }).catch((error) => { if (active) onError?.(error); });
+  return () => { active = false; };
 }
