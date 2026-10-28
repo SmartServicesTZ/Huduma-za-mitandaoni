@@ -11,6 +11,12 @@ import { serviceCatalog } from "../../../shared/catalog";
 
 type FieldProps = { label: string; english?: string; children: React.ReactNode };
 
+const localToday = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+const titleCase = (value: string) => value.toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
+
 function Field({ label, english, children }: FieldProps) {
   return <div className="license-field">
     <label><strong>{label}</strong>{english ? <small>{english}</small> : null}</label>
@@ -22,7 +28,7 @@ export default function TINCertificatePage() {
   const { firebaseUser } = useAuth();
   const [paid, setPaid] = useState(false);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
-  const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:"", traLocation:"", taxOffice:"", physicalLocation:"", streetArea:"", commissioner:"" });
+  const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:localToday(), traLocation:"DAR ES SALAAM", taxOffice:"ILALA", physicalLocation:"DAR ES SALAAM", streetArea:"KARIAKOO", commissioner:"Commissioner General" });
   const [busy, setBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -130,7 +136,7 @@ export default function TINCertificatePage() {
 
         <div className="license-form-section"><h3>1. Taarifa za Mlipakodi</h3><div className="license-form-grid">
           <Field label="Jina la Mlipakodi" english="Taxpayer Name"><input value={form.name} onChange={(e) => set("name", e.target.value.toUpperCase())} /></Field>
-          <Field label="Namba ya TIN" english="TIN Number — 9 digits"><input inputMode="numeric" maxLength={11} value={form.tin} onChange={(e) => { const digits = e.target.value.replace(/\D/g, "").slice(0, 9); set("tin", digits.replace(/(\d{3})(?=\d)/g, "$1-")); }} placeholder="123-456-789" /><small>Format: 123-456-789</small></Field>
+          <Field label="Namba ya TIN" english="TIN Number — 9 digits"><input inputMode="numeric" maxLength={11} value={form.tin} onChange={(e) => { const digits = e.target.value.replace(/\D/g, "").slice(0, 9); set("tin", digits.replace(/(\d{3})(?=\d)/g, "$1-")); }} placeholder="Ingiza TIN yako" /><small>Ingiza tarakimu 9 za TIN yako.</small></Field>
           <Field label="Tarehe ya Kuanza" english="With Effect From"><input type="date" value={form.effectDate} onChange={(e) => set("effectDate", e.target.value)} /></Field>
         </div></div>
 
@@ -139,7 +145,7 @@ export default function TINCertificatePage() {
           <Field label="Tax Office" english="Tax Office"><input value={form.taxOffice} onChange={(e) => set("taxOffice", e.target.value.toUpperCase())} /></Field>
           <Field label="Physical Location" english="Physical Location"><input value={form.physicalLocation} onChange={(e) => set("physicalLocation", e.target.value.toUpperCase())} /></Field>
           <Field label="Street / Area" english="Street / Area"><input value={form.streetArea} onChange={(e) => set("streetArea", e.target.value.toUpperCase())} /></Field>
-          <Field label="Commissioner" english="Commissioner General"><input value={form.commissioner} onChange={(e) => set("commissioner", e.target.value.toUpperCase())} /></Field>
+          <Field label="Commissioner" english="Commissioner General"><input value={form.commissioner} onChange={(e) => set("commissioner", titleCase(e.target.value))} /></Field>
         </div></div>
 
         <div className="tin-actions">
