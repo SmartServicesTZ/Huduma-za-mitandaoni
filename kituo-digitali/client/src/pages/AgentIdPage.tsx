@@ -268,14 +268,22 @@ export default function AgentIdPage() {
       // inapoanzishwa na click ileile, ndiyo maana awali mbele pekee ndiyo ilihifadhiwa.
       const blobs: Blob[] = [];
       for (const job of jobs) blobs.push(await exportCard(job.el, job.size, job.filename));
+      // Hifadhi mbele na nyuma kwenye PNG moja, zikiwa na nafasi nyeupe
+      // kati yake ili mipaka ya kadi zisibandikane na kuonekana zimeungana.
+      const scale = 3;
+      const gap = 48;
+      const cardWidth = set.size.w * scale;
+      const cardHeight = set.size.h * scale;
       const combined = document.createElement("canvas");
-      combined.width = set.size.w * 3;
-      combined.height = set.size.h * 3 * blobs.length;
+      combined.width = cardWidth;
+      combined.height = cardHeight * blobs.length + gap * Math.max(0, blobs.length - 1);
       const context = combined.getContext("2d");
       if (!context) throw new Error("Imeshindikana kuunganisha mbele na nyuma ya kitambulisho.");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, combined.width, combined.height);
       for (let index = 0; index < blobs.length; index++) {
         const bitmap = await createImageBitmap(blobs[index]);
-        context.drawImage(bitmap, 0, index * set.size.h * 3, set.size.w * 3, set.size.h * 3);
+        context.drawImage(bitmap, 0, index * (cardHeight + gap), cardWidth, cardHeight);
         bitmap.close();
       }
       const finalBlob = await new Promise<Blob>((resolve, reject) => combined.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi pande zote za kitambulisho.")), "image/png"));
