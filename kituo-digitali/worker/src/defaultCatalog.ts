@@ -62,7 +62,7 @@ export const defaultServices: DefaultService[] = [
   paid("nembo-chonga", "NEMBO YA CHONGA", "Tengeneza wazo la nembo.", "palette", "Zana za ziada", 22),
   paid("radio-maria", "RADIO MARIA", "Fungua Radio Maria kwa urahisi.", "radio", "Zana za ziada", 23),
   paid("simba-sc", "SIMBA SC", "Habari na huduma za Simba SC.", "trophy", "Zana za ziada", 24),
-  paid("yanga-africans", "YANGA AFRICANS", "Habari na huduma za Yanga Africans.", "star", "Zana za ziada", 25),
+  paid("yanga-africans", "YANGA SC WHATSAPP GROUP", "Jiunge na group la mashabiki wa Yanga kwa tokeni 6 au uthibitishe ushabiki kwa maswali.", "star", "HUDUMA ZINGINE", 25),
   paid("azam-tv", "AZAM TV", "Fungua huduma ya Azam TV.", "tv", "Zana za ziada", 26),
 ];
 
