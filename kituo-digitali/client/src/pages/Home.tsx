@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
 import { mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -254,8 +254,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
   const [otherTokens, setOtherTokens] = useState("0");
   const [paidFromPhone, setPaidFromPhone] = useState(profile?.phone ?? "");
-  const nidaBalance = profile?.tokenBalanceNida ?? 0;
-  const otherBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
+  const totalBalance = (profile?.tokenBalanceNida ?? 0) + (profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0);
   const status = profile?.verificationStatus ?? "pending";
   const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
   const otherAmount = otherCount * 500;
@@ -273,7 +272,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       "Lipa namba: 29126823",
       "Jina la mpokeaji: Steward Tz",
       "Kiasi kilicholipwa: TZS " + totalAmount.toLocaleString("en-US"),
-      "Tokeni zingine: " + otherCount + " (TZS " + otherAmount.toLocaleString("en-US") + ")",
+      "Tokeni za huduma: " + otherCount + " (TZS " + otherAmount.toLocaleString("en-US") + ")",
       "",
       "Nimeambatisha ushahidi wa malipo. Tafadhali hakiki na ongeza tokeni kwenye akaunti yangu."
     ].join("\n");
@@ -282,16 +281,16 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   };
 
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
-    <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">WALLET YA TOKENI</span><strong>{isAuthenticated ? nidaBalance + otherBalance : 0}</strong><span className="token-label">tokeni zote</span></div><span className="token-live-pill">● LIVE</span></div><div className="token-balances"><div><span>Tokeni za NIDA</span><strong>{isAuthenticated ? nidaBalance : 0}</strong></div><div><span>Tokeni zingine</span><strong>{isAuthenticated ? otherBalance : 0}</strong></div></div>
+    <div className="token-card__top"><div className="token-icon"><WalletCards size={26} /></div><div><span className="overline">WALLET YA TOKENI</span><strong>{isAuthenticated ? totalBalance : 0}</strong><span className="token-label">salio la tokeni za huduma</span></div></div>
     <div className="token-card__meta"><div className="token-account-identity"><strong className="token-account-name">{profile?.name ?? "Mwanachama"}</strong><div className="token-phone-line"><span>{profile?.phone ?? "—"}</span><span className={`token-verification-status ${status === "approved" ? "is-verified" : "is-pending"}`}>{status === "approved" ? <><BadgeCheck size={16} aria-hidden="true"/> Verified</> : "Haijathibitishwa"}</span></div></div></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
     <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Lipa kwanza, kisha tuma ushahidi WhatsApp</small></span><ChevronRight size={18}/></button>
     {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
     {tokenChoiceOpen && typeof document !== "undefined" && createPortal(<div className="token-choice-modal" role="dialog" aria-modal="true">
       <div className="token-choice-card">
-        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Chagua tokeni</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
+        <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Nunua tokeni za huduma</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
         <div className="token-choice-fields">
-          <label><strong>Tokeni zingine</strong><span>1 = TZS 500</span><input aria-label="Idadi ya tokeni zingine" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
+          <label><strong>Idadi ya tokeni za huduma</strong><span>Tokeni 1 = TZS 500</span><input aria-label="Idadi ya tokeni za huduma" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
         <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Kiasi cha chini ni TZS 1,000; unaweza kuongeza tokeni na kulipa zaidi.</small></div>
         <label className="token-choice-phone"><strong>Namba iliyolipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
@@ -604,14 +603,24 @@ export default function Home() {
   // Closing the mobile drawer on route changes prevents a stuck drawer after navigation/refresh.
   useEffect(() => { setMenuOpen(false); }, [location]);
   useEffect(() => { if (!isAuthenticated || !firebaseUser) return; void claimDailyTokenBonus().catch(() => undefined); }, [isAuthenticated, firebaseUser?.uid]);
-  useEffect(() => subscribeToCollection("services", (rows) => {
+  useEffect(() => {
+    let cancelled = false;
+    void getCollectionOnce("services").then((rows) => {
+    if (cancelled) return;
     setServices(rows.map((item) => ({ slug: ["thibitisha-tin", "verify-tin"].includes(String(item.slug ?? item.id)) ? "verify-tin" : String(item.slug ?? item.id) === "nakala-nida-2" ? "sme-airtel-mkataba" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" || String(item.slug ?? item.id) === "verify-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "nakala-nida-2" || String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "nakala-nida-2" || String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), tokenType: item.tokenType === "nida" ? "nida" : "huduma", category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
     setServicesLoading(false);
-  }, () => setServicesLoading(false)), []);
-  useEffect(() => subscribeToCollection("siteSettings", (rows) => {
-    const settings = rows.find((item) => item.id === "public");
-    setCatalogInitialized(settings?.catalogInitialized === true);
-  }), []);
+    }).catch(() => { if (!cancelled) setServicesLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    void getCollectionOnce("siteSettings").then((rows) => {
+      if (cancelled) return;
+      const settings = rows.find((item) => item.id === "public");
+      setCatalogInitialized(settings?.catalogInitialized === true);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
   const canManageServices = user?.role === "super_admin" || user?.permissions?.manageServices === true;
   useEffect(() => {
     if (!firebaseUser?.uid || !canManageServices) return;
