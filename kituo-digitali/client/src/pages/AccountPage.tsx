@@ -62,6 +62,13 @@ export default function AccountPage() {
 
   return <main className="portal-main profile-page">
     <header className="page-heading profile-page-heading"><div><span className="overline">SETTINGS</span><h1>Settings za App</h1><p>Akaunti yako, wasifu, usalama na mipangilio yote sehemu moja.</p></div><span className="profile-secure-tag"><ShieldCheck size={15}/> Firebase Auth salama</span></header>
+    <section aria-label="Mawasiliano ya msaada" style={{margin:"0 0 22px",padding:"20px",borderRadius:18,border:"2px solid #22c55e",background:"linear-gradient(135deg,rgba(34,197,94,.13),rgba(20,184,166,.08))",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,minWidth:0}}>
+        <span style={{width:54,height:54,borderRadius:16,display:"grid",placeItems:"center",background:"#16a34a",color:"#fff",flexShrink:0}}><MessageCircle size={28}/></span>
+        <div><strong style={{display:"block",fontSize:18}}>Unahitaji msaada wa moja kwa moja?</strong><p style={{margin:"5px 0",lineHeight:1.5}}>Wasiliana na msimamizi wa SmartServicesTZ kupitia WhatsApp.</p><strong style={{fontSize:16}}>0692287767 <span style={{fontSize:12,color:"#15803d"}}>· WhatsApp tu</span></strong><p style={{margin:"4px 0 0",fontSize:12}}>Namba hii haipokei simu za kawaida wala SMS.</p></div>
+      </div>
+      <a href="https://wa.me/255692287767?text=Habari%2C%20nahitaji%20msaada%20wa%20SmartServicesTZ." target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:9,padding:"13px 20px",borderRadius:12,background:"#16a34a",color:"#fff",fontWeight:800,textDecoration:"none",minHeight:48,boxShadow:"0 5px 16px rgba(22,163,74,.25)"}}><MessageCircle size={19}/> Fungua WhatsApp</a>
+    </section>
     <div className="profile-layout">
       <section className="profile-main-card">
         <div className="profile-card-heading"><div><span className="profile-icon"><UserRound size={20}/></span><div><h2>Account / Wasifu wangu</h2><p>Simu yako ndiyo utambulisho wa akaunti; haiwezi kubadilishwa hapa.</p></div></div></div>
@@ -101,36 +108,84 @@ export default function AccountPage() {
 <div className="settings-shortcuts"><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
 <p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
         <section className="profile-side-card support-center-card">
-          <div className="profile-side-title"><span className="profile-icon"><Bell size={18}/></span><div><h3>Msaada na Mawasiliano</h3><p>Jaribu hatua hizi kabla ya kuwasiliana na msimamizi.</p></div></div>
-          <div style={{display:"grid",gap:9,marginTop:12}}>
-            <a className="profile-side-link" href="https://wa.me/255796621229?text=Habari%20SmartServicesTZ%2C%20nahitaji%20msaada." target="_blank" rel="noreferrer">WhatsApp: 0796 621 229</a>
-            <a className="profile-side-link" href="tel:+255723232323">Piga simu: 0723 232 323</a>
-            <a className="profile-side-link" href="sms:+255723232323">Tuma SMS: 0723 232 323</a>
-          </div>
-          <div className="settings-divider">Maswali ya mara kwa mara</div>
+          <div className="profile-side-title"><span className="profile-icon"><Bell size={18}/></span><div><h3>Msaada na Maswali</h3><p>Maswali 18 ya kawaida kuhusu akaunti na huduma.</p></div></div>
+          <div className="settings-divider">Maswali ya mara kwa mara (18)</div>
+          <p className="profile-muted">Bonyeza swali ili kufungua jibu. Ukikwama bado, wasiliana nasi kwa WhatsApp kupitia kitufe cha kijani hapo juu.</p>
           <div style={{display:"grid",gap:10}}>
-            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
-              <summary style={{fontWeight:700,cursor:"pointer"}}>Nikipakua hati sioni kwenye simu</summary>
-              <p style={{margin:"9px 0 0"}}>Fungua Historia ndani ya SmartServicesTZ na uangalie sehemu ya “Vitu nilivyopakua”. Rekodi hukaa dakika 30. Kisha angalia Files au My Files &gt; Downloads kwenye simu. Kama haipo, jaribu kupakua tena kupitia Chrome na ruhusu upakuaji ukitakiwa.</p>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kujisajili?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Bonyeza Ingia / Jisajili, jaza taarifa zinazohitajika na tumia namba yako ya simu. Hakikisha namba unayotumia ni yako na unaweza kuipata.</p>
             </details>
-            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
-              <summary style={{fontWeight:700,cursor:"pointer"}}>Nimeshindwa kuingia au nimesahau password</summary>
-              <p style={{margin:"9px 0 0"}}>Kagua namba ya simu na password, hakikisha intaneti inafanya kazi, kisha jaribu tena. Usitengeneze akaunti ya pili ikiwa namba yako tayari imesajiliwa. Ikiendelea kukataa, wasiliana na msaada.</p>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Nimeshindwa kuingia au nimesahau password</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Kagua namba na password, hakikisha intaneti ipo, kisha jaribu tena. Usitengeneze akaunti ya pili kwa namba iliyosajiliwa; wasiliana na msaada ukikwama.</p>
             </details>
-            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
-              <summary style={{fontWeight:700,cursor:"pointer"}}>Huduma haifunguki au ukurasa ni mweupe</summary>
-              <p style={{margin:"9px 0 0"}}>Angalia intaneti, funga kisha fungua app tena, na ujaribu ku-refresh. Ikiwa bado, fungua tovuti kupitia Chrome. Ukiwasiliana na msaada, tuma jina la huduma na picha ya hitilafu bila kutuma password.</p>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha jina langu?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Akaunti/Settings, hariri jina la kwanza na la mwisho, kisha bonyeza Hifadhi wasifu.</p>
             </details>
-            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
-              <summary style={{fontWeight:700,cursor:"pointer"}}>TIN au taarifa ninazojaza hazionekani</summary>
-              <p style={{margin:"9px 0 0"}}>Jaza sehemu zinazohitajika mwenyewe na uhakikishe hujaacha nafasi tupu. Tumia taarifa sahihi za mhusika; mfano unaoonekana kwenye sehemu ya kuandika ni mwongozo tu. Usitumie taarifa za mtu mwingine.</p>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha password?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Settings, sehemu ya Badilisha password, weka password mpya yenye angalau herufi 6 na uhifadhi.</p>
             </details>
-            <details style={{padding:"10px 12px",border:"1px solid var(--border, #dbe3ee)",borderRadius:10}}>
-              <summary style={{fontWeight:700,cursor:"pointer"}}>Tokeni zimekatwa au huduma imekwama</summary>
-              <p style={{margin:"9px 0 0"}}>Fungua Historia uangalie rekodi ya tokeni, usirudie malipo mara moja. Hifadhi rejea ya muamala na jina la huduma, kisha tuma kwa msaada ili ikaguliwe.</p>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Tokeni zangu ni nini?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Tokeni ni salio la ndani linalotumika kufungua huduma zinazohitaji tokeni. Kagua gharama inayoonyeshwa kabla ya kuendelea.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Kwa nini sina tokeni?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Angalia salio kwenye Wallet ya Tokeni. Ikiwa ulitarajia kupata tokeni za bonasi na hazijaonekana, wasiliana nasi kupitia WhatsApp.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kuona historia ya shughuli?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Historia kwenye menyu au sehemu ya Akaunti ili kuona rekodi zinazopatikana za shughuli zako.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Tokeni zimekatwa lakini huduma haijafunguka</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Usirudie ombi mara moja. Hifadhi rejea ya muamala, jina la huduma na picha ya hitilafu, kisha wasiliana nasi kupitia WhatsApp.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kuomba huduma?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Chagua huduma unayotaka, soma maelekezo na gharama yake, kisha jaza taarifa sahihi na tuma ombi.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ombi langu limechelewa, nifanye nini?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Kagua Historia au ukurasa wa huduma kuona hali ya ombi. Ukiwasiliana nasi, tuma jina la huduma na rejea ya ombi.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Nikipakua hati sioni kwenye simu</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Angalia Files/My Files > Downloads. Ikiwa haipo, jaribu kupakua tena na ruhusu download inapoulizwa.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Kitufe cha kupakua hakifanyi kazi</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Angalia intaneti, jaribu tena na ruhusu upakuaji. Ikiendelea, tuma jina la huduma na picha ya hitilafu kupitia WhatsApp.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Huduma haifunguki au ukurasa ni mweupe</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Refresh ukurasa, funga na fungua app tena au jaribu Chrome. Ikiendelea, tuma jina la huduma na picha ya hitilafu bila taarifa za siri.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Namba au taarifa ninazoandika hazikubaliwi</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Kagua muundo unaotakiwa, hakikisha sehemu zote muhimu zimejazwa na taarifa ni sahihi. Usitumie taarifa za mtu mwingine.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha lugha?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Akaunti/Settings na uchague Kiswahili au English kwenye sehemu ya Lugha ya matumizi.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha mwonekano wa app?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Settings na uchague Theme pamoja na rangi ya Accent. Baadhi ya mipangilio inaweza kutegemea ukurasa unaotumika.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Arifa za akaunti zina maana gani?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Arifa hukusaidia kuona taarifa na ujumbe unaohusiana na akaunti au maombi yako. Unaweza kubadilisha chaguo hilo kwenye Settings.</p>
+            </details>
+            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
+              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kuwasiliana na msimamizi?</summary>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Bonyeza kitufe kikubwa cha WhatsApp cha msaada kwenye ukurasa huu. Namba rasmi ni 0692287767 (WhatsApp tu; hakuna simu ya kawaida au SMS).</p>
             </details>
           </div>
-          <p className="profile-muted" style={{marginTop:12}}>Ikiwa hatua hizi hazitatui changamoto, wasiliana nasi kupitia njia iliyo juu na ueleze hatua uliyofikia pamoja na ujumbe wa hitilafu.</p>
+          <p className="profile-muted" style={{marginTop:12}}>Usitume password au taarifa nyeti kupitia ujumbe.</p>
         </section>
         <button className="profile-logout-button" type="button" onClick={() => void logout()}><LogOut size={16}/> Toka kwenye akaunti</button>
       </aside>
