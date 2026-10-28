@@ -37,7 +37,7 @@ export type TutorialItem = {
 };
 
 export const announcementText = "Msaada na huduma kwa wateja: WhatsApp +255 698 232 313.";
-export const whatsappUrl = "https://wa.me/255698232313?text=Habari%20HUDUMA%20ZA%20MTANDAONI%2C%20nahitaji%20msaada.";
+export const whatsappUrl = "https://wa.me/255692287767?text=Habari%20HUDUMA%20ZA%20MTANDAONI%2C%20nahitaji%20msaada.";
 
 const paid = (slug: string, name: string, description: string, icon: string, category: string): ServiceCatalogItem => ({ slug, name, description, icon, category, tokenCost: 2, kind: "paid" });
 const free = (slug: string, name: string, description: string, icon: string, category: string): ServiceCatalogItem => ({ slug, name, description, icon, category, tokenCost: 0, kind: "free" });
