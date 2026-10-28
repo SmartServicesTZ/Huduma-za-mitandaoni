@@ -264,7 +264,8 @@ export default function AgentIdPage() {
         setPaid(true);
         toast.success("Tokeni zimekatwa. Watermark imeondolewa; kitambulisho kiko tayari.");
       }
-      // Hifadhi mbele na nyuma kama picha mbili tofauti kwenye simu.
+      // Tengeneza faili tofauti kwa kila upande, kisha pakua mbele na nyuma kila moja kivyake.
+      const blobs = await Promise.all(jobs.map((job) => exportCard(job.el, job.size, job.filename)));
       for (let index = 0; index < blobs.length; index++) {
         triggerDownload(blobs[index], jobs[index].filename, "PNG");
         if (index < blobs.length - 1) await new Promise<void>((resolve) => window.setTimeout(resolve, 700));
