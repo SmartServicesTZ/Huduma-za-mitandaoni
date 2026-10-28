@@ -146,7 +146,7 @@ export default function AdminDashboard() {
   const [serviceOrder, setServiceOrder] = useState<string[]>([]);
   const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
   const [message, setMessage] = useState(emptyMessage);
-  const [cms, setCms] = useState({ systemName: "HUDUMA ZA MTANDAONI", eyebrow: "HUDUMA ZA MTANDAONI", headline: "Huduma zako, sehemu moja.", description: "", searchPlaceholder: "Tafuta huduma...", whatsapp: "255698232313", owner: "", footer: "", primaryColor: "#18b969", accentColor: "#6ea8fe" });
+  const [cms, setCms] = useState({ systemName: "HUDUMA ZA MTANDAONI", eyebrow: "HUDUMA ZA MTANDAONI", headline: "Huduma zako, sehemu moja.", description: "", searchPlaceholder: "Tafuta huduma...", whatsapp: "255692287767", owner: "", footer: "", primaryColor: "#18b969", accentColor: "#6ea8fe" });
   const permissions = user?.permissions ?? {};
   const isSuper = user?.role === "super_admin";
   const isAdmin = user?.role === "admin";
