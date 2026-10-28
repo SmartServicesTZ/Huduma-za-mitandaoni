@@ -129,6 +129,12 @@ export default function AdminDashboard() {
   const [applicationInboxTab, setApplicationInboxTab] = useState<"ALL" | "SERVICES" | "LIPA">("ALL");
   const [lipaServices, setLipaServices] = useState<any[]>([]);
   const [audit, setAudit] = useState<any[]>([]);
+  const [auditCollection, setAuditCollection] = useState<"adminActions" | "auditLogs">("adminActions");
+  const [auditCursor, setAuditCursor] = useState<any>(null);
+  const [auditHasMore, setAuditHasMore] = useState(false);
+  const [auditLoadingMore, setAuditLoadingMore] = useState(false);
+  const panelReadCache = useRef(new Map<string, { loadedAt: number; value: unknown }>());
+  const panelReadPending = useRef(new Map<string, Promise<unknown>>());
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<(AdminUserRecord & { id: string }) | null>(null);
   const [tokenForm, setTokenForm] = useState({ userId: "", amount: 1, tokenType: "huduma", reason: "" });
@@ -146,7 +152,7 @@ export default function AdminDashboard() {
   const canManage = isAuthenticated && (isSuper || isAdmin || Object.values(permissions).some(Boolean));
   const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
   const panel = (nav.some(([key]) => key === rawPanel) ? rawPanel : "overview") as Panel;
-  const visibleNav = nav.filter(([key]) => key === "overview" || (key === "ordering" ? isSuper : !panelPermission[key] || hasPermission(panelPermission[key]!)));
+  const visibleNav = nav.filter(([key]) => key === "overview" || !panelPermission[key] || hasPermission(panelPermission[key]!));
 
   // Keep the admin drawer transient on mobile and never let its open state
   // survive navigation, Escape, or switching to the desktop layout.
@@ -167,7 +173,23 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const refresh = async () => {
+  const cachedRead = <T,>(key: string, enabled: boolean, loader: () => Promise<T>, fallback: T, force: boolean) => {
+    if (!enabled) return Promise.resolve(fallback);
+    const cacheKey = `${firebaseUser?.uid ?? "anonymous"}:${key}`;
+    const cached = panelReadCache.current.get(cacheKey);
+    if (!force && cached && Date.now() - cached.loadedAt < 30_000) return Promise.resolve(cached.value as T);
+    const pending = panelReadPending.current.get(cacheKey);
+    if (!force && pending) return pending as Promise<T>;
+    const request = loader().then((value) => {
+      panelReadCache.current.set(cacheKey, { loadedAt: Date.now(), value });
+      return value;
+    }).finally(() => {
+      if (panelReadPending.current.get(cacheKey) === request) panelReadPending.current.delete(cacheKey);
+    });
+    panelReadPending.current.set(cacheKey, request);
+    return request;
+  };
+  const refresh = async (force = false) => {
     if (!canManage) return;
     setLoadingData(true);
     setDataError("");
@@ -176,24 +198,28 @@ export default function AdminDashboard() {
       // makusanyo mengi ya Firestore hata kama admin alikuwa kwenye panel moja tu.
       const needs = (...panels: Panel[]) => panels.includes(panel);
       const results = await Promise.allSettled([
-        hasPermission("viewUsers") && needs("overview", "users", "tokens") ? adminListUsers() : Promise.resolve([]),
-        hasPermission("manageServices") && needs("services", "serviceControl") ? adminListServices() : Promise.resolve([]),
-        hasPermission("manageReports") && needs("overview", "transactions", "reports") ? adminListTransactions() : Promise.resolve([]),
-        hasPermission("manageMessages") && needs("messages") ? adminListCollection("messages") : Promise.resolve([]),
-        hasPermission("viewAuditLogs") && needs("security") ? getRecentSecurityLogs("adminActions") : Promise.resolve([]),
-        hasPermission("manageSettings") && needs("services", "serviceControl") ? adminGetSiteSettings() : Promise.resolve(null),
-        hasPermission("manageServices") && needs("services", "serviceControl") ? adminListCollection("serviceLocks") : Promise.resolve([]),
-        hasPermission("manageServices") && needs("applications", "lipa") ? adminListCollection("lipaServices") : Promise.resolve([]),
+        cachedRead("users", hasPermission("viewUsers") && needs("overview", "users", "tokens"), adminListUsers, [], force),
+        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl"), adminListServices, [], force),
+        cachedRead("transactions", hasPermission("manageReports") && needs("overview", "transactions", "reports"), adminListTransactions, [], force),
+        cachedRead("messages", hasPermission("manageMessages") && needs("messages"), () => adminListCollection("messages"), [], force),
+        cachedRead(`security:${auditCollection}`, hasPermission("viewAuditLogs") && needs("security"), () => getRecentSecurityLogs(auditCollection), { rows: [], cursor: null, hasMore: false }, force),
+        cachedRead("siteSettings", hasPermission("manageSettings") && needs("services", "serviceControl"), adminGetSiteSettings, null, force),
+        cachedRead("serviceLocks", hasPermission("manageServices") && needs("services", "serviceControl"), () => adminListCollection("serviceLocks"), [], force),
+        cachedRead("lipaServices", hasPermission("manageServices") && needs("applications", "lipa"), () => adminListCollection("lipaServices"), [], force),
         Promise.resolve(null), // Maombi ya Lipa hupakiwa na subscription paneli husika tu.
         Promise.resolve(null), // Maombi ya huduma hupakiwa na subscription paneli husika tu.
-        hasPermission("manageUsers") && needs("agents") ? adminListAgentRecords() : Promise.resolve([]),
+        cachedRead("agentRecords", hasPermission("manageUsers") && needs("agents"), adminListAgentRecords, [], force),
       ]);
       const [u, s, t, m, logs, settings, locks, networkConfigs, applications, genericApplications, agentRows] = results;
       if (u.status === "fulfilled") setUsers(u.value); else setDataError("Watumiaji: " + safeError(u.reason));
       if (s.status === "fulfilled") setServices(s.value); else setDataError((current) => current || "Huduma: " + safeError(s.reason));
       if (t.status === "fulfilled") setTransactions(t.value); else setDataError((current) => current || "Transactions: " + safeError(t.reason));
       if (m.status === "fulfilled") setMessages(m.value); else setDataError((current) => current || "Ujumbe: " + safeError(m.reason));
-      if (logs.status === "fulfilled") setAudit(logs.value); else setDataError((current) => current || "Audit: " + safeError(logs.reason));
+      if (logs.status === "fulfilled") {
+        setAudit(logs.value.rows);
+        setAuditCursor(logs.value.cursor);
+        setAuditHasMore(logs.value.hasMore);
+      } else setDataError((current) => current || "Audit: " + safeError(logs.reason));
       if (locks.status === "fulfilled") setServiceLocks(locks.value); else setDataError((current) => current || "Locks za huduma: " + safeError(locks.reason));
       if (networkConfigs.status === "fulfilled") setLipaServices(networkConfigs.value); else setDataError((current) => current || "Mipangilio ya Lipa: " + safeError(networkConfigs.reason));
       if (applications.status === "rejected") setDataError((current) => current || "Maombi ya Lipa: " + safeError(applications.reason));
@@ -210,6 +236,38 @@ export default function AdminDashboard() {
     } finally { setLoadingData(false); }
   };
   useEffect(() => { void refresh(); }, [canManage, panel]);
+  const loadMoreAudit = async () => {
+    if (!auditCursor || !auditHasMore || auditLoadingMore) return;
+    setAuditLoadingMore(true);
+    try {
+      const page = await getRecentSecurityLogs(auditCollection, auditCursor);
+      setAudit((current) => [...current, ...page.rows]);
+      setAuditCursor(page.cursor);
+      setAuditHasMore(page.hasMore);
+    } catch (error) {
+      setDataError((current) => current || "Audit: " + safeError(error));
+    } finally {
+      setAuditLoadingMore(false);
+    }
+  };
+  const changeAuditCollection = async (name: "adminActions" | "auditLogs") => {
+    if (name === auditCollection) return;
+    setAuditCollection(name);
+    setAudit([]);
+    setAuditCursor(null);
+    setAuditHasMore(false);
+    setAuditLoadingMore(true);
+    try {
+      const page = await getRecentSecurityLogs(name);
+      setAudit(page.rows);
+      setAuditCursor(page.cursor);
+      setAuditHasMore(page.hasMore);
+    } catch (error) {
+      setDataError((current) => current || "Audit: " + safeError(error));
+    } finally {
+      setAuditLoadingMore(false);
+    }
+  };
   useEffect(() => {
     // Usipoll makusanyo ya maombi wakati admin yuko kwenye paneli nyingine.
     // Paneli ya Lipa ndiyo pekee inayohitaji inbox ya Lipa iwe hai.
@@ -223,7 +281,7 @@ export default function AdminDashboard() {
     if (panel !== "applications") return;
     return subscribeToAdminServiceApplications(setServiceApplications, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
   }, [canManage, isAdmin, isSuper, panel, firebaseUser?.uid]);
-  const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
+  const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(true); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
   const visibleUsers = useMemo(() => users.filter((item) => `${item.name} ${item.phone} ${item.username}`.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const totalIssued = transactions.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);
   const totalUsed = Math.abs(transactions.filter((item) => Number(item.amount) < 0).reduce((sum, item) => sum + Number(item.amount), 0));
@@ -238,7 +296,7 @@ export default function AdminDashboard() {
   return <div className="admin-app">
     <aside className={`admin-sidebar ${drawer ? "open" : ""}`}><div className="admin-brand"><div className="admin-brand-mark">$</div><div><strong>$TEWARD TZ</strong><small>HUDUMA ZA MTANDAONI • CONTROL</small></div><button className="admin-close" onClick={() => setDrawer(false)}><X size={18} /></button></div><div className="admin-profile"><div className="admin-avatar">{String(user?.name ?? "AD").slice(0, 2).toUpperCase()}</div><div><strong>{user?.name ?? "Admin"}</strong><small>{String(user?.role ?? "admin").replace("_", " ").toUpperCase()}</small></div></div><nav className="admin-nav">{visibleNav.map(([key, label, Icon]) => <Link key={key} href={key === "overview" ? "/admin" : `/admin/${key}`} className={panel === key ? "active" : ""} onClick={() => setDrawer(false)}><Icon size={17} /><span>{label}</span>{key === "applications" && serviceApplications.filter((app) => app.status === "PENDING").length > 0 && <b className="lipa-admin-nav-badge">{serviceApplications.filter((app) => app.status === "PENDING").length}</b>}{key === "lipa" && lipaApplications.filter((app) => app.status === "PENDING").length > 0 && <b className="lipa-admin-nav-badge">{lipaApplications.filter((app) => app.status === "PENDING").length}</b>}<ChevronRight size={14} /></Link>)}</nav><div className="admin-sidebar-bottom"><Link href="/"><ChevronRight size={15} /> Portal</Link><button onClick={() => void logout()}><LogOut size={15} /> Logout</button></div></aside>
     {drawer && <div className="admin-drawer-backdrop" onClick={() => setDrawer(false)} />}
-    <section className="admin-content"><header className="admin-header"><button className="admin-menu" onClick={() => setDrawer(true)}><Menu size={21} /></button><div><span className="admin-kicker">HUDUMA ZA MTANDAONI CONTROL</span><h1>{panel === "overview" ? "Muhtasari wa HUDUMA ZA MTANDAONI" : title}</h1></div><div className="admin-header-actions" style={{position:"relative"}}><button className="admin-icon-button" aria-label="Taarifa mpya" title="Taarifa mpya" onClick={() => setNotificationOpen((value) => !value)}><Bell size={18}/>{(serviceApplications.filter((app) => app.status === "PENDING").length + lipaApplications.filter((app) => app.status === "PENDING").length) > 0 && <span style={{position:"absolute",top:-5,right:78,minWidth:18,height:18,padding:"0 4px",borderRadius:99,background:"#dc2626",color:"#fff",fontSize:10,fontWeight:800,display:"grid",placeItems:"center"}}>{serviceApplications.filter((app) => app.status === "PENDING").length + lipaApplications.filter((app) => app.status === "PENDING").length}</span>}</button><button className="admin-icon-button" onClick={() => void refresh()} disabled={loadingData} aria-label="Refresh"><RefreshCw size={17} className={loadingData ? "spin" : ""} /></button><Link className="admin-portal-link" href="/">← Portal</Link>{notificationOpen && <div style={{position:"absolute",right:0,top:"calc(100% + 10px)",width:"min(340px, calc(100vw - 34px))",maxHeight:360,overflowY:"auto",zIndex:100,background:"#fff",border:"1px solid #dce5df",borderRadius:12,boxShadow:"0 14px 40px rgba(0,0,0,.16)",padding:12,color:"#17251f"}}><strong style={{display:"block",marginBottom:8}}>Taarifa mpya za maombi</strong>{[...serviceApplications.slice(0,5).map((app) => ({id:app.applicationId || app.id,label:app.serviceName || app.serviceSlug || "Ombi la huduma",person:app.userName || "Mtumiaji",date:app.submittedAt,href:"/admin/applications",kind:"Huduma",status:app.status || "PENDING"})),...lipaApplications.slice(0,5).map((app:any) => ({id:app.id,label:"Pata Lipa Namba",person:app.userName || app.phone || "Mtumiaji",date:app.submittedAt || app.createdAt,href:"/admin/applications",kind:"Lipa",status:app.status || "PENDING"}))].slice(0,8).map((item) => <button key={item.kind + item.id} onClick={() => { setNotificationOpen(false); navigate(item.href); }} style={{width:"100%",display:"block",textAlign:"left",padding:"10px 8px",border:0,borderTop:"1px solid #edf1ee",background:"transparent",cursor:"pointer",color:"#17251f"}}><span style={{display:"block",fontSize:11,color:"#168653",fontWeight:800}}>{item.kind} · {item.status}</span><strong style={{display:"block",fontSize:13}}>{item.label}</strong><small>{item.person}</small></button>)}{serviceApplications.length + lipaApplications.length === 0 && <p style={{fontSize:13,color:"#68746e"}}>Hakuna taarifa za maombi bado.</p>}<button onClick={() => {setNotificationOpen(false);navigate("/admin/applications");}} style={{marginTop:8,width:"100%",padding:9,borderRadius:8,border:"1px solid #cbd9d0",background:"#f5faf7",fontWeight:700,color:"#126c44"}}>Angalia maombi yote</button></div>}</div></header>
+    <section className="admin-content"><header className="admin-header"><button className="admin-menu" onClick={() => setDrawer(true)}><Menu size={21} /></button><div><span className="admin-kicker">HUDUMA ZA MTANDAONI CONTROL</span><h1>{panel === "overview" ? "Muhtasari wa HUDUMA ZA MTANDAONI" : title}</h1></div><div className="admin-header-actions" style={{position:"relative"}}><button className="admin-icon-button" aria-label="Taarifa mpya" title="Taarifa mpya" onClick={() => setNotificationOpen((value) => !value)}><Bell size={18}/>{(serviceApplications.filter((app) => app.status === "PENDING").length + lipaApplications.filter((app) => app.status === "PENDING").length) > 0 && <span style={{position:"absolute",top:-5,right:78,minWidth:18,height:18,padding:"0 4px",borderRadius:99,background:"#dc2626",color:"#fff",fontSize:10,fontWeight:800,display:"grid",placeItems:"center"}}>{serviceApplications.filter((app) => app.status === "PENDING").length + lipaApplications.filter((app) => app.status === "PENDING").length}</span>}</button><button className="admin-icon-button" onClick={() => void refresh(true)} disabled={loadingData} aria-label="Refresh"><RefreshCw size={17} className={loadingData ? "spin" : ""} /></button><Link className="admin-portal-link" href="/">← Portal</Link>{notificationOpen && <div style={{position:"absolute",right:0,top:"calc(100% + 10px)",width:"min(340px, calc(100vw - 34px))",maxHeight:360,overflowY:"auto",zIndex:100,background:"#fff",border:"1px solid #dce5df",borderRadius:12,boxShadow:"0 14px 40px rgba(0,0,0,.16)",padding:12,color:"#17251f"}}><strong style={{display:"block",marginBottom:8}}>Taarifa mpya za maombi</strong>{[...serviceApplications.slice(0,5).map((app) => ({id:app.applicationId || app.id,label:app.serviceName || app.serviceSlug || "Ombi la huduma",person:app.userName || "Mtumiaji",date:app.submittedAt,href:"/admin/applications",kind:"Huduma",status:app.status || "PENDING"})),...lipaApplications.slice(0,5).map((app:any) => ({id:app.id,label:"Pata Lipa Namba",person:app.userName || app.phone || "Mtumiaji",date:app.submittedAt || app.createdAt,href:"/admin/applications",kind:"Lipa",status:app.status || "PENDING"}))].slice(0,8).map((item) => <button key={item.kind + item.id} onClick={() => { setNotificationOpen(false); navigate(item.href); }} style={{width:"100%",display:"block",textAlign:"left",padding:"10px 8px",border:0,borderTop:"1px solid #edf1ee",background:"transparent",cursor:"pointer",color:"#17251f"}}><span style={{display:"block",fontSize:11,color:"#168653",fontWeight:800}}>{item.kind} · {item.status}</span><strong style={{display:"block",fontSize:13}}>{item.label}</strong><small>{item.person}</small></button>)}{serviceApplications.length + lipaApplications.length === 0 && <p style={{fontSize:13,color:"#68746e"}}>Hakuna taarifa za maombi bado.</p>}<button onClick={() => {setNotificationOpen(false);navigate("/admin/applications");}} style={{marginTop:8,width:"100%",padding:9,borderRadius:8,border:"1px solid #cbd9d0",background:"#f5faf7",fontWeight:700,color:"#126c44"}}>Angalia maombi yote</button></div>}</div></header>
       {loadingData && <div className="admin-loading">Inapakia data halisi kutoka Firestore...</div>}
       {dataError && <div className="admin-loading admin-loading--error" role="alert">{dataError}{/kikomo cha matumizi ya Firestore/i.test(dataError) ? "" : " — Hakikisha role ya account hii ipo kwenye users/" + (firebaseUser?.uid ?? "") + " na rules zimetumwa kwenye project sahihi."}</div>}
       {panel === "overview" && <><div className="admin-stat-grid">{stats.map(([label, value, Icon]) => <div className="admin-stat-card" key={label}><div className="admin-stat-icon"><Icon size={18} /></div><span>{label}</span><strong>{value.toLocaleString()}</strong></div>)}</div><div className="admin-two-col"><section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">HATUA ZA HARAKA</span><h2>Simamia mfumo</h2></div><SlidersHorizontal size={19} /></div><div className="quick-actions">{hasPermission("manageTokens") && <Link href="/admin/tokens"><Plus size={17} /> Ongeza tokeni</Link>}{hasPermission("manageServices") && <Link href="/admin/services"><Plus size={17} /> Ongeza huduma</Link>}{hasPermission("manageServices") && <Link href="/admin/applications">Maombi ya huduma {serviceApplications.some((app) => app.status === "PENDING") && <b className="lipa-admin-nav-badge">{serviceApplications.filter((app) => app.status === "PENDING").length} PENDING</b>}</Link>}{hasPermission("manageLipaApplications") && <Link href="/admin/applications">Pata Lipa Namba {lipaApplications.some((app) => app.status === "PENDING") && <b className="lipa-admin-nav-badge">{lipaApplications.filter((app) => app.status === "PENDING").length} PENDING · NEW</b>}</Link>}</div></section><section className="admin-security-card"><div className="admin-card-heading"><div><span className="admin-kicker">USALAMA WA MFUMO</span><h2>Session salama</h2></div><ShieldCheck size={20} /></div><p><strong>{user?.name ?? "Admin"}</strong> · {String(user?.role ?? "admin").replace("_", " ").toUpperCase()}</p></section></div><section className="admin-overview-strip"><div className="admin-overview-intro"><span className="admin-kicker">MUHTASARI</span><h2>Hali ya mfumo kwa sasa</h2></div><div className="admin-pulse-list"><Link href="/admin/applications"><span><ClipboardList size={16}/> Maombi ya huduma</span><strong>{serviceApplications.filter((app) => app.status === "PENDING").length}</strong></Link><Link href="/admin/applications"><span><WalletCards size={16}/> Lipa Namba pending</span><strong>{lipaApplications.filter((app) => app.status === "PENDING").length}</strong></Link><Link href="/admin/users"><span><ShieldCheck size={16}/> Users pending</span><strong>{users.filter((item) => item.verificationStatus === "pending").length}</strong></Link></div></section><section className="admin-card"><div className="admin-card-heading"><div><h2>Miamala ya hivi karibuni</h2></div><Link href="/admin/transactions">Tazama zote</Link></div><TransactionTable rows={transactions.slice(0, 6)} /></section></>}      {panel === "agents" && <AgentRecordsPanel rows={agentRecords} onRefresh={refresh} loading={loadingData} />}
@@ -263,7 +321,7 @@ export default function AdminDashboard() {
       {panel === "lipaReport" && <LipaGlobalReport applications={lipaApplications} />}
             {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2></div><button type="button" className="button button--green button--small" onClick={() => exportTransactionsCsv(transactions)} disabled={!transactions.length}>Pakua ripoti CSV</button></div><TransactionTable rows={transactions} /></section>}
       {panel === "reports" && <BusinessReport transactions={transactions} users={users} serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} />}
-      {panel === "security" && <SecurityPanel isSuper={isSuper} users={users} audit={audit} />}
+      {panel === "security" && <SecurityPanel isSuper={isSuper} users={users} audit={audit} collectionName={auditCollection} onCollectionChange={changeAuditCollection} hasMore={auditHasMore} loadingMore={auditLoadingMore} onLoadMore={loadMoreAudit} />}
       {panel === "messages" && <MessagesPanel users={users} form={message} setForm={setMessage} onRun={run} adminId={firebaseUser!.uid} />}
     </section>{selectedUser && <UserModal person={selectedUser} onClose={() => setSelectedUser(null)} />}</div>;
 }
@@ -282,7 +340,7 @@ const permissionOptions = [
   ["viewAuditLogs", "Audit logs: kuona historia ya actions"],
 ] as const;
 
-const panelPermission: Partial<Record<Panel, string>> = { agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", nida: "manageServices", lipa: "manageLipaApplications", videos: "manageContent", transactions: "manageReports", reports: "manageReports", announcements: "manageContent", security: "viewAuditLogs", messages: "manageMessages" };
+const panelPermission: Partial<Record<Panel, string>> = { agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", lipa: "manageLipaApplications", transactions: "manageReports", reports: "manageReports", security: "viewAuditLogs", messages: "manageMessages" };
 
 function BusinessReport({ transactions, users, serviceApplications, lipaApplications, services }: { transactions: any[]; users: any[]; serviceApplications: ServiceApplication[]; lipaApplications: LipaApplication[]; services: any[] }) {
   const [from, setFrom] = useState("");
@@ -553,7 +611,21 @@ function MessagesPanel({ users, form, setForm, onRun, adminId }: any) {
   const broadcast = !form.recipientId;
   return <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">MESSAGING</span><h2>Tuma ujumbe wa akaunti</h2><p>Ujumbe utahifadhiwa kwenye “Ujumbe na taarifa” za watumiaji. Push notifications zimezimwa kwa sasa ili kupunguza matumizi.</p></div></div><div className="form-grid"><Field label="Kichwa cha ujumbe" value={form.subject} onChange={(value) => setForm({ ...form, subject: value })} /><label className="control-field"><span>Wapokeaji</span><select value={form.recipientId} onChange={(event) => setForm({ ...form, recipientId: event.target.value })}><option value="">Watumiaji wote</option>{users.map((item: any) => <option key={item.id} value={item.id}>{item.name ?? "Bila jina"} — {item.phone || "—"}</option>)}</select></label></div><label className="control-field"><span>Ujumbe</span><textarea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} /></label><button className="admin-primary" disabled={!String(form.subject ?? "").trim() || !String(form.body ?? "").trim()} onClick={() => onRun(() => adminSaveCollectionItem(adminId, "messages", { ...form, broadcast, sentAt: new Date().toISOString() }), broadcast ? "Ujumbe umehifadhiwa kwa watumiaji wote; push zimezimwa." : "Ujumbe umehifadhiwa kwa mtumiaji; push zimezimwa.")}>{broadcast ? "Hifadhi ujumbe kwa wote" : "Hifadhi ujumbe"}</button></section>;
 }
-function SecurityPanel({ isSuper, users, audit }: any) { return <div className="admin-two-col"><section className="admin-security-card"><ShieldCheck size={25} /><h2>{isSuper ? "Eneo la siri" : "Usalama wa admin"}</h2><p>{isSuper ? "Una access ya super_admin. Admin management, settings na audit logs zinapatikana." : "Admin wa kawaida hawezi kubadilisha super_admin au system security settings."}</p><div className="security-checks"><span>✓ Firebase Auth</span><span>✓ Role-based access</span><span>✓ Firestore Rules</span><span>✓ No passwords in Firestore</span></div></section><section className="admin-card"><h2>Audit summary</h2><p>Users: {users.length} · Admins: {users.filter((item: any) => ["admin", "super_admin"].includes(item.role)).length}</p><p>Audit actions: {audit.length}</p><small>Kwa custom claims, tumia Firebase Admin SDK katika mazingira ya privileged; frontend haiwezi kujipa role.</small></section></div>; }
+function SecurityPanel({ isSuper, users, audit, collectionName, onCollectionChange, hasMore, loadingMore, onLoadMore }: any) {
+  return <div className="admin-two-col">
+    <section className="admin-security-card"><ShieldCheck size={25} /><h2>{isSuper ? "Eneo la siri" : "Usalama wa admin"}</h2><p>{isSuper ? "Una access ya super_admin. Admin management, settings na audit logs zinapatikana." : "Admin wa kawaida hawezi kubadilisha super_admin au system security settings."}</p><div className="security-checks"><span>✓ Firebase Auth</span><span>✓ Role-based access</span><span>✓ Firestore Rules</span><span>✓ No passwords in Firestore</span></div></section>
+    <section className="admin-card">
+      <h2>Audit summary</h2>
+      <p>Users: {users.length} · Admins: {users.filter((item: any) => ["admin", "super_admin"].includes(item.role)).length}</p>
+      <label className="control-field"><span>Chanzo cha audit</span><select value={collectionName} onChange={(event) => void onCollectionChange(event.target.value)}><option value="adminActions">Admin actions</option><option value="auditLogs">Audit logs</option></select></label>
+      <p>{collectionName}: {audit.length} loaded</p>
+      <small>Matukio yenye tarehe huonyeshwa mapya kwanza; rekodi zisizo na createdAt hupatikana pia kupitia kurasa za legacy kwa ID.</small>
+      <div className="admin-table-wrap" style={{marginTop:12}}><table className="admin-table"><thead><tr><th>Tarehe</th><th>Kitendo</th><th>Actor</th><th>Target</th></tr></thead><tbody>{audit.map((item: any) => <tr key={item.id}><td>{item.createdAt?.toDate?.().toLocaleString?.() ?? dateText(item.createdAt)}</td><td>{String(item.action ?? "—")}</td><td>{String(item.actorId ?? "—")}</td><td>{String(item.targetId ?? item.targetUserId ?? "—")}</td></tr>)}</tbody></table>{!audit.length && <Empty text="Hakuna matukio ya audit kwenye ukurasa huu."/>}</div>
+      {hasMore && <button type="button" className="admin-secondary" style={{marginTop:12}} onClick={() => void onLoadMore()} disabled={loadingMore}>{loadingMore ? "Inapakia..." : "Pakia matukio 100 ya zamani zaidi"}</button>}
+      <small style={{display:"block",marginTop:12}}>Kwa custom claims, tumia Firebase Admin SDK katika mazingira ya privileged; frontend haiwezi kujipa role.</small>
+    </section>
+  </div>;
+}
 function exportTransactionsCsv(rows: any[]) {
   if (!rows.length) { toast.error("Hakuna miamala ya kuripoti."); return; }
   const columns: Array<[string, (item: any) => unknown]> = [
@@ -665,4 +737,3 @@ function AgentRecordsPanel({ rows, onRefresh, loading }: { rows: any[]; onRefres
     {selected && <div className="admin-modal-backdrop" onClick={() => setSelected(null)}><div className="admin-modal" onClick={(event) => event.stopPropagation()}><button className="admin-modal-close" onClick={() => setSelected(null)}><X size={18}/></button><span className="admin-kicker">TAARIFA KAMILI ZA WAKALA</span><h2>{selected.agentId}</h2><div className="form-grid">{[["Jina kamili",selected.name],["Simu",selected.phone],["Mtandao",selected.network],["Aina ya wakala",selected.type],["Mkoa",selected.region],["Msimbo wa mkoa",selected.regionCode],["Wilaya",selected.district],["Kata / Eneo",selected.area],["Tarehe ya kutolewa",selected.issueDate],["Tarehe ya kuisha",selected.expiryDate],["User ID",selected.userId],["Hali",selected.status],["Tarehe ya usajili",dateText(selected.createdAt)],["Imesasishwa",dateText(selected.updatedAt)]].map(([label,value]) => <div key={label} className="control-field"><span>{label}</span><strong style={{overflowWrap:"anywhere"}}>{String(value || "—")}</strong></div>)}</div><h3 style={{marginTop:20}}>Historia ya mabadiliko</h3>{Array.isArray(selected.history) && selected.history.length ? <ul>{selected.history.map((entry: any,index: number) => <li key={index}>{entry.action || "Mabadiliko"} · {entry.details || ""} · {entry.at || ""} · {entry.by || ""}</li>)}</ul> : <p>Hakuna historia ya ziada iliyohifadhiwa.</p>}<p style={{fontSize:12,color:"var(--muted,#64748b)"}}>Rekodi hii ni ya usimamizi wa ndani. Taarifa binafsi zionekane kwa watumishi walioidhinishwa pekee.</p></div></div>}
   </section>;
 }
-
