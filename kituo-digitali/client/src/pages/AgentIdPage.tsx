@@ -237,8 +237,8 @@ export default function AgentIdPage() {
     if (side === "back" && set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
     if (!jobs.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
     if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
-    if (!name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim()) {
-      window.alert("Jaza jina kamili, simu, mkoa, wilaya na kata/eneo kabla ya kuhifadhi kitambulisho.");
+    if (!photo.trim() || !name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim() || !issueDate.trim() || !type.trim()) {
+      window.alert("Jaza taarifa zote na pakia picha ya wakala kabla ya kupakua kitambulisho.");
       return;
     }
     if (!locationData.regions[region] || !locationData.regions[region].districts[district]) {
@@ -276,6 +276,7 @@ export default function AgentIdPage() {
   };
 
   const orientLabel = orientation === "landscape" ? "Kulala" : "Kusimama";
+  const formComplete = Boolean(photo.trim() && name.trim() && phone.trim() && region.trim() && district.trim() && area.trim() && issueDate.trim() && type.trim());
 
   return <main className="portal-main aid-page">
     <style>{AGENT_ID_CSS}</style>
@@ -300,8 +301,8 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho mbele au nyuma">
-          <button type="button" className="aid-download-front" disabled={busy} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG</small></span></button>
-          <button type="button" className="aid-download-back" disabled={busy} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa mbele"} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG</small></span></button>
+          <button type="button" className="aid-download-back" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa nyuma"} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG</small></span></button>
         </div>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
@@ -349,6 +350,7 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
   return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
     <CardWatermark paid={paid} />
+    {network === "Mbeya One Company Limited" && cfg.logo && <img className="idl-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idl-side">
       <LogoChip cfg={cfg} network={network} />
       <div className="idl-photo">{photo ? <img src={photo} alt="Wakala" /> : <PhotoPlaceholder />}</div>
@@ -383,6 +385,7 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
   const footer = network === "Mbeya One Company Limited" ? "MBEYA ONE COMPANY LIMITED • LIPA KWA SIMU AIRTEL • AUTHORIZED AGENT" : cfg.footer;
   return <div ref={innerRef} className={`idl idl-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
     <CardWatermark paid={paid} />
+    {network === "Mbeya One Company Limited" && cfg.logo && <img className="idl-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idl-head">
       <div><div className="idl-brand"><Words text={`HUDUMA ZA MTANDAONI • ${cfg.slogan}`} /></div><div className="idl-title"><Words text={title} /></div></div>
       <LogoChip cfg={cfg} network={network} />
@@ -457,7 +460,6 @@ function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region
     {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idp-hero idp-hero--sm">
       <div className="idp-ring" />
-      {cfg.logo && <img className="idp-company-logo" src={cfg.logo} alt="" aria-hidden="true" />}
       <div className="idp-top">
         <div className="idp-brand"><Words text="HUDUMA ZA MTANDAONI" /></div>
         <LogoChip cfg={cfg} network={network} />
@@ -529,7 +531,9 @@ const AGENT_ID_CSS = `
 /* ===== KITAMBULISHO CHA KULALA (560x350) ===== */
 .idl{width:560px;height:350px;box-sizing:border-box;position:relative;overflow:hidden;border-radius:22px;background:#fff;color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 18px 40px rgba(15,23,42,.22)}
 .idl small{display:block;font-size:7.5px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
-.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.40;filter:contrast(1.35) saturate(1.4)}
+.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.12;filter:contrast(1.08) saturate(1.12)}
+.idl-bg-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.09;z-index:0;pointer-events:none}
+.idl>.idl-side,.idl>.idl-main,.idl>.idl-head,.idl>.idl-bbody,.idl>.idl-info,.idl>.idl-foot{z-index:1}
 .idl-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
 
 /* mbele: safu mbili */
@@ -572,13 +576,13 @@ const AGENT_ID_CSS = `
 .idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
 .idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.40;filter:contrast(1.35) saturate(1.4)}
 /* Nembo kubwa zikae katikati ya sehemu kuu ya mbele kwa Airtel, Vodacom, Halotel na Yas. */
-.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);opacity:.20;filter:contrast(1.12) saturate(1.15)}
+.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);opacity:.12;filter:contrast(1.08) saturate(1.12)}
 /* Mbeya One: nembo kubwa katikati, kama background ya kitambulisho chote. */
-.net-mbeya .idl-wm{position:absolute;left:50%;right:auto;top:50%;bottom:auto;width:94%;height:94%;max-width:none;max-height:none;transform:translate(-50%,-50%);object-fit:contain;opacity:.13;filter:contrast(1.12) saturate(1.15)}
-.net-mbeya .idl-bbody .idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:90%;height:90%;opacity:.12}
+.net-mbeya .idl-wm{opacity:.08;filter:contrast(1.05) saturate(1.08)}
+.net-mbeya .idl-bg-logo{object-fit:cover;object-position:center;opacity:.10;transform:scale(1.04)}
 /* Nembo kubwa za kampuni kwenye vitambulisho vya kusimama, mbele na nyuma. */
 /* Mtindo mpya wa vitambulisho vya kusimama: nembo ya kampuni kama watermark ya kadi nzima. */
-.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;opacity:.12;filter:contrast(1.08) saturate(1.12);pointer-events:none}
+.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.07;filter:contrast(1.05) saturate(1.08);pointer-events:none}
 .idp>*:not(.idp-bg-logo):not(.idp-strip){position:relative;z-index:2}
 .idp-hero{flex-basis:154px;padding-top:16px;background:linear-gradient(145deg,var(--d) 0%,var(--c) 58%,var(--h) 100%)}
 .idp-hero--sm{flex-basis:142px}
@@ -609,10 +613,10 @@ const AGENT_ID_CSS = `
 .idl-foot{flex:0 0 26px;display:flex;align-items:center;justify-content:center;padding:0 14px;background:linear-gradient(90deg,var(--d),var(--c) 60%,var(--d));color:#fff;font-size:7.5px;font-weight:800;line-height:1.2;letter-spacing:.04em;text-align:center}
 
 /* ===== KITAMBULISHO CHA KUSIMAMA (320x520) ===== */
-.idp{width:320px;height:520px;box-sizing:border-box;position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:26px;background:#fff;color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 18px 40px rgba(15,23,42,.22)}
+.idp{width:320px;height:520px;box-sizing:border-box;position:relative;overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(148,163,184,.35);border-radius:24px;background:linear-gradient(160deg,#fff 0%,#f4f7fb 58%,#fff 100%);color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 20px 44px rgba(15,23,42,.24)}
 .idp small{display:block;font-size:7px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
 .idp-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
-.idp-hero{position:relative;flex:0 0 176px;box-sizing:border-box;padding:18px 20px 0;overflow:hidden;color:#fff;background:linear-gradient(160deg,var(--c) 0%,var(--d) 100%)}
+.idp-hero{position:relative;flex:0 0 170px;box-sizing:border-box;padding:18px 20px 0;overflow:hidden;color:#fff;background:linear-gradient(135deg,var(--d) 0%,var(--c) 62%,var(--h) 100%);border-bottom:4px solid var(--h)}
 .idp-hero--sm{flex-basis:170px}
 .idp-hero::before{content:"";position:absolute;left:-70px;top:-80px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.1)}
 .idp-ring{position:absolute;right:-46px;top:30px;width:150px;height:150px;box-sizing:border-box;border-radius:50%;border:18px solid rgba(255,255,255,.1)}
@@ -632,7 +636,7 @@ const AGENT_ID_CSS = `
 .idp-pillrow{display:flex;justify-content:center;margin-top:4px}
 .idp-pill{display:inline-block;padding:5px 14px;border-radius:999px;background:var(--accent);color:var(--d);font-size:9px;font-weight:900;letter-spacing:.1em}
 .idp-grid{margin:11px 20px 0;display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.idp-grid>div{min-width:0;box-sizing:border-box;padding:6px 10px 7px;border-radius:10px;border-left:3px solid var(--c);background:#f5f7fb}
+.idp-grid>div{min-width:0;box-sizing:border-box;padding:7px 10px 8px;border-radius:10px;border:1px solid rgba(148,163,184,.24);border-left:3px solid var(--c);background:rgba(255,255,255,.94);box-shadow:0 3px 8px rgba(15,23,42,.04)}
 .idp-grid .wide{grid-column:1/-1}
 .idp-grid b{display:block;margin-top:2px;font-size:11px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
 .idp-foot{margin-top:auto;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;padding:8px 20px 14px}
@@ -647,7 +651,7 @@ const AGENT_ID_CSS = `
 .idp-back h3{margin:0 0 7px;font-size:9.5px;font-weight:900;letter-spacing:.08em;color:var(--c)}
 .idp-rl{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;font-size:8.8px;line-height:1.35;color:#475569}
 .idp-rl i{flex:0 0 16px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-size:8.5px;font-weight:900}
-.idp-verify{margin-top:auto;padding:10px 12px;display:grid;gap:3px;border-radius:14px;border-left:4px solid var(--c);background:var(--accent)}
+.idp-verify{margin-top:auto;padding:11px 12px;display:grid;gap:4px;border-radius:12px;border:1px solid rgba(148,163,184,.2);border-left:4px solid var(--c);background:rgba(255,255,255,.96);box-shadow:0 6px 16px rgba(15,23,42,.06)}
 .idp-verify b{font-size:11px;line-height:1.25;overflow-wrap:anywhere}
 .idp-verify span{font-size:8.5px;font-weight:800;line-height:1.3;color:#475569;overflow-wrap:anywhere}
 .idp-foot--back{flex:0 0 auto;margin-top:0;padding:9px 20px 14px;background:linear-gradient(90deg,var(--d),var(--c));color:#fff;font-size:8px;font-weight:900;letter-spacing:.05em}
