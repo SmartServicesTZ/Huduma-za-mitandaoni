@@ -568,6 +568,9 @@ const AGENT_ID_CSS = `
 .idl-title{margin-top:4px;font-size:15px;font-weight:900;line-height:1.15}
 .idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
 .idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.40;filter:contrast(1.35) saturate(1.4)}
+/* Sogeza watermark za Airtel, Vodacom na Halotel ndani ya kadi ili nembo zisionekane zimekatika. */
+.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm{right:0}
+.net-airtel .idl-bbody .idl-wm,.net-vodacom .idl-bbody .idl-wm,.net-halotel .idl-bbody .idl-wm{right:150px}
 .idl-rules{position:relative;flex:1;min-width:0}
 .idl-rules h4{margin:2px 0 10px;font-size:10px;font-weight:900;letter-spacing:.04em;color:var(--d)}
 .idl-rl{display:flex;align-items:flex-start;gap:8px;margin:0 0 9px;font-size:9.4px;line-height:1.38;color:#475569}
