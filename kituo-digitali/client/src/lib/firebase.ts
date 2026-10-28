@@ -125,6 +125,17 @@ const collectionReadLimits: Record<string, number> = {
   serviceLocks: 250,
   services: 250,
   lipaServices: 50,
+  agentRecords: 500,
+  tokenTransactions: 500,
+  websiteHealthReports: 100,
+  tutorialVideos: 100,
+  messages: 100,
+  licenseTemplates: 100,
+  adminActions: 500,
+  auditLogs: 500,
+  serviceApplications: 500,
+  lipaApplications: 500,
+  tokenPurchaseOrders: 50,
 };
 function adminPollDelay() {
   return typeof document !== "undefined" && document.visibilityState === "hidden" ? 120_000 : 30_000;
@@ -342,7 +353,7 @@ export async function createTokenPurchaseOrder(amount: number, requestId = crypt
 }
 
 export function subscribeToTokenPurchaseOrders(uid: string, callback: (orders: TokenPurchaseOrder[]) => void, onError?: (error: Error) => void) {
-  const purchases = query(collection(firestore, "tokenPurchaseOrders"), where("userId", "==", uid));
+  const purchases = query(collection(firestore, "tokenPurchaseOrders"), where("userId", "==", uid), limit(collectionReadLimits.tokenPurchaseOrders));
   return onSnapshot(purchases, (snapshot) => {
     const orders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as TokenPurchaseOrder));
     orders.sort((a, b) => {
@@ -489,7 +500,7 @@ export async function createAgentRecord(input: Omit<AgentRecord, "id" | "agentId
 }
 
 export async function adminListAgentRecords() {
-  const snapshot = await getDocs(collection(firestore, "agentRecords"));
+  const snapshot = await getDocs(query(collection(firestore, "agentRecords"), limit(collectionReadLimits.agentRecords)));
   return snapshot.docs.map((item) => {
     const data = item.data();
     return { id: item.id, ...data, createdAt: timestampValue(data.createdAt), updatedAt: timestampValue(data.updatedAt) } as AgentRecord;
@@ -506,7 +517,7 @@ export async function adminListUsers() {
 }
 
 export async function adminListServices() {
-  const snapshot = await getDocs(collection(firestore, "services"));
+  const snapshot = await getDocs(query(collection(firestore, "services"), limit(collectionReadLimits.services)));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }
 
@@ -544,7 +555,7 @@ export async function recordWebsiteHealthReport(input: { kind: WebsiteHealthRepo
 }
 
 export function subscribeAdminWebsiteHealthReports(callback: (rows: WebsiteHealthReport[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(collection(firestore, "websiteHealthReports"), (snapshot) => {
+  return onSnapshot(query(collection(firestore, "websiteHealthReports"), limit(collectionReadLimits.websiteHealthReports)), (snapshot) => {
     const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt), resolvedAt: timestampValue(item.data().resolvedAt) } as WebsiteHealthReport));
     rows.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
     callback(rows);
@@ -556,12 +567,12 @@ export async function resolveWebsiteHealthReport(id: string, note = "Imekaguliwa
 }
 
 export async function adminListTransactions() {
-  const snapshot = await getDocs(collection(firestore, "tokenTransactions"));
+  const snapshot = await getDocs(query(collection(firestore, "tokenTransactions"), limit(collectionReadLimits.tokenTransactions)));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 }
 
 export async function adminListCollection(name: "announcements" | "auditLogs" | "advertisements" | "tutorialVideos" | "licenseTemplates" | "adminActions" | "siteSettings" | "messages" | "systemSettings" | "serviceLocks" | "lipaServices" | "tokenPurchaseOrders") {
-  const snapshot = await getDocs(collection(firestore, name));
+  const snapshot = await getDocs(query(collection(firestore, name), limit(collectionReadLimits[name] ?? 200)));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) }));
 }
 
@@ -1160,27 +1171,29 @@ export async function openPrivateConversation(current: ChatUser, other: ChatUser
 }
 
 function subscribeChatRows(collectionRef: ReturnType<typeof collection>, callback: (rows: any[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collectionRef, orderBy("createdAt", "asc")), (snapshot) => {
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as any)));
+  // Soma window ya mwisho tu ili Chat isirudishe history yote ya room.
+  // Reverse baada ya query ili UI iendelee kuonyesha oldest -> newest.
+  return onSnapshot(query(collectionRef, orderBy("createdAt", "desc"), limit(200)), (snapshot) => {
+    callback(snapshot.docs.slice().reverse().map((item) => ({ id: item.id, ...item.data() } as any)));
   }, onError);
 }
 export function subscribePublicChat(callback: (rows: ChatMessage[]) => void, onError?: (error: unknown) => void) {
   return subscribeChatRows(collection(firestore, "publicChatMessages"), callback, onError);
 }
 export function subscribeConversations(uid: string, callback: (rows: PrivateConversation[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "conversations"), where("participants", "array-contains", uid)), (snapshot) => {
+  return onSnapshot(query(collection(firestore, "conversations"), where("participants", "array-contains", uid), limit(100)), (snapshot) => {
     const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as PrivateConversation));
     rows.sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
     callback(rows);
   }, onError);
 }
 export function subscribeAllConversations(callback: (rows: PrivateConversation[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "conversations"), orderBy("updatedAt", "desc")), (snapshot) => {
+  return onSnapshot(query(collection(firestore, "conversations"), orderBy("updatedAt", "desc"), limit(100)), (snapshot) => {
     callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as PrivateConversation)));
   }, onError);
 }
 export function subscribeChatGroups(uid: string, callback: (rows: ChatGroup[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "chatGroups"), where("memberIds", "array-contains", uid)), (snapshot) => {
+  return onSnapshot(query(collection(firestore, "chatGroups"), where("memberIds", "array-contains", uid), limit(100)), (snapshot) => {
     const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroup));
     rows.sort((a, b) => String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? "")));
     callback(rows);
@@ -1284,7 +1297,7 @@ export async function uploadChatGroupAvatar(groupId: string, uid: string, file: 
   return url;
 }
 export function subscribePublicChatGroups(callback: (rows: ChatGroup[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "chatGroups"), where("visibility", "==", "public")), (snapshot) => {
+  return onSnapshot(query(collection(firestore, "chatGroups"), where("visibility", "==", "public"), limit(100)), (snapshot) => {
     const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroup));
     rows.sort((a, b) => String(b.updatedAt ?? b.createdAt ?? "").localeCompare(String(a.updatedAt ?? a.createdAt ?? "")));
     callback(rows);
@@ -1300,7 +1313,7 @@ export async function requestToJoinChatGroup(groupId: string, user: ChatUser) {
   await setDoc(ref, { groupId, userId: user.uid, userName: user.name, userPhone: user.phone, userImage: user.profileImageUrl ?? "", status: "pending", createdAt: serverTimestamp() }, { merge: true });
 }
 export function subscribeGroupJoinRequests(groupId: string, callback: (rows: ChatGroupJoinRequest[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(query(collection(firestore, "chatGroups", groupId, "joinRequests"), where("status", "==", "pending")), (snapshot) => {
+  return onSnapshot(query(collection(firestore, "chatGroups", groupId, "joinRequests"), where("status", "==", "pending"), limit(100)), (snapshot) => {
     callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as ChatGroupJoinRequest)));
   }, onError);
 }
