@@ -187,12 +187,11 @@ export default function AdminDashboard() {
         Promise.resolve(null), // Maombi ya huduma hupakiwa na subscription paneli husika tu.
         hasPermission("manageUsers") && needs("agents") ? adminListAgentRecords() : Promise.resolve([]),
       ]);
-      const [u, s, t, m, l, logs, settings, locks, networkConfigs, applications, genericApplications, agentRows] = results;
+      const [u, s, t, m, logs, settings, locks, networkConfigs, applications, genericApplications, agentRows] = results;
       if (u.status === "fulfilled") setUsers(u.value); else setDataError("Watumiaji: " + safeError(u.reason));
       if (s.status === "fulfilled") setServices(s.value); else setDataError((current) => current || "Huduma: " + safeError(s.reason));
       if (t.status === "fulfilled") setTransactions(t.value); else setDataError((current) => current || "Transactions: " + safeError(t.reason));
       if (m.status === "fulfilled") setMessages(m.value); else setDataError((current) => current || "Ujumbe: " + safeError(m.reason));
-      if (l.status === "fulfilled") setLicenses(l.value); else setDataError((current) => current || "Leseni: " + safeError(l.reason));
       if (logs.status === "fulfilled") setAudit(logs.value); else setDataError((current) => current || "Audit: " + safeError(logs.reason));
       if (locks.status === "fulfilled") setServiceLocks(locks.value); else setDataError((current) => current || "Locks za huduma: " + safeError(locks.reason));
       if (networkConfigs.status === "fulfilled") setLipaServices(networkConfigs.value); else setDataError((current) => current || "Mipangilio ya Lipa: " + safeError(networkConfigs.reason));
