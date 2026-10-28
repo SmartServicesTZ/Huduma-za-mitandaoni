@@ -676,6 +676,8 @@ export default function Home() {
   const [showYangaRules, setShowYangaRules] = useState(false);
   const [yangaRulesAccepted, setYangaRulesAccepted] = useState(false);
   const [yangaQuizPassed, setYangaQuizPassed] = useState(false);
+  const [yangaFanConfirm, setYangaFanConfirm] = useState("");
+  const [yangaLoveConfirm, setYangaLoveConfirm] = useState("");
   const [yangaAnswers, setYangaAnswers] = useState<Record<number, string>>({});
   const [yangaPlayers, setYangaPlayers] = useState<string[]>([]);
   const [yangaQuizError, setYangaQuizError] = useState("");
@@ -689,7 +691,7 @@ export default function Home() {
     { q: "Yanga ilitwaa taji la Ligi Kuu Tanzania msimu wa 2025/26?", options: ["Ndiyo", "Hapana", "Haikushiriki", "Msimu haukuchezwa"], answer: "Ndiyo" },
     { q: "Yanga ilifika fainali ya Kombe la Shirikisho la CAF mwaka gani?", options: ["2018", "2020", "2023", "2025"], answer: "2023" },
     { q: "Jina kamili la Yanga SC ni lipi?", options: ["Young Africans Sports Club", "Youth Africa Simba Club", "Young Athletic Society", "Yellow Africans Club"], answer: "Young Africans Sports Club" },
-    { q: "Ni timu ipi kati ya hizi ni Yanga?", options: ["Wekundu wa Msimbazi", "Wananchi", "Wanalambalamba", "Jamaa wa Msimbazi"], answer: "Wananchi" },
+    { q: "Yanga SC imetwaa mataji mangapi ya Ligi Kuu Tanzania hadi msimu wa 2025/26?", options: ["22", "27", "32", "35"], answer: "32" },
   ];
   const yangaPlayerChoices = [
     { name: "Djigui Diarra", team: "YANGA" }, { name: "Abdul Juma Mshery", team: "YANGA" },
@@ -706,6 +708,7 @@ export default function Home() {
     { name: "Yusuph Kagoma", team: "SIMBA" },
   ];
   const submitYangaQuiz = () => {
+    if (yangaFanConfirm !== "Ndiyo" || yangaLoveConfirm !== "Ndiyo") { setYangaQuizError("Lazima uthibitishe kuwa wewe ni shabiki wa Yanga na unaipenda Yanga ili kuendelea."); return; }
     const allAnswered = yangaQuizQuestions.every((_, i) => Boolean(yangaAnswers[i]));
     if (!allAnswered) { setYangaQuizError("Jibu maswali yote 10 kwanza."); return; }
     if (yangaPlayers.length !== 11) { setYangaQuizError("Chagua wachezaji 11 wa Yanga tu kutoka kwenye orodha ya timu zote mbili."); return; }
@@ -776,7 +779,7 @@ export default function Home() {
   const appAccent = profile?.settings?.accent ?? "green";
   const compactMode = profile?.settings?.compactMode === true;
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.location.href = service.actionUrl; else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
-  const handleUse = (service: ServiceCatalogItem) => { if (!isAuthenticated) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); toast("Jisajili au ingia kwanza ili kuendelea kutumia huduma."); return; } if (service.slug === "simba-sc") { setServiceNotice("SIMBA SC WHATSAPP GROUP bado haijaandaliwa. Kipengele hiki kimefungwa kwa muda hadi kiungo rasmi cha WhatsApp na maudhui yake yatakapowekwa."); return; } if (service.slug === "yanga-africans") { setYangaRulesAccepted(false); setYangaQuizPassed(false); setYangaAnswers({}); setYangaPlayers([]); setYangaQuizError(""); setShowYangaRules(true); return; } if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
+  const handleUse = (service: ServiceCatalogItem) => { if (!isAuthenticated) { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); toast("Jisajili au ingia kwanza ili kuendelea kutumia huduma."); return; } if (service.slug === "simba-sc") { setServiceNotice("SIMBA SC WHATSAPP GROUP bado haijaandaliwa. Kipengele hiki kimefungwa kwa muda hadi kiungo rasmi cha WhatsApp na maudhui yake yatakapowekwa."); return; } if (service.slug === "yanga-africans") { setYangaRulesAccepted(false); setYangaQuizPassed(false); setYangaFanConfirm(""); setYangaLoveConfirm(""); setYangaAnswers({}); setYangaPlayers([]); setYangaQuizError(""); setShowYangaRules(true); return; } if (service.kind === "locked") { setServiceNotice(`${service.name}: huduma hii imefungwa kwa sasa na msimamizi. Tafadhali chagua huduma nyingine au jaribu tena baadaye.`); return; } if (totalTokenBalance <= 0) { toast.error("Huna tokeni. Ongeza tokeni kwanza ili kufungua huduma yoyote."); navigate("/tokens"); return; } if (["leseni-biashara", "pata-lipa-namba", "access-lipa-number", "tengeneza-mkataba"].includes(service.slug) || !service.actionUrl) { navigate(`/service/${service.slug}`); return; } if (!tokenOperationKeys.current.has(service.slug)) useService.mutate(service); };
   const serviceSlug = location.startsWith("/service/") ? location.slice("/service/".length) : "";
   const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
