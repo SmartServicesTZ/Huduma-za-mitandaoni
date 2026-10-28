@@ -698,3 +698,25 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .portal-shell .header-actions>.button.button--green.button--small:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 7px 20px rgba(22,163,74,.36)}
 .portal-shell .header-actions>.button.button--green.button--small:focus-visible{outline:3px solid #fde047;outline-offset:3px}
 @media(max-width:560px){.portal-shell .header-actions>.button.button--green.button--small{min-height:40px;padding:0 10px!important;font-size:11px!important;gap:5px}.portal-shell .header-actions>.button.button--green.button--small svg{width:16px;height:16px}}
+
+
+/* Yanga fan verification quiz */
+.yanga-quiz-content{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 3px 10px}
+.yanga-fan-confirmations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.yanga-quiz-questions{display:grid;gap:12px}
+.yanga-quiz-question{min-width:0;margin:0;padding:11px 12px;border:1px solid rgba(134,239,172,.2);border-radius:13px;background:rgba(255,255,255,.045)}
+.yanga-quiz-question legend{padding:0 4px;color:#f8fafc;font-size:12px;font-weight:800;line-height:1.5}
+.yanga-quiz-option{display:flex;align-items:center;gap:8px;margin-top:8px;color:#e2e8f0;font-size:12px;line-height:1.4;cursor:pointer}
+.yanga-quiz-option input,.yanga-player-option input{width:16px;height:16px;flex:0 0 16px;accent-color:#22c55e}
+.yanga-player-picker{margin-top:16px}
+.yanga-player-picker h3{margin:0 0 5px;color:#bbf7d0;font-size:15px;font-weight:900}
+.yanga-player-picker>p{margin:0 0 10px;color:#cbd5e1;font-size:11px;line-height:1.5}
+.yanga-player-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.yanga-player-option{display:flex;align-items:center;gap:7px;min-width:0;padding:9px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.05);color:#f8fafc;font-size:11px;line-height:1.3}
+.yanga-player-option span{flex:1;min-width:0}
+.yanga-player-option small{font-size:9px;font-weight:900;letter-spacing:.04em}
+.yanga-player-option.is-yanga small{color:#86efac}
+.yanga-player-option.is-simba small{color:#fca5a5}
+.yanga-quiz-error{margin:10px 0;padding:10px 12px;border:1px solid rgba(248,113,113,.4);border-radius:10px;background:rgba(127,29,29,.25);color:#fecaca;font-size:12px;line-height:1.5}
+.yanga-rules-list li strong{color:#bbf7d0}
+@media(max-width:560px){.yanga-fan-confirmations{grid-template-columns:1fr;gap:8px}.yanga-player-grid{grid-template-columns:1fr}.yanga-quiz-question{padding:10px}.yanga-quiz-question legend{font-size:11px}.yanga-quiz-option{font-size:11px}}
