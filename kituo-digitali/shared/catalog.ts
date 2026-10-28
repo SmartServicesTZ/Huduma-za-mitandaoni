@@ -43,7 +43,8 @@ const portalServiceNameOverrides: Record<string, string> = {
   "cheti-tin": "TIN CERTIFICATE",
   "pata-lipa-namba": "PATA LIPA NAMBA",
   "access-lipa-number": "PATA ACCESS YA LIPA & USAJILI",
-  "pata-pocket-wifi-mabando": "PATA POCKET WIFI & BANDO",\n  "yanga-africans": "YANGA SC WHATSAPP GROUP",
+  "pata-pocket-wifi-mabando": "PATA POCKET WIFI & BANDO",
+  "yanga-africans": "YANGA SC WHATSAPP GROUP",
 };
 
 export function getPortalServiceName(slug: string, fallbackName = "Huduma") {
