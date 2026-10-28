@@ -299,13 +299,51 @@ async function handleLipaDocumentDownload(request: Request, cors: Headers, env: 
   }
 }
 
+async function handleGeminiChat(request: Request, cors: Headers, env: Env): Promise<Response> {
+  if (request.method !== "POST") return jsonResponse({ error: { message: "Tumia POST." } }, 405, cors);
+  const contentLength = Number(request.headers.get("Content-Length") ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > 20_000) return jsonResponse({ error: { message: "Ujumbe umezidi ukubwa unaoruhusiwa." } }, 413, cors);
+  let body: unknown;
+  try { body = await request.json(); } catch { return jsonResponse({ error: { message: "Muundo wa ujumbe si sahihi." } }, 400, cors); }
+  const message = typeof body === "object" && body !== null ? (body as { message?: unknown }).message : undefined;
+  if (typeof message !== "string" || !message.trim()) return jsonResponse({ error: { message: "Andika ujumbe kwanza." } }, 400, cors);
+  if (message.length > 4000) return jsonResponse({ error: { message: "Ujumbe usizidi herufi 4,000." } }, 400, cors);
+  const apiKey = (env as Env & { GEMINI_API_KEY?: string }).GEMINI_API_KEY;
+  if (!apiKey) {
+    return jsonResponse({ error: { message: "Msaidizi wa AI bado hajawashwa. Admin anahitaji kuweka GEMINI_API_KEY kwenye Cloudflare Worker Secrets." } }, 503, cors);
+  }
+  try {
+    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: "Wewe ni msaidizi wa SmartServicesTZ. Jibu kwa Kiswahili rahisi isipokuwa mtumiaji aombe lugha nyingine. Toa maelezo sahihi na mafupi. Usidai kuwa unaweza kuona akaunti au kufanya miamala. Usitake password, API keys, au taarifa za siri." }] },
+        contents: [{ role: "user", parts: [{ text: message.trim() }] }],
+        generationConfig: { maxOutputTokens: 700, temperature: 0.7 },
+      }),
+      signal: AbortSignal.timeout(25000),
+    });
+    const data = await upstream.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } };
+    if (!upstream.ok) {
+      console.error("Gemini chat upstream error", { status: upstream.status });
+      return jsonResponse({ error: { message: upstream.status === 429 ? "Msaidizi amefikia kikomo cha muda. Jaribu tena baadaye." : "Msaidizi wa AI hapatikani kwa sasa. Jaribu tena baadaye." } }, upstream.status === 429 ? 429 : 502, cors);
+    }
+    const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
+    if (!reply) return jsonResponse({ error: { message: "AI haikurudisha jibu. Jaribu tena." } }, 502, cors);
+    return jsonResponse({ reply }, 200, cors);
+  } catch (error) {
+    console.error("Gemini chat request failed", { code: error instanceof Error ? error.name : "unknown" });
+    return jsonResponse({ error: { message: "Imeshindikana kuwasiliana na AI. Kagua mtandao ujaribu tena." } }, 502, cors);
+  }
+}
+
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const cors = corsHeaders(request, env);
     if (!cors) return jsonResponse({ error: { code: "permission-denied", message: "Origin haijaidhinishwa." } }, 403, { "Vary": "Origin", "Cache-Control": "no-store" });
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     const url = new URL(request.url);
-    if (url.pathname === "/health" && request.method === "GET") return jsonResponse({ ok: true }, 200, cors);
+    if (url.pathname === "/chat") return handleGeminiChat(request, cors, env);\n    if (url.pathname === "/health" && request.method === "GET") return jsonResponse({ ok: true }, 200, cors);
     if (url.pathname === "/ready" && request.method === "GET") {
       let validServiceAccount = false;
       try {
