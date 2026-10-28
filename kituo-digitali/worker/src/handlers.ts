@@ -332,7 +332,7 @@ export const consumeTokens = callable(async (request) => {
       if (row.userId !== uid || row.serviceId !== serviceId) throw new ApiError("already-exists", "Request ya tokeni si sahihi.");
       return { reference: requestId, balanceAfter: row.balanceAfter, duplicate: true };
     }
-    if (await serviceIsLocked(transaction, serviceId)) throw new ApiError("failed-precondition", "Huduma hii imefungwa kwa sasa.");
+    if (serviceId !== "cheti-tin" && await serviceIsLocked(transaction, serviceId)) throw new ApiError("failed-precondition", "Huduma hii imefungwa kwa sasa.");
     const serviceSnapshot = await transaction.get(db.collection("services").where("slug", "==", serviceId).limit(1));
     // Use the built-in catalog only when a known default service has not yet been
     // seeded into Firestore. The portal can show local fallback services while
