@@ -846,7 +846,15 @@ export default function Home() {
       <section className="yanga-rules-modal" role="dialog" aria-modal="true" aria-labelledby="yanga-rules-title" onClick={(event) => event.stopPropagation()}>
         <button type="button" className="yanga-rules-close" aria-label="Funga dirisha" onClick={() => setShowYangaRules(false)}><X size={20} /></button>
         <div className="yanga-rules-kicker">💚💛 YANGA SC WHATSAPP GROUP</div>
-        {!yangaQuizPassed ? <>
+        {yangaEntryStep === "choice" ? <>
+          <h2 id="yanga-rules-title">Chagua namna ya kujiunga</h2>
+          <p className="yanga-rules-motto">Unaweza kutumia tokeni 6 au kuthibitisha ushabiki wako kwa kujibu maswali bure.</p>
+          <div className="yanga-entry-options">
+            <button type="button" className="yanga-rules-join" disabled={yangaPaymentBusy} onClick={() => void payYangaEntry()}><WalletCards size={18} /> {yangaPaymentBusy ? "Inakata tokeni..." : "LIPIA TOKENI 6 KUJIUNGA"}</button>
+            <button type="button" className="yanga-rules-join yanga-entry-free" onClick={() => { setYangaEntryStep("quiz"); setYangaQuizError(""); setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) }))); }}>JIBU MASWALI KUJIUNGA BURE</button>
+          </div>
+          <p className="yanga-entry-hint">Njia ya bure inahitaji majibu yote sahihi na kuchagua wachezaji 11 wa Yanga.</p>
+        </> : !yangaQuizPassed ? <>
           <h2 id="yanga-rules-title">Thibitisha kuwa shabiki wa Yanga</h2>
           <p className="yanga-rules-motto">Maswali 10 yamechaguliwa kwa bahati nasibu kutoka kwenye hifadhi ya maswali. Kila jaribio linaweza kuwa tofauti.</p>
           <div className="yanga-fan-confirm">
