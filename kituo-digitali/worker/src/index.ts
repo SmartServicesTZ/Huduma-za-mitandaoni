@@ -117,8 +117,8 @@ async function handleCallable(request: Request, name: string, cors: Headers, env
   if (typeof body !== "object" || body === null || Array.isArray(body)) return jsonResponse({ error: { code: "invalid-argument", message: "Muundo wa ombi si sahihi." } }, 400, cors);
   const data = (body as { data?: unknown }).data ?? {};
   try {
-    await enforceAccountRestriction(auth.uid, name);
-    const result = await descriptor.handler({ auth, data });
+    const accountProfile = await enforceAccountRestriction(auth.uid, name);
+    const result = await descriptor.handler({ auth, data, ...(accountProfile ? { profile: accountProfile as Record<string, unknown> } : {}) });
     return jsonResponse({ data: result }, 200, cors);
   } catch (error) {
     if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message, ...(error.details === undefined ? {} : { details: error.details }) } }, statusForError(error.code), cors);

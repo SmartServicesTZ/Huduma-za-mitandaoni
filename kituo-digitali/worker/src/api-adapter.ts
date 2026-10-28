@@ -4,6 +4,7 @@ import { getSecret } from "./runtime.js";
 export interface ApiRequest<T = unknown> {
   data: T;
   auth?: { uid: string; email?: string };
+  profile?: Record<string, unknown>;
 }
 
 export interface WorkerHttpRequest {

@@ -31,6 +31,7 @@ import {
   runTransaction,
   serverTimestamp,
   startAfter,
+  type DocumentReference,
   type Query,
   type QueryDocumentSnapshot,
   setDoc,
@@ -198,6 +199,7 @@ export type FirebaseProfile = {
 
 const credentialFieldNames = ["password", "pin", "pinHash"] as const;
 const profilesReadyInThisSession = new Set<string>();
+const profileInitializationRequests = new Map<string, Promise<DocumentReference>>();
 let activeRegistration: { uid?: string; ready: boolean; promise: Promise<void>; resolve: () => void } | null = null;
 export function sanitizeProfileData(data: DocumentData): FirebaseProfile {
   const safe = { ...data } as Record<string, unknown>;
@@ -249,15 +251,23 @@ export async function ensureUserProfile(user: User, extra: Partial<FirebaseProfi
 }
 
 export async function ensureAuthenticatedProfile(user: User) {
-  const registration = activeRegistration;
-  if (registration) {
-    await registration.promise;
-    if (registration.ready && registration.uid === user.uid) return doc(firestore, "users", user.uid);
-  }
   if (profilesReadyInThisSession.has(user.uid)) return doc(firestore, "users", user.uid);
-  const ref = await ensureUserProfile(user);
-  profilesReadyInThisSession.add(user.uid);
-  return ref;
+  const pending = profileInitializationRequests.get(user.uid);
+  if (pending) return pending;
+  const request = (async () => {
+    const registration = activeRegistration;
+    if (registration) {
+      await registration.promise;
+      if (registration.ready && registration.uid === user.uid) return doc(firestore, "users", user.uid);
+    }
+    if (profilesReadyInThisSession.has(user.uid)) return doc(firestore, "users", user.uid);
+    const ref = await ensureUserProfile(user);
+    profilesReadyInThisSession.add(user.uid);
+    return ref;
+  })();
+  profileInitializationRequests.set(user.uid, request);
+  try { return await request; }
+  finally { if (profileInitializationRequests.get(user.uid) === request) profileInitializationRequests.delete(user.uid); }
 }
 
 function phoneFromLegacyAlias(alias: string | null) {

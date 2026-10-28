@@ -49,10 +49,13 @@ async function getAllCollectionDocs(collectionName: string, pageSize = ADMIN_LIS
   }
 }
 
-async function profileFor(uid: string) {
-  const snapshot = await db.collection("users").doc(uid).get();
-  if (!snapshot.exists) throw new ApiError("permission-denied", "Profile ya akaunti haijapatikana.");
-  const profile = snapshot.data() as Profile;
+async function profileFor(uid: string, prefetched?: Profile) {
+  let profile = prefetched;
+  if (!profile) {
+    const snapshot = await db.collection("users").doc(uid).get();
+    if (!snapshot.exists) throw new ApiError("permission-denied", "Profile ya akaunti haijapatikana.");
+    profile = snapshot.data() as Profile;
+  }
   const roleResolution = resolveAuthRole(profile.role, profile.phone, getWorkerEnv().SUPER_ADMIN_PHONE ?? "255698232313");
   if (roleResolution.shouldDemote) {
     await db.collection("users").doc(uid).update({ role: "user", permissions: {}, updatedAt: FieldValue.serverTimestamp() });
@@ -71,16 +74,16 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "appli
   markUserMessageRead: "read", registerFcmToken: "profile", sendPushNotification: "admin", syncAuthClaims: "auth",
 };
 
-export async function enforceAccountRestriction(uid: string, callableName: string) {
+export async function enforceAccountRestriction(uid: string, callableName: string): Promise<Profile | undefined> {
   const action = callableAccessAction[callableName] ?? "admin";
   if (action === "auth") return;
   const snapshot = await db.collection("users").doc(uid).get();
   if (!snapshot.exists) return;
   const profile = snapshot.data() as Profile;
   const mode = resolveAccountAccessMode(profile);
-  if (mode === "active") return;
-  if (mode === "read_only" && (action === "read" || action === "profile")) return;
-  if (mode === "limited" && (action === "read" || accountRestrictionActions.includes(action as AccountRestrictionAction) && profile.allowedActions?.includes(action))) return;
+  if (mode === "active") return profile;
+  if (mode === "read_only" && (action === "read" || action === "profile")) return profile;
+  if (mode === "limited" && (action === "read" || accountRestrictionActions.includes(action as AccountRestrictionAction) && profile.allowedActions?.includes(action))) return profile;
   const reason = typeof profile.restrictionReason === "string" && profile.restrictionReason.trim() ? ` Sababu: ${profile.restrictionReason.trim()}` : " Admin hakuweka sababu maalum.";
   throw new ApiError("permission-denied", `Akaunti hii imewekewa kizuizi.${reason} Wasiliana na admin kupitia 0698232313.`);
 }
@@ -178,7 +181,7 @@ export const registerFcmToken = callable(async (request) => {
 
 export const sendPushNotification = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageMessages");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const title = typeof data.title === "string" ? data.title.trim().slice(0, 100) : "";
@@ -219,7 +222,7 @@ export const sendPushNotification = callable(async (request) => {
 
 export const adminWrite = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   const data = (request.data ?? {}) as Record<string, unknown>;
   const collectionName = text(data.collection, 80);
   const policy = writePolicy[collectionName];
@@ -264,7 +267,7 @@ const homepageSections = ["services", "locked", "special", "tools", "tutorials"]
 
 export const setHomepageServiceOrder = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   if (actor.role !== "super_admin") throw new ApiError("permission-denied", "Mpangilio wa huduma unaweza kubadilishwa na Super Admin pekee.");
 
   const data = (request.data ?? {}) as Record<string, unknown>;
@@ -298,7 +301,7 @@ export const setHomepageServiceOrder = callable(async (request) => {
 
 export const adminDelete = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   const data = (request.data ?? {}) as Record<string, unknown>;
   const collectionName = text(data.collection, 80);
   const policy = writePolicy[collectionName];
@@ -406,7 +409,7 @@ export const consumeTokens = callable(async (request) => {
 
 export const adjustTokens = callable(async (request) => {
   const uid = authUid(request);
-  const profile = await profileFor(uid);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(profile, "manageTokens");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
@@ -454,7 +457,7 @@ export const adjustTokens = callable(async (request) => {
 
 export const setServiceLock = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageServices");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const slug = text(data.slug, 120);
@@ -519,7 +522,7 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
 
 export const ensureDefaultServiceCatalog = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageServices");
   const actorRole = String(actor.role ?? "user");
   return initializeServiceCatalog(uid, actorRole, true);
@@ -527,7 +530,7 @@ export const ensureDefaultServiceCatalog = callable(async (request) => {
 
 export const seedServiceCatalog = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   if (actor.role !== "super_admin") throw new ApiError("permission-denied", "Super Admin pekee anaweza kuanzisha katalogi ya huduma.");
   return initializeServiceCatalog(uid, String(actor.role), false);
 });
@@ -571,7 +574,7 @@ function cleanApplicationValues(values: Record<string, unknown>, fields: Array<R
 
 export const submitLipaApplication = callable(async (request) => {
   const uid = authUid(request);
-  const profile = await profileFor(uid);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
   const data = objectValue(request.data, "Taarifa za ombi");
   const networkId = text(data.networkId, 80);
@@ -634,7 +637,7 @@ export const submitLipaApplication = callable(async (request) => {
 
 export const setLipaApplicationStatus = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageLipaApplications");
   const data = objectValue(request.data, "Mabadiliko ya status");
   const applicationId = text(data.applicationId, 80);
@@ -679,7 +682,7 @@ export const setLipaApplicationStatus = callable(async (request) => {
 
 export const replyToLipaApplication = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageLipaApplications");
   const data = objectValue(request.data, "Jibu la ombi");
   const applicationId = text(data.applicationId, 80);
@@ -719,7 +722,7 @@ Jibu la Admin: ${reply}` : ""}` : reply;
 
 export const updateLipaRewardTracking = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageLipaApplications");
   const data = objectValue(request.data, "Taarifa za zawadi");
   const applicationId = text(data.applicationId, 80);
@@ -776,7 +779,7 @@ export const updateLipaRewardTracking = callable(async (request) => {
 
 export const listLipaApplications = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageLipaApplications");
   const documents = await getAllCollectionDocs("lipaApplications");
   const rows: Array<Record<string, unknown> & { id: string }> = documents.map((item) => ({ id: item.id, ...item.data() }));
@@ -790,7 +793,7 @@ export const listLipaApplications = callable(async (request) => {
 
 export const markLipaApplicationViewed = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageLipaApplications");
   const applicationId = text((request.data as Record<string, unknown> | undefined)?.applicationId, 80);
   const snapshot = await db.collection("lipaApplications").doc(applicationId).get();
@@ -820,7 +823,7 @@ export const createLipaDocumentUploadUrl = callable(async (request) => {
 
 export const getLipaApplicationDocument = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   const data = objectValue(request.data, "Taarifa za faili");
   const applicationId = text(data.applicationId, 80);
   const fieldName = text(data.fieldName, 64);
@@ -859,7 +862,7 @@ export const markUserMessageRead = callable(async (request) => {
 
 export const createPocketWifiOrder = callable(async (request) => {
   const uid = authUid(request);
-  const profile = await profileFor(uid);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
   const data = objectValue(request.data, "Oda ya Pocket WiFi");
   const applicationId = text(data.applicationId, 80);
@@ -892,7 +895,7 @@ export const createPocketWifiOrder = callable(async (request) => {
 
 export const createServiceApplication = callable(async (request) => {
   const uid = authUid(request);
-  const profile = await profileFor(uid);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
   const data = objectValue(request.data, "Ombi la huduma");
   const serviceSlug = text(data.serviceSlug, 120);
@@ -977,7 +980,7 @@ export const createServiceApplication = callable(async (request) => {
 
 export const updateServiceApplication = callable(async (request) => {
   const uid = authUid(request);
-  const profile = await profileFor(uid);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii haiwezi kuhariri maombi.");
   const data = objectValue(request.data, "Hariri ombi");
   const applicationId = text(data.applicationId, 80);
@@ -1014,7 +1017,7 @@ export const updateServiceApplication = callable(async (request) => {
 
 export const setServiceApplicationStatus = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageServices");
   const data = objectValue(request.data, "Hali ya ombi");
   const applicationId = text(data.applicationId, 80);
@@ -1077,7 +1080,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
 
 export const listServiceApplications = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageServices");
   const documents = await getAllCollectionDocs("serviceApplications");
   const rows: Array<Record<string, unknown> & { id: string }> = documents.map((item) => ({ id: item.id, ...item.data() }));
@@ -1087,7 +1090,7 @@ export const listServiceApplications = callable(async (request) => {
 
 export const replyToServiceApplication = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageServices");
   const data = objectValue(request.data, "Jibu la ombi");
   const applicationId = text(data.applicationId, 80);
@@ -1115,7 +1118,7 @@ export const replyToServiceApplication = callable(async (request) => {
 
 export const markServiceApplicationViewed = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageServices");
   const applicationId = text((request.data as Record<string, unknown> | undefined)?.applicationId, 80);
   const snapshot = await db.collection("serviceApplications").doc(applicationId).get();
@@ -1127,7 +1130,7 @@ export const markServiceApplicationViewed = callable(async (request) => {
 
 export const getServiceApplicationDocument = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   const data = objectValue(request.data, "Taarifa za faili");
   const applicationId = text(data.applicationId, 80);
   const fieldName = text(data.fieldName, 64);
@@ -1154,7 +1157,7 @@ export const getServiceApplicationDocument = callable(async (request) => {
 
 export const listAdminUsers = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "viewUsers");
 
   const documents = await getAllCollectionDocs("users");
@@ -1184,7 +1187,7 @@ export const listAdminUsers = callable(async (request) => {
 
 export const adminDeleteUserAccount = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   if (actor.role !== "super_admin") throw new ApiError("permission-denied", "Super Admin pekee ndiye anayeruhusiwa kufuta akaunti kabisa.");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
@@ -1231,7 +1234,7 @@ export const adminDeleteUserAccount = callable(async (request) => {
 
 export const updateUserAccess = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageUsers");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
@@ -1366,7 +1369,7 @@ export const claimRegistrationPhone = callable(async (request) => {
 
 export const changeOwnPassword = callable(async (request) => {
   const uid = authUid(request);
-  const profile = await profileFor(uid);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
   if (profile.mustChangePassword !== true) throw new ApiError("failed-precondition", "Akaunti hii haihitaji kubadilisha password ya muda.");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const password = data.password;
@@ -1402,7 +1405,7 @@ export const changeOwnPassword = callable(async (request) => {
 
 export const resetUserPassword = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageUsers");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
@@ -1438,7 +1441,7 @@ export const resetUserPassword = callable(async (request) => {
 
 export const setAccountStatus = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageUsers");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
@@ -1499,7 +1502,7 @@ export const setAccountStatus = callable(async (request) => {
 
 export const verifyUser = callable(async (request) => {
   const uid = authUid(request);
-  const actor = await profileFor(uid);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageUsers");
   const data = (request.data ?? {}) as Record<string, unknown>;
   const userId = text(data.userId, 180);
@@ -1738,7 +1741,7 @@ const tokenPackageLabel = (amount: number, credits: number) => `${amount.toLocal
 
 export const createTokenPurchaseOrder = callable(async (request) => {
   const uid = authUid(request);
-  const profile = await profileFor(uid);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii haiwezi kununua tokeni.");
 
   const data = objectValue(request.data, "Ombi la kununua tokeni");
