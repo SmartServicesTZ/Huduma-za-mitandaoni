@@ -30,11 +30,9 @@ const PocketWifiPage = lazy(() => import("./PocketWifiPage"));
 const AccountSettingsPage = lazy(() => import("./AccountPage"));
 
 const appEnglish: Record<string, string> = {
-  "Mwanzo":"Home","Huduma zote":"All services","Chat":"Chat","Tokeni":"Tokens","Historia":"History","Settings":"Settings","Paneli ya Admin":"Admin panel",
-  "Akaunti yangu":"My account","Ingia kuanza":"Sign in to start","Huduma salama":"Secure services","Ujumbe na mazungumzo":"Messages & chats",
-  "Ujumbe":"Messages","Jumuiya":"Community","Binafsi":"Private","Magroup":"Groups","Usimamizi":"Moderation","Public chat":"Public chat",
-  "Anzisha mazungumzo":"Start conversation","Tafuta mazungumzo":"Search conversations","Namba ya simu":"Phone number","Tafuta mtumiaji":"Find user",
-  "Tengeneza group":"+ Create group","Chagua group":"Choose a group","Hakuna ujumbe bado":"No messages yet","Tuma ujumbe":"Send message",
+  "Mwanzo":"Home","Huduma zote":"All services","Tokeni":"Tokens","Historia":"History","Settings":"Settings","Paneli ya Admin":"Admin panel",
+  "Akaunti yangu":"My account","Ingia kuanza":"Sign in to start","Huduma salama":"Secure services",
+  "Ujumbe":"Messages",
   "SETTINGS":"SETTINGS","Settings za App":"App Settings","Account / Wasifu wangu":"Account / My profile","Hifadhi wasifu":"Save profile",
   "Jina la kwanza":"First name","Jina la mwisho":"Last name","Kuhusu mimi":"About me","Lugha ya matumizi":"Language",
   "Kiswahili":"Swahili","English":"English","Salio la tokeni":"Token balance","Uthibitisho":"Verification","Imeidhinishwa":"Verified","Inasubiri":"Pending",
@@ -42,7 +40,7 @@ const appEnglish: Record<string, string> = {
   "Theme":"Theme","Accent color":"Accent color","Arifa za akaunti":"Account notifications","Onyesha salio la tokeni":"Show token balance",
   "Compact mode":"Compact mode","Reduce motion":"Reduce motion","Sauti za app":"App sounds","Refresh ya moja kwa moja":"Automatic refresh",
   "Onyesha hali ya online":"Show online status","Thibitisha vitendo muhimu":"Confirm important actions","Data saver":"Data saver",
-  "Historia ya shughuli":"Activity history","Chat na Magroup":"Chat & Groups","ONGEZA TOKENI":"ADD TOKENS","CHEKI NIDA":"CHECK NIDA",
+  "Historia ya shughuli":"Activity history","ONGEZA TOKENI":"ADD TOKENS",
   "HUDUMA NYINGINE":"OTHER SERVICES","Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye.":"This service is under maintenance. Please try again later.",
   "Bure":"Free","IMEFUNGWA":"CLOSED","Huduma kuu":"Main services"
 };
@@ -217,7 +215,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
       try { await markUserMessageRead(item.id, user.uid); setNotifications((rows) => rows.map((row) => row.id === item.id ? { ...row, readBy: [...(Array.isArray(row.readBy) ? row.readBy as string[] : []), user.uid] } : row)); }
       catch { toast.error("Imeshindikana kuweka arifa kuwa imesomwa."); }
     }
-    const target = typeof item.targetPath === "string" ? item.targetPath : typeof item.href === "string" ? item.href : String(item.type ?? "").toLowerCase().includes("nida") ? "/#cheki-nida" : "/";
+    const target = typeof item.targetPath === "string" ? item.targetPath : typeof item.href === "string" ? item.href : "/";
     setNotificationsOpen(false);
     navigate(target);
   };
@@ -313,7 +311,6 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
     "cheti-tin": "#7c3aed",
     "leseni-udereva": "#ea580c",
     "verify-tin": "#16a34a",
-    "nakala-nida": "#4f46e5",
     "mpiga-kura": "#0891b2",
     "stika-lipa": "#db2777",
     "stika-mawakala": "#d97706",
@@ -335,7 +332,7 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
   const palette = ["#0f766e", "#c2410c", "#7e22ce", "#be123c", "#047857", "#b45309", "#4338ca", "#0e7490", "#a21caf", "#4d7c0f"];
   const colorIndex = [...service.slug].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
   const accent = locked ? "#dc2626" : (serviceColors[service.slug] ?? palette[colorIndex]);
-  const serviceIcons: Record<string, string> = { "pata-lipa-namba": "wallet-cards", "access-lipa-number": "smartphone", "nakala-nida": "contact", "cheti-tin": "file-badge", "leseni-biashara": "briefcase-business", "leseni-udereva": "car-front", "stika-lipa": "qr-code", "stika-mawakala": "ticket", "sme-vodacom": "radio", "sme-airtel": "credit-card", "sme-airtel-mkataba": "copy", "change-business-name-airtel-lipa": "file-pen", "brela": "landmark", "mpiga-kura": "vote", "kitambulisho-wakala": "user-round-pen", "cheti-kuzaliwa": "baby", "simba-sc": "trophy", "yanga-africans": "star", "azam-tv": "tv", "pata-pocket-wifi-mabando": "wifi" };
+  const serviceIcons: Record<string, string> = { "pata-lipa-namba": "wallet-cards", "access-lipa-number": "smartphone", "cheti-tin": "file-badge", "leseni-biashara": "briefcase-business", "leseni-udereva": "car-front", "stika-lipa": "qr-code", "stika-mawakala": "ticket", "sme-vodacom": "radio", "sme-airtel": "credit-card", "sme-airtel-mkataba": "copy", "change-business-name-airtel-lipa": "file-pen", "brela": "landmark", "mpiga-kura": "vote", "kitambulisho-wakala": "user-round-pen", "cheti-kuzaliwa": "baby", "simba-sc": "trophy", "yanga-africans": "star", "azam-tv": "tv", "pata-pocket-wifi-mabando": "wifi" };
   const iconName = locked ? service.icon : serviceIcons[service.slug] ?? service.icon;
   return <div className="portal-service-card-wrap">
     <button className={`portal-service-card service-${service.kind} ${external ? "service-external" : ""}`} onClick={() => onUse(service)} style={{ background: `linear-gradient(145deg, ${accent}18 0%, #ffffff 78%)`, borderColor: `${accent}55`, boxShadow: `0 5px 18px ${accent}12` }}>
@@ -609,7 +606,7 @@ export default function Home() {
     let cancelled = false;
     void getCollectionOnce("services").then((rows) => {
     if (cancelled) return;
-    setServices(rows.map((item) => ({ slug: ["thibitisha-tin", "verify-tin"].includes(String(item.slug ?? item.id)) ? "verify-tin" : String(item.slug ?? item.id) === "nakala-nida-2" ? "sme-airtel-mkataba" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" || String(item.slug ?? item.id) === "verify-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "nakala-nida-2" || String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "nakala-nida-2" || String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), tokenType: item.tokenType === "nida" ? "nida" : "huduma", category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
+    setServices(rows.map((item) => ({ slug: ["thibitisha-tin", "verify-tin"].includes(String(item.slug ?? item.id)) ? "verify-tin" : (item.slug ?? item.id), name: String(String(item.slug ?? item.id) === "thibitisha-tin" || String(item.slug ?? item.id) === "verify-tin" ? "VERIFY TIN" : String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : item.name ?? "Huduma"), description: String(String(item.slug ?? item.id) === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""), icon: String(item.icon ?? "sparkles"), tokenCost: Number(item.tokenCost ?? 0), tokenType: item.tokenType === "nida" ? "nida" : "huduma", category: String(item.category ?? "Huduma kuu"), kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"], actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined, order: Number(item.order ?? 9999), fields: Array.isArray(item.fields) ? item.fields : undefined, active: item.active !== false, isVisible: item.isVisible !== false, isLocked: item.isLocked === true, maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined })));
     setServicesLoading(false);
     }).catch(() => { if (!cancelled) setServicesLoading(false); });
     return () => { cancelled = true; };
