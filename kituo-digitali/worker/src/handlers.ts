@@ -777,12 +777,10 @@ export const listLipaApplications = callable(async (request) => {
   if (paging.status) query = query.where("status", "==", paging.status);
   if (paging.startAfter) query = query.startAfter(paging.startAfter);
   const snapshot = await query.limit(paging.pageSize + 1).get();
+  // Keep the adapter's document-ID order intact until after cursor pagination.
+  // Sorting by submittedAt before pageResult makes the next cursor point at a
+  // non-terminal document in the query order, which can skip or repeat records.
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  rows.sort((a, b) => {
-    const left = String(a.submittedAt ?? "");
-    const right = String(b.submittedAt ?? "");
-    return right.localeCompare(left);
-  });
   const page = pageResult(rows, paging.pageSize);
   return { applications: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
