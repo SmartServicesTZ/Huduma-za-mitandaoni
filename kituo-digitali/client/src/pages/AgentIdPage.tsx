@@ -228,13 +228,13 @@ export default function AgentIdPage() {
     event.target.value = "";
   };
 
-  const downloadCards = async () => {
+  const downloadCards = async (side: "front" | "back") => {
     const set = orientation === "landscape"
       ? { size: LAND, label: "mlalo", front: landFrontRef.current, back: landBackRef.current }
       : { size: PORT, label: "wima", front: portFrontRef.current, back: portBackRef.current };
     const jobs: { el: HTMLElement; size: { w: number; h: number }; filename: string }[] = [];
-    if (set.front) jobs.push({ el: set.front, size: set.size, filename: `kitambulisho-${set.label}-mbele.png` });
-    if (set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
+    if (side === "front" && set.front) jobs.push({ el: set.front, size: set.size, filename: `kitambulisho-${set.label}-mbele.png` });
+    if (side === "back" && set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
     if (!jobs.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
     if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
     if (!name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim()) {
@@ -287,7 +287,7 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button>
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
-        <p className="aid-choice-note">Chagua mkao wa kitambulisho. Kitufe kimoja kitapakua picha mbili: mbele na nyuma, kwa mkao uliochagua.</p>
+        <p className="aid-choice-note">Chagua mkao, kisha pakua mbele na nyuma kivyake. Kila upande una kitufe na rangi yake.</p>
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{display:"block",width:"auto",height:"auto",maxWidth:"100%",maxHeight:"100%",objectFit:"contain",flex:"0 0 auto"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
@@ -299,7 +299,10 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Kata / Eneo</span><input value={area} maxLength={30} onChange={(e) => setArea(e.target.value)} /></label>
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
-        <button type="button" className="button button--green button--wide" style={{ marginTop: 12 }} disabled={busy} onClick={() => void downloadCards()}>{busy ? <><LoaderCircle size={16} className="aid-spin" /> Inaandaa picha...</> : <><Download size={16} /> Pakua Kitambulisho ({orientLabel}) — Mbele na Nyuma</>}</button>
+        <div className="aid-download-sections" aria-label="Pakua kitambulisho mbele au nyuma">
+          <button type="button" className="aid-download-front" disabled={busy} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG</small></span></button>
+          <button type="button" className="aid-download-back" disabled={busy} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG</small></span></button>
+        </div>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
 
@@ -490,6 +493,7 @@ const AGENT_ID_CSS = `
 .aid-field span{font-size:12px;font-weight:700;color:#334155}
 .aid-field input,.aid-field select{width:100%;box-sizing:border-box;border-radius:10px;padding:10px 11px;background:#f8fbff;color:#172443;font-size:13px}
 .aid-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.aid-download-sections{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.aid-download-sections button{display:flex;align-items:center;justify-content:center;gap:9px;min-height:64px;padding:10px;border:0;border-radius:12px;color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 14px rgba(15,23,42,.12)}.aid-download-sections button:disabled{opacity:.65;cursor:wait}.aid-download-sections span{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.aid-download-sections b{font-size:12px}.aid-download-sections small{font-size:10px;opacity:.85}.aid-download-front{background:linear-gradient(135deg,#087f5b,#16a36a)}.aid-download-back{background:linear-gradient(135deg,#5b35b5,#8b5cf6)}
 .aid-choice{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
 .aid-choice button{border:1px solid #d6e0ec;border-radius:10px;background:#f4f7fb;color:#334155;padding:10px 7px;font-size:10px;font-weight:900;cursor:pointer;transition:background .18s,color .18s,border-color .18s}
 .aid-choice button.active{background:#18b969;border-color:#18b969;color:#fff}
