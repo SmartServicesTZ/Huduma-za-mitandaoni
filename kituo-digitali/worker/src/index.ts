@@ -290,7 +290,7 @@ async function handleLipaDocumentDownload(request: Request, cors: Headers, env: 
   // Read those legacy objects securely after the same application ownership/admin check above.
   try {
     const [legacyUrl] = await getStorage().bucket().file(storagePath).getSignedUrl({ action: "read", expires: Date.now() + 60_000 });
-    const legacyResponse = await fetch(legacyUrl, { signal: AbortSignal.timeout(20000) });
+    const legacyResponse = await fetch(legacyUrl, { signal: AbortSignal.timeout(55000) });
     if (!legacyResponse.ok || !legacyResponse.body) throw new Error("Legacy object not found.");
     headers.set("Content-Type", legacyResponse.headers.get("Content-Type") ?? "application/octet-stream");
     return new Response(legacyResponse.body, { status: 200, headers });
