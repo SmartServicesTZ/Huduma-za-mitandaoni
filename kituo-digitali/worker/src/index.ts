@@ -313,7 +313,7 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
     return jsonResponse({ error: { message: "Msaidizi wa AI bado hajawashwa. Admin anahitaji kuweka GEMINI_API_KEY kwenye Cloudflare Worker Secrets." } }, 503, cors);
   }
   try {
-    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+    const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
@@ -325,7 +325,7 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
     });
     const data = await upstream.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } };
     if (!upstream.ok) {
-      console.error("Gemini chat upstream error", { status: upstream.status });
+      console.error("Gemini chat upstream error", { status: upstream.status, providerMessage: String(data.error?.message ?? "No provider message").slice(0, 240) });
       return jsonResponse({ error: { message: upstream.status === 429 ? "Msaidizi amefikia kikomo cha muda. Jaribu tena baadaye." : "Msaidizi wa AI hapatikani kwa sasa. Jaribu tena baadaye." } }, upstream.status === 429 ? 429 : 502, cors);
     }
     const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
