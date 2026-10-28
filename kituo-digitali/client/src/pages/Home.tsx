@@ -515,15 +515,29 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const [category, setCategory] = useState("Zote");
   const [showAppDownload, setShowAppDownload] = useState(false);
   useEffect(() => {
-    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    const isNativeApp = /SmartServicesTZApp|; wv\)|SmartServicesTZ/i.test(navigator.userAgent)
+      || window.matchMedia("(display-mode: standalone)").matches
+      || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (isNativeApp) { setShowAppDownload(false); return; }
     let showTimer: ReturnType<typeof setTimeout> | undefined;
-    const isNativeApp = /SmartServicesTZApp/i.test(navigator.userAgent) || window.matchMedia("(display-mode: standalone)").matches;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+    let cycleTimer: ReturnType<typeof setInterval> | undefined;
     let dismissed = false;
     try { dismissed = sessionStorage.getItem("stz-app-download-dismissed") === "1"; } catch {}
-    if (isNativeApp || dismissed) return;
-    showTimer = setTimeout(() => setShowAppDownload(true), 3500);
-    hideTimer = setTimeout(() => setShowAppDownload(false), 14000);
-    return () => { if (showTimer) clearTimeout(showTimer); if (hideTimer) clearTimeout(hideTimer); };
+    if (dismissed) return;
+    const cycle = () => {
+      setShowAppDownload(true);
+      hideTimer = setTimeout(() => setShowAppDownload(false), 7000);
+    };
+    showTimer = setTimeout(() => {
+      cycle();
+      cycleTimer = setInterval(cycle, 22000);
+    }, 3500);
+    return () => {
+      if (showTimer) clearTimeout(showTimer);
+      if (hideTimer) clearTimeout(hideTimer);
+      if (cycleTimer) clearInterval(cycleTimer);
+    };
   }, []);
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("steward-tz-favorite-services-v1") || "[]"); } catch { return []; }
@@ -592,17 +606,8 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
-    <section className="app-download-banner" aria-label="Pakua SmartServicesTZ App">
-      <span className="app-download-banner__icon"><Smartphone size={25} aria-hidden="true" /></span>
-      <div className="app-download-banner__copy">
-        <strong>Pakua SmartServicesTZ App</strong>
-        <span>Isakinishe kwenye simu yako kwa ufikiaji wa haraka wa huduma.</span>
-      </div>
-      <a className="app-download-banner__button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk">
-        <Smartphone size={17} aria-hidden="true" /> Pakua App <ExternalLink size={14} aria-hidden="true" />
-      </a>
-    </section>
-    {showAppDownload && <aside role="complementary" aria-label="Pakua SmartServicesTZ App" style={{ position: "fixed", right: 14, bottom: "calc(82px + env(safe-area-inset-bottom))", zIndex: 80, width: "min(330px, calc(100vw - 28px))", padding: "11px 12px", borderRadius: 16, border: "1px solid rgba(59,130,246,.38)", background: "var(--navy, #071a36)", color: "#fff", boxShadow: "0 10px 35px rgba(0,0,0,.28)", display: "flex", alignItems: "center", gap: 10 }}>
+
+    {showAppDownload && <aside role="complementary" aria-label="Pakua SmartServicesTZ App" style={{ position: "fixed", right: 14, bottom: "calc(82px + env(safe-area-inset-bottom))", zIndex: 80, width: "min(330px, calc(100vw - 28px))", padding: "11px 12px", borderRadius: 16, border: "1px solid rgba(59,130,246,.38)", background: "var(--navy, #071a36)", color: "#fff", boxShadow: "0 10px 35px rgba(0,0,0,.28)", display: "flex", alignItems: "center", gap: 10, animation: "stzAppFloatIn .45s ease-out both" }}>
       <span style={{ width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 12, background: "rgba(59,130,246,.18)", color: "#60a5fa", flexShrink: 0 }}><Smartphone size={21} /></span>
       <div style={{ flex: 1, minWidth: 0 }}><strong style={{ display: "block", fontSize: 13 }}>SmartServicesTZ App</strong><a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" style={{ display: "inline-block", marginTop: 3, color: "#86efac", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Pakua App <ExternalLink size={12} style={{ display: "inline", verticalAlign: "middle" }} /></a></div>
       <button type="button" aria-label="Funga tangazo la App" onClick={() => { setShowAppDownload(false); try { sessionStorage.setItem("stz-app-download-dismissed", "1"); } catch {} }} style={{ border: 0, background: "transparent", color: "#cbd5e1", padding: 4, cursor: "pointer" }}><X size={17} /></button>
