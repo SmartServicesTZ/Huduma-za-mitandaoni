@@ -30,6 +30,9 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  startAfter,
+  type Query,
+  type QueryDocumentSnapshot,
   setDoc,
   updateDoc,
   where,
@@ -116,6 +119,19 @@ type CollectionListener = {
   unsubscribe: () => void;
 };
 const collectionListenerCache = new Map<string, CollectionListener>();
+async function readAllDocuments(buildQuery: (cursor?: QueryDocumentSnapshot<DocumentData>) => Query<DocumentData>, pageSize = 100) {
+  const documents: QueryDocumentSnapshot<DocumentData>[] = [];
+  let cursor: QueryDocumentSnapshot<DocumentData> | undefined;
+  for (;;) {
+    const page = await getDocs(buildQuery(cursor));
+    documents.push(...page.docs);
+    if (page.docs.length < pageSize) return documents;
+    const nextCursor = page.docs.at(-1);
+    if (!nextCursor || nextCursor.id === cursor?.id) throw new Error("Firestore pagination did not advance.");
+    cursor = nextCursor;
+  }
+}
+
 const PROFILE_CACHE_TTL_MS = 45_000;
 const profileCache = new Map<string, { loadedAt: number; value: FirebaseProfile | null }>();
 const profileRequests = new Map<string, Promise<FirebaseProfile | null>>();
@@ -335,7 +351,7 @@ export async function getFirebaseProfileOnce(uid: string, options?: { force?: bo
   if (!force && pending) return pending;
   const request = getDocFromServer(doc(firestore, "users", uid)).then((snapshot) => {
     const value = snapshot.exists() ? sanitizeProfileData(snapshot.data()) : null;
-    profileCache.set(uid, { loadedAt: Date.now(), value });
+    if (profileRequests.get(uid) === request) profileCache.set(uid, { loadedAt: Date.now(), value });
     return value;
   }).catch((error) => {
     profileCache.delete(uid);
@@ -376,14 +392,9 @@ export async function createTokenPurchaseOrder(amount: number, requestId = crypt
 }
 
 export function subscribeToTokenPurchaseOrders(uid: string, callback: (orders: TokenPurchaseOrder[]) => void, onError?: (error: Error) => void) {
-  const purchases = query(collection(firestore, "tokenPurchaseOrders"), where("userId", "==", uid));
+  const purchases = query(collection(firestore, "tokenPurchaseOrders"), where("userId", "==", uid), orderBy("createdAt", "desc"), limit(10));
   return onSnapshot(purchases, (snapshot) => {
-    const orders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as TokenPurchaseOrder));
-    orders.sort((a, b) => {
-      const timestamp = (value: unknown) => value && typeof value === "object" && "toMillis" in value && typeof (value as { toMillis?: unknown }).toMillis === "function" ? (value as { toMillis: () => number }).toMillis() : 0;
-      return timestamp(b.createdAt) - timestamp(a.createdAt);
-    });
-    callback(orders.slice(0, 10));
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as TokenPurchaseOrder)));
   }, onError);
 }
 
@@ -443,9 +454,9 @@ export async function createServiceRequest(uid: string, service: { slug: string;
 
 export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
   let active = true;
-  void getDocs(query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), limit(100))).then((snapshot) => {
+  void readAllDocuments((cursor) => query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
     if (!active) return;
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData)).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))));
+    callback(documents.map((item) => ({ id: item.id, ...item.data() } as DocumentData)).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))));
   }).catch((error) => { if (active) onError?.(error); });
   return () => { active = false; };
 }
@@ -578,7 +589,7 @@ export async function recordWebsiteHealthReport(input: { kind: WebsiteHealthRepo
 }
 
 export function subscribeAdminWebsiteHealthReports(callback: (rows: WebsiteHealthReport[]) => void, onError?: (error: unknown) => void) {
-  return onSnapshot(collection(firestore, "websiteHealthReports"), (snapshot) => {
+  return onSnapshot(query(collection(firestore, "websiteHealthReports"), orderBy("createdAt", "desc"), limit(100)), (snapshot) => {
     const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt), resolvedAt: timestampValue(item.data().resolvedAt) } as WebsiteHealthReport));
     rows.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
     callback(rows);
@@ -698,17 +709,26 @@ export async function adminDeleteAnnouncement(adminId: string, id: string) {
 
 export async function adminSaveCollectionItem(adminId: string, collectionName: string, values: Record<string, unknown>, id?: string) {
   const callable = createWorkerCall("adminWrite");
-  return (await callable({ collection: collectionName, id, values })).data;
+  const result = (await callable({ collection: collectionName, id, values })).data;
+  if (collectionName === "messages") invalidateUserMessagesCache();
+  return result;
 }
 
 export async function adminDeleteCollectionItem(adminId: string, collectionName: string, id: string) {
   const callable = createWorkerCall("adminDelete");
-  return (await callable({ collection: collectionName, id })).data;
+  const result = (await callable({ collection: collectionName, id })).data;
+  if (collectionName === "messages") invalidateUserMessagesCache();
+  return result;
 }
 
 export async function adminSaveSiteSettings(adminId: string, values: Record<string, unknown>) {
   const callable = createWorkerCall("adminWrite");
-  return (await callable({ collection: "siteSettings", id: "public", values })).data;
+  const result = (await callable({ collection: "siteSettings", id: "public", values })).data;
+  publicSiteSettingsRevision += 1;
+  publicSiteSettingsCache = undefined;
+  publicSiteSettingsRequest = undefined;
+  publicLicenseTemplateCache = undefined;
+  return result;
 }
 
 export async function setHomepageServiceOrder(serviceOrder: string[], homepageSectionOrder: string[]) {
@@ -717,21 +737,25 @@ export async function setHomepageServiceOrder(serviceOrder: string[], homepageSe
 }
 
 export async function getPublicSiteSettings() {
-  const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
-  return snapshot.exists() ? snapshot.data() : null;
+  return getPublicSiteSettingsOnce();
 }
 let publicSiteSettingsCache: { loadedAt: number; value: DocumentData | null } | undefined;
 let publicSiteSettingsRequest: Promise<DocumentData | null> | undefined;
-export async function getPublicSiteSettingsOnce(options?: { force?: boolean }) {
+let publicSiteSettingsRevision = 0;
+export async function getPublicSiteSettingsOnce(options?: { force?: boolean }): Promise<DocumentData | null> {
   const force = options?.force === true;
+  if (force) publicSiteSettingsRevision += 1;
   if (!force && publicSiteSettingsCache && Date.now() - publicSiteSettingsCache.loadedAt < 45_000) return publicSiteSettingsCache.value;
   if (!force && publicSiteSettingsRequest) return publicSiteSettingsRequest;
-  publicSiteSettingsRequest = getDoc(doc(firestore, "siteSettings", "public")).then((snapshot) => {
+  const revision = publicSiteSettingsRevision;
+  const request: Promise<DocumentData | null> = getDoc(doc(firestore, "siteSettings", "public")).then((snapshot): Promise<DocumentData | null> | DocumentData | null => {
     const value = snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as DocumentData) : null;
+    if (revision !== publicSiteSettingsRevision) return getPublicSiteSettingsOnce();
     publicSiteSettingsCache = { loadedAt: Date.now(), value };
     return value;
-  }).finally(() => { publicSiteSettingsRequest = undefined; });
-  return publicSiteSettingsRequest;
+  }).finally(() => { if (publicSiteSettingsRequest === request) publicSiteSettingsRequest = undefined; });
+  publicSiteSettingsRequest = request;
+  return request;
 }
 
 let publicLicenseTemplateCache: Record<string, unknown> | null | undefined;
@@ -744,8 +768,7 @@ export async function getPublicLicenseTemplateSettings() {
 }
 
 export async function adminGetSiteSettings() {
-  const snapshot = await getDoc(doc(firestore, "siteSettings", "public"));
-  return snapshot.exists() ? snapshot.data() : null;
+  return getPublicSiteSettingsOnce();
 }
 
 export async function reserveBusinessLicenseNumber(reservationId: string, licenseType: "NEW LICENCE" | "RENEWED LICENCE" = "NEW LICENCE") {
@@ -754,10 +777,9 @@ export async function reserveBusinessLicenseNumber(reservationId: string, licens
 }
 
 export async function getCollectionOnce(name: string): Promise<DocumentData[]> {
-  const source = collection(firestore, name);
-  const bounded = collectionReadLimits[name] ? query(source, limit(collectionReadLimits[name])) : source;
-  const snapshot = await getDocs(bounded);
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
+  const pageSize = collectionReadLimits[name] ?? 100;
+  const documents = await readAllDocuments((cursor) => query(collection(firestore, name), limit(pageSize), ...(cursor ? [startAfter(cursor)] : [])), pageSize);
+  return documents.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
 }
 
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
@@ -965,9 +987,9 @@ export async function adminListLipaApplications() {
 
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
   let active = true;
-  void getDocs(query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(50))).then((snapshot) => {
+  void readAllDocuments((cursor) => query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
     if (!active) return;
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
+    callback(documents.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
   }).catch((error) => { if (active) onError?.(error); });
   return () => { active = false; };
 }
@@ -1061,9 +1083,9 @@ export async function getServiceApplicationDocument(applicationId: string, field
 
 export function subscribeUserServiceApplications(uid: string, callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
   let active = true;
-  void getDocs(query(collection(firestore, "serviceApplications"), where("userId", "==", uid), limit(50))).then((snapshot) => {
+  void readAllDocuments((cursor) => query(collection(firestore, "serviceApplications"), where("userId", "==", uid), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
     if (!active) return;
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
+    callback(documents.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
   }).catch((error) => { if (active) onError?.(error); });
   return () => { active = false; };
 }
@@ -1071,19 +1093,31 @@ export function subscribeUserServiceApplications(uid: string, callback: (rows: S
 export async function markUserMessageRead(messageId: string, uid: string) {
   if (!messageId || !uid || uid !== firebaseAuth.currentUser?.uid) throw new Error("Akaunti haijathibitishwa.");
   const callable = createWorkerCall<{ messageId: string }, { ok: boolean }>("markUserMessageRead");
-  return (await callable({ messageId })).data;
+  const result = (await callable({ messageId })).data;
+  invalidateUserMessagesCache(uid);
+  return result;
 }
 
 const userMessagesCache = new Map<string, { loadedAt: number; rows: Array<Record<string, unknown> & { id: string }> }>();
 const userMessagesPending = new Map<string, Promise<Array<Record<string, unknown> & { id: string }>>>();
+const userMessagesRevision = new Map<string, number>();
+function invalidateUserMessagesCache(uid?: string) {
+  const keys = uid ? [uid] : [...new Set([...userMessagesCache.keys(), ...userMessagesPending.keys()])];
+  for (const key of keys) {
+    userMessagesRevision.set(key, (userMessagesRevision.get(key) ?? 0) + 1);
+    userMessagesCache.delete(key);
+    userMessagesPending.delete(key);
+  }
+}
 async function getUserMessagesOnce(uid: string) {
   const cached = userMessagesCache.get(uid);
   if (cached && Date.now() - cached.loadedAt < 30_000) return cached.rows;
   const pending = userMessagesPending.get(uid);
   if (pending) return pending;
-  const request = getDocs(query(collection(firestore, "messages"), or(where("recipientId", "==", uid), where("broadcast", "==", true)), limit(100))).then((snapshot) => {
-    const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
-    userMessagesCache.set(uid, { loadedAt: Date.now(), rows });
+  const revision = userMessagesRevision.get(uid) ?? 0;
+  const request = readAllDocuments((cursor) => query(collection(firestore, "messages"), or(where("recipientId", "==", uid), where("broadcast", "==", true)), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
+    const rows = documents.map((item) => ({ id: item.id, ...item.data(), createdAt: timestampValue(item.data().createdAt) })).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
+    if (revision === (userMessagesRevision.get(uid) ?? 0)) userMessagesCache.set(uid, { loadedAt: Date.now(), rows });
     return rows;
   }).finally(() => { if (userMessagesPending.get(uid) === request) userMessagesPending.delete(uid); });
   userMessagesPending.set(uid, request);

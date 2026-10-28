@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
-import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot, type Transaction } from "./firestore-rest.js";
+import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot, type Query, type Transaction } from "./firestore-rest.js";
 import { getStorage } from "./storage-rest.js";
 import { ApiError, defineWorkerSecret, callable, httpEndpoint, type ApiRequest } from "./api-adapter.js";
 import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
@@ -19,16 +19,34 @@ const roles = ["user", "admin", "moderator", "support", "super_admin"] as const;
 type Role = (typeof roles)[number];
 const permissions = ["viewUsers", "manageUsers", "manageTokens", "manageServices", "manageLipaApplications", "manageContent", "manageMessages", "manageReports", "manageSettings", "manageLicenses", "viewAuditLogs"] as const;
 const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara"]);
-// Admin panels only need a recent working set; historical records remain in
-// Firestore and are loaded through the panel's pagination where supported.
+// Keep each Firestore request bounded; complete admin lists advance through
+// deterministic document-ID cursors so no records are silently dropped.
 const ADMIN_LIST_LIMIT = 50;
-const FCM_BROADCAST_LIMIT = 100;
+const FCM_PAGE_SIZE = 100;
+const FCM_SEND_CONCURRENCY = 20;
 
 type Profile = { createdAt?: unknown; role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBonusRegistrationGranted?: boolean; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; firstName?: string; phone?: string; profileImageUrl?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
   return request.auth.uid;
+}
+
+async function getAllCollectionDocs(collectionName: string, pageSize = ADMIN_LIST_LIMIT, equalityFilter?: { field: string; value: unknown }) {
+  const documents: Array<DocumentSnapshot> = [];
+  let cursor: string | undefined;
+  for (;;) {
+    let pageQuery: Query = db.collection(collectionName);
+    if (equalityFilter) pageQuery = pageQuery.where(equalityFilter.field, "==", equalityFilter.value);
+    pageQuery = pageQuery.orderByDocumentId();
+    if (cursor) pageQuery = pageQuery.startAfterDocumentId(cursor);
+    const page = await pageQuery.limit(pageSize).get();
+    documents.push(...page.docs);
+    if (page.docs.length < pageSize) return documents;
+    const nextCursor = page.docs.at(-1)?.id;
+    if (!nextCursor || nextCursor === cursor) throw new Error(`Firestore pagination stalled for ${collectionName}.`);
+    cursor = nextCursor;
+  }
 }
 
 async function profileFor(uid: string) {
@@ -170,29 +188,31 @@ export const sendPushNotification = callable(async (request) => {
   if (!title || !body || (!broadcast && !targetUid) || (broadcast && targetUid)) {
     throw new ApiError("invalid-argument", "Weka kichwa, ujumbe na chagua mtumiaji mmoja au watumiaji wote.");
   }
-  const tokensSnapshot = broadcast
-    ? await db.collection("fcmTokens").limit(FCM_BROADCAST_LIMIT).get()
-    : await db.collection("fcmTokens").where("uid", "==", targetUid).limit(100).get();
-  const tokens = [...new Set(tokensSnapshot.docs.map((doc) => doc.data()?.token).filter((token): token is string => typeof token === "string" && token.length >= 20))];
+  const tokenDocuments = await getAllCollectionDocs("fcmTokens", FCM_PAGE_SIZE, broadcast ? undefined : { field: "uid", value: targetUid });
+  const tokens = [...new Set(tokenDocuments
+    .map((document) => document.data()?.token)
+    .filter((token): token is string => typeof token === "string" && token.length >= 20))];
   if (!tokens.length) return { sent: 0, failed: 0, message: "Hakuna kifaa kilichosajili tokeni ya arifa." };
   const accessToken = await getGoogleAccessToken();
   let sent = 0;
   let failed = 0;
-  for (const token of tokens) {
-    const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(getWorkerEnv().FIREBASE_PROJECT_ID)}/messages:send`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ message: { token, notification: { title, body }, android: { priority: "HIGH", notification: { channel_id: "smartservicestz_updates" } } } }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (response.ok) sent++;
-    else {
+  const sendOne = async (token: string) => {
+    try {
+      const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(getWorkerEnv().FIREBASE_PROJECT_ID)}/messages:send`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: { token, notification: { title, body }, android: { priority: "HIGH", notification: { channel_id: "smartservicestz_updates" } } } }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (response.ok) sent++;
+      else { failed++; console.error("FCM delivery failed", { status: response.status }); }
+    } catch (error) {
       failed++;
-      if (response.status === 404 || response.status === 400) {
-        // Invalid tokens are retained for audit and can be cleaned up safely later.
-      }
-      console.error("FCM delivery failed", { status: response.status });
+      console.error("FCM delivery failed", { error: error instanceof Error ? error.message : "network error" });
     }
+  };
+  for (let offset = 0; offset < tokens.length; offset += FCM_SEND_CONCURRENCY) {
+    await Promise.all(tokens.slice(offset, offset + FCM_SEND_CONCURRENCY).map(sendOne));
   }
   return { sent, failed, attempted: tokens.length };
 });
@@ -758,8 +778,8 @@ export const listLipaApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
-  const snapshot = await db.collection("lipaApplications").limit(ADMIN_LIST_LIMIT).get();
-  const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const documents = await getAllCollectionDocs("lipaApplications");
+  const rows: Array<Record<string, unknown> & { id: string }> = documents.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => {
     const left = String(a.submittedAt ?? "");
     const right = String(b.submittedAt ?? "");
@@ -1059,8 +1079,8 @@ export const listServiceApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  const snapshot = await db.collection("serviceApplications").limit(ADMIN_LIST_LIMIT).get();
-  const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const documents = await getAllCollectionDocs("serviceApplications");
+  const rows: Array<Record<string, unknown> & { id: string }> = documents.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
   return { applications: rows };
 });
@@ -1137,8 +1157,8 @@ export const listAdminUsers = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "viewUsers");
 
-  const snapshot = await db.collection("users").limit(ADMIN_LIST_LIMIT).get();
-  return Promise.all(snapshot.docs.map(async (document) => {
+  const documents = await getAllCollectionDocs("users");
+  return Promise.all(documents.map(async (document) => {
     const data = document.data() as Record<string, unknown>;
     const roleResolution = resolveAuthRole(
       typeof data.role === "string" ? data.role as Role : undefined,

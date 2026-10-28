@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
-import { changeOwnPassword, claimRegistrationPhone, enforceAccountRestriction, setAccountStatus } from "../src/handlers.js";
+import { changeOwnPassword, claimRegistrationPhone, enforceAccountRestriction, sendPushNotification, setAccountStatus } from "../src/handlers.js";
 import { withWorkerEnv, type WorkerEnv } from "../src/runtime.js";
 
 const phone = "255712345678";
@@ -189,4 +189,46 @@ test("limited accounts can call only the selected action categories", async () =
     await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "submitLipaApplication")), { code: "permission-denied" });
     await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "createTokenPurchaseOrder")), { code: "permission-denied" });
   });
+});
+
+test("sendPushNotification pages through all broadcast tokens beyond the first 100", async () => {
+  const env = environment();
+  const originalFetch = globalThis.fetch;
+  const sentTokens = new Set<string>();
+  const runQueryBodies: Array<Record<string, any>> = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const url = input instanceof URL ? input.href : String(input);
+    if (url.includes("oauth2.googleapis.com/token")) return jsonResponse({ access_token: "test-access-token", expires_in: 3600 });
+    if (url.endsWith("/documents/users/admin-1")) return jsonResponse(firestoreDocument("users/admin-1", { role: "admin", phone }));
+    if (url.endsWith(":runQuery")) {
+      const body = JSON.parse(String(init.body)) as Record<string, any>;
+      runQueryBodies.push(body);
+      const start = body.structuredQuery.startAt ? 100 : 0;
+      const end = Math.min(start + 100, 105);
+      return jsonResponse(Array.from({ length: end - start }, (_, offset) => {
+        const index = start + offset;
+        const id = `token-doc-${String(index).padStart(3, "0")}`;
+        return { document: firestoreDocument(`fcmTokens/${id}`, { uid: `user-${index}`, token: `valid-device-fcm-token-${String(index).padStart(3, "0")}` }) };
+      }));
+    }
+    if (url.endsWith("/messages:send")) {
+      const body = JSON.parse(String(init.body)) as { message?: { token?: string } };
+      sentTokens.add(String(body.message?.token));
+      return jsonResponse({ name: `projects/worker-handler-test/messages/${sentTokens.size}` });
+    }
+    throw new Error(`Unexpected mocked request: ${init.method ?? "GET"} ${url}`);
+  };
+  try {
+    const result = await withWorkerEnv(env, () => sendPushNotification.handler({
+      auth: { uid: "admin-1" },
+      data: { broadcast: true, title: "Taarifa", body: "Jaribio la notification" },
+    }));
+    assert.deepEqual(result, { sent: 105, failed: 0, attempted: 105 });
+    assert.equal(sentTokens.size, 105);
+    assert.equal(runQueryBodies.length, 2);
+    assert.equal(runQueryBodies[0].structuredQuery.limit, 100);
+    assert.equal(runQueryBodies[1].structuredQuery.startAt.before, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

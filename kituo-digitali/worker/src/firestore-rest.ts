@@ -150,16 +150,26 @@ export class Query {
     readonly collectionPath: string,
     protected readonly filter?: { field: string; value: unknown },
     protected readonly maxResults?: number,
+    protected readonly documentIdCursor?: string,
   ) {}
 
   where(field: string, operation: "==", value: unknown) {
     if (operation !== "==") throw new Error("The Worker Firestore adapter currently supports equality queries only.");
-    return new Query(this.client, this.collectionPath, { field, value }, this.maxResults);
+    return new Query(this.client, this.collectionPath, { field, value }, this.maxResults, this.documentIdCursor);
   }
 
   limit(count: number) {
     if (!Number.isInteger(count) || count < 1 || count > 1000) throw new Error("Invalid Firestore query limit.");
-    return new Query(this.client, this.collectionPath, this.filter, count);
+    return new Query(this.client, this.collectionPath, this.filter, count, this.documentIdCursor);
+  }
+
+  orderByDocumentId() {
+    return new Query(this.client, this.collectionPath, this.filter, this.maxResults, this.documentIdCursor);
+  }
+
+  startAfterDocumentId(documentId: string) {
+    if (!documentId || documentId.includes("/")) throw new Error("Invalid Firestore cursor document ID.");
+    return new Query(this.client, this.collectionPath, this.filter, this.maxResults, documentId);
   }
 
   async get(transactionId?: string) {
@@ -172,6 +182,10 @@ export class Query {
 
   get queryLimit() {
     return this.maxResults;
+  }
+
+  get queryDocumentIdCursor() {
+    return this.documentIdCursor;
   }
 }
 
@@ -291,6 +305,12 @@ export class FirestoreRest {
           value: encodeValue(query.queryFilter.value),
         },
       };
+    }
+    structuredQuery.orderBy = [{ field: { fieldPath: "__name__" }, direction: "ASCENDING" }];
+    if (query.queryDocumentIdCursor) {
+      const segments = query.collectionPath.split("/").filter(Boolean);
+      const documentPath = [...segments, query.queryDocumentIdCursor].map(encodeURIComponent).join("/");
+      structuredQuery.startAt = { values: [{ referenceValue: `projects/${projectId()}/databases/(default)/documents/${documentPath}` }], before: false };
     }
     if (query.queryLimit !== undefined) structuredQuery.limit = query.queryLimit;
     const body: Record<string, unknown> = { structuredQuery };
