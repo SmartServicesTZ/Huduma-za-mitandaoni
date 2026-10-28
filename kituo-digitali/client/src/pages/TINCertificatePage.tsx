@@ -28,7 +28,7 @@ export default function TINCertificatePage() {
   const { firebaseUser } = useAuth();
   const [paid, setPaid] = useState(false);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
-  const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:localToday(), traLocation:"MANYARA", taxOffice:"BABATI TAX OFFICE", physicalLocation:"BABATI (KATA YA BABATI)", streetArea:"BABATI MJINI", commissioner:"Alfred T. Mregi" });
+  const [form, setForm] = useState<TinCertificateForm>({ name:"", tin:"", effectDate:localToday(), traLocation:"MANYARA", taxOffice:"BABATI TAX OFFICE", physicalLocation:"MAGUGU, BABATI DC", streetArea:"NGARENARO", commissioner:"Alfred T. Mregi" });
   const [busy, setBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
