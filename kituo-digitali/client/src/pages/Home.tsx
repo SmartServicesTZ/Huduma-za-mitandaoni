@@ -257,10 +257,10 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const totalBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
   const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
-  const otherAmount = otherCount * 500;
-  const totalAmount = otherAmount;
+  const totalAmount = Math.ceil(otherCount / 3) * 500;
+  const otherAmount = totalAmount;
   const paymentPhone = paidFromPhone.trim() || profile?.phone || "";
-  const canProceed = totalAmount >= 1000 && otherCount > 0 && paymentPhone.trim().length >= 9;
+  const canProceed = totalAmount >= 500 && otherCount >= 3 && paymentPhone.trim().length >= 9;
   const openWhatsAppProof = () => {
     if (!canProceed) return;
     const message = [
@@ -290,11 +290,11 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       <div className="token-choice-card">
         <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Nunua tokeni za huduma</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
         <div className="token-choice-fields">
-          <label><strong>Idadi ya tokeni za huduma</strong><span>Tokeni 1 = TZS 500</span><input aria-label="Idadi ya tokeni za huduma" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
+          <label><strong>Idadi ya tokeni za huduma</strong><span>Tokeni 3 = TZS 500 • Tokeni 6 = TZS 1,000</span><input aria-label="Idadi ya tokeni za huduma" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
-        <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Kiasi cha chini ni TZS 1,000; unaweza kuongeza tokeni na kulipa zaidi.</small></div>
+        <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Bei: tokeni 3 = TZS 500, tokeni 6 = TZS 1,000; kila tokeni 3 za ziada ni TZS 500.</small></div>
         <label className="token-choice-phone"><strong>Namba iliyolipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
-        <div className="token-choice-payto"><div className="token-choice-payto-row"><span>NAMBA YA LIPA</span><strong>29126823</strong></div><div className="token-choice-payto-row"><span>JINA LA MPOKEAJI</span><strong>Steward Tz</strong></div><div className="token-choice-payto-row"><span>HUDUMA</span><strong>Azam Pesa</strong></div></div>
+        <div className="token-choice-payto"><div className="token-choice-payto-row"><span>NAMBA YA LIPA</span><strong>29126823</strong></div><div className="token-choice-payto-row"><span>JINA LA MPOKEAJI</span><strong>Steward Tz</strong></div><div className="token-choice-payto-row"><span>MTANDAO</span><strong>Azam Pesa</strong></div></div>
         <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA WHATSAPP</button>
         <p className="token-choice-help">Baada ya kulipa, tuma picha ya uthibitisho WhatsApp. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
       </div>
