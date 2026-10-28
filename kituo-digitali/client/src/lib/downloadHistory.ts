@@ -160,18 +160,25 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
     try {
       const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
       if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
-        void navigator.share({ files: [file], title: name }).catch(() => startBrowserDownload(blob, name));
+        // Subiri share sheet irudiwe/imalizike; usionyeshe "imepakuliwa" kabla ya Android kurudisha matokeo.
+        void navigator.share({ files: [file], title: name })
+          .then(() => window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } })))
+          .catch(() => {
+            startBrowserDownload(blob, name);
+            window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
+          });
       } else {
         startBrowserDownload(blob, name);
+        window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
       }
     } catch {
       startBrowserDownload(blob, name);
+      window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
     }
   } else {
     startBrowserDownload(blob, name);
+    window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
   }
-
-  window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
 
   // Hifadhi hati ndogo ili iweze kupakuliwa tena kutoka Historia kwa dakika 30.
   if (blob.size > 0 && blob.size <= 600 * 1024) {
