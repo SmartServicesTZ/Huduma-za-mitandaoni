@@ -10,23 +10,23 @@ export function resolveAuthRole(
   const configuredPhone = normalizeTanzaniaPhone(configuredSuperAdminPhone);
   const normalizedProfilePhone = normalizeTanzaniaPhone(profilePhone);
   const isConfiguredSuperAdmin = Boolean(configuredPhone && normalizedProfilePhone === configuredPhone);
+  const storedPhone = typeof profilePhone === "string" ? profilePhone.replace(/[\\s()+-]/g, "") : "";
+  // When the same configured super-admin phone exists twice, keep the canonical
+  // international 255... profile as super_admin and demote the local 0... duplicate.
+  const shouldDemote = profileRole === "super_admin"
+    && isConfiguredSuperAdmin
+    && !storedPhone.startsWith("255");
 
-  // The Firestore role is server-managed: browser writes cannot change it,
-  // adminWrite blocks the role field, and updateUserAccess restricts role
-  // elevation to an already-authorized super admin. Do not silently demote an
-  // established super_admin just because the optional phone allow-list is
-  // missing or out of sync; that mismatch otherwise breaks every protected
-  // action (including adjustTokens) while the dashboard still shows SUPER ADMIN.
-  const role: AuthRole = profileRole === "super_admin" || isConfiguredSuperAdmin
-    ? "super_admin"
-    : profileRole ?? "user";
+  const role: AuthRole = shouldDemote
+    ? "user"
+    : profileRole === "super_admin" || isConfiguredSuperAdmin
+      ? "super_admin"
+      : profileRole ?? "user";
 
   return {
     role,
     isConfiguredSuperAdmin,
-    shouldPromote: isConfiguredSuperAdmin && profileRole !== "super_admin",
-    // Never auto-demote a server-managed super_admin based solely on a phone
-    // mismatch. Demotion must be an explicit, authorized role change.
-    shouldDemote: false,
+    shouldPromote: isConfiguredSuperAdmin && profileRole !== "super_admin" && !shouldDemote,
+    shouldDemote,
   };
 }
