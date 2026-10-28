@@ -4,7 +4,7 @@ import { Bot, MessageCircle, Minimize2, Send, Sparkles, X } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; text: string };
 
-const workerBase = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "").trim().replace(/\/+$/, "");
+const workerBase = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "https://huduma-za-mtandao-api.stewardjackson999.workers.dev").trim().replace(/\/+$/, "");
 
 export default function GeminiFloatingChat() {
   const [open, setOpen] = useState(false);
