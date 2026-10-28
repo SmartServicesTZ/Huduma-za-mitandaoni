@@ -384,3 +384,84 @@ html body .portal-shell .portal-content .portal-main .portal-service-grid--order
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+
+/* Premium wallet / token landing card */
+html body .portal-shell .portal-content .portal-main .token-card:not(.token-card--compact) {
+  isolation: isolate;
+  padding: clamp(22px, 4vw, 34px) !important;
+  min-height: 250px;
+  color: #f8fbff !important;
+  background:
+    radial-gradient(circle at 90% 15%, rgba(52,211,153,.24), transparent 24%),
+    radial-gradient(circle at 8% 100%, rgba(96,165,250,.18), transparent 30%),
+    linear-gradient(135deg,#101b35 0%,#172d52 53%,#253d77 100%) !important;
+  border: 1px solid rgba(191,219,254,.22) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 24px 60px rgba(15,23,42,.2) !important;
+}
+.token-card:not(.token-card--compact) .token-card__top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+.token-card:not(.token-card--compact) .token-icon {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 20px;
+  color: #fff !important;
+  background: linear-gradient(145deg,rgba(59,130,246,.95),rgba(16,185,129,.88)) !important;
+  box-shadow: 0 10px 24px rgba(2,6,23,.22);
+}
+.token-card:not(.token-card--compact) .overline { color: #b7c9e8 !important; letter-spacing: .14em; font-size: 10px; }
+.token-card:not(.token-card--compact) .token-card__top strong {
+  display: block;
+  margin: 5px 0 2px;
+  color: #fff !important;
+  font-size: clamp(38px,7vw,54px);
+  font-weight: 850;
+  letter-spacing: -.045em;
+  line-height: 1.04;
+}
+.token-card:not(.token-card--compact) .token-label { color: #c6d5eb !important; font-size: 12px; }
+.token-card:not(.token-card--compact) .token-card__meta {
+  position: relative;
+  z-index: 1;
+  margin-top: 24px;
+  padding: 15px 17px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 17px;
+  background: rgba(255,255,255,.075);
+  backdrop-filter: blur(10px);
+}
+.token-card:not(.token-card--compact) .token-account-name { color: #fff !important; font-size: 15px; }
+.token-card:not(.token-card--compact) .token-phone-line { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:7px; color:#c8d7ed !important; font-size:12px; }
+.token-card:not(.token-card--compact) .token-verification-status { color:#d7e7f8 !important; }
+.token-card:not(.token-card--compact) .token-add-button {
+  position: relative;
+  z-index: 1;
+  display:flex;
+  width:100%;
+  min-height:60px;
+  justify-content:space-between;
+  gap:14px;
+  margin-top:16px;
+  padding:14px 17px !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  border-radius:17px !important;
+  background:linear-gradient(100deg,#10b981,#059669) !important;
+  box-shadow:0 10px 24px rgba(5,150,105,.22);
+}
+.token-card:not(.token-card--compact) .token-add-button small { display:block; margin-top:4px; color:rgba(255,255,255,.83) !important; font-size:11px; font-weight:500; }
+.token-card:not(.token-card--compact) .account-warning { position:relative; z-index:1; border-radius:14px; }
+.token-card:not(.token-card--compact) .token-note { color:#c6d5eb !important; }
+@media(max-width:480px) {
+  html body .portal-shell .portal-content .portal-main .token-card:not(.token-card--compact) { padding:20px !important; border-radius:22px !important; }
+  .token-card:not(.token-card--compact) .token-icon { width:52px; height:52px; flex-basis:52px; border-radius:16px; }
+}
