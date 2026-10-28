@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Bot, MessageCircle, Minimize2, Send, Sparkles, X } from "lucide-react";
+import { Bot, MessageCircle, Minimize2, Send, Sparkles } from "lucide-react";
 
 type ChatSource = { title: string; url: string; verifiedAt: string };
 type ChatMessage = { role: "user" | "assistant"; text: string; sources?: ChatSource[] };
@@ -19,6 +19,12 @@ export default function GeminiFloatingChat() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy, open]);
+
+  useEffect(() => {
+    const openSupport = () => setOpen(true);
+    window.addEventListener("smartservicestz-open-ai-support", openSupport);
+    return () => window.removeEventListener("smartservicestz-open-ai-support", openSupport);
+  }, []);
 
   async function sendMessage(event?: FormEvent) {
     event?.preventDefault();
@@ -77,9 +83,9 @@ export default function GeminiFloatingChat() {
           <div style={{ padding: "0 12px 9px", background: "#fff", textAlign: "center", fontSize: 10, color: "#94a3b8" }}>Usitume password au taarifa nyeti.</div>
         </section>
       )}
-      <button type="button" onClick={() => setOpen((value) => !value)} aria-label={open ? "Funga msaidizi wa AI" : "Fungua msaidizi wa AI"} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.85)", borderRadius: 999, background: "linear-gradient(135deg,#075e54,#128c7e)", color: "#fff", boxShadow: "0 8px 26px rgba(7,94,84,.4)", fontWeight: 750, fontSize: 13, cursor: "pointer" }}>
-        {open ? <X size={20} /> : <MessageCircle size={21} />} {open ? "Funga" : "Uliza AI"}
-      </button>
+      <a href="https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&iam=2" target="_blank" rel="noreferrer" aria-label="Jiunge na Group la WhatsApp la SmartServicesTZ" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.85)", borderRadius: 999, background: "linear-gradient(135deg,#075e54,#128c7e)", color: "#fff", boxShadow: "0 8px 26px rgba(7,94,84,.4)", fontWeight: 750, fontSize: 13, cursor: "pointer", textDecoration: "none" }}>
+        <MessageCircle size={21} /> Group la WhatsApp
+      </a>
     </div>
   );
 }
