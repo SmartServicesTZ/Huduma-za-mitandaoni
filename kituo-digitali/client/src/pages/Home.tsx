@@ -750,7 +750,7 @@ export default function Home() {
     const selected = yangaPlayerChoices.filter((p) => yangaPlayers.includes(p.name));
     if (selected.some((p) => p.team !== "YANGA")) { setYangaQuizError("Umechagua mchezaji wa Simba. Ondoa chaguo hilo na chagua wachezaji wa Yanga pekee."); return; }
     const correct = yangaQuizQuestions.every((question, i) => yangaAnswers[i] === question.answer);
-    if (!correct) { setYangaQuizError("Baadhi ya majibu si sahihi. Kagua majibu yako na ujaribu tena."); return; }
+    if (!correct) { setYangaQuizError("Kuna majibu yasiyo sahihi. Tumechagua maswali mapya; jibu tena."); setYangaAnswers({}); setYangaPlayers([]); setYangaQuizQuestions(shuffleYangaArray(yangaQuestionPool).slice(0, 10).map((q) => ({ ...q, options: shuffleYangaArray(q.options) }))); return; }
     setYangaQuizError("");
     setYangaQuizPassed(true);
     setYangaEntryStep("rules");
