@@ -631,3 +631,26 @@
   .lq-guide-card { border-radius: 9px !important; }
   .lq-qr-paper { border-width: .35px !important; }
 }
+
+
+/* Network-specific sticker identities. QR data retains the existing TIPS merchant format. */
+.lq-network-brand { display:flex; align-items:center; justify-content:flex-end; width:36%; min-width:0; color:#c90020; font-size:clamp(15px,3.8cqw,42px); font-weight:1000; line-height:1; letter-spacing:-.055em; text-align:right; overflow-wrap:anywhere; }
+.lq-network-brand--voda { color:#c90020; font-style:italic; }
+.lq-network-brand--yas { color:#54258b; letter-spacing:.04em; }
+.lq-network-brand--airtel { color:#e21b2d; font-size:clamp(12px,2.8cqw,32px); letter-spacing:-.06em; }
+.lq-network-brand--halotel { color:#168a45; letter-spacing:-.035em; }
+.lq-card-artboard[data-network="yas"] .lq-card-red { background-color:#55258c !important; background-image:radial-gradient(circle at 85% 30%,#ffffff24 0 12%,transparent 12.5% 20%,#ffffff16 20.5% 28%,transparent 28.5%),linear-gradient(135deg,#7136a9 0%,#54258c 55%,#32145e 100%) !important; }
+.lq-card-artboard[data-network="airtel"] .lq-card-red { background-color:#e21b2d !important; background-image:radial-gradient(circle at 85% 30%,#ffffff25 0 12%,transparent 12.5% 20%,#ffffff16 20.5% 28%,transparent 28.5%),linear-gradient(135deg,#f0444e 0%,#df1b2f 55%,#a9001c 100%) !important; }
+.lq-card-artboard[data-network="halotel"] .lq-card-red { background-color:#138b48 !important; background-image:radial-gradient(circle at 85% 30%,#ffffff25 0 12%,transparent 12.5% 20%,#ffffff16 20.5% 28%,transparent 28.5%),linear-gradient(135deg,#24a95b 0%,#138b48 55%,#075b30 100%) !important; }
+.lq-card-artboard[data-network="yas"] .lq-card-watermark,.lq-card-artboard[data-network="airtel"] .lq-card-watermark,.lq-card-artboard[data-network="halotel"] .lq-card-watermark { opacity:.35; }
+.lq-card-artboard[data-network="yas"] .lq-merchant-number::after { background:#6734a0 !important; }
+.lq-card-artboard[data-network="airtel"] .lq-merchant-number::after { background:#e21b2d !important; }
+.lq-card-artboard[data-network="halotel"] .lq-merchant-number::after { background:#138b48 !important; }
+.lq-card-artboard[data-network="yas"] .lq-qr-corner { border-color:#54258c !important; }
+.lq-card-artboard[data-network="airtel"] .lq-qr-corner { border-color:#df1b2f !important; }
+.lq-card-artboard[data-network="halotel"] .lq-qr-corner { border-color:#138b48 !important; }
+.lq-card-artboard[data-network="yas"] .lq-pay-banner strong { color:#54258c !important; }
+.lq-card-artboard[data-network="airtel"] .lq-pay-banner strong { color:#df1b2f !important; }
+.lq-card-artboard[data-network="halotel"] .lq-pay-banner strong { color:#138b48 !important; }
+.lq-qr-paper { border-width:.2px !important; }
+@media (max-width:700px) { .lq-network-brand { width:36%; } .lq-qr-paper { border-width:.2px !important; } }
