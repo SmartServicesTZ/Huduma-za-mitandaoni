@@ -602,6 +602,11 @@ export const submitLipaApplication = callable(async (request) => {
   if (config.active !== true) throw new ApiError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
   const fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
   if (/yas|tigo/i.test(networkId)) {
+    for (let index = fields.length - 1; index >= 0; index -= 1) {
+      const name = String(fields[index].fieldName ?? "");
+      if (name === "businessLicense") fields.splice(index, 1);
+      else if (name === "tinNumber" || name === "businessLicensePhoto") fields[index] = { ...fields[index], required: false };
+    }
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
     if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
     if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
