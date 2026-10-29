@@ -996,7 +996,8 @@ export const createServiceApplication = callable(async (request) => {
   const serviceSnapshot = await db.collection("services").where("slug", "==", serviceSlug).limit(1).get();
   const seededAccessService = defaultAccessLipaServices.find((item) => item.slug === serviceSlug);
   const seededSmeVodacom = serviceSlug === "sme-vodacom" ? defaultServices.find((item) => item.slug === serviceSlug) : undefined;
-  const service = serviceSnapshot.empty ? (seededAccessService ?? seededSmeVodacom) : serviceSnapshot.docs[0]?.data();
+  const seededTillService = serviceSlug === "pata-till-mitandao-yote" ? defaultServices.find((item) => item.slug === serviceSlug) : undefined;
+  const service = serviceSnapshot.empty ? (seededAccessService ?? seededSmeVodacom ?? seededTillService) : serviceSnapshot.docs[0]?.data();
   // Keep the dedicated SME Vodacom schema in sync with the built-in form schema.
   if (serviceSlug === "sme-vodacom" && service && seededSmeVodacom) service.fields = seededSmeVodacom.fields;
   if (!service) throw new ApiError("not-found", "Huduma haikupatikana.");
