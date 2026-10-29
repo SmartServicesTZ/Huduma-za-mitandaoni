@@ -65,6 +65,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "HUDUMA ZA WAKALA"),
   free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia bila malipo.", "landmark", "HUDUMA ZA WAKALA"),
   free("access-lipa-number", "PATA ACCESS YA LIPA & USAJILI", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "HUDUMA ZA WAKALA"),
+  free("pata-till-mitandao-yote", "PATA TILL MITANDAO YOTE", "Omba Till ya Halotel, Airtel au Vodacom. Halotel bure; Airtel TSh 5,000; Vodacom TSh 40,000.", "store", "HUDUMA ZA WAKALA"),
   paid("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA USAJILI & LIPA", "Tengeneza kitambulisho cha kisasa cha wakala wa usajili na Lipa.", "badge-check", "HUDUMA ZA WAKALA"),
   paid("sme-airtel-mkataba", "SME AIRTEL MKATABA", "Jaza na hakiki mkataba wa SME wa Airtel.", "copy", "HUDUMA ZA WAKALA"),
   free("sme-vodacom", "SME VODACOM", "Omba kuunganishwa SME Vodacom na uwasilishe cheti cha TIN.", "smartphone", "HUDUMA ZA WAKALA"),
@@ -113,7 +114,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
       : { ...fallback, ...service });
   });
   if (initialized) {
-    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando"];
+    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote"];
     alwaysAvailableDefaults.forEach((slug) => {
       const fallback = defaults.get(slug);
       if (fallback && !configured.some((service) => service.slug === slug)) merged.set(slug, fallback);
