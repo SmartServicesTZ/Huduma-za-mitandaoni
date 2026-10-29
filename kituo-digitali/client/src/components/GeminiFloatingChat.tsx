@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Bot, MessageCircle, Minimize2, Send, Sparkles } from "lucide-react";
+import { Bot, Download, MessageCircle, Minimize2, Send, Sparkles } from "lucide-react";
 
 type ChatSource = { title: string; url: string; verifiedAt: string };
 type ChatMessage = { role: "user" | "assistant"; text: string; sources?: ChatSource[] };
@@ -83,9 +83,14 @@ export default function GeminiFloatingChat() {
           <div style={{ padding: "0 12px 9px", background: "#fff", textAlign: "center", fontSize: 10, color: "#94a3b8" }}>Usitume password au taarifa nyeti.</div>
         </section>
       )}
-      <a href="https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&iam=2" target="_blank" rel="noreferrer" aria-label="Jiunge na Group la WhatsApp la SmartServicesTZ" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.85)", borderRadius: 999, background: "linear-gradient(135deg,#075e54,#128c7e)", color: "#fff", boxShadow: "0 8px 26px rgba(7,94,84,.4)", fontWeight: 750, fontSize: 13, cursor: "pointer", textDecoration: "none" }}>
-        <MessageCircle size={21} /> Group la WhatsApp
-      </a>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>
+        <a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" aria-label="Pakua SmartServicesTZ App" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.9)", borderRadius: 999, background: "linear-gradient(135deg,#1d4ed8,#2563eb)", color: "#fff", boxShadow: "0 8px 26px rgba(37,99,235,.35)", fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <Download size={21} /> DOWNLOAD APP
+        </a>
+        <a href="https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&iam=2" target="_blank" rel="noreferrer" aria-label="Jiunge na Group la WhatsApp la SmartServicesTZ" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.85)", borderRadius: 999, background: "linear-gradient(135deg,#075e54,#128c7e)", color: "#fff", boxShadow: "0 8px 26px rgba(7,94,84,.4)", fontWeight: 750, fontSize: 13, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <MessageCircle size={21} /> GROUP LA WHATSAPP
+        </a>
+      </div>
     </div>
   );
 }
