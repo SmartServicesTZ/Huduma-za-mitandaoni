@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getCollectionOnce, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus } from "@/lib/firebase";
 import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -250,7 +250,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { user } = useAuth();
-  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }, { href: "#support", label: "Saport", icon: HeartHandshake }];
+  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/my-applications", label: "Maombi Yangu", icon: FileBadge }, { href: "/tokens", label: "Tokeni", icon: CircleDollarSign }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }, { href: "#support", label: "Saport", icon: HeartHandshake }];
   return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{(user?.name?.trim()?.slice(0, 1).toUpperCase() ?? "S")}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div>{!user && <button type="button" className="sidebar-auth-cta" onClick={() => { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); onClose?.(); }}><LogIn size={17} /><span>INGIA / JISAJILI</span></button>}<nav>{items.map(({ href, label, icon: ItemIcon }) => href === "#support" ? <button key={href} type="button" onClick={() => { window.dispatchEvent(new CustomEvent("smartservicestz-open-ai-support")); onClose?.(); }} className="portal-nav-item" style={{ width: "100%", border: 0, background: "transparent", cursor: "pointer", textAlign: "left", font: "inherit" }}><ItemIcon size={19} /><span>{label} · AI</span></button> : <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <><Link href="/admin" onClick={onClose} className={`portal-nav-item admin-link ${location === "/admin" ? "active" : ""}`} style={{margin:"8px 10px",borderRadius:12,border:"1px solid #c4b5fd",background:"linear-gradient(135deg,#f5f3ff,#eef2ff)",color:"#4c1d95",fontWeight:800}}><Settings2 size={19} /><span>Paneli ya Admin</span><ChevronRight size={16}/></Link></>}<a href="https://wa.me/255692287767?text=Habari%20SmartServicesTZ%2C%20nahitaji%20msaada." target="_blank" rel="noreferrer" className="sidebar-support-contact" style={{display:"flex",alignItems:"center",gap:10,margin:"8px 10px",padding:10,borderRadius:12,background:"#e7f9ef",color:"#075e36",textDecoration:"none",fontSize:12,fontWeight:700,flexShrink:0}}><MessageCircle size={18}/><span>WhatsApp: 0692287767<small style={{display:"block",fontWeight:500,marginTop:3}}>WhatsApp tu · si simu ya kawaida</small></span></a><div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
@@ -511,6 +511,113 @@ function HistoryPage() {
     </section>
   </main>;
 }
+function MyApplicationsPage() {
+  const { firebaseUser } = useAuth();
+  const [serviceApplications, setServiceApplications] = useState<any[]>([]);
+  const [lipaApplications, setLipaApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const uid = firebaseUser?.uid;
+    if (!uid) {
+      setServiceApplications([]);
+      setLipaApplications([]);
+      setLoading(false);
+      return undefined;
+    }
+    setLoading(true);
+    const stopServices = subscribeUserServiceApplications(uid, (items) => {
+      setServiceApplications(items);
+      setLoading(false);
+    }, (error) => {
+      console.error("Imeshindikana kupakia maombi ya huduma", error);
+      toast.error("Baadhi ya maombi ya huduma hayajapakiwa. Jaribu tena.");
+      setLoading(false);
+    });
+    const stopLipa = subscribeUserLipaApplications(uid, (items) => {
+      setLipaApplications(items);
+      setLoading(false);
+    }, (error) => {
+      console.error("Imeshindikana kupakia maombi ya Lipa Namba", error);
+      toast.error("Maombi ya Lipa Namba hayajapakiwa. Jaribu tena.");
+      setLoading(false);
+    });
+    return () => { stopServices(); stopLipa(); };
+  }, [firebaseUser?.uid]);
+
+  const dateMillis = (value: any) => {
+    try {
+      const date = value?.toDate ? value.toDate() : new Date(String(value ?? ""));
+      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    } catch { return 0; }
+  };
+  const rows = [
+    ...serviceApplications.map((item) => ({
+      id: String(item.applicationId || item.id),
+      title: String(item.serviceName || item.serviceSlug || "Ombi la huduma"),
+      category: "Huduma",
+      status: String(item.status || "PENDING").toUpperCase(),
+      reference: String(item.applicationId || item.id),
+      phone: String(item.phone ?? item.applicantData?.phone ?? ""),
+      date: item.updatedAt ?? item.submittedAt ?? item.createdAt,
+      reason: String(item.rejectionReason ?? ""),
+      message: String(item.adminReply ?? item.adminNote ?? item.additionalInfoRequest ?? ""),
+    })),
+    ...lipaApplications.map((item) => ({
+      id: String(item.applicationId || item.id),
+      title: `Lipa Namba — ${String(item.network || item.networkId || "Mtandao")}`,
+      category: "Lipa Namba",
+      status: String(item.status || "PENDING").toUpperCase(),
+      reference: String(item.applicationId || item.id),
+      phone: String(item.phone ?? ""),
+      date: item.updatedAt ?? item.submittedAt,
+      reason: String(item.rejectionReason ?? ""),
+      message: String(item.adminReply ?? item.additionalInfoRequest ?? item.rewardNote ?? ""),
+    })),
+  ].sort((a, b) => dateMillis(b.date) - dateMillis(a.date));
+  const statusLabel = (status: string) => status === "APPROVED" ? "LIMEIDHINISHWA" : status === "REJECTED" ? "LIMEKATALIWA" : status === "PROCESSING" ? "LINAFANYIWA KAZI" : status === "PENDING" ? "LINASUBIRI" : status;
+  const statusStyle = (status: string): React.CSSProperties => ({
+    display: "inline-flex", alignItems: "center", borderRadius: 999, padding: "6px 10px", fontSize: 11, fontWeight: 900,
+    background: status === "APPROVED" ? "#dcfce7" : status === "REJECTED" ? "#fee2e2" : status === "PROCESSING" ? "#dbeafe" : "#fef3c7",
+    color: status === "APPROVED" ? "#166534" : status === "REJECTED" ? "#991b1b" : status === "PROCESSING" ? "#1d4ed8" : "#92400e",
+    border: `1px solid ${status === "APPROVED" ? "#86efac" : status === "REJECTED" ? "#fca5a5" : status === "PROCESSING" ? "#93c5fd" : "#fcd34d"}`,
+  });
+
+  return <main className="portal-main">
+    <div className="page-heading">
+      <div><span className="overline">Ufuatiliaji wa huduma</span><h1>MAOMBI YANGU</h1><p>Maombi yote uliyotuma yanaonekana hapa — Lipa Namba, Access, leseni na huduma nyingine.</p></div>
+      <FileBadge size={36} />
+    </div>
+    {!firebaseUser ? <section className="account-panel"><Notice tone="info">Ingia kwenye akaunti yako ili kuona na kufuatilia maombi yako.</Notice><button type="button" className="button button--green" onClick={() => window.dispatchEvent(new CustomEvent("smartservicestz-open-auth"))}>INGIA / JISAJILI</button></section>
+    : <section className="account-panel" style={{maxWidth:"none"}}>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
+        <div className="notice notice--info" style={{margin:0,flex:"1 1 140px"}}><strong>{rows.length}</strong> maombi yote</div>
+        <div className="notice notice--info" style={{margin:0,flex:"1 1 140px"}}><strong>{rows.filter((r)=>r.status==="PENDING"||r.status==="PROCESSING").length}</strong> yanasubiri / yanafanyiwa kazi</div>
+      </div>
+      {loading ? <Notice tone="info">Inapakia maombi yako yote...</Notice> : rows.length === 0 ? <div style={{textAlign:"center",padding:"28px 12px"}}><FileBadge size={34}/><h2>Bado huna maombi</h2><p>Tuma ombi la huduma; utaliona hapa na kufuatilia hali yake.</p><Link className="button button--green" href="/services">TAZAMA HUDUMA</Link></div> :
+        <div style={{display:"grid",gap:12}}>
+          {rows.map((item) => {
+            const date = dateMillis(item.date);
+            return <article key={item.category + ":" + item.id} style={{border:"1px solid #dbe5df",borderLeft:`5px solid ${item.status==="APPROVED"?"#16a34a":item.status==="REJECTED"?"#dc2626":item.status==="PROCESSING"?"#2563eb":"#d97706"}`,borderRadius:13,padding:15,background:"#fff",display:"grid",gap:9}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+                <div style={{minWidth:0,flex:"1 1 220px"}}><span style={{fontSize:10,fontWeight:900,letterSpacing:".08em",color:"#64748b"}}>{item.category.toUpperCase()}</span><h3 style={{margin:"4px 0",fontSize:16,overflowWrap:"anywhere"}}>{item.title}</h3></div>
+                <span style={statusStyle(item.status)}>{statusLabel(item.status)}</span>
+              </div>
+              <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:12,color:"#475569"}}>
+                <span>Rejea: <strong>{item.reference}</strong></span>
+                {item.phone && <span>Simu: {item.phone}</span>}
+                <span>{date ? new Date(date).toLocaleString("sw-TZ") : "Tarehe haijatajwa"}</span>
+              </div>
+              {item.reason && <div style={{padding:10,borderRadius:9,background:"#fef2f2",color:"#991b1b",fontSize:13}}><strong>Sababu ya kukataliwa:</strong> {item.reason}</div>}
+              {item.message && <div style={{padding:10,borderRadius:9,background:"#eff6ff",color:"#1e3a8a",fontSize:13}}><strong>Ujumbe wa Admin:</strong> {item.message}</div>}
+            </article>;
+          })}
+        </div>}
+      <p style={{fontSize:12,color:"#64748b",marginTop:16}}>Ikiwa hali bado ni “LINASUBIRI” au “LINAFANYIWA KAZI”, hutahitaji kutuma ombi lilelile tena. Fungua ombi hili kufuatilia rejea yake au wasiliana na support.</p>
+    </section>}
+  </main>;
+}
+
 function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
 
@@ -657,7 +764,7 @@ function BottomNav() {
   const items = [
     { href: "/", label: "Mwanzo", icon: LayoutGrid },
     { href: "/services", label: "Huduma", icon: Zap },
-    { href: "/history", label: "Historia", icon: History },
+    { href: "/my-applications", label: "Maombi", icon: FileBadge },
     { href: "/account", label: "Akaunti", icon: UserRound },
   ];
   return <nav className="bottom-nav" aria-label="Menyu kuu ya simu">
@@ -963,7 +1070,7 @@ export default function Home() {
   const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
   const serviceFields = Array.isArray(selectedService?.fields) ? selectedService.fields : [];
-  const page = serviceSlug && (!isAuthenticated || totalTokenBalance <= 0) ? <main className="portal-main"><section className="license-form-card" style={{ maxWidth: 620, margin: "40px auto", textAlign: "center" }}><div className="token-icon" style={{ margin: "0 auto 16px" }}><WalletCards size={30} /></div><h1>{!isAuthenticated ? "Ingia kwanza" : "Huna tokeni"}</h1><p>{!isAuthenticated ? "Ingia kwenye akaunti yako ili kutumia huduma." : "Huna tokeni zilizobaki. Ongeza tokeni kwanza; huduma hazitafunguka mpaka salio liwe zaidi ya sifuri."}</p><button type="button" className="button button--green" onClick={() => { if (!isAuthenticated) window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); else navigate("/tokens"); }}>{!isAuthenticated ? "INGIA / JISAJILI SASA" : "ONGEZA TOKENI"}</button></section></main> : location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "stika-lipa" ? <LipaQrStudioPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "pata-pocket-wifi-mabando" ? <PocketWifiPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "sme-vodacom" ? <SmeVodacomPage /> : serviceSlug === "sme-airtel" ? <SmeAirtelPage /> : serviceSlug === "change-business-name-airtel-lipa" ? <ChangeBusinessNameAirtelLipaPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <VerifyTinPage /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : serviceSlug === "tengeneza-mkataba" ? <ContractMakerPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa msaada kuhusu salio, wasiliana nasi WhatsApp 0692287767 (WhatsApp tu).</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} userName={user?.name} isAuthenticated={isAuthenticated} allServicesPage={location === "/services"} />;
+  const page = serviceSlug && (!isAuthenticated || totalTokenBalance <= 0) ? <main className="portal-main"><section className="license-form-card" style={{ maxWidth: 620, margin: "40px auto", textAlign: "center" }}><div className="token-icon" style={{ margin: "0 auto 16px" }}><WalletCards size={30} /></div><h1>{!isAuthenticated ? "Ingia kwanza" : "Huna tokeni"}</h1><p>{!isAuthenticated ? "Ingia kwenye akaunti yako ili kutumia huduma." : "Huna tokeni zilizobaki. Ongeza tokeni kwanza; huduma hazitafunguka mpaka salio liwe zaidi ya sifuri."}</p><button type="button" className="button button--green" onClick={() => { if (!isAuthenticated) window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); else navigate("/tokens"); }}>{!isAuthenticated ? "INGIA / JISAJILI SASA" : "ONGEZA TOKENI"}</button></section></main> : location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "stika-lipa" ? <LipaQrStudioPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "pata-pocket-wifi-mabando" ? <PocketWifiPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "sme-vodacom" ? <SmeVodacomPage /> : serviceSlug === "sme-airtel" ? <SmeAirtelPage /> : serviceSlug === "change-business-name-airtel-lipa" ? <ChangeBusinessNameAirtelLipaPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <VerifyTinPage /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : serviceSlug === "tengeneza-mkataba" ? <ContractMakerPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/my-applications" ? <MyApplicationsPage /> : location === "/history" ? <HistoryPage /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /><Notice tone="info">Ununuzi wa tokeni kupitia FimiPay umesitishwa kwa muda. Kwa msaada kuhusu salio, wasiliana nasi WhatsApp 0692287767 (WhatsApp tu).</Notice></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} userName={user?.name} isAuthenticated={isAuthenticated} allServicesPage={location === "/services"} />;
   const accessMode = resolveAccountAccessMode(user);
   const fullAccessBlocked = isAuthenticated && accessMode === "denied";
   const restrictionNotice = accessMode === "read_only"
