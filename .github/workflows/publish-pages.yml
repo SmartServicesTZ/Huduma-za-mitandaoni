@@ -1,4 +1,4 @@
-name: Build and publish SmartServicesTZ to GitHub Pages
+name: Validate SmartServicesTZ Pages build
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: smartservicestz-pages
@@ -50,16 +50,5 @@ jobs:
           VITE_FIREBASE_STORAGE_READY: "false"
         run: pnpm build
 
-      - name: Publish generated static files to the Pages root
-        run: |
-          test -f kituo-digitali/dist/public/index.html
-          cp -a kituo-digitali/dist/public/. .
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No generated site changes to publish."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Publish SmartServicesTZ production build [skip ci]"
-          git push
+      - name: Verify production build output
+        run: test -f kituo-digitali/dist/public/index.html
