@@ -9,7 +9,12 @@ import airtelLogo from "../../public/airtel-logo.png";
 import vodacomLogo from "../../public/vodacom-logo.png";
 
 type Network = "HALOTEL" | "AIRTEL" | "VODACOM";
-const price: Record<Network, string> = { HALOTEL: "BURE KABISA", AIRTEL: "TSh 5,000", VODACOM: "TSh 40,000" };
+const price: Record<Network, string> = { HALOTEL: "BURE", AIRTEL: "TSh 5,000", VODACOM: "TSh 40,000" };
+const priceBadge: Record<Network, { color: string; background: string; border: string }> = {
+  HALOTEL: { color: "#166534", background: "#dcfce7", border: "#86efac" },
+  AIRTEL: { color: "#1d4ed8", background: "#dbeafe", border: "#93c5fd" },
+  VODACOM: { color: "#6d28d9", background: "#ede9fe", border: "#c4b5fd" },
+};
 const networkDetails: Record<Network, string[]> = {
   HALOTEL: ["Laini ya Halotel iwe na float/salio la angalau TSh 100,000.", "Mteja asiwe na Lipa Namba tayari.", "TIN namba inahitajika.", "Pakia picha ya kitambulisho cha taifa, mpiga kura au leseni ya udereva.", "Asiye na kitambulisho cha taifa aweke namba ya NIDA."],
   AIRTEL: ["Lazima uwe na laini ya Airtel.", "Namba ya NIDA inahitajika.", "Huduma hii inahitaji malipo ya TSh 5,000 kabla ya kukamilishwa.", "Baada ya kutuma ombi, wasiliana na Admin kwa OTP."],
@@ -102,14 +107,14 @@ export default function PataTillNetworksPage() {
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,245px),1fr))",gap:15}}>
         {(["HALOTEL","AIRTEL","VODACOM"] as Network[]).map(item => <button key={item} type="button" onClick={() => { setNetwork(item); resetForm(); }} style={{background:"#fff",border:`1px solid ${themes[item].border}`,borderRadius:16,padding:16,textAlign:"left",cursor:"pointer",color:"#172033",display:"flex",flexDirection:"column",gap:16,boxShadow:"0 7px 24px rgba(15,23,42,.055)",minHeight:220,transition:"transform .15s,box-shadow .15s"}}>
           <div style={{height:105,width:"100%",display:"grid",placeItems:"center",background:"#fff",border:"1px solid #edf0f5",borderRadius:11,padding:12,boxSizing:"border-box"}}><img src={logos[item]} alt={item+" logo"} style={{maxWidth:"80%",maxHeight:78,objectFit:"contain"}}/></div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,width:"100%"}}><strong style={{fontSize:17,letterSpacing:".2px"}}>{item}</strong><span style={{fontSize:14,fontWeight:900,color:item==="HALOTEL"?"#9a6700":themes[item].accent,background:themes[item].soft,padding:"8px 10px",borderRadius:9}}>{price[item]}</span></div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,width:"100%"}}><strong style={{fontSize:17,letterSpacing:".2px"}}>{item}</strong><span style={{fontSize:14,fontWeight:900,color:priceBadge[item].color,background:priceBadge[item].background,border:`1px solid ${priceBadge[item].border}`,padding:"8px 10px",borderRadius:9}}>{price[item]}</span></div>
           <span style={{fontSize:13,color:"#64748b",fontWeight:650}}>Angalia vigezo na endelea <span style={{color:themes[item].accent}}>→</span></span>
         </button>)}
       </div>
     </section> : <section style={{...cardStyle,padding:"clamp(16px,3vw,28px)",borderTop:`4px solid ${activeTheme.accent}`}}>
       <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",paddingBottom:20,borderBottom:"1px solid #e9edf3",marginBottom:20}}>
         <div style={{width:92,height:68,display:"grid",placeItems:"center",background:"#fff",border:"1px solid #e5eaf1",borderRadius:12,padding:8,boxSizing:"border-box"}}><img src={logos[network]} alt={network+" logo"} style={{maxWidth:"100%",maxHeight:52,objectFit:"contain"}}/></div>
-        <div style={{flex:"1 1 180px"}}><div style={{fontSize:11,fontWeight:900,letterSpacing:1.2,color:"#64748b"}}>FOMU YA MAOMBI</div><h2 style={{margin:"5px 0",fontSize:23,color:"#172033"}}>{network} Till / Uwakala</h2><span style={{display:"inline-block",fontSize:14,fontWeight:900,color:network==="HALOTEL"?"#8a5b00":activeTheme.accent,background:activeTheme.soft,padding:"7px 11px",borderRadius:8}}>{price[network]}</span></div>
+        <div style={{flex:"1 1 180px"}}><div style={{fontSize:11,fontWeight:900,letterSpacing:1.2,color:"#64748b"}}>FOMU YA MAOMBI</div><h2 style={{margin:"5px 0",fontSize:23,color:"#172033"}}>{network} Till / Uwakala</h2><span style={{display:"inline-block",fontSize:14,fontWeight:900,color:priceBadge[network].color,background:priceBadge[network].background,border:`1px solid ${priceBadge[network].border}`,padding:"7px 11px",borderRadius:8}}>{price[network]}</span></div>
       </div>
       <div style={{background:network==="HALOTEL"?"#fffbeb":"#fff7f8",border:`1px solid ${activeTheme.border}`,borderRadius:12,padding:16,marginBottom:22}}>
         <h3 style={{margin:"0 0 10px",fontSize:15,color:"#172033"}}>Kabla ya kuanza — vigezo vya {network}</h3>
@@ -132,13 +137,12 @@ export default function PataTillNetworksPage() {
         {network==="AIRTEL" && <>
           <label style={labelStyle}>Namba ya simu ya Airtel *<input style={fieldStyle} value={values.airtelPhone??""} onChange={e=>set("airtelPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
           <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value)} required placeholder="Weka namba ya NIDA" pattern="[0-9]{8}-[0-9]{5}-[0-9]{5}-[0-9]{2}"/></label>
-          <div style={{gridColumn:"1 / -1",background:"#fff7f7",border:"1px solid #fecaca",borderRadius:11,padding:15,color:"#7f1d1d",fontSize:14,lineHeight:1.7}}>Malipo ya huduma ni <b>TSh 5,000</b>. Baada ya kutuma ombi, wasiliana na Admin kupitia WhatsApp ili kupata maelekezo ya OTP.</div>
+          <div style={{gridColumn:"1 / -1",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:11,padding:15,color:"#1e40af",fontSize:14,lineHeight:1.7}}>Malipo ya huduma ni <b>TSh 5,000</b>. Baada ya kutuma ombi, wasiliana na Admin kupitia WhatsApp ili kupata maelekezo ya OTP.</div>
         </>}
         {network==="VODACOM" && <>
           <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value)} required placeholder="Weka namba ya NIDA" pattern="[0-9]{8}-[0-9]{5}-[0-9]{5}-[0-9]{2}"/></label>
           <label style={labelStyle}>Namba ya mawasiliano *<input style={fieldStyle} value={values.contactPhone??""} onChange={e=>set("contactPhone",e.target.value)} required inputMode="tel" placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
-          <label style={{...labelStyle,gridColumn:"1 / -1"}}>Picha ya kitambulisho (hiari)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setIdentityFile(e.target.files?.[0]??null)} style={{...fieldStyle,padding:9}}/><small style={{color:"#64748b",fontWeight:500}}>Unaweza kuambatisha picha ikiwa inahitajika.</small></label>
-          <div style={{gridColumn:"1 / -1",background:"#fff1f2",border:"1px solid #fecdd3",borderRadius:11,padding:15,color:"#881337",fontSize:14,lineHeight:1.7}}>Usisajili laini kabla ya kupata maelekezo. Hakikisha una scanner au Famoco yenye scanner. Gharama ya huduma ni <b>TSh 40,000</b>.</div>
+          <div style={{gridColumn:"1 / -1",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:11,padding:15,color:"#5b21b6",fontSize:14,lineHeight:1.7}}>Usisajili laini kabla ya kupata maelekezo. Hakikisha una scanner au Famoco yenye scanner. Gharama ya huduma ni <b>TSh 40,000</b>.</div>
         </>}
         {network!=="HALOTEL" && <label style={{display:"flex",gap:11,alignItems:"flex-start",gridColumn:"1 / -1",padding:14,border:"1px solid #e2e8f0",borderRadius:11,color:"#334155",lineHeight:1.6,fontSize:14}}><input type="checkbox" checked={paidConfirmed} onChange={e=>setPaidConfirmed(e.target.checked)} required style={{marginTop:4,accentColor:activeTheme.accent,width:17,height:17,flexShrink:0}}/><span>Nimeelewa kuwa gharama ya huduma ni {price[network]} na nitafuata maelekezo ya malipo yaliyothibitishwa na Admin.</span></label>}
         <div style={{gridColumn:"1 / -1",display:"flex",gap:10,flexWrap:"wrap",marginTop:4,paddingTop:16,borderTop:"1px solid #e9edf3"}}>
