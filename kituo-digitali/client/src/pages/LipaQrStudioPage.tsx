@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download, Info, MapPin, Printer, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowLeft, Download, Info, Printer, ShieldCheck, WalletCards } from "lucide-react";
 import * as QRCode from "qrcode";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -50,29 +50,23 @@ function downloadBlob(blob: Blob, filename: string) {
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string }>(function CardArtboard({ values, qrDataUrl }, ref) {
   return <article ref={ref} className="lq-artboard lq-card-artboard" data-lipa-export-page="card">
     <header className="lq-card-header">
-      <div className="lq-card-brand"><span className="lq-card-brand-mark">L</span><span><strong>Huduma za Lipa</strong><small>KADI YA BIASHARA</small></span></div>
-      <div className="lq-card-header-right"><span className="lq-card-header-mark">L</span><span><strong>LIPA NAMBA</strong><small>TAARIFA ZA BIASHARA</small></span></div>
+      <div className="lq-tips-logo" aria-label="TIPS"><strong>TIPS</strong></div>
+      <div className="lq-mpesa-logo" aria-label="Vodacom M-Pesa"><span className="lq-vodacom-mark">V</span><span><strong>M-PESA</strong><small>VODACOM</small></span></div>
     </header>
     <div className="lq-card-red">
-      <div className="lq-card-watermark" aria-hidden="true" />
       <div className="lq-qr-frame">
         <span className="lq-qr-corner lq-qr-tl" /><span className="lq-qr-corner lq-qr-tr" />
         <span className="lq-qr-corner lq-qr-bl" /><span className="lq-qr-corner lq-qr-br" />
         <div className="lq-qr-paper">
-          {qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara, si QR ya malipo" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}
+          {qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}
         </div>
       </div>
-      <span className="lq-qr-caption">SCAN KUONA TAARIFA</span>
       <div className="lq-merchant-box">
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
         <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>
       </div>
-      <div className="lq-pay-banner">Lipa kwa namba ya biashara</div>
-      <p className="lq-card-subtitle">Thibitisha jina la biashara kabla ya kulipa</p>
-      <div className="lq-card-location"><MapPin size={12} />{values.location || "ENEO"}<span>·</span>POSTA {values.postalCode || "53000"}</div>
-      <div className="lq-qr-disclaimer">QR HII NI YA TAARIFA TU · SI QR YA MALIPO</div>
+      <div className="lq-pay-banner"><strong>Pesa ni M-Pesa</strong><small>Lipa kutoka mitandao yote na benki</small></div>
     </div>
-    <footer className="lq-card-footer">Tumia menyu rasmi ya mtandao wako kufanya malipo · Hakiki jina la mpokeaji</footer>
   </article>;
 });
 
