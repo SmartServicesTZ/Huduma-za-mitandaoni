@@ -217,7 +217,28 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
       setFormError("Huduma hii haipokei maombi kwa sasa.");
       return;
     }
-    const nextErrors = validateServiceForm(fields, values);
+    // Vodacom Lipa Namba uses one visible "Majina 3" field, while some saved
+    // service forms still require firstName/middleName/lastName. Normalize the
+    // single full-name input before validation and submission so the hidden
+    // legacy required fields do not block a valid application.
+    let submissionValues = values;
+    if (service.slug === "access-lipa-vodacom") {
+      const fullName = String(values.fullName ?? values.names ?? "").trim();
+      const parts = fullName.split(/\\s+/).filter(Boolean);
+      if (fullName) {
+        submissionValues = {
+          ...values,
+          fullName,
+          firstName: String(values.firstName ?? parts[0] ?? "").trim(),
+          middleName: String(values.middleName ?? (parts.length > 2 ? parts.slice(1, -1).join(" ") : parts[1] ?? "")).trim(),
+          lastName: String(values.lastName ?? (parts.length > 1 ? parts[parts.length - 1] : "")).trim(),
+          name1: String(values.name1 ?? parts[0] ?? "").trim(),
+          name2: String(values.name2 ?? parts[1] ?? "").trim(),
+          name3: String(values.name3 ?? parts[2] ?? "").trim(),
+        };
+      }
+    }
+    const nextErrors = validateServiceForm(fields, submissionValues);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       setFormError("Tafadhali kagua sehemu zilizo na hitilafu kabla ya kutuma.");
@@ -226,14 +247,14 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     setSubmitting(true);
     try {
       if (editingApplicationId) {
-        await updateServiceApplication(editingApplicationId, values);
+        await updateServiceApplication(editingApplicationId, submissionValues);
         setSuccessReference(editingApplicationId);
         setEditingApplicationId(null);
         setValues({});
         setUploads({});
         setFormError("Mabadiliko yamehifadhiwa. Ombi bado linasubiri kuanza kushughulikiwa.");
       } else {
-        const result = await createServiceApplication(applicationId, service.slug, values) as ResultLike;
+        const result = await createServiceApplication(applicationId, service.slug, submissionValues) as ResultLike;
         setSuccessReference(String(result.reference ?? result.applicationId ?? applicationId));
       }
     } catch (error) {
