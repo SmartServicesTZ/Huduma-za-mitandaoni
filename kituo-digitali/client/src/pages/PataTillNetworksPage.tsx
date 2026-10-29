@@ -4,9 +4,9 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { createServiceApplication, uploadServiceDocument, subscribeUserServiceApplications, type ServiceApplication } from "@/lib/firebase";
-import halotelLogo from "../../../Halotel.png";
-import airtelLogo from "../../../Airtel.png";
-import vodacomLogo from "../../../Vodacom.png";
+import halotelLogo from "../../public/Halotel.png";
+import airtelLogo from "../../public/Airtel.png";
+import vodacomLogo from "../../public/Vodacom.png";
 
 type Network = "HALOTEL" | "AIRTEL" | "VODACOM";
 const price: Record<Network, string> = { HALOTEL: "BURE", AIRTEL: "TSh 5,000", VODACOM: "TSh 40,000" };
