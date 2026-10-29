@@ -59,7 +59,7 @@ function valueText(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (typeof value === "object") {
     try {
-      return JSON.stringify(value);
+      return JSON.stringify(value, null, 2);
     } catch {
       return "—";
     }
@@ -131,10 +131,12 @@ function PanelStyles() {
       .service-app-admin-modal-header p { color: #68746e; margin: 0; }
       .service-app-admin-close { align-items: center; background: transparent; border: 0; border-radius: 7px; color: #52625a; cursor: pointer; display: inline-flex; font-size: 1.35rem; line-height: 1; padding: 7px; }
       .service-app-admin-close:hover { background: #f0f5f1; }
-      .service-app-admin-detail-grid { display: grid; gap: 10px 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .service-app-admin-detail-item { border-bottom: 1px solid #edf1ee; padding: 8px 0; }
-      .service-app-admin-detail-item dt { color: #68746e; font-size: .73rem; margin-bottom: 3px; }
-      .service-app-admin-detail-item dd { margin: 0; overflow-wrap: anywhere; }
+      .service-app-admin-detail-grid { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); width: 100%; }
+      .service-app-admin-detail-item { background: #f8fbf9; border: 1px solid #dfe9e2; border-left: 4px solid #168653; border-radius: 10px; display: block; min-width: 0; padding: 12px 14px; }
+      .service-app-admin-detail-item dt { color: #17653f; display: block; font-size: .78rem; font-weight: 800; line-height: 1.45; margin: 0 0 7px; overflow-wrap: anywhere; }
+      .service-app-admin-detail-item dd { color: #17251f; display: block; font-size: .94rem; line-height: 1.65; margin: 0; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; word-break: break-word; }
+      .service-app-admin-detail-item dd img { max-width: 100%; }
+      .service-app-admin-section-title + .service-app-admin-detail-grid { margin-top: 12px; }
       .service-app-admin-section-title { border-bottom: 1px solid #e6ede8; font-size: .93rem; margin: 22px 0 6px; padding-bottom: 8px; }
       .service-app-admin-file { align-items: center; background: #f7faf8; border: 1px solid #e1ebe4; border-radius: 8px; display: flex; gap: 10px; justify-content: space-between; padding: 10px; }
       .service-app-admin-file-label { display: grid; gap: 3px; min-width: 0; }
