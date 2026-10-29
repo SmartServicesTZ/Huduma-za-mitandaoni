@@ -32,6 +32,7 @@ export const defaultServices: DefaultService[] = [
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: false, order: 11 },
       { fieldName: "businessEvidence", label: "Ushahidi wa biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp", "application/pdf"], order: 12 },
       { fieldName: "floatConfirmed", label: "Float ya TSh 100,000 imethibitishwa", type: "TEXT", required: false, order: 13 },
+      { fieldName: "noExistingLipa", label: "Mteja hana Lipa Namba tayari", type: "TEXT", required: false, order: 13.5 },
       { fieldName: "paidConfirmed", label: "Utayari wa malipo umethibitishwa", type: "TEXT", required: false, order: 14 },
       { fieldName: "otpRequired", label: "OTP inahitajika", type: "TEXT", required: false, order: 15 },
       { fieldName: "adminInstructions", label: "Maelekezo ya Admin", type: "TEXTAREA", required: false, order: 16 },
