@@ -531,8 +531,8 @@ const AGENT_ID_CSS = `
 /* ===== KITAMBULISHO CHA KULALA (560x350) ===== */
 .idl{width:560px;height:350px;box-sizing:border-box;position:relative;overflow:hidden;border-radius:22px;background:#fff;color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 18px 40px rgba(15,23,42,.22)}
 .idl small{display:block;font-size:7.5px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
-.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.22;filter:contrast(1.18) saturate(1.25)}
-.idl-bg-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.09;z-index:0;pointer-events:none}
+.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.32;filter:contrast(1.3) saturate(1.45)}
+.idl-bg-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.32;z-index:0;pointer-events:none}
 .idl>.idl-side,.idl>.idl-main,.idl>.idl-head,.idl>.idl-bbody,.idl>.idl-info,.idl>.idl-foot{z-index:1}
 .idl-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
 
@@ -576,13 +576,13 @@ const AGENT_ID_CSS = `
 .idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
 .idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.40;filter:contrast(1.35) saturate(1.4)}
 /* Nembo kubwa zikae katikati ya sehemu kuu ya mbele kwa Airtel, Vodacom, Halotel na Yas. */
-.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);opacity:.12;filter:contrast(1.08) saturate(1.12)}
+.net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);opacity:.32;filter:contrast(1.22) saturate(1.3)}
 /* Mbeya One: nembo kubwa katikati, kama background ya kitambulisho chote. */
-.net-mbeya .idl-wm{opacity:.16;filter:contrast(1.12) saturate(1.2)}
-.net-mbeya .idl-bg-logo{object-fit:cover;object-position:center;opacity:.18;transform:scale(1.04)}
+.net-mbeya .idl-wm{opacity:.32;filter:contrast(1.25) saturate(1.4)}
+.net-mbeya .idl-bg-logo{object-fit:cover;object-position:center;opacity:.32;transform:scale(1.04);filter:contrast(1.18) saturate(1.3)}
 /* Nembo kubwa za kampuni kwenye vitambulisho vya kusimama, mbele na nyuma. */
 /* Mtindo mpya wa vitambulisho vya kusimama: nembo ya kampuni kama watermark ya kadi nzima. */
-.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.14;filter:contrast(1.12) saturate(1.2);pointer-events:none}
+.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.32;filter:contrast(1.2) saturate(1.35);pointer-events:none}
 .idp>*:not(.idp-bg-logo):not(.idp-strip){position:relative;z-index:2}
 .idp-hero{flex-basis:154px;padding-top:16px;background:linear-gradient(145deg,var(--d) 0%,var(--c) 58%,var(--h) 100%)}
 .idp-hero--sm{flex-basis:142px}
@@ -616,8 +616,8 @@ const AGENT_ID_CSS = `
 .idp{width:320px;height:520px;box-sizing:border-box;position:relative;overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(148,163,184,.35);border-radius:24px;background:linear-gradient(160deg,#fff 0%,#f4f7fb 58%,#fff 100%);color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 20px 44px rgba(15,23,42,.24)}
 .idp small{display:block;font-size:7px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
 .idp-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
-.idp-hero{position:relative;flex:0 0 170px;box-sizing:border-box;padding:18px 20px 0;overflow:hidden;color:#fff;background:linear-gradient(135deg,var(--d) 0%,var(--c) 62%,var(--h) 100%);border-bottom:4px solid var(--h)}
-.idp-hero--sm{flex-basis:170px}
+.idp-hero{position:relative;flex:0 0 146px;box-sizing:border-box;padding:15px 16px 0;overflow:hidden;color:#fff;background:linear-gradient(135deg,var(--d) 0%,var(--c) 62%,var(--h) 100%);border-bottom:5px solid var(--h)}
+.idp-hero--sm{flex-basis:146px}
 .idp-hero::before{content:"";position:absolute;left:-70px;top:-80px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.1)}
 .idp-ring{position:absolute;right:-46px;top:30px;width:150px;height:150px;box-sizing:border-box;border-radius:50%;border:18px solid rgba(255,255,255,.1)}
 .idp-hero>*:not(.idp-ring):not(.idp-curve){position:relative;z-index:2}
@@ -630,13 +630,13 @@ const AGENT_ID_CSS = `
 .idp-curve{position:absolute;left:-20px;top:100%;margin-top:-22px;width:360px;height:360px;border-radius:50%;background:#fff;z-index:1}
 
 /* mbele */
-.idp-photo{position:relative;z-index:3;flex:0 0 auto;width:126px;height:144px;box-sizing:border-box;margin:-58px auto 0;overflow:hidden;border:5px solid #fff;border-radius:24px;background:#e9eef4;box-shadow:0 12px 26px rgba(15,23,42,.25)}
+.idp-photo{position:relative;z-index:3;flex:0 0 auto;width:108px;height:120px;box-sizing:border-box;margin:-42px auto 0;overflow:hidden;border:4px solid #fff;border-radius:18px;background:#e9eef4;box-shadow:0 10px 22px rgba(15,23,42,.22)}
 .idp-photo img{display:block;width:100%;height:100%;object-fit:cover}
-.idp-name{flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:42px;margin-top:8px;padding:0 18px;text-align:center;font-weight:900;line-height:1.15;color:#0f172a;letter-spacing:-.01em}
+.idp-name{flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:36px;margin-top:6px;padding:0 12px;text-align:center;font-weight:900;line-height:1.12;color:#0f172a;letter-spacing:-.01em}
 .idp-pillrow{display:flex;justify-content:center;margin-top:4px}
 .idp-pill{display:inline-block;padding:5px 14px;border-radius:999px;background:var(--accent);color:var(--d);font-size:9px;font-weight:900;letter-spacing:.1em}
-.idp-grid{margin:11px 20px 0;display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.idp-grid>div{min-width:0;box-sizing:border-box;padding:7px 10px 8px;border-radius:10px;border:1px solid rgba(148,163,184,.24);border-left:3px solid var(--c);background:rgba(255,255,255,.94);box-shadow:0 3px 8px rgba(15,23,42,.04)}
+.idp-grid{margin:7px 14px 0;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.idp-grid>div{min-width:0;box-sizing:border-box;padding:6px 8px 6px;border-radius:9px;border:1px solid rgba(148,163,184,.24);border-left:3px solid var(--c);background:rgba(255,255,255,.94);box-shadow:0 3px 8px rgba(15,23,42,.04)}
 .idp-grid .wide{grid-column:1/-1}
 .idp-grid b{display:block;margin-top:2px;font-size:11px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
 .idp-foot{margin-top:auto;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;padding:8px 20px 14px}
