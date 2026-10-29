@@ -733,7 +733,7 @@ export const updateLipaRewardTracking = callable(async (request) => {
   const verifiedTransactionAmount = Number(data.verifiedTransactionAmount ?? 0);
   if (!Number.isSafeInteger(verifiedTransactionAmount) || verifiedTransactionAmount < 0 || verifiedTransactionAmount > 1000000000000) throw new ApiError("invalid-argument", "Jumla ya thamani ya miamala si sahihi.");
   const qualificationMonth = typeof data.qualificationMonth === "string" ? data.qualificationMonth.trim() : "";
-  if (qualificationMonth && !/^\\d{4}-(0[1-9]|1[0-2])$/.test(qualificationMonth)) throw new ApiError("invalid-argument", "Chagua mwezi sahihi wa miamala.");
+  if (qualificationMonth && !/^\d{4}-(0[1-9]|1[0-2])$/.test(qualificationMonth)) throw new ApiError("invalid-argument", "Chagua mwezi sahihi wa miamala.");
   const verifiedTransactionSource = String(data.verifiedTransactionSource ?? "");
   if (!["", "VODACOM", "OTHER"].includes(verifiedTransactionSource)) throw new ApiError("invalid-argument", "Chanzo cha miamala si sahihi.");
   const qualificationStatus = String(data.qualificationStatus ?? "");
@@ -754,7 +754,7 @@ export const updateLipaRewardTracking = callable(async (request) => {
     if (isVodacom && qualificationStatus === "QUALIFIED") {
       if (verifiedTransactions < 3) throw new ApiError("failed-precondition", "Vodacom: lazima uthibitishe angalau miamala 3 ndani ya mwezi husika.");
       if (verifiedTransactionAmount < 70000) throw new ApiError("failed-precondition", "Vodacom: jumla ya thamani ya miamala lazima iwe angalau TSh 70,000.");
-      if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(qualificationMonth)) throw new ApiError("failed-precondition", "Vodacom: chagua mwezi ambao miamala imethibitishwa.");
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(qualificationMonth)) throw new ApiError("failed-precondition", "Vodacom: chagua mwezi ambao miamala imethibitishwa.");
       if (verifiedTransactionSource !== "VODACOM") throw new ApiError("failed-precondition", "Vodacom: miamala yote inayohesabika lazima ithibitishwe kuwa imetoka Vodacom pekee.");
     }
     if (rewardStatus === "PAID" && qualificationStatus !== "QUALIFIED") throw new ApiError("failed-precondition", "Zawadi haiwezi kuwa PAID bila kuthibitisha qualification.");
