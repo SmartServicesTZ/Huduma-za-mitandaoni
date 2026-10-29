@@ -43,6 +43,14 @@ jobs:
         working-directory: kituo-digitali
         run: pnpm install --frozen-lockfile
 
+      - name: TypeScript check
+        working-directory: kituo-digitali
+        run: pnpm check
+
+      - name: Run test suite
+        working-directory: kituo-digitali
+        run: pnpm test
+
       - name: Build production frontend
         working-directory: kituo-digitali
         env:
