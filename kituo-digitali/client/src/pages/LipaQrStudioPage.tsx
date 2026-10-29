@@ -145,7 +145,7 @@ export default function LipaQrStudioPage() {
   }, [paymentPayload]);
 
   const update = (field: keyof LipaCardValues, value: string) => {
-    const next = field === "lipaNumber" ? normalizeLipaNumber(value) : field === "postalCode" ? value.replace(/\D/g, "").slice(0, 5) : field === "businessName" ? value.slice(0, 25) : value;
+    const next = field === "lipaNumber" ? normalizeLipaNumber(value) : field === "businessName" ? value.slice(0, 25) : value;
     setValues((previous) => ({ ...previous, [field]: next }));
   };
 
@@ -185,24 +185,15 @@ export default function LipaQrStudioPage() {
         new Uint8Array(pdfBuffer).set(bytes);
         downloadBlob(new Blob([pdfBuffer], { type: "application/pdf" }), `${stem}.pdf`);
       } else {
-        const width = Math.max(...canvases.map((canvas) => canvas.width));
-        const height = canvases.reduce((sum, canvas) => sum + canvas.height, 0);
-        const combined = document.createElement("canvas");
-        combined.width = width;
-        combined.height = height;
-        const context = combined.getContext("2d");
-        if (!context) throw new Error("Imeshindikana kutengeneza picha.");
-        context.fillStyle = "#ffffff";
-        context.fillRect(0, 0, width, height);
-        let top = 0;
-        for (const canvas of canvases) {
-          context.drawImage(canvas, 0, top);
-          top += canvas.height;
+        for (let index = 0; index < canvases.length; index += 1) {
+          const canvas = canvases[index];
+          const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Imeshindikana kutengeneza faili la PNG.")), "image/png"));
+          const suffix = pageMode === "card-and-guide" ? (index === 0 ? "stika" : "maelekezo") : "stika";
+          downloadBlob(blob, `${stem}-${suffix}.png`);
+          if (index < canvases.length - 1) await new Promise((resolve) => window.setTimeout(resolve, 450));
         }
-        const blob = await new Promise<Blob>((resolve, reject) => combined.toBlob((result) => result ? resolve(result) : reject(new Error("Imeshindikana kutengeneza faili la PNG.")), "image/png"));
-        downloadBlob(blob, `${stem}.png`);
       }
-      toast.success(`Faili la ${format.toUpperCase()} limeandaliwa kwa ubora wa kuchapisha wa A5.`);
+      toast.success(format === "png" && pageMode === "card-and-guide" ? "Picha mbili tofauti zimeandaliwa: stika na maelekezo." : `Faili la ${format.toUpperCase()} limeandaliwa kwa ubora wa kuchapisha wa A5.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kuandaa faili. Jaribu tena.");
     } finally {
@@ -236,19 +227,6 @@ export default function LipaQrStudioPage() {
           <input id="lq-business" maxLength={25} placeholder="Mfano: Duka la Amani" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
           {fieldError("businessName") && <small role="alert">{fieldError("businessName")}</small>}
         </label>
-        <label className={`lq-field ${fieldError("location") ? "has-error" : ""}`} htmlFor="lq-location">
-          <span>Eneo</span>
-          <select id="lq-location" value={values.location} onChange={(event) => update("location", event.target.value)} aria-invalid={Boolean(fieldError("location"))}>
-            <option value="">Chagua eneo</option>
-            {TANZANIA_LIPA_LOCATIONS.map((location) => <option value={location} key={location}>{location}</option>)}
-          </select>
-          {fieldError("location") && <small role="alert">{fieldError("location")}</small>}
-        </label>
-        <label className={`lq-field ${fieldError("postalCode") ? "has-error" : ""}`} htmlFor="lq-postal">
-          <span>Namba ya posta</span>
-          <input id="lq-postal" inputMode="numeric" maxLength={5} value={values.postalCode} onChange={(event) => update("postalCode", event.target.value)} aria-invalid={Boolean(fieldError("postalCode"))} />
-          {fieldError("postalCode") ? <small role="alert">{fieldError("postalCode")}</small> : <small>53000 ni thamani ya mwanzo; hakiki msimbo sahihi wa eneo lako.</small>}
-        </label>
       </section>
 
       <section className="lq-editor-panel lq-output-panel">
@@ -262,7 +240,7 @@ export default function LipaQrStudioPage() {
           <button type="button" aria-pressed={format === "pdf"} className={format === "pdf" ? "is-active" : ""} onClick={() => setFormat("pdf")}>PDF</button>
           <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG</button>
         </div>
-        <p className="lq-print-note">Ukubwa wa A5, ubora wa 300 DPI. PNG ya kurasa mbili hutoka kama picha moja ndefu.</p>
+        <p className="lq-print-note">Ukubwa wa A5, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti.</p>
       </section>
       <div className="lq-disclaimer"><ShieldCheck size={16} /><p>Zana hii ni huru; haihusiani wala kuidhinishwa na Vodacom Tanzania, M-Pesa au TIPS. QR hutengenezwa kwa muundo unaoonekana kwenye mifano ya TIPS iliyotolewa. Hakiki kwa mtoa huduma kuwa taarifa za biashara zimewezeshwa kupokea malipo kwa QR.</p></div>
     </aside>
