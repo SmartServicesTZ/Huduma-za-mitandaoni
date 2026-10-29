@@ -191,7 +191,6 @@ jobs:
           public class MainActivity extends Activity {
               private static final int FILE_CHOOSER = 1001;
               private static final int MEDIA_PERMISSION_REQUEST = 1002;
-              private static final String SMARTSERVICES_WHATSAPP_GROUP = "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4";
               private PermissionRequest pendingWebPermissionRequest;
               private static final String HOME = "https://smartservicestz.github.io/Huduma-za-mitandaoni/?app=android-v6";
               private WebView webView;
@@ -218,9 +217,7 @@ jobs:
               private boolean isWhatsAppGroup(Uri uri) {
                   if (uri == null || uri.getHost() == null) return false;
                   String host = uri.getHost();
-                  String withoutQuery = uri.toString().split("\\?", 2)[0];
-                  return "chat.whatsapp.com".equalsIgnoreCase(host)
-                          && SMARTSERVICES_WHATSAPP_GROUP.equalsIgnoreCase(withoutQuery);
+                  return "chat.whatsapp.com".equalsIgnoreCase(host);
               }
 
               private boolean openWhatsAppOrBrowser(Uri uri) {
