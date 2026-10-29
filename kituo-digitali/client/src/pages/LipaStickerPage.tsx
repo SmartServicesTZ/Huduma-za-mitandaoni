@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Download, QrCode, RotateCcw } from "lucide-react";
+import { Download, QrCode, RotateCcw, WalletCards } from "lucide-react";
+import { Link } from "wouter";
 import { triggerDownload } from "@/lib/downloadHistory";
 
 type Network = "AIRTEL" | "VODACOM" | "YAS" | "HALOTEL";
@@ -113,7 +114,7 @@ export default function LipaStickerPage() {
         <div className="h-2" style={{background:theme.main}}/>
         <div className="flex items-center gap-4 p-5 sm:p-7">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm" style={{background:theme.main}}><QrCode size={30}/></div>
-          <div><p className="text-xs font-black tracking-[.22em]" style={{color:theme.main}}>SMARTSERVICESTZ</p><h1 className="text-2xl font-black sm:text-3xl">STIKA ZA LIPA NAMBA</h1><p className="mt-1 text-sm text-slate-500">Chagua mtandao; stika itatumia rangi na logo yake.</p></div>
+          <div><p className="text-xs font-black tracking-[.22em]" style={{color:theme.main}}>SMARTSERVICESTZ</p><h1 className="text-2xl font-black sm:text-3xl">STIKA ZA LIPA NAMBA</h1><p className="mt-1 text-sm text-slate-500">Chagua mtandao; stika itatumia rangi na logo yake.</p><Link href="/lipa-qr-studio" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700 no-underline"><WalletCards size={17}/> Tengeneza Kadi ya Lipa (QR)</Link></div>
         </div>
       </header>
       <div className="grid items-start gap-5 lg:grid-cols-[350px_minmax(0,1fr)]">
