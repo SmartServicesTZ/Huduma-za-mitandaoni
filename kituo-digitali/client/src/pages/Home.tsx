@@ -574,8 +574,9 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
     if (isServiceLocked(service.slug, override, service.kind === "locked")) return { ...service, kind: "locked" as const, description: service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye." };
-    // Heshimu lock ya admin. Usigeuze huduma iliyofungwa kuwa paid hapa:
-    // serviceLocks ndiyo chanzo cha mwisho cha hali ya kufungwa/kufunguliwa.
+    // Admin akifungua huduma, override=false lazima iondoe pia kind="locked"
+    // iliyobaki kwenye catalog ya zamani; vinginevyo kadi huendelea kuonekana imefungwa.
+    if (override === false && service.kind === "locked") return { ...service, kind: Number(service.tokenCost ?? 0) <= 0 ? "free" as const : "paid" as const };
     return service;
   }), serviceOrder);
   const lower = search.toLowerCase();
