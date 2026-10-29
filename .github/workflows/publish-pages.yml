@@ -17,11 +17,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: smartservicestz-pages
-  cancel-in-progress: false
+  group: smartservicestz-pages-validation
+  cancel-in-progress: true
 
 jobs:
-  build-and-publish:
+  validate-production-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
