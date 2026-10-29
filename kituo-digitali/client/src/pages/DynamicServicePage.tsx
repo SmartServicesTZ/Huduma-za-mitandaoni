@@ -50,10 +50,29 @@ function errorMessage(error: unknown, fallback: string) {
 
 export default function DynamicServicePage({ service }: DynamicServicePageProps) {
   const { firebaseUser, loading: authLoading } = useAuth();
-  const fields = useMemo(
-    () => [...(service.fields ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-    [service.fields],
-  );
+  const fields = useMemo(() => {
+    const sourceFields = [...(service.fields ?? [])];
+    if (service.slug === "access-lipa-vodacom") {
+      // Force the visible Vodacom form to use three explicit name inputs,
+      // regardless of an older Firestore service schema.
+      const nameFields = new Set(["fullName", "names", "firstName", "middleName", "lastName", "name1", "name2", "name3"]);
+      const existingName = sourceFields.find((field) => nameFields.has(field.fieldName));
+      const nameOrder = existingName?.order ?? 2;
+      const explicitNames: ServiceFormField[] = [
+        { fieldName: "name1", label: "Jina la 1", type: "TEXT", required: true, placeholder: "Jina la kwanza", order: nameOrder },
+        { fieldName: "name2", label: "Jina la 2", type: "TEXT", required: true, placeholder: "Jina la pili", order: nameOrder + 1 },
+        { fieldName: "name3", label: "Jina la 3", type: "TEXT", required: true, placeholder: "Jina la tatu", order: nameOrder + 2 },
+      ];
+      const retained = sourceFields.filter((field) => !nameFields.has(field.fieldName));
+      const emailField = retained.find((field) => field.fieldName === "email");
+      if (!emailField) retained.push({ fieldName: "email", label: "Email", type: "TEXT", required: true, order: nameOrder + 3 });
+      const contactField = retained.find((field) => field.fieldName === "contact");
+      if (!contactField) retained.push({ fieldName: "contact", label: "Namba ya mawasiliano", type: "PHONE", required: true, order: nameOrder + 4 });
+      retained.push(...explicitNames);
+      return retained.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+    return sourceFields.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [service.fields, service.slug]);
   const [applicationId] = useState(newApplicationId);
   const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [values, setValues] = useState<ServiceFormValues>({});
@@ -217,26 +236,24 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
       setFormError("Huduma hii haipokei maombi kwa sasa.");
       return;
     }
-    // Vodacom Lipa Namba uses one visible "Majina 3" field, while some saved
-    // service forms still require firstName/middleName/lastName. Normalize the
-    // single full-name input before validation and submission so the hidden
-    // legacy required fields do not block a valid application.
+    // Map the three visible Vodacom name fields to every legacy field name
+    // accepted by older API/admin consumers, without validating hidden legacy inputs.
     let submissionValues = values;
     if (service.slug === "access-lipa-vodacom") {
-      const fullName = String(values.fullName ?? values.names ?? "").trim();
-      const parts = fullName.split(/\\s+/).filter(Boolean);
-      if (fullName) {
-        submissionValues = {
-          ...values,
-          fullName,
-          firstName: String(values.firstName ?? parts[0] ?? "").trim(),
-          middleName: String(values.middleName ?? (parts.length > 2 ? parts.slice(1, -1).join(" ") : parts[1] ?? "")).trim(),
-          lastName: String(values.lastName ?? (parts.length > 1 ? parts[parts.length - 1] : "")).trim(),
-          name1: String(values.name1 ?? parts[0] ?? "").trim(),
-          name2: String(values.name2 ?? parts[1] ?? "").trim(),
-          name3: String(values.name3 ?? parts[2] ?? "").trim(),
-        };
-      }
+      const first = String(values.name1 ?? values.firstName ?? "").trim();
+      const middle = String(values.name2 ?? values.middleName ?? "").trim();
+      const last = String(values.name3 ?? values.lastName ?? "").trim();
+      submissionValues = {
+        ...values,
+        name1: first,
+        name2: middle,
+        name3: last,
+        firstName: first,
+        middleName: middle,
+        lastName: last,
+        fullName: [first, middle, last].filter(Boolean).join(" "),
+        names: [first, middle, last].filter(Boolean).join(" "),
+      };
     }
     const nextErrors = validateServiceForm(fields, submissionValues);
     setErrors(nextErrors);
