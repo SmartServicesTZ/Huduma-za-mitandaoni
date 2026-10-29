@@ -541,6 +541,7 @@ function HistoryPage() {
 }
 function MyApplicationsPage() {
   const { firebaseUser } = useAuth();
+  const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
   const [serviceApplications, setServiceApplications] = useState<any[]>([]);
   const [lipaApplications, setLipaApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -590,6 +591,7 @@ function MyApplicationsPage() {
       date: item.updatedAt ?? item.submittedAt ?? item.createdAt,
       reason: String(item.rejectionReason ?? ""),
       message: String(item.adminReply ?? item.adminNote ?? item.additionalInfoRequest ?? ""),
+      raw: item,
     })),
     ...lipaApplications.map((item) => ({
       id: String(item.applicationId || item.id),
@@ -601,6 +603,7 @@ function MyApplicationsPage() {
       date: item.updatedAt ?? item.submittedAt,
       reason: String(item.rejectionReason ?? ""),
       message: String(item.adminReply ?? item.additionalInfoRequest ?? item.rewardNote ?? ""),
+      raw: item,
     })),
   ].sort((a, b) => dateMillis(b.date) - dateMillis(a.date));
   const statusLabel = (status: string) => status === "APPROVED" ? "LIMEIDHINISHWA" : status === "REJECTED" ? "LIMEKATALIWA" : status === "PROCESSING" ? "LINAFANYIWA KAZI" : status === "PENDING" ? "LINASUBIRI" : status;
@@ -638,11 +641,28 @@ function MyApplicationsPage() {
               </div>
               {item.reason && <div style={{padding:10,borderRadius:9,background:"#fef2f2",color:"#991b1b",fontSize:13}}><strong>Sababu ya kukataliwa:</strong> {item.reason}</div>}
               {item.message && <div style={{padding:10,borderRadius:9,background:"#eff6ff",color:"#1e3a8a",fontSize:13}}><strong>Ujumbe wa Admin:</strong> {item.message}</div>}
+              <button type="button" onClick={() => setSelectedApplication(item)} style={{justifySelf:"start",display:"inline-flex",alignItems:"center",gap:7,padding:"8px 12px",border:0,borderRadius:9,background:"#e0e7ff",color:"#3730a3",fontSize:12,fontWeight:800,cursor:"pointer"}}><Eye size={14}/> Fungua ombi uone taarifa zote</button>
             </article>;
           })}
         </div>}
       <p style={{fontSize:12,color:"#64748b",marginTop:16}}>Ikiwa hali bado ni “LINASUBIRI” au “LINAFANYIWA KAZI”, hutahitaji kutuma ombi lilelile tena. Fungua ombi hili kufuatilia rejea yake au wasiliana na support.</p>
     </section>}
+    {selectedApplication && <div role="presentation" onClick={() => setSelectedApplication(null)} style={{position:"fixed",inset:0,zIndex:10000,display:"grid",placeItems:"center",padding:14,background:"rgba(2,6,23,.72)",backdropFilter:"blur(5px)"}}>
+      <section role="dialog" aria-modal="true" aria-labelledby="my-application-detail-title" onClick={(event) => event.stopPropagation()} style={{width:"min(100%,680px)",maxHeight:"88dvh",overflowY:"auto",padding:20,borderRadius:18,background:"#fff",color:"#0f172a",boxShadow:"0 24px 70px rgba(0,0,0,.3)"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+          <div><span style={{fontSize:10,fontWeight:900,letterSpacing:".08em",color:"#64748b"}}>{selectedApplication.category.toUpperCase()}</span><h2 id="my-application-detail-title" style={{margin:"4px 0 10px",fontSize:20}}>{selectedApplication.title}</h2><span style={statusStyle(selectedApplication.status)}>{statusLabel(selectedApplication.status)}</span></div>
+          <button type="button" aria-label="Funga taarifa za ombi" onClick={() => setSelectedApplication(null)} style={{width:34,height:34,border:0,borderRadius:9,background:"#f1f5f9",fontSize:20,cursor:"pointer"}}>×</button>
+        </div>
+        <div style={{display:"grid",gap:10,marginTop:18}}>
+          <div style={{padding:12,borderRadius:10,background:"#f8fafc"}}><strong>Rejea ya ombi</strong><p style={{margin:"4px 0 0",overflowWrap:"anywhere"}}>{selectedApplication.reference}</p></div>
+          {selectedApplication.phone && <div style={{padding:12,borderRadius:10,background:"#f8fafc"}}><strong>Namba ya simu</strong><p style={{margin:"4px 0 0"}}>{selectedApplication.phone}</p></div>}
+          {selectedApplication.reason && <div style={{padding:12,borderRadius:10,background:"#fef2f2",color:"#991b1b"}}><strong>Sababu ya kukataliwa</strong><p style={{margin:"4px 0 0"}}>{selectedApplication.reason}</p></div>}
+          {selectedApplication.message && <div style={{padding:12,borderRadius:10,background:"#eff6ff",color:"#1e3a8a"}}><strong>Ujumbe / maelekezo ya Admin</strong><p style={{margin:"4px 0 0",whiteSpace:"pre-wrap"}}>{selectedApplication.message}</p></div>}
+          {Object.entries((selectedApplication.raw?.applicantData ?? selectedApplication.raw?.formData ?? {}) as Record<string, unknown>).filter(([,value]) => value !== null && value !== undefined && value !== "").map(([key,value]) => <div key={key} style={{padding:12,border:"1px solid #e2e8f0",borderRadius:10}}><strong style={{display:"block",fontSize:12,color:"#475569"}}>{key.replace(/([A-Z])/g," $1").replace(/[_-]/g," ")}</strong><p style={{margin:"5px 0 0",whiteSpace:"pre-wrap",overflowWrap:"anywhere",fontSize:13}}>{typeof value === "object" ? JSON.stringify(value) : String(value)}</p></div>)}
+          <div style={{padding:12,borderRadius:10,background:"#f8fafc"}}><strong>Tarehe ya mwisho kusasishwa</strong><p style={{margin:"4px 0 0"}}>{selectedApplication.date ? new Date(dateMillis(selectedApplication.date)).toLocaleString("sw-TZ") : "Haijatajwa"}</p></div>
+        </div>
+      </section>
+    </div>}
   </main>;
 }
 
