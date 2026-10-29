@@ -622,7 +622,7 @@ export const submitLipaApplication = callable(async (request) => {
       applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" ") || String(profile.name ?? profile.firstName ?? "Mwombaji"),
       phone: String(applicantData.phone ?? ""), businessName: String(applicantData.businessName ?? ""), nidaNumber: String(applicantData.nidaNumber ?? ""), tinNumber: String(applicantData.tinNumber ?? ""),
       businessLicense: String(applicantData.businessLicense ?? ""), idDocumentUrl: String(applicantData.idDocument ?? ""), idDocumentType: String(applicantData.idDocumentType ?? ""), applicantData,
-      reward: Number(config.reward ?? 0), additionalNotes, rewardStatus: Number(config.reward ?? 0) > 0 ? "UNPAID" : "NOT_ELIGIBLE", qualificationStatus: Number(config.reward ?? 0) > 0 ? "PENDING_CHECK" : "NOT_QUALIFIED", verifiedTransactions: 0, lipaNumber: "", rewardPaymentReference: "", rewardNote: "", status: "PENDING", rejectionReason: "", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
+      reward: networkId.toLowerCase().includes("vodacom") ? 5000 : Number(config.reward ?? 0), additionalNotes, rewardStatus: (networkId.toLowerCase().includes("vodacom") ? 5000 : Number(config.reward ?? 0)) > 0 ? "UNPAID" : "NOT_ELIGIBLE", qualificationStatus: (networkId.toLowerCase().includes("vodacom") ? 5000 : Number(config.reward ?? 0)) > 0 ? "PENDING_CHECK" : "NOT_QUALIFIED", verifiedTransactions: 0, lipaNumber: "", rewardPaymentReference: "", rewardNote: "", status: "PENDING", rejectionReason: "", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
     };
     transaction.create(applicationRef, application);
     transaction.create(openRef, { applicationId, userId: uid, networkId, createdAt: FieldValue.serverTimestamp() });
@@ -730,6 +730,12 @@ export const updateLipaRewardTracking = callable(async (request) => {
   const lipaNumber = typeof data.lipaNumber === "string" ? data.lipaNumber.trim().slice(0, 50) : "";
   const verifiedTransactions = Number(data.verifiedTransactions);
   if (!Number.isSafeInteger(verifiedTransactions) || verifiedTransactions < 0 || verifiedTransactions > 100000000) throw new ApiError("invalid-argument", "Idadi ya miamala si sahihi.");
+  const verifiedTransactionAmount = Number(data.verifiedTransactionAmount ?? 0);
+  if (!Number.isSafeInteger(verifiedTransactionAmount) || verifiedTransactionAmount < 0 || verifiedTransactionAmount > 1000000000000) throw new ApiError("invalid-argument", "Jumla ya thamani ya miamala si sahihi.");
+  const qualificationMonth = typeof data.qualificationMonth === "string" ? data.qualificationMonth.trim() : "";
+  if (qualificationMonth && !/^\\d{4}-(0[1-9]|1[0-2])$/.test(qualificationMonth)) throw new ApiError("invalid-argument", "Chagua mwezi sahihi wa miamala.");
+  const verifiedTransactionSource = String(data.verifiedTransactionSource ?? "");
+  if (!["", "VODACOM", "OTHER"].includes(verifiedTransactionSource)) throw new ApiError("invalid-argument", "Chanzo cha miamala si sahihi.");
   const qualificationStatus = String(data.qualificationStatus ?? "");
   if (!["PENDING_CHECK", "QUALIFIED", "NOT_QUALIFIED"].includes(qualificationStatus)) throw new ApiError("invalid-argument", "Hali ya qualification si sahihi.");
   const rewardStatus = String(data.rewardStatus ?? "");
@@ -742,11 +748,18 @@ export const updateLipaRewardTracking = callable(async (request) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
     const application = snapshot.data()!;
-    const reward = Number(application.reward ?? 0);
+    const isVodacom = String(application.networkId ?? application.network ?? "").toLowerCase().includes("vodacom");
+    const reward = isVodacom ? 5000 : Number(application.reward ?? 0);
     if (String(application.status ?? "") !== "APPROVED") throw new ApiError("failed-precondition", "Ombi lazima liwe APPROVED kabla ya kufuatilia zawadi.");
+    if (isVodacom && qualificationStatus === "QUALIFIED") {
+      if (verifiedTransactions < 3) throw new ApiError("failed-precondition", "Vodacom: lazima uthibitishe angalau miamala 3 ndani ya mwezi husika.");
+      if (verifiedTransactionAmount < 70000) throw new ApiError("failed-precondition", "Vodacom: jumla ya thamani ya miamala lazima iwe angalau TSh 70,000.");
+      if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(qualificationMonth)) throw new ApiError("failed-precondition", "Vodacom: chagua mwezi ambao miamala imethibitishwa.");
+      if (verifiedTransactionSource !== "VODACOM") throw new ApiError("failed-precondition", "Vodacom: miamala yote inayohesabika lazima ithibitishwe kuwa imetoka Vodacom pekee.");
+    }
     if (rewardStatus === "PAID" && qualificationStatus !== "QUALIFIED") throw new ApiError("failed-precondition", "Zawadi haiwezi kuwa PAID bila kuthibitisha qualification.");
     const now = FieldValue.serverTimestamp();
-    const patch: Record<string, unknown> = { lipaNumber, verifiedTransactions, qualificationStatus, rewardStatus, rewardPaymentReference, rewardNote, updatedAt: now, rewardUpdatedAt: now, rewardUpdatedBy: uid };
+    const patch: Record<string, unknown> = { lipaNumber, verifiedTransactions, verifiedTransactionAmount, qualificationMonth, verifiedTransactionSource, qualificationStatus, rewardStatus, rewardPaymentReference, rewardNote, ...(isVodacom ? { reward: 5000 } : {}), updatedAt: now, rewardUpdatedAt: now, rewardUpdatedBy: uid };
     if (rewardStatus === "PAID") { patch.rewardPaidAt = now; patch.rewardPaidBy = uid; }
     transaction.update(ref, patch);
     const qualificationLabel = qualificationStatus === "QUALIFIED" ? "Umefikia vigezo vya zawadi" : qualificationStatus === "NOT_QUALIFIED" ? "Kwa sasa hujafikia vigezo vya zawadi" : "Miamala yako bado inafuatiliwa";
@@ -755,6 +768,9 @@ export const updateLipaRewardTracking = callable(async (request) => {
       `Hali ya ufuatiliaji wa Lipa Namba yako ya ${String(application.network ?? application.networkId ?? "mtandao")} imesasishwa.`,
       `Lipa Namba: ${lipaNumber || "Bado haijawekwa"}`,
       `Miamala iliyothibitishwa: ${verifiedTransactions}`,
+      `Thamani ya miamala: TSh ${verifiedTransactionAmount.toLocaleString("en-US")}`,
+      qualificationMonth ? `Mwezi wa miamala: ${qualificationMonth}` : "",
+      verifiedTransactionSource ? `Chanzo cha miamala: ${verifiedTransactionSource === "VODACOM" ? "Vodacom pekee" : "Haijathibitishwa kuwa Vodacom pekee"}` : "",
       `Ufuatiliaji: ${qualificationLabel}`,
       `Malipo ya zawadi: ${paymentLabel}`,
       reward > 0 ? `Kiasi cha zawadi: TSh ${reward.toLocaleString("en-US")}` : "",
@@ -774,7 +790,7 @@ export const updateLipaRewardTracking = callable(async (request) => {
       rewardStatus: application.rewardStatus ?? "UNPAID",
       lipaNumber: application.lipaNumber ?? "",
     }, { qualificationStatus, rewardStatus, lipaNumber }, { verifiedTransactions, reward, rewardPaymentReference });
-    return { applicationId, reward, qualificationStatus, rewardStatus, lipaNumber, verifiedTransactions };
+    return { applicationId, reward, qualificationStatus, rewardStatus, lipaNumber, verifiedTransactions, verifiedTransactionAmount, qualificationMonth, verifiedTransactionSource };
   });
 });
 

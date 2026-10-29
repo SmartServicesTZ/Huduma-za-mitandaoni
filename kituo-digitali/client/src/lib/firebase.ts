@@ -847,6 +847,9 @@ export type LipaApplication = {
   reward?: number;
   lipaNumber?: string;
   verifiedTransactions?: number;
+  verifiedTransactionAmount?: number;
+  qualificationMonth?: string;
+  verifiedTransactionSource?: "VODACOM" | "OTHER" | "";
   qualificationStatus?: "PENDING_CHECK" | "QUALIFIED" | "NOT_QUALIFIED";
   rewardStatus?: "UNPAID" | "PAID" | "NOT_ELIGIBLE";
   rewardPaymentReference?: string;
@@ -885,6 +888,9 @@ export async function replyToLipaApplication(applicationId: string, reply = "", 
 export async function updateLipaRewardTracking(applicationId: string, values: {
   lipaNumber: string;
   verifiedTransactions: number;
+  verifiedTransactionAmount: number;
+  qualificationMonth: string;
+  verifiedTransactionSource: "VODACOM" | "OTHER" | "";
   qualificationStatus: "PENDING_CHECK" | "QUALIFIED" | "NOT_QUALIFIED";
   rewardStatus: "UNPAID" | "PAID" | "NOT_ELIGIBLE";
   rewardPaymentReference?: string;

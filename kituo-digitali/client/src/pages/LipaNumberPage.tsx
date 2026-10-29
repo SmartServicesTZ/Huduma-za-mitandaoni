@@ -86,9 +86,9 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
     name: String(row.name ?? id),
     title: String(row.title ?? `PATA LIPA NAMBA — ${String(row.name ?? id).toUpperCase()}`),
     introduction: String(row.introduction ?? "Jaza taarifa zako kwa usahihi ili ombi lako lichakatwe kwa haraka."),
-    requirements: String(row.requirements ?? "Taarifa sahihi za mwombaji na kitambulisho halali."),
+    requirements: id === "vodacom" ? "Zawadi ya TSh 5,000: angalau miamala 3 ndani ya mwezi husika; miamala yote lazima iwe ya Vodacom pekee; jumla ya thamani isiwe chini ya TSh 70,000. Miamala ya mitandao mingine haitahesabika." : String(row.requirements ?? "Taarifa sahihi za mwombaji na kitambulisho halali."),
     paymentInfo: String(row.paymentInfo ?? "Malipo yatafanyika baada ya ombi lako kukamilika."),
-    reward: Number(row.reward ?? 0),
+    reward: id === "vodacom" ? 5000 : Number(row.reward ?? 0),
     active: row.active !== false,
     fields: (() => {
       let fields = safeFields(row.fields);
