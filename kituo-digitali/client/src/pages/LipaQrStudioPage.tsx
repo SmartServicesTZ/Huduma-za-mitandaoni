@@ -202,8 +202,8 @@ export default function LipaQrStudioPage() {
   return <main className="lq-app">
     <aside className="lq-sidebar">
       <div className="lq-sidebar-top">
-        <Link href="/services" className="lq-back-link"><ArrowLeft size={16} /> Rudi kwenye huduma</Link>
-        <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>Lipa <i>QR Studio</i></strong><small>Tengeneza kadi ya biashara</small></span></span>
+        <Link href="/service/stika-za-lipa" className="lq-back-link"><ArrowLeft size={16} /> Rudi kwenye STIKA ZA LIPA</Link>
+        <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>STIKA ZA LIPA</strong><small>Tengeneza kadi ya Lipa</small></span></span>
       </div>
       <section className="lq-editor-panel">
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
