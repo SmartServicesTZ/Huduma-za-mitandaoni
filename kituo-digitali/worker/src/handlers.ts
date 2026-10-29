@@ -650,7 +650,7 @@ export const submitLipaApplication = callable(async (request) => {
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const previousLipaApplications = await transaction.get(db.collection("lipaApplications").where("userId", "==", uid).where("networkId", "==", networkId).limit(100));
     const duplicate = previousLipaApplications.docs.find((document) => {
-      const previous = document.data();
+      const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
       if (status !== "PENDING" && status !== "PROCESSING") return false;
       const previousFingerprint = typeof previous.duplicateFingerprint === "string"
@@ -939,7 +939,7 @@ export const createPocketWifiOrder = callable(async (request) => {
     if (prior.exists) throw new ApiError("already-exists", "Namba ya oda hii tayari imetumika.");
     const previousOrders = await transaction.get(db.collection("serviceApplications").where("userId", "==", uid).where("serviceSlug", "==", "pata-pocket-wifi-mabando").limit(100));
     const duplicate = previousOrders.docs.find((document) => {
-      const previous = document.data();
+      const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
       if (status !== "PENDING" && status !== "PROCESSING") return false;
       const previousValues = recordValues(previous.applicantData);
@@ -1016,7 +1016,7 @@ export const createServiceApplication = callable(async (request) => {
     }
     const existingServiceApplications = await transaction.get(db.collection("serviceApplications").where("userId", "==", uid).where("serviceSlug", "==", serviceSlug).limit(100));
     const duplicate = existingServiceApplications.docs.find((document) => {
-      const previous = document.data();
+      const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
       if (status !== "PENDING" && status !== "PROCESSING") return false;
       const previousFingerprint = typeof previous.duplicateFingerprint === "string"
