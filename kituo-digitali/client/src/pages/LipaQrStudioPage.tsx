@@ -18,6 +18,7 @@ type FileFormat = "pdf" | "png";
 const A5_WIDTH_PX = 1748;
 const A5_WIDTH_MM = 148;
 const A5_HEIGHT_MM = 210;
+const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
 
 function makeFileStem(name: string, number: string) {
   const safeName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -50,8 +51,8 @@ function downloadBlob(blob: Blob, filename: string) {
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string }>(function CardArtboard({ values, qrDataUrl }, ref) {
   return <article ref={ref} className="lq-artboard lq-card-artboard" data-lipa-export-page="card">
     <header className="lq-card-header">
-      <img className="lq-tips-logo-image" src="/lipa-assets/tips-logo-reference.png" alt="TIPS — Tanzania Instant Payment System" />
-      <img className="lq-mpesa-logo-image" src="/lipa-assets/mpesa-header-reference.png" alt="Vodafone m-pesa" />
+      <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
+      <img className="lq-mpesa-logo-image" src={`${LIPA_ASSET_BASE}mpesa-header-reference.png`} alt="Vodafone m-pesa" />
     </header>
     <div className="lq-card-red">
       <div className="lq-card-watermark" aria-hidden="true" />
