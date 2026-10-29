@@ -39,7 +39,7 @@ export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
 /** Validate the CRC16-CCITT checksum in a TIPS/EMV payment payload. */
 export function isValidTipsPaymentPayload(value: string): boolean {
   const payload = value.trim();
-  if (!/^000201[\\s\\S]*6304[0-9A-Fa-f]{4}$/.test(payload)) return false;
+  if (!/^000201[\s\S]*6304[0-9A-Fa-f]{4}$/.test(payload)) return false;
   const body = payload.slice(0, -4);
   let crc = 0xffff;
   for (let index = 0; index < body.length; index += 1) {
