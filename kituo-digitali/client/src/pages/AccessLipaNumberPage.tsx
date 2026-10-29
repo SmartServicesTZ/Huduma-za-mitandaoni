@@ -50,6 +50,9 @@ export default function AccessLipaNumberPage() {
   const [selected, setSelected] = useState<NetworkId>("airtel");
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
+  const [name1, setName1] = useState("");
+  const [name2, setName2] = useState("");
+  const [name3, setName3] = useState("");
   const [contact, setContact] = useState("");
   const [nida, setNida] = useState("");
   const [email, setEmail] = useState("");
@@ -71,7 +74,7 @@ export default function AccessLipaNumberPage() {
   const resetForm = async (nextNetwork?: NetworkId) => {
     if (passportPath.startsWith("serviceUploads/")) await removeServiceUpload(passportPath).catch(() => undefined);
     if (passportPreview) URL.revokeObjectURL(passportPreview);
-    setPhone(""); setFullName(""); setContact(""); setNida(""); setEmail(""); setEditingApplicationId("");
+    setPhone(""); setFullName(""); setName1(""); setName2(""); setName3(""); setContact(""); setNida(""); setEmail(""); setEditingApplicationId("");
     setPassportPath(""); setPassportName(""); setPassportPreview(""); setSubmittedRef(""); setApplicationId(newApplicationId());
     if (nextNetwork) setSelected(nextNetwork);
   };
@@ -107,6 +110,9 @@ export default function AccessLipaNumberPage() {
     setEditingApplicationId(nextId);
     setPhone(String(data.phone ?? ""));
     setFullName(String(data.fullName ?? ""));
+    setName1(String(data.name1 ?? data.firstName ?? ""));
+    setName2(String(data.name2 ?? data.middleName ?? ""));
+    setName3(String(data.name3 ?? data.lastName ?? ""));
     setContact(String(data.contact ?? ""));
     setNida(String(data.nidaNumber ?? ""));
     setEmail(String(data.email ?? ""));
@@ -123,12 +129,13 @@ export default function AccessLipaNumberPage() {
     if (!phone.trim()) { toast.error("Namba ya simu inahitajika."); return; }
     if (selected === "airtel" && (!fullName.trim() || !contact.trim())) { toast.error("Jaza majina na namba ya mawasiliano."); return; }
     if (selected === "yas" && (!nida.trim() || !passportPath || !contact.trim())) { toast.error("Jaza NIDA, picha ya passport size na namba ya mawasiliano."); return; }
-    if (selected === "vodacom" && (!fullName.trim() || !email.trim() || !contact.trim())) { toast.error("Jaza majina, email na namba ya mawasiliano."); return; }
+    if (selected === "vodacom" && (!name1.trim() || !name2.trim() || !name3.trim() || !email.trim() || !contact.trim())) { toast.error("Jaza Jina la 1, Jina la 2, Jina la 3, email na namba ya mawasiliano."); return; }
     if (selected === "yas" && !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(nida)) { toast.error("Namba ya NIDA haijakamilika."); return; }
     setSubmitting(true);
     try {
       const serviceSlug = selected === "airtel" ? "access-lipa-airtel" : selected === "yas" ? "access-lipa-yas" : "access-lipa-vodacom";
-      const vodacomNames = fullName.trim().split(/\\s+/).filter(Boolean);
+      const vodacomNames = [name1.trim(), name2.trim(), name3.trim()].filter(Boolean);
+      const vodacomFullName = vodacomNames.join(" ");
       const values: Record<string, string | number | null> = selected === "airtel"
         ? { network: "Airtel", phone: phone.trim(), fullName: fullName.trim(), contact: contact.trim(), nidaNumber: null, passportPhoto: null, email: null }
         : selected === "yas"
@@ -136,13 +143,13 @@ export default function AccessLipaNumberPage() {
           : {
               network: "Vodacom",
               phone: phone.trim(),
-              fullName: fullName.trim(),
-              firstName: vodacomNames[0] ?? "",
-              middleName: vodacomNames.length > 2 ? vodacomNames.slice(1, -1).join(" ") : (vodacomNames[1] ?? ""),
-              lastName: vodacomNames.length > 1 ? vodacomNames[vodacomNames.length - 1] : "",
-              name1: vodacomNames[0] ?? "",
-              name2: vodacomNames[1] ?? "",
-              name3: vodacomNames[2] ?? "",
+              fullName: vodacomFullName,
+              firstName: name1.trim(),
+              middleName: name2.trim(),
+              lastName: name3.trim(),
+              name1: name1.trim(),
+              name2: name2.trim(),
+              name3: name3.trim(),
               email: email.trim(),
               contact: contact.trim(),
               nidaNumber: null,
@@ -220,7 +227,7 @@ export default function AccessLipaNumberPage() {
         <div className="access-brand"><img src={publicAsset("mbeya-one.png")} alt="Mbeya One Company Limited"/><div><strong>KAMPUNI / AGENCY</strong><span>Mbeya One Company Limited</span></div></div>
         {selected === "airtel" && <><h2>Karibu ujipatie huduma ya access ya kutengeneza Lipa Namba Airtel</h2><h3>Muhtasari wa malipo</h3><div className="access-payment-grid"><div className="access-payment"><strong>Lipa 15 · TZS 37,500</strong><span>Kila week</span></div><div className="access-payment"><strong>Lipa 20 · TZS 50,000</strong><span>Kila week</span></div><div className="access-payment"><strong>Lipa 60 · TZS 100,000</strong><span>Kwa mwezi</span></div></div><h3>Vigezo vya kila Lipa ili uweze kulipwa</h3>{["Lipa Namba ifanye miamala 2 au zaidi — mfano leo TZS 9,500 na kesho TZS 500.","Miamala hiyo itoke namba mbili tofauti — mfano leo kwa mteja mmoja, kesho kwa Adija.","Miamala hiyo ifanyike siku tofauti — mfano Ijumaa mmoja na Jumapili mmoja.","Jumla ya miamala isiwe chini ya TZS 10,000 — mfano 10,000, 11,000, 20,000, 25,000 na kuendelea."].map((item,index)=><div className="access-rule" key={item}><span className="access-rule-num" style={{"--accent":network.accent} as React.CSSProperties}>{index+1}</span><span>{item}</span></div>)}<div className="access-notice"><Info size={15}/> Malipo hufanyika kuanzia Jumatatu hadi Jumatano; malipo yanakuwa tayari ndani ya kipindi hicho.</div><h3>KUPATA ACCESS — TUMA TAARIFA HIZI</h3>{FieldBlock(<><Field label="Namba ya simu" value={phone} onChange={setPhone} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/><Field label="Majina 2 au 3 kama yalivyo kwenye NIDA" value={fullName} onChange={setFullName} placeholder="Jina kamili"/><Field label="Namba ya mawasiliano Normal / WhatsApp" value={contact} onChange={setContact} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/></>)}<p className="access-notice"><Info size={15}/> Access ni ya siku 1 tu unapata.</p></>}
         {selected === "yas" && <><h2>Karibu ujipatie huduma ya access ya kutengeneza Lipa Namba Yas</h2><h3>MALIPO</h3><div className="access-payment-grid"><div className="access-payment"><strong>Machinga · TZS 10,000</strong><span>Malipo ya huduma</span></div><div className="access-payment"><strong>Individual · TZS 20,000</strong><span>Malipo ya huduma</span></div><div className="access-payment"><strong>Company · TZS 20,000</strong><span>Malipo ya huduma</span></div></div><h3>Vigezo vya Lipa kukulipa</h3>{["Hakikisha unasajili Lipa ya MIX kwa mteja husika.","Hakikisha Lipa unayomsajilia mteja inafanya miamala 4 itoke MIX by Yas tu.","Hakikisha Lipa yako inafanya miamala 4 yenye thamani ya TZS 100,000 kutoka MIX by Yas.","Hakikisha miamala hiyo inatoka MIX by Yas, sio mitandao mingine."].map((item,index)=><div className="access-rule" key={item}><span className="access-rule-num" style={{"--accent":network.accent} as React.CSSProperties}>{index+1}</span><span>{item}</span></div>)}<h3>TUMA TAARIFA HIZI KUPATA ACCESS</h3>{FieldBlock(<><Field label="Namba ya simu" value={phone} onChange={setPhone} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/><Field label="Namba ya NIDA (isiwe na code yoyote ya YAS)" value={nida} onChange={(value)=>setNida(formatNida(value))} placeholder="20068517-27520-00001-22" inputMode="numeric"/><div className="access-upload"><div className="access-upload-row">{passportPreview?<img className="access-upload-preview" src={passportPreview} alt="Passport size preview"/>:<span className="access-upload-preview" style={{display:"grid",placeItems:"center"}}><FileImage size={21}/></span>}<div className="access-upload-meta"><strong>{passportName||"Picha yako ya passport size"}</strong><small>JPG, PNG au WebP · hadi MB 5</small></div><label className="access-upload-button"><Upload size={14}/> {uploading?"Inapakia...":passportName?"Badilisha":"Chagua picha"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading||submitting} onChange={(event)=>void uploadPassport(event.target.files?.[0])}/></label></div></div><Field label="Namba ya mawasiliano Normal / WhatsApp" value={contact} onChange={setContact} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/></>)}<p className="access-notice"><Info size={15}/> Hakikisha NIDA haina code yoyote ya YAS kabla ya kutuma.</p></>}
-        {selected === "vodacom" && <><h2>Karibu ujipatie huduma ya access ya kutengeneza Lipa Namba Vodacom</h2><h3>Malipo</h3><div className="access-payment-grid" style={{gridTemplateColumns:"1fr"}}><div className="access-payment"><strong>LIPA 1 · TZS 10,000</strong><span>Hulipwa mwisho wa mwezi</span></div></div><h3>Vigezo</h3>{["Lipa ifanye miamala 3 kutoka Vodacom.","Miamala hiyo ifanyike siku tofauti.","Jumla ya miamala iwe TZS 30,000."].map((item,index)=><div className="access-rule" key={item}><span className="access-rule-num" style={{"--accent":network.accent} as React.CSSProperties}>{index+1}</span><span>{item}</span></div>)}<h3>TUMA TAARIFA HIZI KUPATA ACCESS</h3>{FieldBlock(<><Field label="Namba ya simu" value={phone} onChange={setPhone} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/><Field label="Majina 3" value={fullName} onChange={setFullName} placeholder="Majina kamili"/><Field label="Email" value={email} onChange={setEmail} type="email" placeholder="example@email.com" inputMode="email"/><Field label="Namba ya mawasiliano" value={contact} onChange={setContact} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/></>)}</>}
+        {selected === "vodacom" && <><h2>Karibu ujipatie huduma ya access ya kutengeneza Lipa Namba Vodacom</h2><h3>Malipo</h3><div className="access-payment-grid" style={{gridTemplateColumns:"1fr"}}><div className="access-payment"><strong>LIPA 1 · TZS 10,000</strong><span>Hulipwa mwisho wa mwezi</span></div></div><h3>Vigezo</h3>{["Lipa ifanye miamala 3 kutoka Vodacom.","Miamala hiyo ifanyike siku tofauti.","Jumla ya miamala iwe TZS 30,000."].map((item,index)=><div className="access-rule" key={item}><span className="access-rule-num" style={{"--accent":network.accent} as React.CSSProperties}>{index+1}</span><span>{item}</span></div>)}<h3>TUMA TAARIFA HIZI KUPATA ACCESS</h3>{FieldBlock(<><Field label="Namba ya simu" value={phone} onChange={setPhone} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/><Field label="Jina la 1" value={name1} onChange={setName1} placeholder="Jina la kwanza"/><Field label="Jina la 2" value={name2} onChange={setName2} placeholder="Jina la pili"/><Field label="Jina la 3" value={name3} onChange={setName3} placeholder="Jina la tatu"/><Field label="Email" value={email} onChange={setEmail} type="email" placeholder="example@email.com" inputMode="email"/><Field label="Namba ya mawasiliano" value={contact} onChange={setContact} type="tel" placeholder="07XXXXXXXX" inputMode="tel"/></>)}</>}
         {!network.available && <div className="access-notice"><Info size={16}/><span>Maelezo ya access ya Halotel bado hayajawekwa. Nimeacha kadi ya Halotel ionekane bila kutengeneza masharti ya kubuni.</span></div>}
         {submittedRef && <div className="access-success"><strong>{editingApplicationId ? "Mabadiliko yamehifadhiwa." : "Ombi limetumwa kikamilifu."}</strong><br/>Rejea: <strong>{submittedRef}</strong><br/>Admin anaweza kuliona kwenye <strong>Maombi ya huduma</strong> na kulihamisha PENDING → PROCESSING → APPROVED/REJECTED.</div>}
         {network.available && <div className="access-submit"><button type="button" disabled={submitting||uploading||Boolean(submittedRef)} onClick={() => void submit()}><Send size={15}/>{submitting?"INATUMA...":editingApplicationId?"HIFADHI MABADILIKO":"TUMA OMBI KWA ADMIN"}<ChevronRight size={15}/></button></div>}
