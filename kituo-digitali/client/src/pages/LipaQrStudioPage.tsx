@@ -85,27 +85,43 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork }>(function CardArtboard({ values, qrDataUrl, network }, ref) {
-  return <article ref={ref} className="lq-artboard lq-card-artboard" data-lipa-export-page="card" data-network={network}>
-    <header className="lq-card-header">
+  const isYas = network === "yas";
+  const isAirtel = network === "airtel";
+  return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network}>
+    <header className={`lq-card-header lq-card-header--${network}`}>
       <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-      <span className={`lq-network-brand lq-network-brand--${network}`} aria-label={LIPA_NETWORKS[network].label}>{network === "voda" ? "M-PESA" : network === "airtel" ? "airtel money" : network === "yas" ? "YAS" : "HALOTEL"}</span>
-    </header>
-    <div className="lq-card-red">
-      <div className="lq-card-watermark" aria-hidden="true" />
-      <div className="lq-qr-frame">
-        <span className="lq-qr-corner lq-qr-tl" /><span className="lq-qr-corner lq-qr-tr" />
-        <span className="lq-qr-corner lq-qr-bl" /><span className="lq-qr-corner lq-qr-br" />
-        <div className="lq-qr-paper">
-          {qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}
-        </div>
+      <div className={`lq-network-brand lq-network-brand--${network}`} aria-label={LIPA_NETWORKS[network].label}>
+        {isAirtel ? <><span className="lq-airtel-symbol">◉</span><span className="lq-airtel-wordmark"><b>airtel</b><small>money</small></span></> : isYas ? <span className="lq-mixx-wordmark"><b>mixx</b><small>By <i>yas</i></small></span> : network === "voda" ? <span className="lq-voda-wordmark">◉ M-PESA</span> : <span>HALOTEL</span>}
       </div>
+    </header>
+    {isYas ? <section className="lq-yas-body">
+      <h2>Lipa kwa kuscan</h2>
+      <div className="lq-yas-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya TIPS" /> : <span>QR CODE</span>}</div>
+      <strong className="lq-yas-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
+      <strong className="lq-yas-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
+      <p>Lipa kutoka mitandao yote na Benki</p>
+      <div className="lq-yas-footer"><span className="lq-yas-yellow-shape"><b>Lipa</b><small>KWA SIMU</small></span></div>
+    </section> : isAirtel ? <section className="lq-airtel-body">
+      <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
+      <div className="lq-airtel-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya TIPS" /> : <span>QR CODE</span>}</div>
+      <div className="lq-airtel-fields">
+        <label>LIPA NAMBA</label><strong className="lq-airtel-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
+        <label>JINA</label><strong className="lq-airtel-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
+      </div>
+      <footer className="lq-airtel-footer">
+        <div className="lq-network-logos"><b>mixx</b><b className="vodacom">◉</b><b className="halotel">halotel</b><b className="airtel-mini">◉</b></div>
+        <strong>LIPA<small>KWA SIMU</small></strong>
+      </footer>
+    </section> : <section className="lq-card-red">
+      <div className="lq-card-watermark" aria-hidden="true" />
+      <div className="lq-qr-frame"><div className="lq-qr-paper">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}</div></div>
       <div className="lq-merchant-box">
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
-        <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>{values.location && <span className="lq-merchant-location">{values.location}</span>}
+        <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>
       </div>
       <div className="lq-pay-banner"><strong>{LIPA_NETWORKS[network].stickerName}</strong></div>
       <p className="lq-card-subtitle">Lipa kutoka mitandao yote na benki</p>
-    </div>
+    </section>}
   </article>;
 });
 
