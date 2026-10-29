@@ -719,3 +719,8 @@
  .lq-card-artboard--airtel .lq-card-header,.lq-card-artboard--yas .lq-card-header { min-height:0 !important; }
  .lq-airtel-footer { flex-basis:10.5%; }
 }
+
+/* Match the more compact QR and oversized yellow lower corner in the Yas reference. */
+.lq-yas-qr { width:26% !important; padding:5.3% !important; }
+.lq-yas-footer { min-height:26% !important; }
+.lq-yas-yellow-shape { width:76% !important; }
