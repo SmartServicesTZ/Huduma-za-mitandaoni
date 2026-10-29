@@ -1,1 +1,0 @@
-Faili za SITIKA ZA LIPA
