@@ -178,7 +178,6 @@ export default function BusinessLicensePage() {
     if (!form.principalBranch) { toast.error("Chagua Principal au Branch."); return false; }
     if (!form.businessType || (form.businessType === "OTHER" && !form.otherBusinessType.trim())) { toast.error("Tafadhali chagua aina ya biashara."); return false; }
     if (!/^\d{3}-\d{3}-\d{3}$/.test(form.tin.trim())) { toast.error("Format ya TIN si sahihi. Tumia mfumo 123-123-123."); return false; }
-    if (!form.ward.trim()) { toast.error("Tafadhali jaza Kata."); return false; }
     if (!form.street.trim()) { toast.error("Tafadhali jaza Mtaa / Kijiji."); return false; }
     if (!Number.isFinite(form.licenseFee) || form.licenseFee <= 0) { toast.error("Ada ya leseni lazima iwe zaidi ya sifuri."); return false; }
     return true;
@@ -302,7 +301,7 @@ export default function BusinessLicensePage() {
                 {tanzaniaRegions.map((region) => <option key={region} value={region} />)}
               </datalist>
             </Field>
-            <Field label="Kata" english="Ward" required><input value={form.ward} onChange={(event) => set("ward", titleCase(event.target.value))} /></Field>
+            <Field label="Kata" english="Ward"><input value={form.ward} onChange={(event) => set("ward", titleCase(event.target.value))} /></Field>
             <Field label="Mtaa / Kijiji" english="Street / Village" required><input value={form.street} onChange={(event) => set("street", titleCase(event.target.value))} /></Field>
           </div>
         </div>
