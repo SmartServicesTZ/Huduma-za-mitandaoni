@@ -140,7 +140,7 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
           : new Set([imageFields.find((field) => field.fieldName === "idDocument")?.fieldName ?? imageFields[0].fieldName]);
         fields = fields.filter((field) => field.type !== "IMAGE_UPLOAD" || keepFields.has(field.fieldName));
       }
-      fields = fields.map((field) => field.type === "IMAGE_UPLOAD" ? {
+      fields = fields.map((field) => field.type === "IMAGE_UPLOAD" && field.fieldName !== "businessNameEvidence" ? {
         ...field,
         label: "Picha ya utambulisho wa mwombaji",
         helpText: "PAKIA PICHA MOJAWAPO KATI YA: Passport size ya mhusika, picha ya kitambulisho cha NIDA, au picha ya kitambulisho cha mpiga kura. Picha iwe wazi na isomeke vizuri. JPG, PNG au WebP; hadi MB 5.",
