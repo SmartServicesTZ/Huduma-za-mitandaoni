@@ -666,3 +666,56 @@
   letter-spacing:.035em;
   text-align:center;
 }
+
+
+/* Airtel Money sticker — match the supplied red reference layout. */
+.lq-card-artboard--airtel .lq-card-header { flex:0 0 10.5% !important; min-height:0 !important; padding:2.5% 6% !important; }
+.lq-card-artboard--airtel .lq-tips-logo-image { width:38% !important; max-width:40% !important; }
+.lq-network-brand--airtel { width:36% !important; display:flex !important; align-items:center; justify-content:flex-end; gap:2%; color:#e21b2d !important; }
+.lq-airtel-symbol { font-size:8cqw; line-height:1; font-weight:900; transform:rotate(-25deg); }
+.lq-airtel-wordmark { display:grid; gap:0; text-align:left; line-height:.83; }
+.lq-airtel-wordmark b { font-size:8cqw; font-weight:950; letter-spacing:-.07em; }
+.lq-airtel-wordmark small { font-size:4.3cqw; font-weight:500; letter-spacing:-.04em; }
+.lq-airtel-body { position:relative; display:flex; flex:1; min-height:0; flex-direction:column; align-items:center; gap:2.1%; padding:4.2% 5.8% 3.2%; color:#fff; background-color:#d10b28; background-image:radial-gradient(circle,#ffffff18 0 2px,transparent 2.5px); background-size:22px 22px; }
+.lq-airtel-body h2 { margin:0 0 .5%; color:#fff; font-size:3.5cqw; line-height:1.15; font-weight:950; text-align:center; }
+.lq-airtel-qr { display:grid; place-items:center; flex:0 0 auto; width:78%; aspect-ratio:1; padding:7.5%; border-radius:6%; background:#fff; }
+.lq-airtel-qr img { display:block; width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
+.lq-airtel-qr > span { color:#111; font-size:3cqw; }
+.lq-airtel-fields { display:grid; grid-template-columns:1fr; gap:1.1%; width:100%; margin-top:auto; }
+.lq-airtel-fields label { margin:0 0 -1%; color:#fff; font-size:3.1cqw; line-height:1.15; font-weight:950; text-align:left; }
+.lq-airtel-number,.lq-airtel-name { display:flex; align-items:center; width:100%; min-height:10.5%; padding:2.3% 3.5%; border:2px solid #f2d13a; border-radius:12px; color:#101522; background:#fff; text-align:left; overflow-wrap:anywhere; }
+.lq-airtel-number { font-size:6.1cqw; line-height:1.05; font-weight:950; letter-spacing:.015em; }
+.lq-airtel-name { font-size:3.65cqw; line-height:1.15; font-weight:800; }
+.lq-airtel-footer { display:flex; align-items:center; justify-content:space-between; flex:0 0 10.5%; width:calc(100% + 11.6%); margin:0 -5.8% -3.2%; padding:2.5% 5%; color:#c90828; background:#fff; }
+.lq-network-logos { display:flex; align-items:center; gap:5px; color:#1551a0; font-size:2.4cqw; font-weight:950; }
+.lq-network-logos b { display:grid; place-items:center; min-width:9cqw; height:7cqw; padding:0 2px; background:#f4f4f4; }
+.lq-network-logos .vodacom { color:#fff; background:#d7192d; font-size:5cqw; }
+.lq-network-logos .halotel { color:#fff; background:#e65b20; font-size:2cqw; }
+.lq-network-logos .airtel-mini { color:#e21b2d; background:#fff; border:1px solid #ddd; font-size:4cqw; }
+.lq-airtel-footer > strong { display:grid; gap:0; color:#c90828; font-size:6cqw; line-height:.82; font-weight:1000; text-align:center; }
+.lq-airtel-footer > strong small { font-size:2.7cqw; letter-spacing:.18em; }
+
+/* Mixx by Yas sticker — blue, centered QR and yellow Lipa kwa Simu footer. */
+.lq-card-artboard--yas .lq-card-header { flex:0 0 9% !important; min-height:0 !important; padding:1.7% 6% !important; }
+.lq-card-artboard--yas .lq-tips-logo-image { width:34% !important; max-width:36% !important; }
+.lq-network-brand--yas { width:34% !important; display:flex !important; justify-content:flex-end; color:#07509b !important; }
+.lq-mixx-wordmark { display:grid; justify-items:center; gap:0; line-height:.8; }
+.lq-mixx-wordmark b { color:#07509b; font-size:11cqw; font-weight:1000; font-style:italic; letter-spacing:-.08em; }
+.lq-mixx-wordmark small { color:#07509b; font-size:2.8cqw; font-weight:900; }
+.lq-mixx-wordmark i { display:inline-block; padding:1px 5px; border-radius:50%; color:#ffdf00; background:#07509b; font-style:italic; }
+.lq-yas-body { position:relative; display:flex; flex:1; min-height:0; flex-direction:column; align-items:center; gap:2.8%; overflow:hidden; padding:4.3% 5% 0; color:#fff; background:#073d80; text-align:center; }
+.lq-yas-body h2 { margin:0 0 1%; color:#fff; font-size:5.1cqw; line-height:1.1; font-weight:750; }
+.lq-yas-qr { display:grid; place-items:center; flex:0 0 auto; width:48%; aspect-ratio:1; padding:5.3%; border-radius:3.5%; background:#fff; }
+.lq-yas-qr img { display:block; width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
+.lq-yas-qr > span { color:#111; font-size:3cqw; }
+.lq-yas-number,.lq-yas-name { display:flex; align-items:center; justify-content:center; flex:0 0 auto; max-width:92%; min-height:8%; padding:1.8% 4%; border-radius:13px; color:#111; background:#fff; font-size:4.1cqw; line-height:1.1; font-weight:900; letter-spacing:.07em; overflow-wrap:anywhere; }
+.lq-yas-name { font-size:3.8cqw; letter-spacing:0; }
+.lq-yas-body p { margin:2.5% 0 0; color:#fff; font-size:3.6cqw; line-height:1.15; font-weight:750; }
+.lq-yas-footer { position:relative; display:flex; align-items:flex-end; justify-content:flex-end; flex:1 1 auto; width:115%; min-height:17%; margin-top:auto; margin-right:-15%; overflow:hidden; }
+.lq-yas-yellow-shape { display:flex; flex-direction:column; justify-content:center; align-items:center; width:72%; height:100%; padding:3% 3% 1% 20%; border-radius:48% 0 0 0 / 35% 0 0 0; color:#07509b; background:#ffdf00; transform:skewX(-12deg) translateX(2%); }
+.lq-yas-yellow-shape b { font-size:13cqw; line-height:.8; font-weight:1000; font-style:italic; letter-spacing:-.08em; }
+.lq-yas-yellow-shape small { font-size:3.5cqw; line-height:1; font-weight:950; letter-spacing:.12em; }
+@media (max-width:700px) {
+ .lq-card-artboard--airtel .lq-card-header,.lq-card-artboard--yas .lq-card-header { min-height:0 !important; }
+ .lq-airtel-footer { flex-basis:10.5%; }
+}
