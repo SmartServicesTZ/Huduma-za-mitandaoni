@@ -243,3 +243,13 @@
 .lq-app { overflow-x: clip; }
 .lq-button:hover:not(:disabled), .lq-button:active { transform: none !important; }
 .lq-preview, .lq-sidebar, .lq-preview-pages, .lq-artboard { animation: none !important; transition: none !important; }
+
+
+/* Keep the STIKA ZA LIPA workspace steady and prevent sideways page movement. */
+.lq-app { width: 100%; max-width: 100vw; overflow-x: clip; }
+.lq-sidebar, .lq-preview, .lq-preview-pages, .lq-artboard { min-width: 0; }
+.lq-preview-toolbar, .lq-toolbar-actions { flex-wrap: wrap; }
+.lq-preview-pages { width: 100%; }
+.lq-artboard { max-width: 100%; }
+.lq-app *, .lq-app *::before, .lq-app *::after { animation: none !important; scroll-behavior: auto !important; }
+.lq-button:hover:not(:disabled) { transform: none !important; }
