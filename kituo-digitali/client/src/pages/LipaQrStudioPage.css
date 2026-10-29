@@ -188,3 +188,52 @@
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .lq-preview:before, .lq-preview:after, .lq-preview-toolbar, .lq-preview-footnote, .lq-mobile-actions { display: none !important; }
 }
+
+
+/* Lipa QR Studio: stable interface, no decorative motion */
+.lq-app, .lq-app *, .lq-app *::before, .lq-app *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.lq-card-header {
+  flex: 0 0 14%;
+  min-height: 58px;
+  padding: 3.5% 6%;
+  background: #fff;
+}
+.lq-tips-logo { display:flex; align-items:center; justify-content:flex-start; min-width:0; }
+.lq-tips-logo strong {
+  color:#007b4b; font-size:clamp(17px,5cqw,30px); font-weight:950;
+  letter-spacing:-.06em; line-height:1;
+}
+.lq-mpesa-logo { display:flex; align-items:center; justify-content:flex-end; gap:6px; color:#d20b2d; }
+.lq-vodacom-mark {
+  display:grid; place-items:center; width:25px; height:25px; border:2px solid #d20b2d;
+  border-radius:50%; color:#d20b2d; font-size:15px; font-weight:950;
+}
+.lq-mpesa-logo > span:last-child { display:grid; gap:1px; text-align:right; }
+.lq-mpesa-logo strong { color:#d20b2d; font-size:clamp(13px,3.4cqw,21px); font-weight:950; letter-spacing:-.04em; }
+.lq-mpesa-logo small { color:#5c6470; font-size:clamp(6px,1.5cqw,9px); font-weight:800; letter-spacing:.08em; }
+.lq-card-red {
+  flex:1; justify-content:center; gap:2.8%; padding:4% 6%;
+  background:#fff; color:#17202c; background-image:none;
+}
+.lq-card-red::before { display:none !important; }
+.lq-qr-frame { margin-bottom:1%; }
+.lq-merchant-box {
+  width:100%; padding:2.5% 4%; border:1px solid #e5e7eb; border-radius:0;
+  box-shadow:none; gap:4px; text-align:center;
+}
+.lq-merchant-number { padding-bottom:2%; border-bottom:1px solid #e5e7eb; color:#171717; }
+.lq-merchant-name { color:#242424; white-space:normal; overflow-wrap:anywhere; }
+.lq-pay-banner {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  width:100%; padding:3.2% 2%; border-radius:0; color:#d20b2d; background:#fff;
+  border-top:2px solid #d20b2d; border-bottom:2px solid #d20b2d; letter-spacing:0;
+}
+.lq-pay-banner strong { display:block; font-size:5.4cqw; line-height:1.15; font-weight:950; }
+.lq-pay-banner small { display:block; color:#4a4a4a; font-size:2.7cqw; line-height:1.3; font-weight:650; }
+@media (prefers-reduced-motion: reduce) {
+  .lq-app, .lq-app *, .lq-app *::before, .lq-app *::after { animation:none !important; transition:none !important; }
+}
