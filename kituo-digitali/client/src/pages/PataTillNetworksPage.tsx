@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Clock3, FileImage, ShieldCheck, UploadCloud } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -118,7 +118,6 @@ export default function PataTillNetworksPage() {
           <label style={{...labelStyle,gridColumn:"1 / -1"}}>Picha ya kitambulisho (hiari)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setIdentityFile(e.target.files?.[0] ?? null)} style={textInput}/></label>
           <div style={{gridColumn:"1 / -1",background:"#422006",padding:14,borderRadius:12,color:"#fde68a"}}>⚠️ Usisajili laini kwanza. Hakikisha una scanner au Famoco yenye scanner na uko tayari kulipa TSh 40,000 kabla ya kupewa user ya kuwasha Till.</div>
         </>}
-        <label style={{...labelStyle,gridColumn:"1 / -1"}}>Maelezo ya ziada (hiari)<textarea style={{...textInput,minHeight:88,resize:"vertical"}} value={values.notes ?? ""} onChange={e=>set("notes",e.target.value)} placeholder="Taarifa nyingine za kumsaidia Admin (hiari)"/></label>
         {network !== "HALOTEL" && <label style={{display:"flex",gap:10,alignItems:"flex-start",gridColumn:"1 / -1"}}><input type="checkbox" checked={paidConfirmed} onChange={e=>setPaidConfirmed(e.target.checked)} required/><span>Nimeelewa kuwa huduma hii inahitaji malipo ya {price[network]} kabla ya kukamilishwa.</span></label>}
         <div style={{gridColumn:"1 / -1",display:"flex",gap:10,flexWrap:"wrap",marginTop:4}}>
           <button type="submit" disabled={busy || !!uploading} style={{border:0,borderRadius:12,padding:"14px 20px",fontWeight:850,color:"#fff",background:busy?"#475569":"linear-gradient(110deg,#ea580c,#dc2626)",cursor:busy?"wait":"pointer",flex:"1 1 230px"}}>{busy ? (uploading ? "Inapakia kiambatisho..." : "Inatuma ombi...") : "✓ Thibitisha & Tuma Maombi"}</button>
