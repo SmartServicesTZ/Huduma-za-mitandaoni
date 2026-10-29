@@ -93,12 +93,15 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
     fields: (() => {
       let fields = safeFields(row.fields);
       if (id === "vodacom") {
-        const nameFields = fields.filter((field) => ["firstName", "middleName", "lastName"].includes(field.fieldName));
-        if (nameFields.length) {
-          const order = Math.min(...nameFields.map((field) => field.order ?? 0));
-          fields = fields.filter((field) => !["firstName", "middleName", "lastName"].includes(field.fieldName));
-          fields.push({ fieldName: "fullName", label: "Majina yote matatu kama yalivyo kwenye kitambulisho", type: "TEXT", required: true, helpText: "Andika majina yako yote matatu kwa usahihi kama yalivyo kwenye kitambulisho chako. Usitumie jina la mteja.", order });
-        }
+        // Always show three separate name inputs, even if Firestore still has the legacy fullName schema.
+        const nameFields = new Set(["fullName", "firstName", "middleName", "lastName", "name1", "name2", "name3"]);
+        const nameOrder = Math.min(...fields.filter((field) => nameFields.has(field.fieldName)).map((field) => field.order ?? 0), 0);
+        fields = fields.filter((field) => !nameFields.has(field.fieldName));
+        fields.push(
+          { fieldName: "name1", label: "Jina la 1", type: "TEXT", placeholder: "Jina la kwanza", required: true, helpText: "Andika jina la kwanza la mwombaji.", order: nameOrder },
+          { fieldName: "name2", label: "Jina la 2", type: "TEXT", placeholder: "Jina la pili", required: true, helpText: "Andika jina la pili la mwombaji.", order: nameOrder + 1 },
+          { fieldName: "name3", label: "Jina la 3", type: "TEXT", placeholder: "Jina la tatu", required: true, helpText: "Andika jina la tatu la mwombaji.", order: nameOrder + 2 },
+        );
         fields = fields.map((field) => field.fieldName === "phone"
           ? { ...field, label: "Namba ya simu ya kuwezesha Lipa (ya wakala)", placeholder: "2557XXXXXXXX", helpText: "Weka namba yako ya wakala inayoanza na 255. Namba hii haitakiwi kuwa tayari imewezeshwa akaunti ya M-Pesa.", required: true }
           : field);
@@ -151,7 +154,9 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     reward: 5000,
     active: true,
     fields: [
-      { fieldName: "fullName", label: "Majina yote matatu kama yalivyo kwenye kitambulisho", type: "TEXT", required: true, helpText: "Andika majina yako yote matatu kwa usahihi kama yalivyo kwenye kitambulisho chako.", order: 0 },
+      { fieldName: "name1", label: "Jina la 1", type: "TEXT", placeholder: "Jina la kwanza", required: true, helpText: "Andika jina la kwanza la mwombaji.", order: 0 },
+      { fieldName: "name2", label: "Jina la 2", type: "TEXT", placeholder: "Jina la pili", required: true, helpText: "Andika jina la pili la mwombaji.", order: 1 },
+      { fieldName: "name3", label: "Jina la 3", type: "TEXT", placeholder: "Jina la tatu", required: true, helpText: "Andika jina la tatu la mwombaji.", order: 2 },
       { fieldName: "businessName", label: "Majina ya Biashara", type: "TEXT", required: false, order: 3 },
       { fieldName: "phone", label: "Namba ya simu ya kuwezesha Lipa (ya wakala)", type: "PHONE", placeholder: "2557XXXXXXXX", required: true, helpText: "Weka namba yako ya wakala inayoanza na 255. Namba hii haitakiwi kuwa tayari imewezeshwa akaunti ya M-Pesa.", order: 4 },
       { fieldName: "contactPhone", label: "Namba ya mawasiliano ya wakala", type: "PHONE", placeholder: "2557XXXXXXXX", required: true, helpText: "Weka namba yako mwenyewe ya mawasiliano, si namba ya mteja. Tumia muundo wa 255.", order: 4.5 },
@@ -531,7 +536,14 @@ export default function LipaNumberPage() {
     if (Object.keys(nextErrors).length > 0) { toast.error("Tafadhali rekebisha taarifa zilizoainishwa kwenye fomu."); return; }
     setSubmitting(true);
     try {
-      await submitLipaApplication(applicationId, selectedNetwork.id, values);
+      const submissionValues: ServiceFormValues = selectedNetwork.id === "vodacom" ? {
+        ...values,
+        firstName: String(values.name1 ?? "").trim(),
+        middleName: String(values.name2 ?? "").trim(),
+        lastName: String(values.name3 ?? "").trim(),
+        fullName: [values.name1, values.name2, values.name3].map((name) => String(name ?? "").trim()).filter(Boolean).join(" "),
+      } : values;
+      await submitLipaApplication(applicationId, selectedNetwork.id, submissionValues);
       toast.success("Ombi lako limetumwa.", { description: "Utaona mabadiliko ya hali kwenye historia yako." });
       await clearDraftUploads(crypto.randomUUID());
       setValues({});
