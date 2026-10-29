@@ -27,15 +27,29 @@ function makeFileStem(name: string, number: string) {
 
 async function captureArtboard(element: HTMLElement) {
   await document.fonts?.ready;
-  const { default: html2canvas } = await import("html2canvas");
   const width = element.getBoundingClientRect().width;
   if (!width) throw new Error("Hakikisho halijawa tayari.");
-  return html2canvas(element, {
+
+  // Wait for the exact logos and generated QR image shown in the live preview.
+  await Promise.all(Array.from(element.querySelectorAll("img"), async (image) => {
+    if (!image.complete) {
+      await new Promise<void>((resolve) => {
+        image.addEventListener("load", () => resolve(), { once: true });
+        image.addEventListener("error", () => resolve(), { once: true });
+      });
+    }
+    if (typeof image.decode === "function") {
+      await image.decode().catch(() => undefined);
+    }
+  }));
+
+  // modern-screenshot uses the browser's SVG foreignObject renderer rather
+  // than html2canvas's partial CSS renderer. This preserves gradients,
+  // pseudo-elements, container units and the responsive preview styling.
+  const { domToCanvas } = await import("modern-screenshot");
+  return domToCanvas(element, {
     backgroundColor: "#ffffff",
-    logging: false,
     scale: A5_WIDTH_PX / width,
-    useCORS: false,
-    imageTimeout: 0,
   });
 }
 
