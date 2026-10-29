@@ -533,3 +533,101 @@
   .lq-qr-frame { padding: 0 !important; }
   .lq-qr-paper { padding: 0 !important; }
 }
+
+
+/* Refined editor and guide-card presentation */
+.lq-sidebar { gap: 16px; padding: 24px 20px 28px; }
+.lq-brand-lockup { padding: 4px 2px 8px; }
+.lq-editor-panel {
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid #edf0f4;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  box-shadow: 0 5px 18px #17202c08;
+}
+.lq-section-heading { color: #606d7d; font-size: 9px; }
+.lq-field { gap: 7px; font-size: 11px; }
+.lq-field input, .lq-field select {
+  min-height: 46px;
+  border-color: #d9dfe7;
+  border-radius: 11px;
+  background: #fff;
+  font-size: 12px;
+}
+.lq-output-panel { gap: 11px; }
+.lq-choice-group { padding: 4px; border-radius: 11px; }
+.lq-choice-group button { min-height: 39px; border-radius: 8px; font-size: 10px; }
+.lq-choice-group button.is-active { box-shadow: 0 2px 7px #48131c18; }
+.lq-print-note { padding: 9px 10px; border-radius: 9px; color: #687486; background: #f3f6f9; font-size: 9px; line-height: 1.55; }
+.lq-guide-header {
+  flex-basis: 27% !important;
+  gap: 2.2% !important;
+  padding: 4.5% 6% !important;
+  background-image: linear-gradient(120deg, #d91a36 0%, #bd0825 58%, #8f001b 100%) !important;
+}
+.lq-guide-header h2 { font-size: 5.8cqw !important; line-height: 1.08 !important; }
+.lq-guide-merchant-pill {
+  min-height: 31px !important;
+  padding: 1.8% 2.6% !important;
+  border-color: #ffffff80 !important;
+  border-radius: 8px !important;
+  background: #72001455 !important;
+  box-shadow: 0 4px 12px #5a00152b;
+}
+.lq-guide-main { gap: 2.8% !important; padding: 3.5% 5% 3% !important; }
+.lq-guide-card {
+  padding: 8% 6% 5% !important;
+  border: 0 !important;
+  border-radius: 11px !important;
+  box-shadow: 0 6px 18px #5b001426 !important;
+}
+.lq-guide-card--mpesa { padding-top: 9% !important; }
+.lq-guide-number {
+  top: -9px !important;
+  left: -8px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border: 2px solid #fff !important;
+  background: #b50022 !important;
+  box-shadow: 0 3px 9px #57000c45 !important;
+}
+.lq-network-heading { gap: 5px !important; }
+.lq-network-heading strong { color: #a90020 !important; font-weight: 950 !important; }
+.lq-network-heading span {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #8b1027 !important;
+  background: #fff0f2;
+  font-weight: 850;
+}
+.lq-guide-card ol { gap: 5px !important; line-height: 1.38 !important; }
+.lq-guide-card li::marker { color: #c20b2b; font-weight: 900; }
+.lq-guide-app-steps { gap: 5% !important; padding: 3% 2% !important; }
+.lq-app-step {
+  padding: 3.5% 4% !important;
+  border: 1px solid #ffffff55 !important;
+  border-radius: 9px !important;
+  background: #7f001955 !important;
+  box-shadow: 0 4px 12px #5b001522;
+}
+.lq-guide-app-steps > p {
+  border-radius: 9px !important;
+  background: #76001855 !important;
+  line-height: 1.4 !important;
+}
+.lq-guide-footer {
+  flex-basis: 7.5% !important;
+  background: #790017c9 !important;
+}
+.lq-guide-footer strong { font-size: 2.5cqw; letter-spacing: .025em; }
+.lq-qr-paper { border-width: .35px !important; }
+@media (max-width: 700px) {
+  .lq-sidebar { gap: 13px; padding: 16px 14px 20px; }
+  .lq-editor-panel { padding: 14px; border-radius: 13px; }
+  .lq-field input, .lq-field select { min-height: 45px; }
+  .lq-guide-card { border-radius: 9px !important; }
+  .lq-qr-paper { border-width: .35px !important; }
+}
