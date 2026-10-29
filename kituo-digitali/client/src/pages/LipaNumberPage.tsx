@@ -116,14 +116,29 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
         fields = fields.map((field) => field.fieldName === "tinNumber"
           ? { ...field, label: "Namba ya TIN", placeholder: "123-123-123", required: false, helpText: "Weka namba kwa muundo 123-123-123." }
           : field);
+        if (!fields.some((field) => field.fieldName === "businessNameEvidence")) {
+          const businessOrder = fields.find((field) => field.fieldName === "businessName")?.order ?? 3;
+          fields.push({
+            fieldName: "businessNameEvidence",
+            label: "Ushahidi wa jina la biashara",
+            type: "IMAGE_UPLOAD",
+            required: false,
+            helpText: "Kwa jina la biashara, pakia picha iliyo wazi ya bango la eneo la biashara jina lionekane, AU picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.",
+            maxSizeMb: 5,
+            accept: ["image/jpeg", "image/png", "image/webp"],
+            order: businessOrder + 0.25,
+          });
+        }
       }
       fields = fields.map((field) => field.type === "PHONE"
         ? { ...field, placeholder: field.placeholder?.startsWith("255") ? field.placeholder : "2557XXXXXXXX" }
         : field);
       const imageFields = fields.filter((field) => field.type === "IMAGE_UPLOAD");
       if (imageFields.length > 1) {
-        const keep = imageFields.find((field) => field.fieldName === "idDocument") ?? imageFields[0];
-        fields = fields.filter((field) => field.type !== "IMAGE_UPLOAD" || field.fieldName === keep.fieldName);
+        const keepFields = id === "vodacom"
+          ? new Set(["idDocument", "businessNameEvidence"])
+          : new Set([imageFields.find((field) => field.fieldName === "idDocument")?.fieldName ?? imageFields[0].fieldName]);
+        fields = fields.filter((field) => field.type !== "IMAGE_UPLOAD" || keepFields.has(field.fieldName));
       }
       fields = fields.map((field) => field.type === "IMAGE_UPLOAD" ? {
         ...field,
@@ -536,6 +551,9 @@ export default function LipaNumberPage() {
     if (selectedNetwork.id === "vodacom" && values.hasTinNumber === "Ndiyo" && !String(values.tinNumber ?? "").trim()) {
       nextErrors.tinNumber = "Umechagua Ndiyo; tafadhali andika namba yako ya TIN.";
     }
+    if (selectedNetwork.id === "vodacom" && String(values.businessName ?? "").trim() && !String(values.businessNameEvidence ?? "").startsWith("lipaUploads/")) {
+      nextErrors.businessNameEvidence = "Umeweka jina la biashara; pakia picha ya bango la eneo au picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.";
+    }
     for (const field of selectedNetwork.fields.filter((item) => item.type === "IMAGE_UPLOAD" || item.type === "FILE_UPLOAD")) {
       if (nextErrors[field.fieldName] && valueForField(values, field).startsWith("lipaUploads/")) delete nextErrors[field.fieldName];
     }
@@ -573,6 +591,7 @@ export default function LipaNumberPage() {
   const renderField = (field: ServiceFormField) => {
     const value = valueForField(values, field);
     if (field.fieldName === "tinNumber" && selectedNetwork?.id === "vodacom" && values.hasTinNumber !== "Ndiyo") return null;
+    if (field.fieldName === "businessNameEvidence" && selectedNetwork?.id === "vodacom" && !String(values.businessName ?? "").trim()) return null;
     const inputId = `lipa-${field.fieldName}`;
     const common = { id: inputId, name: field.fieldName, placeholder: field.placeholder, value, required: field.required, "aria-invalid": Boolean(errors[field.fieldName]), "aria-describedby": `${inputId}-help` };
     const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
