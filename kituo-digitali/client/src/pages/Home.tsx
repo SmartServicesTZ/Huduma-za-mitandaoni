@@ -394,7 +394,7 @@ function ServiceGrid({ title, services, onUse }: { title: string; services: Serv
 
 function SpecialSection() {
   const open = (item: typeof specialServices[number]) => {
-    if ("url" in item && item.url) { window.open(item.url, "_blank", "noopener,noreferrer"); return; }
+    if ("url" in item && item.url) { window.location.href = item.url; return; }
     const action = (item as unknown as { action?: string }).action;
     if (action === "whatsapp") { window.open(whatsappUrl, "_blank", "noopener,noreferrer"); return; }
     toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => window.open(whatsappUrl, "_blank") } });
