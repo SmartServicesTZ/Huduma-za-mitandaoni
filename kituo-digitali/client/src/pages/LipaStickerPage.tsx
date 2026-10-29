@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Download, QrCode, RotateCcw, Sparkles } from "lucide-react";
+import { Download, QrCode, RotateCcw } from "lucide-react";
 import { triggerDownload } from "@/lib/downloadHistory";
 
 type Network = "AIRTEL" | "VODACOM" | "YAS" | "HALOTEL";
-const palettes: Record<Network, { main: string; dark: string; accent: string; text: string }> = {
-  AIRTEL: { main: "#ed1c2e", dark: "#b80e20", accent: "#ffc928", text: "#fff" },
-  VODACOM: { main: "#e31837", dark: "#a9001c", accent: "#fff", text: "#fff" },
-  YAS: { main: "#ffd500", dark: "#102d69", accent: "#102d69", text: "#101828" },
-  HALOTEL: { main: "#f58220", dark: "#b64d00", accent: "#fff", text: "#fff" },
+const palettes: Record<Network, { main: string; dark: string; accent: string; text: string; logo: string; label: string }> = {
+  AIRTEL: { main: "#ed1c2e", dark: "#b80e20", accent: "#ffc928", text: "#fff", logo: "/airtel-logo.png", label: "AIRTEL MONEY" },
+  VODACOM: { main: "#e31837", dark: "#a9001c", accent: "#fff", text: "#fff", logo: "/vodacom-logo.png", label: "M-PESA" },
+  YAS: { main: "#ffd500", dark: "#102d69", accent: "#102d69", text: "#102d69", logo: "/yas-logo.png", label: "YAS PESA" },
+  HALOTEL: { main: "#f58220", dark: "#b64d00", accent: "#fff", text: "#fff", logo: "/halotel-logo.png", label: "HALOPESA" },
 };
-
-const clean = (v: string) => v.replace(/\s+/g, " ").trim();
-const digits = (v: string) => v.replace(/\D/g, "").slice(0, 14);
+const clean = (v: string) => v.replace(/\\s+/g, " ").trim();
+const digits = (v: string) => v.replace(/\\D/g, "").slice(0, 14);
+const wordCount = (v: string) => clean(v).split(" ").filter(Boolean).length;
+const stickerNames = (network: Network, names: string) => {
+  const words = clean(names).split(" ").filter(Boolean);
+  return (network === "YAS" ? words.slice(0, 2) : network === "AIRTEL" ? words.slice(0, 3) : words.slice(0, 2)).join(" ");
+};
 
 export default function LipaStickerPage() {
   const [network, setNetwork] = useState<Network>("AIRTEL");
@@ -22,13 +26,13 @@ export default function LipaStickerPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const theme = palettes[network];
-  const valid = useMemo(() => clean(names).split(" ").filter(Boolean).length >= 2 && /^\d{5,14}$/.test(digits(lipaNumber)), [names, lipaNumber]);
-  const qrPayload = useMemo(() => `LIPA NAMBA\nMtandao: ${network}\nNamba: ${digits(lipaNumber)}\nJina: ${clean(names).toUpperCase()}`, [network, lipaNumber, names]);
-
+  const requiredNames = network === "AIRTEL" || network === "YAS" ? 3 : 2;
+  const valid = useMemo(() => wordCount(names) >= requiredNames && /^\\d{5,14}$/.test(digits(lipaNumber)), [names, lipaNumber, requiredNames]);
+  const qrPayload = useMemo(() => `LIPA NAMBA\\nMtandao: ${network}\\nNamba: ${digits(lipaNumber)}\\nJina: ${clean(names).toUpperCase()}`, [network, lipaNumber, names]);
   useEffect(() => {
     let cancelled = false;
     if (!valid) { setQr(""); return; }
-    QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "M", margin: 1, width: 240, color: { dark: "#111827", light: "#ffffff" } })
+    QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "M", margin: 2, width: 280, color: { dark: "#111827", light: "#ffffff" } })
       .then((url: string) => { if (!cancelled) setQr(url); })
       .catch(() => { if (!cancelled) setQr(""); });
     return () => { cancelled = true; };
@@ -39,77 +43,105 @@ export default function LipaStickerPage() {
     setBusy(true); setError("");
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = 1500; canvas.height = 1000;
+      canvas.width = 1600; canvas.height = 1050;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Kifaa cha kutengeneza picha hakipatikani.");
       ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      bg.addColorStop(0, theme.main); bg.addColorStop(1, theme.dark);
-      ctx.fillStyle = bg; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(520, 0); ctx.lineTo(0, 430); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = theme.accent; ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(70, 40); ctx.lineTo(70, 390); ctx.stroke();
-      ctx.fillStyle = theme.main; ctx.fillRect(0, 0, canvas.width, 22);
-      ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 12; ctx.strokeRect(24, 24, canvas.width - 48, canvas.height - 48);
-      ctx.textAlign = "center"; ctx.fillStyle = theme.main; ctx.font = "900 86px Arial"; ctx.fillText("LIPA NAMBA", 750, 170);
-      ctx.fillStyle = "#64748b"; ctx.font = "bold 34px Arial"; ctx.fillText("LIPA KWA MITANDAO YOTE", 750, 225);
-      ctx.fillStyle = theme.main; ctx.beginPath(); ctx.roundRect(190, 290, 1120, 245, 62); ctx.fill();
-      ctx.strokeStyle = theme.accent; ctx.lineWidth = 14; ctx.stroke();
-      ctx.fillStyle = theme.text; ctx.font = `900 ${clean(names).length > 23 ? 52 : 68}px Arial`; ctx.fillText(clean(names).toUpperCase(), 750, 430, 1020);
-      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(180, 600, 800, 190, 80); ctx.fill();
-      ctx.strokeStyle = theme.main; ctx.lineWidth = 12; ctx.stroke();
-      ctx.fillStyle = theme.main; ctx.font = "900 78px Arial"; ctx.fillText(digits(lipaNumber), 580, 715, 720);
+      ctx.fillStyle = theme.main; ctx.fillRect(0, 0, canvas.width, 26);
+      ctx.fillStyle = theme.dark; ctx.fillRect(0, 26, 24, canvas.height - 26);
+      ctx.fillStyle = "#f8fafc"; ctx.fillRect(24, 26, canvas.width - 24, canvas.height - 26);
+      ctx.strokeStyle = theme.main; ctx.lineWidth = 8; ctx.strokeRect(42, 44, canvas.width - 84, canvas.height - 88);
+      ctx.fillStyle = theme.main; ctx.beginPath(); ctx.roundRect(65, 70, 1470, 180, 28); ctx.fill();
+      const logo = new Image(); logo.src = theme.logo;
+      await new Promise<void>((resolve) => { logo.onload = () => resolve(); logo.onerror = () => resolve(); });
+      if (logo.naturalWidth > 0) {
+        const maxW = 190, maxH = 120, ratio = Math.min(maxW / logo.naturalWidth, maxH / logo.naturalHeight);
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(90, 96, 210, 128, 18); ctx.fill();
+        ctx.drawImage(logo, 100 + (maxW - logo.naturalWidth * ratio) / 2, 100 + (maxH - logo.naturalHeight * ratio) / 2, logo.naturalWidth * ratio, logo.naturalHeight * ratio);
+      }
+      ctx.fillStyle = theme.text; ctx.textAlign = "center"; ctx.font = "900 62px Arial";
+      ctx.fillText("LIPA KWA " + theme.label, 890, 145);
+      ctx.font = "bold 28px Arial"; ctx.fillText(network, 890, 200);
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(90, 300, 930, 340, 28); ctx.fill();
+      ctx.strokeStyle = theme.main; ctx.lineWidth = 8; ctx.stroke();
+      ctx.fillStyle = theme.dark; ctx.textAlign = "center"; ctx.font = "bold 30px Arial"; ctx.fillText("JINA LA MTEJA / BIASHARA", 555, 365);
+      ctx.fillStyle = theme.main;
+      const displayName = stickerNames(network, names).toUpperCase();
+      const nameSize = displayName.length > 22 ? 48 : displayName.length > 15 ? 60 : 76;
+      ctx.font = `900 ${nameSize}px Arial`; ctx.fillText(displayName, 555, 480, 850);
+      ctx.fillStyle = "#f1f5f9"; ctx.beginPath(); ctx.roundRect(145, 525, 820, 80, 18); ctx.fill();
+      ctx.fillStyle = theme.dark; ctx.font = "900 56px Arial"; ctx.fillText(digits(lipaNumber), 555, 580, 770);
       const qrImage = new Image(); qrImage.src = qr;
       await new Promise<void>((resolve, reject) => { qrImage.onload = () => resolve(); qrImage.onerror = () => reject(new Error("QR code haikuweza kupakiwa.")); });
-      ctx.fillStyle = "#fff"; ctx.fillRect(1030, 580, 270, 270); ctx.drawImage(qrImage, 1045, 595, 240, 240);
-      ctx.fillStyle = "#334155"; ctx.font = "bold 24px Arial"; ctx.fillText("SCAN / TAARIFA", 1165, 890);
-      ctx.fillStyle = theme.dark; ctx.font = "bold 27px Arial"; ctx.fillText(network, 750, 880);
-      ctx.fillStyle = "#64748b"; ctx.font = "24px Arial"; ctx.fillText("QR hii ina taarifa za Lipa Namba na jina la biashara", 750, 935);
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(1080, 300, 390, 390, 28); ctx.fill();
+      ctx.drawImage(qrImage, 1105, 325, 340, 340);
+      ctx.fillStyle = theme.dark; ctx.textAlign = "center"; ctx.font = "bold 25px Arial"; ctx.fillText("SCAN QR CODE", 1275, 730);
+      ctx.fillStyle = theme.main; ctx.beginPath(); ctx.roundRect(90, 760, 1380, 120, 22); ctx.fill();
+      ctx.fillStyle = theme.text; ctx.font = "900 34px Arial"; ctx.fillText("LIPA NAMBA • " + theme.label, 780, 835);
+      ctx.fillStyle = "#64748b"; ctx.font = "22px Arial"; ctx.fillText("Tumia QR kusoma taarifa za Lipa Namba", 780, 940);
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-      if (!blob) throw new Error("Sticker haikuweza kutengenezwa.");
+      if (!blob) throw new Error("Stika haikuweza kutengenezwa.");
       triggerDownload(blob, `stika-lipa-${network.toLowerCase()}-${digits(lipaNumber)}.png`, "PNG");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Imeshindikana kutengeneza sticker.");
+      setError(e instanceof Error ? e.message : "Imeshindikana kutengeneza stika.");
     } finally { setBusy(false); }
   }
-
   function reset() { setNames(""); setLipaNumber(""); setNetwork("AIRTEL"); setError(""); }
 
-  return <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6">
+  return <main className="min-h-screen bg-slate-100 px-3 py-5 text-slate-900 sm:px-6">
     <div className="mx-auto max-w-6xl">
-      <header className="mb-6 rounded-3xl p-5 text-white shadow-lg sm:p-7" style={{ background: `linear-gradient(120deg, ${theme.main}, ${theme.dark})` }}>
-        <div className="flex items-center gap-3"><div className="rounded-2xl bg-white/15 p-3"><QrCode size={30}/></div><div><p className="text-xs font-black tracking-[.2em] opacity-90">SMARTSERVICESTZ</p><h1 className="text-2xl font-black sm:text-3xl">STIKA ZA LIPA NAMBA</h1><p className="mt-1 text-sm opacity-90">Tengeneza stika yenye QR code kwa mitandao yote.</p></div></div>
+      <header className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-2" style={{background:theme.main}}/>
+        <div className="flex items-center gap-4 p-5 sm:p-7">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm" style={{background:theme.main}}><QrCode size={30}/></div>
+          <div><p className="text-xs font-black tracking-[.22em]" style={{color:theme.main}}>SMARTSERVICESTZ</p><h1 className="text-2xl font-black sm:text-3xl">STIKA ZA LIPA NAMBA</h1><p className="mt-1 text-sm text-slate-500">Chagua mtandao; stika itatumia rangi na logo yake.</p></div>
+        </div>
       </header>
-      <div className="grid items-start gap-6 lg:grid-cols-[370px_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 lg:grid-cols-[350px_minmax(0,1fr)]">
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-black">Jaza taarifa za stika</h2>
-          <label className="mb-4 block text-sm font-bold">Mtandao wa Lipa Namba
-            <select value={network} onChange={e => setNetwork(e.target.value as Network)} className="mt-2 h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-3 text-base">
+          <h2 className="mb-4 text-lg font-black">Taarifa za stika</h2>
+          <label className="mb-4 block text-sm font-bold">Mtandao
+            <select value={network} onChange={e => {setNetwork(e.target.value as Network); setError("");}} className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base focus:border-slate-500 focus:outline-none">
               {Object.keys(palettes).map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
-          <label className="mb-4 block text-sm font-bold">Majina ya biashara (angalau majina 2)
-            <input value={names} onChange={e => setNames(e.target.value.slice(0, 48))} maxLength={48} autoComplete="organization" placeholder="Mfano: BRIAN FRANCIS" className="mt-2 h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base"/>
+          <div className="mb-4 flex items-center gap-3 rounded-2xl p-3" style={{background:network==="YAS"?"#fff9cc":theme.main+"12"}}>
+            <img src={theme.logo} alt={network+" logo"} className="h-12 w-16 object-contain" onError={e => {e.currentTarget.style.visibility="hidden";}}/>
+            <div><p className="font-black" style={{color:theme.dark}}>{theme.label}</p><p className="text-xs text-slate-500">{requiredNames} majina yanahitajika</p></div>
+          </div>
+          <label className="mb-2 block text-sm font-bold">Majina kamili
+            <input value={names} onChange={e => setNames(e.target.value.slice(0, 64))} maxLength={64} autoComplete="organization" placeholder={network==="AIRTEL"||network==="YAS"?"Mfano: JINA LA BIASHARA":"Mfano: JINA LA BIASHARA"} className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 text-base focus:border-slate-500 focus:outline-none"/>
           </label>
+          <p className="mb-4 text-xs leading-relaxed text-slate-500">{network==="YAS"?"QR itakuwa na majina yote 3; stika itaonyesha majina 2 ya kwanza.":network==="AIRTEL"?"QR na stika vitatumia majina 3.":"QR itakuwa na majina uliyoweka; stika itaonyesha majina 2 ya kwanza."}</p>
           <label className="mb-2 block text-sm font-bold">Namba ya Lipa Namba
-            <input value={lipaNumber} onChange={e => setLipaNumber(digits(e.target.value))} inputMode="numeric" maxLength={14} placeholder="Weka namba ya Lipa" className="mt-2 h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base"/>
+            <input value={lipaNumber} onChange={e => setLipaNumber(digits(e.target.value))} inputMode="numeric" maxLength={14} placeholder="Weka namba ya Lipa" className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 text-base focus:border-slate-500 focus:outline-none"/>
           </label>
-          <p className="mb-5 text-xs text-slate-500">Majina na namba vitaonekana kwenye stika na taarifa hizo zitawekwa ndani ya QR code.</p>
-          <button disabled={!valid || !qr || busy} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:opacity-50" style={{background:theme.main}}><Download size={19}/>{busy ? "Inatengeneza..." : "PAKUA STIKA PNG"}</button>
+          <p className="mb-5 mt-2 text-xs text-slate-500">Angalau {requiredNames} majina na namba halali vinahitajika.</p>
+          <button disabled={!valid || !qr || busy} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white shadow-sm disabled:opacity-50" style={{background:theme.main}}><Download size={19}/>{busy ? "Inatengeneza..." : "PAKUA STIKA PNG"}</button>
           <button onClick={reset} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700"><RotateCcw size={16}/> Futa taarifa</button>
           {error && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
         </section>
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-          <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-black">Muonekano wa stika</h2><p className="text-xs text-slate-500">Preview hubadilika unapoandika.</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">LIVE</span></div>
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div className="relative overflow-hidden px-4 pb-8 pt-8 text-center">
-              <div className="absolute left-0 top-0 h-28 w-36 -translate-x-7 -translate-y-8 rotate-[-25deg]" style={{background:theme.main}}/>
-              <div className="relative"><h3 className="text-3xl font-black tracking-[.18em]" style={{color:theme.main}}>LIPA NAMBA</h3><p className="mt-2 text-xs font-black tracking-[.18em] text-slate-500">LIPA KWA MITANDAO YOTE</p>
-                <div className="mx-auto mt-7 max-w-xl rounded-3xl border-4 px-3 py-5 shadow-sm" style={{background:theme.main,borderColor:theme.accent,color:theme.text}}><p className="break-words text-xl font-black uppercase sm:text-3xl">{clean(names) || "JINA LA BIASHARA"}</p><p className="mt-1 text-xs font-bold opacity-90">{network}</p></div>
-                <div className="mt-5 flex flex-wrap items-center justify-center gap-4"><div className="min-w-0 rounded-full border-4 px-5 py-4" style={{borderColor:theme.main,color:theme.main}}><p className="break-all text-2xl font-black sm:text-4xl">{digits(lipaNumber) || "000000000"}</p></div>{qr && <img src={qr} alt="QR code ya taarifa za Lipa Namba" className="h-28 w-28 rounded-lg border border-slate-200 p-1"/>}</div>
-                <p className="mt-4 flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><Sparkles size={13}/> QR ina jina, mtandao na namba ya Lipa.</p>
+          <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-black">Muonekano wa stika</h2><p className="text-xs text-slate-500">Muonekano wa mwisho utapakuliwa kama PNG.</p></div><span className="rounded-full px-3 py-1 text-xs font-black" style={{background:theme.main+"18",color:theme.dark}}>LIVE PREVIEW</span></div>
+          <div className="overflow-hidden rounded-2xl border-2 bg-slate-50 p-3 sm:p-5" style={{borderColor:theme.main}}>
+            <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+              <div className="flex items-center gap-3 px-4 py-4 text-white sm:px-6" style={{background:theme.main}}>
+                <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-xl bg-white p-2"><img src={theme.logo} alt={network+" logo"} className="max-h-full max-w-full object-contain"/></div>
+                <div className="min-w-0"><p className="text-xs font-black tracking-widest opacity-90">{network}</p><h3 className="text-xl font-black sm:text-3xl">LIPA KWA {theme.label}</h3><p className="text-xs font-semibold opacity-90">LIPA NAMBA</p></div>
               </div>
+              <div className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-center sm:p-6">
+                <div className="min-w-0">
+                  <p className="mb-2 text-xs font-black tracking-widest text-slate-500">JINA LA MTEJA / BIASHARA</p>
+                  <h4 className="break-words text-2xl font-black sm:text-3xl" style={{color:theme.dark}}>{stickerNames(network,names).toUpperCase()||"JINA LA BIASHARA"}</h4>
+                  <div className="mt-5 rounded-xl p-4" style={{background:theme.main+"12",borderLeft:"6px solid "+theme.main}}><p className="text-xs font-bold text-slate-500">NAMBA YA LIPA</p><p className="mt-1 break-all text-2xl font-black sm:text-3xl" style={{color:theme.dark}}>{digits(lipaNumber)||"000000000"}</p></div>
+                  <p className="mt-4 text-sm font-black" style={{color:theme.main}}>LIPA KWA URAHISI</p>
+                </div>
+                <div className="mx-auto w-fit rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-sm">{qr?<img src={qr} alt="QR code ya taarifa za Lipa Namba" className="h-36 w-36"/>:<div className="flex h-36 w-36 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">QR CODE</div>}<p className="mt-2 text-xs font-black text-slate-600">SCAN QR CODE</p></div>
+              </div>
+              <div className="h-2" style={{background:theme.main}}/>
             </div>
           </div>
-          <p className="mt-3 text-xs leading-relaxed text-amber-700">Kumbuka: QR code hii ni ya kusoma taarifa za Lipa Namba. Ili iweze kufungua malipo moja kwa moja, tunahitaji muundo rasmi wa QR kutoka kwa mtandao husika.</p>
+          <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">Muhimu: kwa sasa QR ina taarifa za jina, mtandao na namba tu; si QR rasmi ya malipo iliyothibitishwa. QR za mfano ulizotuma zinahitaji muundo rasmi wa mtandao na hesabu sahihi ya CRC kabla ya kuzalisha QR za malipo zinazobadilika.</p>
         </section>
       </div>
     </div>
