@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
   createTipsPaymentPayload,
   normalizeLipaNumber,
-  TANZANIA_LIPA_LOCATIONS,
   validateLipaCard,
   type LipaCardValues,
 } from "@shared/lipaQrStudio";
