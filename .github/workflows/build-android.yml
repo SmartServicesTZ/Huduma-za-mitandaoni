@@ -150,6 +150,7 @@ jobs:
 
           import android.app.Activity;
           import android.Manifest;
+          import android.content.ActivityNotFoundException;
           import android.content.pm.PackageManager;
           import android.content.ContentValues;
           import android.content.Intent;
@@ -190,6 +191,7 @@ jobs:
           public class MainActivity extends Activity {
               private static final int FILE_CHOOSER = 1001;
               private static final int MEDIA_PERMISSION_REQUEST = 1002;
+              private static final String SMARTSERVICES_WHATSAPP_GROUP = "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4";
               private PermissionRequest pendingWebPermissionRequest;
               private static final String HOME = "https://smartservicestz.github.io/Huduma-za-mitandaoni/?app=android-v6";
               private WebView webView;
@@ -211,6 +213,40 @@ jobs:
                   v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
                   v.setPadding(dp(14), 0, dp(14), 0);
                   return v;
+              }
+
+              private boolean isWhatsAppGroup(Uri uri) {
+                  if (uri == null || uri.getHost() == null) return false;
+                  String host = uri.getHost();
+                  String withoutQuery = uri.toString().split("\\?", 2)[0];
+                  return "chat.whatsapp.com".equalsIgnoreCase(host)
+                          && SMARTSERVICES_WHATSAPP_GROUP.equalsIgnoreCase(withoutQuery);
+              }
+
+              private boolean openWhatsAppOrBrowser(Uri uri) {
+                  if (uri == null) return false;
+                  Intent whatsappIntent = new Intent(Intent.ACTION_VIEW, uri);
+                  whatsappIntent.setPackage("com.whatsapp");
+                  try {
+                      startActivity(whatsappIntent);
+                      return true;
+                  } catch (ActivityNotFoundException ignored) {
+                      // Try WhatsApp Business before falling back to a normal browser.
+                  }
+                  whatsappIntent.setPackage("com.whatsapp.w4b");
+                  try {
+                      startActivity(whatsappIntent);
+                      return true;
+                  } catch (ActivityNotFoundException ignored) {
+                      // A browser is the fallback; never send the user to Google Play.
+                  }
+                  try {
+                      startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                      return true;
+                  } catch (ActivityNotFoundException ignored) {
+                      Toast.makeText(this, "WhatsApp au browser haipatikani kwenye simu hii.", Toast.LENGTH_LONG).show();
+                      return false;
+                  }
               }
 
               @Override protected void onCreate(Bundle state) {
@@ -296,6 +332,10 @@ jobs:
                           // WhatsApp invite links must leave the embedded WebView.
                           // Otherwise Android may show the Play Store page instead of
                           // handing the invite to an already-installed WhatsApp app.
+                          if (isWhatsAppGroup(u)) {
+                              openWhatsAppOrBrowser(u);
+                              return true;
+                          }
                           if ("https".equalsIgnoreCase(scheme) && host != null
                                   && (host.equalsIgnoreCase("chat.whatsapp.com")
                                   || host.equalsIgnoreCase("www.whatsapp.com")
@@ -312,13 +352,24 @@ jobs:
                               }
                               return true;
                           }
-
                           if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
                               return false;
                           }
                           if ("tel".equalsIgnoreCase(scheme) || "mailto".equalsIgnoreCase(scheme) || "sms".equalsIgnoreCase(scheme)) {
                               try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) {}
                           }
+                          return true;
+                      }
+
+                      @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                          Uri u = Uri.parse(url);
+                          if (isWhatsAppGroup(u)) {
+                              openWhatsAppOrBrowser(u);
+                              return true;
+                          }
+                          String scheme = u.getScheme();
+                          if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) return false;
+                          try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) {}
                           return true;
                       }
 
