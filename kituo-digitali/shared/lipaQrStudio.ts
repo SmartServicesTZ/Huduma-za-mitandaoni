@@ -7,6 +7,7 @@ export type LipaCardValues = {
   businessName: string;
   location: string;
   postalCode: string;
+  qrPayload: string;
 };
 
 export type LipaCardErrors = Partial<Record<keyof LipaCardValues, string>>;
@@ -29,19 +30,23 @@ export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   if (!/^\d{5}$/.test(values.postalCode)) {
     errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
   }
+  if (!isValidTipsPaymentPayload(values.qrPayload)) {
+    errors.qrPayload = "Bandika payload halisi ya TIPS yenye CRC sahihi (huanza 000201 na kuishia 6304xxxx).";
+  }
   return errors;
 }
 
-/**
- * This is deliberately informational text, not an EMV/TIPS payment payload.
- * A real payment QR requires a merchant payload from an authorized provider.
- */
-export function buildLipaInfoQrPayload(values: LipaCardValues): string {
-  return [
-    "TAARIFA ZA LIPA — SI QR YA MALIPO",
-    `Namba ya Lipa: ${normalizeLipaNumber(values.lipaNumber)}`,
-    `Biashara: ${values.businessName.trim().toUpperCase().slice(0, 25)}`,
-    `Eneo: ${values.location}`,
-    `Posta: ${values.postalCode}`,
-  ].join("\n");
+/** Validate the CRC16-CCITT checksum in a TIPS/EMV payment payload. */
+export function isValidTipsPaymentPayload(value: string): boolean {
+  const payload = value.trim();
+  if (!/^000201[\\s\\S]*6304[0-9A-Fa-f]{4}$/.test(payload)) return false;
+  const body = payload.slice(0, -4);
+  let crc = 0xffff;
+  for (let index = 0; index < body.length; index += 1) {
+    crc ^= body.charCodeAt(index) << 8;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc & 0x8000) !== 0 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0") === payload.slice(-4).toUpperCase();
 }
