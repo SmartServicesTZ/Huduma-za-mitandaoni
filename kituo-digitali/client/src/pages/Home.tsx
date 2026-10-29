@@ -629,7 +629,7 @@ function MyApplicationsPage() {
         <div style={{display:"grid",gap:12}}>
           {rows.map((item) => {
             const date = dateMillis(item.date);
-            return <article key={item.category + ":" + item.id} style={{border:"1px solid #dbe5df",borderLeft:`5px solid ${item.status==="APPROVED"?"#16a34a":item.status==="REJECTED"?"#dc2626":item.status==="PROCESSING"?"#2563eb":"#d97706"}`,borderRadius:13,padding:15,background:"#fff",display:"grid",gap:9}}>
+            return <article key={item.category + ":" + item.id} role="button" tabIndex={0} aria-label={`Fungua ombi ${item.title}`} onClick={() => setSelectedApplication(item)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedApplication(item); } }} style={{border:"1px solid #dbe5df",borderLeft:`5px solid ${item.status==="APPROVED"?"#16a34a":item.status==="REJECTED"?"#dc2626":item.status==="PROCESSING"?"#2563eb":"#d97706"}`,borderRadius:13,padding:15,background:item.status==="APPROVED"?"#f0fdf4":item.status==="REJECTED"?"#fff1f2":item.status==="PROCESSING"?"#eff6ff":"#fffbeb",display:"grid",gap:9,cursor:"pointer",transition:"box-shadow .18s ease,transform .18s ease"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
                 <div style={{minWidth:0,flex:"1 1 220px"}}><span style={{fontSize:10,fontWeight:900,letterSpacing:".08em",color:"#64748b"}}>{item.category.toUpperCase()}</span><h3 style={{margin:"4px 0",fontSize:16,overflowWrap:"anywhere"}}>{item.title}</h3></div>
                 <span style={statusStyle(item.status)}>{statusLabel(item.status)}</span>
@@ -641,7 +641,7 @@ function MyApplicationsPage() {
               </div>
               {item.reason && <div style={{padding:10,borderRadius:9,background:"#fef2f2",color:"#991b1b",fontSize:13}}><strong>Sababu ya kukataliwa:</strong> {item.reason}</div>}
               {item.message && <div style={{padding:10,borderRadius:9,background:"#eff6ff",color:"#1e3a8a",fontSize:13}}><strong>Ujumbe wa Admin:</strong> {item.message}</div>}
-              <button type="button" onClick={() => setSelectedApplication(item)} style={{justifySelf:"start",display:"inline-flex",alignItems:"center",gap:7,padding:"8px 12px",border:0,borderRadius:9,background:"#e0e7ff",color:"#3730a3",fontSize:12,fontWeight:800,cursor:"pointer"}}><Eye size={14}/> Fungua ombi uone taarifa zote</button>
+              <button type="button" onClick={(event) => { event.stopPropagation(); setSelectedApplication(item); }} style={{justifySelf:"start",display:"inline-flex",alignItems:"center",gap:6,padding:"6px 9px",border:0,borderRadius:8,background:"#e0e7ff",color:"#3730a3",fontSize:11,fontWeight:800,cursor:"pointer"}}><Eye size={13}/> Fungua taarifa</button>
             </article>;
           })}
         </div>}
