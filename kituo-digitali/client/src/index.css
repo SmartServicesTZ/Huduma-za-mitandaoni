@@ -2559,3 +2559,11 @@ form,
 .token-choice-payto-row strong { display:block !important; color:#0f172a !important; font-size:14px !important; font-weight:900 !important; text-align:right; }
 .idx-logochip { position:relative; z-index:5; flex-shrink:0; background:#fff !important; opacity:1 !important; border:2px solid rgba(255,255,255,.95); box-shadow:0 5px 14px rgba(0,0,0,.28) !important; isolation:isolate; }
 .idx-logochip img { display:block !important; width:100% !important; height:100% !important; max-width:100% !important; max-height:100% !important; object-fit:contain !important; opacity:1 !important; filter:none !important; mix-blend-mode:normal !important; position:relative; z-index:6; }
+
+
+/* User preference: keep the whole portal still when pages open. */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
