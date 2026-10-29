@@ -399,8 +399,30 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
     try {
       const result = await getLipaApplicationDocument(selected.applicationId || selected.id, field.fieldName);
       if (!result?.url) throw new Error("Hati haikupatikana.");
-      if (action === "preview" && field.type === "IMAGE_UPLOAD") setDocumentPreview({ url: result.url, label: field.label, image: true });
-      else window.open(result.url, "_blank", "noopener,noreferrer");
+      if (action === "preview" && field.type === "IMAGE_UPLOAD") {
+        setDocumentPreview({ url: result.url, label: field.label, image: true });
+        return;
+      }
+      if (action === "download") {
+        const response = await fetch(result.url);
+        if (!response.ok) throw new Error("Imeshindikana kupakua faili. Jaribu tena.");
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const source = String(selected.applicantData?.[field.fieldName] ?? "");
+        const extension = /\\.([a-z0-9]{2,5})(?:$|[?#])/i.exec(source)?.[1]?.toLowerCase()
+          ?? (field.type === "IMAGE_UPLOAD" ? "jpg" : "bin");
+        const filename = (field.label || field.fieldName).normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^_+|_+$/g, "") || "nyaraka";
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.download = `${filename}.${extension}`;
+        anchor.rel = "noopener noreferrer";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1500);
+        return;
+      }
+      window.open(result.url, "_blank", "noopener,noreferrer");
     } catch (error) {
       setDocumentError(`${field.label}: ${errorText(error)}`);
     } finally {
@@ -516,7 +538,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
         </div>
                <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button" disabled={rewardSaving} onClick={() => void saveRewardTracking()}>{rewardSaving ? "Inahifadhi..." : "HIFADHI TAARIFA ZA ZAWADI"}</button></div>
       </section>}
-      <h4 className="lipa-admin-section-title">Taarifa zote alizotuma mwombaji</h4><div className="lipa-admin-detail-grid">{fieldsForApplication(selected, byNetwork[selected.networkId]).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isImage = field.type === "IMAGE_UPLOAD" || (typeof value === "string" && /\.(jpe?g|png|webp)(?:$|[?#])/i.test(value)); const isFile = isImage || field.type === "FILE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\//.test(value)); return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName}</dt><dd>{isFile && value ? <div className="lipa-admin-file-block">{isImage ? <><div className="lipa-admin-inline-image-heading"><ImageIcon size={15} /><strong>Picha / kitambulisho kilichotumwa</strong></div>{inlineImages[field.fieldName] ? <a className="lipa-admin-inline-image-link" href={inlineImages[field.fieldName]} target="_blank" rel="noreferrer"><img className="lipa-admin-inline-image" src={inlineImages[field.fieldName]} alt={field.label || "Picha ya mwombaji"} loading="lazy" /></a> : <p className="lipa-admin-inline-image-status">{inlineImageErrors[field.fieldName] ? `Imeshindwa kuonyesha picha: ${inlineImageErrors[field.fieldName]}` : "Inapakia picha..."}</p>}</> : <div className="lipa-admin-file"><span className="lipa-admin-file-label"><FileText size={15} /><span>Faili lililotumwa</span></span><span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}><ExternalLink size={14} /> Fungua faili</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> Pakua</button></span></div>}</div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
+      <h4 className="lipa-admin-section-title">Taarifa zote alizotuma mwombaji</h4><div className="lipa-admin-detail-grid">{fieldsForApplication(selected, byNetwork[selected.networkId]).map((field) => { const value = selected.applicantData?.[field.fieldName]; const isImage = field.type === "IMAGE_UPLOAD" || (typeof value === "string" && /\.(jpe?g|png|webp)(?:$|[?#])/i.test(value)); const isFile = isImage || field.type === "FILE_UPLOAD" || (typeof value === "string" && /^(lipaUploads|lipaApplications)\//.test(value)); return <div className="lipa-admin-detail-item" key={field.fieldName}><dt>{field.label || field.fieldName}</dt><dd>{isFile && value ? <div className="lipa-admin-file-block">{isImage ? <><div className="lipa-admin-inline-image-heading"><ImageIcon size={15} /><strong>Picha / kitambulisho kilichotumwa</strong></div>{inlineImages[field.fieldName] ? <a className="lipa-admin-inline-image-link" href={inlineImages[field.fieldName]} target="_blank" rel="noreferrer"><img className="lipa-admin-inline-image" src={inlineImages[field.fieldName]} alt={field.label || "Picha ya mwombaji"} loading="lazy" /></a> : <p className="lipa-admin-inline-image-status">{inlineImageErrors[field.fieldName] ? `Imeshindwa kuonyesha picha: ${inlineImageErrors[field.fieldName]}` : "Inapakia picha..."}</p>}</> : <div className="lipa-admin-file-label"><FileText size={15} /><span>Faili lililotumwa</span></div>}<span className="lipa-admin-file-actions"><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "preview")}><ExternalLink size={14} /> Fungua faili</button><button type="button" className="lipa-admin-row-action" disabled={documentBusy === field.fieldName} onClick={() => void loadDocument(field, "download")}><Download size={14} /> {documentBusy === field.fieldName ? "Inapakua..." : "Pakua"}</button></span></div> : <span>{displayValue(value)}</span>}</dd></div>; })}</div>
       {documentError && <div className="lipa-admin-error" role="alert">{documentError}</div>}
       <div className="lipa-admin-actions"><button type="button" className="lipa-admin-button lipa-admin-button-secondary" onClick={() => setSelected(null)}>Funga Details</button></div>
     </div></div>}
