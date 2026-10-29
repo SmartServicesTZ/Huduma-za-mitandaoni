@@ -531,7 +531,7 @@ const AGENT_ID_CSS = `
 /* ===== KITAMBULISHO CHA KULALA (560x350) ===== */
 .idl{width:560px;height:350px;box-sizing:border-box;position:relative;overflow:hidden;border-radius:22px;background:#fff;color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 18px 40px rgba(15,23,42,.22)}
 .idl small{display:block;font-size:7.5px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
-.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.12;filter:contrast(1.08) saturate(1.12)}
+.idl-wm{position:absolute;right:-28px;bottom:34px;width:190px;height:190px;object-fit:contain;opacity:.22;filter:contrast(1.18) saturate(1.25)}
 .idl-bg-logo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.09;z-index:0;pointer-events:none}
 .idl>.idl-side,.idl>.idl-main,.idl>.idl-head,.idl>.idl-bbody,.idl>.idl-info,.idl>.idl-foot{z-index:1}
 .idl-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
@@ -578,11 +578,11 @@ const AGENT_ID_CSS = `
 /* Nembo kubwa zikae katikati ya sehemu kuu ya mbele kwa Airtel, Vodacom, Halotel na Yas. */
 .net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);opacity:.12;filter:contrast(1.08) saturate(1.12)}
 /* Mbeya One: nembo kubwa katikati, kama background ya kitambulisho chote. */
-.net-mbeya .idl-wm{opacity:.08;filter:contrast(1.05) saturate(1.08)}
-.net-mbeya .idl-bg-logo{object-fit:cover;object-position:center;opacity:.10;transform:scale(1.04)}
+.net-mbeya .idl-wm{opacity:.16;filter:contrast(1.12) saturate(1.2)}
+.net-mbeya .idl-bg-logo{object-fit:cover;object-position:center;opacity:.18;transform:scale(1.04)}
 /* Nembo kubwa za kampuni kwenye vitambulisho vya kusimama, mbele na nyuma. */
 /* Mtindo mpya wa vitambulisho vya kusimama: nembo ya kampuni kama watermark ya kadi nzima. */
-.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.07;filter:contrast(1.05) saturate(1.08);pointer-events:none}
+.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.14;filter:contrast(1.12) saturate(1.2);pointer-events:none}
 .idp>*:not(.idp-bg-logo):not(.idp-strip){position:relative;z-index:2}
 .idp-hero{flex-basis:154px;padding-top:16px;background:linear-gradient(145deg,var(--d) 0%,var(--c) 58%,var(--h) 100%)}
 .idp-hero--sm{flex-basis:142px}
