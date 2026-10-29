@@ -225,20 +225,42 @@ jobs:
 
               private boolean openWhatsAppOrBrowser(Uri uri) {
                   if (uri == null) return false;
-                  Intent whatsappIntent = new Intent(Intent.ACTION_VIEW, uri);
+                  String inviteCode = uri.getLastPathSegment();
+                  Uri nativeInvite = inviteCode == null || inviteCode.isEmpty()
+                          ? null : Uri.parse("whatsapp://chat?code=" + Uri.encode(inviteCode));
+                  Intent whatsappIntent = nativeInvite == null ? null : new Intent(Intent.ACTION_VIEW, nativeInvite);
+                  if (whatsappIntent != null) whatsappIntent.setPackage("com.whatsapp");
+                  try {
+                      if (whatsappIntent != null) {
+                          startActivity(whatsappIntent);
+                          return true;
+                      }
+                  } catch (ActivityNotFoundException ignored) {
+                      // Try WhatsApp Business with the native invite scheme.
+                  }
+                  if (nativeInvite != null) whatsappIntent = new Intent(Intent.ACTION_VIEW, nativeInvite);
+                  if (whatsappIntent != null) whatsappIntent.setPackage("com.whatsapp.w4b");
+                  try {
+                      if (whatsappIntent != null) {
+                          startActivity(whatsappIntent);
+                          return true;
+                      }
+                  } catch (ActivityNotFoundException ignored) {
+                      // Some WhatsApp versions expose only the HTTPS invite handler.
+                  }
+                  whatsappIntent = new Intent(Intent.ACTION_VIEW, uri);
                   whatsappIntent.setPackage("com.whatsapp");
                   try {
                       startActivity(whatsappIntent);
                       return true;
                   } catch (ActivityNotFoundException ignored) {
-                      // Try WhatsApp Business before falling back to a normal browser.
-                  }
-                  whatsappIntent.setPackage("com.whatsapp.w4b");
-                  try {
-                      startActivity(whatsappIntent);
-                      return true;
-                  } catch (ActivityNotFoundException ignored) {
-                      // A browser is the fallback; never send the user to Google Play.
+                      whatsappIntent.setPackage("com.whatsapp.w4b");
+                      try {
+                          startActivity(whatsappIntent);
+                          return true;
+                      } catch (ActivityNotFoundException ignoredAgain) {
+                          // A browser is the final fallback; never send the user to Google Play.
+                      }
                   }
                   try {
                       startActivity(new Intent(Intent.ACTION_VIEW, uri));
