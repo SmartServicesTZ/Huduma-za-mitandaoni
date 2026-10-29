@@ -17,14 +17,14 @@ export function normalizeLipaNumber(value: string): string {
 
 export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   const errors: LipaCardErrors = {};
-  if (!/^\\d{5,12}$/.test(values.lipaNumber)) errors.lipaNumber = "Namba ya Lipa iwe na tarakimu 5 hadi 12.";
+  if (!/^\d{5,12}$/.test(values.lipaNumber)) errors.lipaNumber = "Namba ya Lipa iwe na tarakimu 5 hadi 12.";
   const businessName = values.businessName.trim();
   if (!businessName) errors.businessName = "Weka jina la biashara.";
   else if (businessName.length > 25) errors.businessName = "Jina la biashara lisizidi herufi 25.";
   if (!TANZANIA_LIPA_LOCATIONS.includes(values.location as (typeof TANZANIA_LIPA_LOCATIONS)[number])) {
     errors.location = "Chagua eneo kutoka kwenye orodha.";
   }
-  if (!/^\\d{5}$/.test(values.postalCode)) errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
+  if (!/^\d{5}$/.test(values.postalCode)) errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
   return errors;
 }
 
@@ -57,6 +57,6 @@ export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumbe
 
 export function isValidTipsPaymentPayload(value: string): boolean {
   const payload = value.trim();
-  if (!/^000201[\\s\\S]*6304[0-9A-Fa-f]{4}$/.test(payload)) return false;
+  if (!/^000201[\s\\S]*6304[0-9A-Fa-f]{4}$/.test(payload)) return false;
   return tipsCrc16(payload.slice(0, -4)) === payload.slice(-4).toUpperCase();
 }
