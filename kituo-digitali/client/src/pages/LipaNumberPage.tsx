@@ -145,13 +145,19 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
         ? { ...field, placeholder: field.placeholder?.startsWith("255") ? field.placeholder : "2557XXXXXXXX" }
         : field);
       const imageFields = fields.filter((field) => field.type === "IMAGE_UPLOAD");
+      const identityField = imageFields.find((field) => ["idDocument", "identityDocument", "identityPhoto"].includes(field.fieldName))
+        ?? imageFields.find((field) => !["businessNameEvidence", "businessLicensePhoto"].includes(field.fieldName))
+        ?? imageFields[0];
+      const identityFieldName = identityField?.fieldName;
       if (imageFields.length > 1) {
-        const keepFields = id === "vodacom"
-          ? new Set(["idDocument", "businessNameEvidence"])
-          : new Set([imageFields.find((field) => field.fieldName === "idDocument")?.fieldName ?? imageFields[0].fieldName]);
+        const keepFields = new Set([
+          ...(identityFieldName ? [identityFieldName] : []),
+          ...(id === "vodacom" ? ["businessNameEvidence"] : []),
+          ...(/yas|tigo/i.test(id) ? ["businessLicensePhoto"] : []),
+        ]);
         fields = fields.filter((field) => field.type !== "IMAGE_UPLOAD" || keepFields.has(field.fieldName));
       }
-      fields = fields.map((field) => field.type === "IMAGE_UPLOAD" && field.fieldName !== "businessNameEvidence" ? {
+      fields = fields.map((field) => field.type === "IMAGE_UPLOAD" && field.fieldName === identityFieldName ? {
         ...field,
         label: "Picha ya utambulisho wa mwombaji",
         helpText: "PAKIA PICHA MOJAWAPO KATI YA: Passport size ya mhusika, picha ya kitambulisho cha NIDA, au picha ya kitambulisho cha mpiga kura. Picha iwe wazi na isomeke vizuri. JPG, PNG au WebP; hadi MB 5.",
