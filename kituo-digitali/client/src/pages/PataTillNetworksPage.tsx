@@ -16,9 +16,14 @@ const networkDetails: Record<Network, string[]> = {
   VODACOM: ["Usisajili laini kabla ya kupata maelekezo.", "Mteja awe na namba ya NIDA.", "Hakikisha una scanner au Famoco yenye scanner.", "Malipo ya TSh 40,000 yafanyike kwanza; kisha utapewa user ya kuwasha Till.", "Taarifa nyingine zitakamilishwa na Admin."],
 };
 const logos: Record<Network, string> = { HALOTEL: halotelLogo, AIRTEL: airtelLogo, VODACOM: vodacomLogo };
+const themes: Record<Network, { accent: string; soft: string; border: string; text: string; gradient: string; warning: string }> = {
+  HALOTEL: { accent: "#facc15", soft: "#422006", border: "#eab308", text: "#fef08a", gradient: "linear-gradient(120deg,#854d0e,#ca8a04)", warning: "#422006" },
+  AIRTEL: { accent: "#ef4444", soft: "#450a0a", border: "#dc2626", text: "#fecaca", gradient: "linear-gradient(120deg,#991b1b,#ef4444)", warning: "#450a0a" },
+  VODACOM: { accent: "#f43f5e", soft: "#4c0519", border: "#be123c", text: "#fecdd3", gradient: "linear-gradient(120deg,#881337,#be123c)", warning: "#4c0519" },
+};
 const textInput: CSSProperties = { width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 12, border: "1px solid #334155", background: "#0b1220", color: "#f8fafc", fontSize: 15 };
-const labelStyle: React.CSSProperties = { display: "grid", gap: 7, color: "#dbeafe", fontWeight: 650, fontSize: 13 };
-const panelStyle: React.CSSProperties = { border: "1px solid #26364e", borderRadius: 18, padding: 18, background: "linear-gradient(145deg,#121d30,#0c1423)", minWidth: 0 };
+const labelStyle: CSSProperties = { display: "grid", gap: 7, color: "#dbeafe", fontWeight: 650, fontSize: 13 };
+const panelStyle: CSSProperties = { border: "1px solid #26364e", borderRadius: 18, padding: 18, background: "linear-gradient(145deg,#121d30,#0c1423)", minWidth: 0 };
 function newId() { return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `till-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 function dateLabel(value: unknown) { const date = value ? new Date(String(value)) : null; return date && !Number.isNaN(date.getTime()) ? date.toLocaleString("sw-TZ") : "—"; }
 
@@ -26,6 +31,9 @@ export default function PataTillNetworksPage() {
   const { firebaseUser } = useAuth();
   const [, navigate] = useLocation();
   const [network, setNetwork] = useState<Network | null>(null);
+  const activeTheme = network ? themes[network] : themes.HALOTEL;
+  const labelStyle: CSSProperties = { display: "grid", gap: 7, color: "#e2e8f0", fontWeight: 650, fontSize: 13 };
+  const themedInput: CSSProperties = { ...textInput, borderColor: activeTheme.border, background: "#0b1220" };
   const [values, setValues] = useState<Record<string, string>>({});
   const [identityFile, setIdentityFile] = useState<File | null>(null);
   const [floatConfirmed, setFloatConfirmed] = useState(false);
@@ -77,41 +85,41 @@ export default function PataTillNetworksPage() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena."); }
     finally { setBusy(false); }
   };
-  return <main className="portal-main" style={{ maxWidth: 1080, margin: "0 auto", padding: "24px 16px 110px", color: "#f8fafc" }}>
+  return <main className="portal-main" style={{ maxWidth: 1080, margin: "0 auto", padding: "24px 16px 110px", color: "#f8fafc", ["--till-accent" as string]: activeTheme.accent }}>
     <button onClick={() => network ? (setNetwork(null), resetForm()) : navigate("/")} style={{ display: "inline-flex", alignItems: "center", gap: 8, border: 0, background: "transparent", color: "#bfdbfe", padding: "8px 0", cursor: "pointer", marginBottom: 14 }}><ArrowLeft size={18}/> {network ? "Rudi kwenye mitandao" : "Rudi Dashboard"}</button>
-    <header style={{ ...panelStyle, padding: 24, marginBottom: 20, background: "radial-gradient(circle at top right,#1d4ed855,transparent 45%),linear-gradient(135deg,#111c32,#0b1220)" }}>
+    <header style={{ ...panelStyle, padding: 24, marginBottom: 20, borderColor: activeTheme.border, background: `radial-gradient(circle at top right,${activeTheme.accent}33,transparent 48%),linear-gradient(135deg,${activeTheme.soft},#0b1220)` }}>
       <div style={{ color: "#93c5fd", fontSize: 11, fontWeight: 800, letterSpacing: 2 }}>SMARTSERVICESTZ · HUDUMA ZA WAKALA</div>
       <h1 style={{ fontSize: "clamp(25px,4vw,38px)", margin: "9px 0", lineHeight: 1.15 }}>PATA TILL MITANDAO YOTE</h1>
       <p style={{ color: "#b6c4d8", margin: 0, lineHeight: 1.6 }}>Chagua mtandao, soma vigezo na tuma ombi lako. Maombi yako yataonekana kwa Admin kwa ajili ya uhakiki na hatua zinazofuata.</p>
     </header>
     {!network ? <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,250px),1fr))", gap: 14 }}>
-      {(["HALOTEL","AIRTEL","VODACOM"] as Network[]).map(item => <button key={item} onClick={() => { setNetwork(item); resetForm(); }} style={{ ...panelStyle, textAlign: "left", cursor: "pointer", color: "white", display: "flex", flexDirection: "column", gap: 16, transition: "transform .2s,border-color .2s" }}>
+      {(["HALOTEL","AIRTEL","VODACOM"] as Network[]).map(item => <button key={item} onClick={() => { setNetwork(item); resetForm(); }} style={{ ...panelStyle, borderColor: themes[item].border, boxShadow: `inset 0 3px 0 ${themes[item].accent}55`, textAlign: "left", cursor: "pointer", color: "white", display: "flex", flexDirection: "column", gap: 16, transition: "transform .2s,border-color .2s" }}>
         <div style={{ height: 100, display: "grid", placeItems: "center", background: "#fff", borderRadius: 14, padding: 10 }}><img src={logos[item]} alt={item + " logo"} style={{ maxWidth: "80%", maxHeight: 78, objectFit: "contain" }}/></div>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}><strong style={{ fontSize: 19 }}>{item}</strong><span style={{ fontWeight: 850, color: item === "HALOTEL" ? "#86efac" : "#fcd34d" }}>{price[item]}</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}><strong style={{ fontSize: 19 }}>{item}</strong><span style={{ fontWeight: 850, color: themes[item].accent }}>{price[item]}</span></div>
         <span style={{ color: "#b6c4d8", fontSize: 13 }}>Angalia vigezo na tuma ombi <span aria-hidden="true">→</span></span>
       </button>)}
     </section> : <section style={panelStyle}>
-      <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}><img src={logos[network]} alt={network} style={{ width: 74, height: 54, objectFit: "contain", background: "white", borderRadius: 10, padding: 5 }}/><div><h2 style={{ margin: 0 }}>Tuma Maombi ya Till (Uwakala)</h2><strong style={{ color: network === "HALOTEL" ? "#86efac" : "#fcd34d" }}>{network} · {price[network]}</strong></div></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}><img src={logos[network]} alt={network} style={{ width: 74, height: 54, objectFit: "contain", background: "white", borderRadius: 10, padding: 5 }}/><div><h2 style={{ margin: 0, color: activeTheme.text }}>Tuma Maombi ya Till (Uwakala)</h2><strong style={{ color: activeTheme.accent }}>{network} · {price[network]}</strong></div></div>
       {network === "HALOTEL" && <div role="alert" style={{ background: "#422006", color: "#fde68a", border: "1px solid #f59e0b", padding: 14, borderRadius: 12, marginBottom: 16, lineHeight: 1.55 }}>⚠️ <b>Tahadhari:</b> Bila kuwa na float ya TSh 100,000 kwenye laini ya mteja, ombi la Till linaweza kukataliwa (REJECTED).</div>}
-      <div style={{ background: "#101d30", borderRadius: 12, padding: 14, marginBottom: 18 }}><b>Vigezo vya {network}</b><ul style={{ marginBottom: 0, paddingLeft: 20, color: "#d1dced", lineHeight: 1.8 }}>{networkDetails[network].map(item => <li key={item}>{item}</li>)}</ul></div>
+      <div style={{ background: activeTheme.soft, border: `1px solid ${activeTheme.border}`, borderRadius: 12, padding: 14, marginBottom: 18 }}><b>Vigezo vya {network}</b><ul style={{ marginBottom: 0, paddingLeft: 20, color: "#d1dced", lineHeight: 1.8 }}>{networkDetails[network].map(item => <li key={item}>{item}</li>)}</ul></div>
       <form onSubmit={submit} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,260px),1fr))", gap: 14 }}>
         {network === "HALOTEL" && <>
-          <label style={labelStyle}>Majina kamili ya mteja *<input style={textInput} value={values.fullName ?? ""} onChange={e=>set("fullName",e.target.value)} required placeholder="Majina kama yalivyo kwenye kitambulisho"/></label>
+          <label style={labelStyle}>Majina kamili ya mteja *<input style={themedInput} value={values.fullName ?? ""} onChange={e=>set("fullName",e.target.value)} required placeholder="Majina kama yalivyo kwenye kitambulisho"/></label>
           <label style={labelStyle}>Namba ya simu ya Till *<input style={textInput} value={values.tillPhone ?? ""} onChange={e=>set("tillPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/><small style={{color:"#94a3b8"}}>Lazima ianze na 06 au 07, namba 10 tu.</small></label>
           <label style={labelStyle}>Namba ya simu ya mawasiliano *<input style={textInput} value={values.contactPhone ?? ""} onChange={e=>set("contactPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/><small style={{color:"#94a3b8"}}>Lazima ianze na 06 au 07.</small></label>
           <label style={labelStyle}>Namba ya TIN *<input style={textInput} value={values.tinNumber ?? ""} onChange={e=>set("tinNumber",e.target.value)} required placeholder="123-123-123" pattern="[0-9]{3}-[0-9]{3}-[0-9]{3}"/></label>
           <label style={labelStyle}>Aina ya kitambulisho *<select style={textInput} value={values.idType ?? ""} onChange={e=>set("idType",e.target.value)} required><option value="">Chagua aina ya kitambulisho</option><option>NIDA</option><option>Kitambulisho cha mpiga kura</option><option>Leseni ya udereva</option></select></label>
           <label style={labelStyle}>Namba ya kitambulisho *<input style={textInput} value={values.idNumber ?? ""} onChange={e=>set("idNumber",e.target.value)} required placeholder="20000909-59418-00001-22"/></label>
           <label style={labelStyle}>Jina la biashara (hiari)<input style={textInput} value={values.businessName ?? ""} onChange={e=>set("businessName",e.target.value)} placeholder="Kwa wateja wenye vigezo tu"/><small style={{color:"#94a3b8"}}>Hii ni kwa wateja walio na vigezo tu.</small></label>
-          <label style={{...labelStyle,gridColumn:"1 / -1"}}>VIAMBATANISHO — picha ya kitambulisho *<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e=>setIdentityFile(e.target.files?.[0] ?? null)} required style={{...textInput,background:"#7c2d12",borderColor:"#ea580c"}}/><small style={{color:"#cbd5e1"}}>JPG, PNG, WebP au PDF; kiwango cha juu MB 5.</small></label>
-          <label style={{...labelStyle,gridColumn:"1 / -1",background:"#2a1b0a",padding:12,borderRadius:12,border:"1px solid #b45309"}}>Msisitizo kuhusu jina la biashara: Sehemu hii si lazima na ni kwa wateja wenye vigezo vya kutosha tu. Bila vigezo vya kutosha ombi linaweza kukataliwa. Kwa maelezo zaidi, wasiliana na wakala mkuu.</label>
+          <label style={{...labelStyle,gridColumn:"1 / -1"}}>VIAMBATANISHO — picha ya kitambulisho *<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e=>setIdentityFile(e.target.files?.[0] ?? null)} required style={{...textInput,background:activeTheme.soft,borderColor:activeTheme.border}}/><small style={{color:"#cbd5e1"}}>JPG, PNG, WebP au PDF; kiwango cha juu MB 5.</small></label>
+          <label style={{...labelStyle,gridColumn:"1 / -1",background:activeTheme.soft,padding:12,borderRadius:12,border:`1px solid ${activeTheme.border}`}}>Msisitizo kuhusu jina la biashara: Sehemu hii si lazima na ni kwa wateja wenye vigezo vya kutosha tu. Bila vigezo vya kutosha ombi linaweza kukataliwa. Kwa maelezo zaidi, wasiliana na wakala mkuu.</label>
           <label style={{display:"flex",gap:10,alignItems:"flex-start",gridColumn:"1 / -1",lineHeight:1.5}}><input type="checkbox" checked={noExistingLipa} onChange={e=>setNoExistingLipa(e.target.checked)} required style={{marginTop:4}}/><span>Thibitisha kuwa mteja hana Lipa Namba tayari.</span></label>
           <label style={{display:"flex",gap:10,alignItems:"flex-start",gridColumn:"1 / -1",lineHeight:1.5}}><input type="checkbox" checked={floatConfirmed} onChange={e=>setFloatConfirmed(e.target.checked)} required style={{marginTop:4}}/><span>Thibitisha: mteja ameweka float ya TSh 100,000 kwenye laini yake. Nimehakiki float ya 100,000 imewekwa kwenye laini ya mteja.</span></label>
         </>}
         {network === "AIRTEL" && <>
           <label style={labelStyle}>Namba ya Airtel *<input style={textInput} value={values.airtelPhone ?? ""} onChange={e=>set("airtelPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
           <label style={labelStyle}>Namba ya NIDA *<input style={textInput} value={values.nidaNumber ?? ""} onChange={e=>set("nidaNumber",e.target.value)} required placeholder="20000909-59418-00001-22" pattern="[0-9]{8}-[0-9]{5}-[0-9]{5}-[0-9]{2}"/></label>
-          <div style={{gridColumn:"1 / -1",background:"#422006",padding:14,borderRadius:12,color:"#fde68a"}}>⚠️ Huduma hii inahitaji malipo ya TSh 5,000 kabla ya kukamilishwa. Baada ya kutuma ombi, gusa kitufe cha WhatsApp ili kuwasiliana na Admin kwa ajili ya OTP.</div>
+          <div style={{gridColumn:"1 / -1",background:activeTheme.warning,padding:14,borderRadius:12,color:activeTheme.text,border:`1px solid ${activeTheme.border}`}}>⚠️ Huduma hii inahitaji malipo ya TSh 5,000 kabla ya kukamilishwa. Baada ya kutuma ombi, gusa kitufe cha WhatsApp ili kuwasiliana na Admin kwa ajili ya OTP.</div>
         </>}
         {network === "VODACOM" && <>
           <label style={labelStyle}>Namba ya NIDA *<input style={textInput} value={values.nidaNumber ?? ""} onChange={e=>set("nidaNumber",e.target.value)} required placeholder="20000909-59418-00001-22" pattern="[0-9]{8}-[0-9]{5}-[0-9]{5}-[0-9]{2}"/></label>
