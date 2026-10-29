@@ -601,6 +601,13 @@ export const submitLipaApplication = callable(async (request) => {
   if (!config) throw new ApiError("not-found", "Mtandao huu haujapatikana.");
   if (config.active !== true) throw new ApiError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
   const fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
+  if (/yas|tigo/i.test(networkId)) {
+    const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
+    if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
+    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
+    if (!hasField("hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 4 });
+    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+  }
   if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "businessNameEvidence")) {
     fields.push({
       fieldName: "businessNameEvidence",
@@ -614,6 +621,14 @@ export const submitLipaApplication = callable(async (request) => {
     });
   }
   const rawValues = objectValue(data.values, "Fomu");
+  if (/yas|tigo/i.test(networkId)) {
+    if (rawValues.hasTinNumber === "Ndiyo" && !String(rawValues.tinNumber ?? "").trim()) {
+      throw new ApiError("failed-precondition", "Umechagua Ndiyo kwenye swali la TIN; weka namba ya TIN.");
+    }
+    if (rawValues.hasBusinessLicense === "Ndiyo" && !String(rawValues.businessLicensePhoto ?? "").startsWith(`lipaUploads/${uid}/${applicationId}/businessLicensePhoto-`)) {
+      throw new ApiError("failed-precondition", "Umechagua Ndiyo kwenye swali la leseni; pakia picha ya leseni ya biashara iliyo wazi.");
+    }
+  }
   if (networkId.toLowerCase().includes("vodacom") && String(rawValues.businessName ?? "").trim()) {
     const evidencePath = String(rawValues.businessNameEvidence ?? "");
     if (!evidencePath.startsWith(`lipaUploads/${uid}/${applicationId}/businessNameEvidence-`)) {
