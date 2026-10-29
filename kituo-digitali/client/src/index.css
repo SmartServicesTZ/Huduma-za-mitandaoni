@@ -2587,3 +2587,21 @@ html body .portal-shell .portal-content .portal-main .special-card > svg { width
   html body .portal-shell .portal-content .portal-main .special-card small { font-size: 8px !important; }
   html body .portal-shell .portal-content .portal-main .special-card > svg { width: 13px !important; height: 13px !important; flex-basis: 13px; }
 }
+
+
+/* Compact utility actions: Download App, Share and WhatsApp Group */
+.special-grid .special-card {
+  min-height: 66px;
+  padding: 10px 12px;
+  gap: 8px;
+  border-radius: 11px;
+}
+.special-grid .special-card strong { font-size: 11px; line-height: 1.25; }
+.special-grid .special-card small { margin-top: 4px; font-size: 9px; line-height: 1.25; }
+.special-grid .special-card > svg { width: 16px; height: 16px; flex: 0 0 16px; }
+@media (max-width: 560px) {
+  .special-grid { gap: 8px; }
+  .special-grid .special-card { min-height: 58px; padding: 8px 9px; border-radius: 9px; }
+  .special-grid .special-card strong { font-size: 10px; }
+  .special-grid .special-card small { font-size: 8px; }
+}
