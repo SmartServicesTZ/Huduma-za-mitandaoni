@@ -292,6 +292,27 @@ jobs:
                           Uri u = request.getUrl();
                           String host = u.getHost();
                           String scheme = u.getScheme();
+
+                          // WhatsApp invite links must leave the embedded WebView.
+                          // Otherwise Android may show the Play Store page instead of
+                          // handing the invite to an already-installed WhatsApp app.
+                          if ("https".equalsIgnoreCase(scheme) && host != null
+                                  && (host.equalsIgnoreCase("chat.whatsapp.com")
+                                  || host.equalsIgnoreCase("www.whatsapp.com")
+                                  || host.equalsIgnoreCase("whatsapp.com"))) {
+                              try {
+                                  Intent intent = new Intent(Intent.ACTION_VIEW, u);
+                                  intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                                  startActivity(intent);
+                              } catch (Exception ignored) {
+                                  try {
+                                      Intent browser = new Intent(Intent.ACTION_VIEW, u);
+                                      startActivity(browser);
+                                  } catch (Exception ignoredAgain) {}
+                              }
+                              return true;
+                          }
+
                           if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
                               return false;
                           }
