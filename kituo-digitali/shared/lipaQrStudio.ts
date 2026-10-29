@@ -21,10 +21,6 @@ export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   const businessName = values.businessName.trim();
   if (!businessName) errors.businessName = "Weka jina la biashara.";
   else if (businessName.length > 25) errors.businessName = "Jina la biashara lisizidi herufi 25.";
-  if (!TANZANIA_LIPA_LOCATIONS.includes(values.location as (typeof TANZANIA_LIPA_LOCATIONS)[number])) {
-    errors.location = "Chagua eneo kutoka kwenye orodha.";
-  }
-  if (!/^\d{5}$/.test(values.postalCode)) errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
   return errors;
 }
 
@@ -44,14 +40,11 @@ export function tipsCrc16(value: string): string {
 export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName" | "location" | "postalCode">): string {
   const lipa = normalizeLipaNumber(values.lipaNumber);
   const name = values.businessName.trim().toUpperCase();
-  const city = values.location.trim().toUpperCase();
-  const postal = values.postalCode.trim();
   const merchantAccount = `0014tz.go.bot.tips01050250302${String(lipa.length).padStart(2, "0")}${lipa}`;
   const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
   const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
-  const cityField = `60${String(city.length).padStart(2, "0")}${city}`;
-  const postalField = `61${String(postal.length).padStart(2, "0")}${postal}`;
-  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}${cityField}${postalField}62210308001123490705110026304`;
+  // Location and postal code are not collected, so do not add guessed values to the QR.
+  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}62210308001123490705110026304`;
   return body + tipsCrc16(body);
 }
 
