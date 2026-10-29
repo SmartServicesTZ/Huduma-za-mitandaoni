@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Bot, Download, MessageCircle, Minimize2, Send, Sparkles } from "lucide-react";
+import { Bot, Download, MessageCircle, Minimize2, Send, Share2, Sparkles } from "lucide-react";
 
 type ChatSource = { title: string; url: string; verifiedAt: string };
 type ChatMessage = { role: "user" | "assistant"; text: string; sources?: ChatSource[] };
@@ -25,6 +25,26 @@ export default function GeminiFloatingChat() {
     window.addEventListener("smartservicestz-open-ai-support", openSupport);
     return () => window.removeEventListener("smartservicestz-open-ai-support", openSupport);
   }, []);
+
+  async function shareSmartServices() {
+    const website = "https://smartservicestz.github.io/Huduma-za-mitandaoni/";
+    const app = "https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk";
+    const message = "Karibu SmartServicesTZ!\\n\\nWebsite: " + website + "\\nPakua App (Android): " + app;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "SmartServicesTZ", text: "Shiriki SmartServicesTZ na rafiki yako. Website na App vipo hapa:", url: website });
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(message);
+      window.alert("Viungo vya Website na App vimenakiliwa. Sasa unaweza kuvituma kwa rafiki yako.");
+    } catch {
+      window.prompt("Nakili viungo hivi na utume kwa rafiki yako:", message);
+    }
+  }
 
   async function sendMessage(event?: FormEvent) {
     event?.preventDefault();
@@ -87,6 +107,9 @@ export default function GeminiFloatingChat() {
         <a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" aria-label="Pakua SmartServicesTZ App" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.9)", borderRadius: 999, background: "linear-gradient(135deg,#1d4ed8,#2563eb)", color: "#fff", boxShadow: "0 8px 26px rgba(37,99,235,.35)", fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
           <Download size={21} /> DOWNLOAD APP
         </a>
+        <button type="button" onClick={shareSmartServices} aria-label="Share SmartServicesTZ App au Website" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.9)", borderRadius: 999, background: "linear-gradient(135deg,#7c3aed,#6d28d9)", color: "#fff", boxShadow: "0 8px 26px rgba(109,40,217,.35)", fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+          <Share2 size={21} /> SHARE APP / WEBSITE
+        </button>
         <a href="https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&iam=2" target="_blank" rel="noreferrer" aria-label="Jiunge na Group la WhatsApp la SmartServicesTZ" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.85)", borderRadius: 999, background: "linear-gradient(135deg,#075e54,#128c7e)", color: "#fff", boxShadow: "0 8px 26px rgba(7,94,84,.4)", fontWeight: 750, fontSize: 13, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
           <MessageCircle size={21} /> GROUP LA WHATSAPP
         </a>
