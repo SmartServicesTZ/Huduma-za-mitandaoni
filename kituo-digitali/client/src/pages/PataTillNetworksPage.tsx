@@ -28,7 +28,6 @@ export default function PataTillNetworksPage() {
   const [network, setNetwork] = useState<Network | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [identityFile, setIdentityFile] = useState<File | null>(null);
-  const [businessFile, setBusinessFile] = useState<File | null>(null);
   const [floatConfirmed, setFloatConfirmed] = useState(false);
   const [noExistingLipa, setNoExistingLipa] = useState(false);
   const [paidConfirmed, setPaidConfirmed] = useState(false);
@@ -42,7 +41,7 @@ export default function PataTillNetworksPage() {
     return subscribeUserServiceApplications(firebaseUser.uid, rows => setApplications(rows.filter(row => row.serviceSlug === "pata-till-mitandao-yote")));
   }, [firebaseUser?.uid]);
   const set = (key: string, value: string) => setValues(current => ({ ...current, [key]: value }));
-  const resetForm = () => { setValues({}); setIdentityFile(null); setBusinessFile(null); setFloatConfirmed(false); setNoExistingLipa(false); setPaidConfirmed(false); setReference(""); };
+  const resetForm = () => { setValues({}); setIdentityFile(null); setFloatConfirmed(false); setNoExistingLipa(false); setPaidConfirmed(false); setReference(""); };
   const upload = async (field: string, file: File | null) => {
     if (!file || !firebaseUser?.uid) return "";
     setUploading(field);
@@ -65,10 +64,9 @@ export default function PataTillNetworksPage() {
     setBusy(true);
     try {
       const identityPath = identityFile ? await upload("identityDocument", identityFile) : "";
-      const businessPath = businessFile ? await upload("businessEvidence", businessFile) : "";
       const payload = {
         network, serviceType: "TILL / UWAKALA", price: price[network], ...values,
-        identityDocument: identityPath, businessEvidence: businessPath,
+        identityDocument: identityPath,
         floatConfirmed: String(floatConfirmed), noExistingLipa: String(noExistingLipa), paidConfirmed: String(paidConfirmed), otpRequired: String(network === "AIRTEL"),
         adminInstructions: network === "AIRTEL" ? "Mteja anahitaji OTP; wasiliana naye kupitia WhatsApp." : network === "VODACOM" ? "Thibitisha malipo kabla ya kumpa user ya kuwasha Till." : "Hakiki float ya TSh 100,000, TIN na nyaraka.",
         status: "PENDING",
