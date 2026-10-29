@@ -97,7 +97,7 @@ export default function PataTillNetworksPage() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}><strong style={{ fontSize: 19 }}>{item}</strong><span style={{ fontWeight: 850, color: themes[item].accent }}>{price[item]}</span></div>
         <span style={{ color: "#b6c4d8", fontSize: 13 }}>Angalia vigezo na tuma ombi <span aria-hidden="true">→</span></span>
       </button>)}
-    </section> : <section style={panelStyle}>
+    </section> : <section style={{ ...panelStyle, borderColor: activeTheme.border, background: `linear-gradient(145deg,${activeTheme.soft}88,#0c1423 72%)` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}><img src={logos[network]} alt={network} style={{ width: 74, height: 54, objectFit: "contain", background: "white", borderRadius: 10, padding: 5 }}/><div><h2 style={{ margin: 0, color: activeTheme.text }}>Tuma Maombi ya Till (Uwakala)</h2><strong style={{ color: activeTheme.accent }}>{network} · {price[network]}</strong></div></div>
       {network === "HALOTEL" && <div role="alert" style={{ background: "#422006", color: "#fde68a", border: "1px solid #f59e0b", padding: 14, borderRadius: 12, marginBottom: 16, lineHeight: 1.55 }}>⚠️ <b>Tahadhari:</b> Bila kuwa na float ya TSh 100,000 kwenye laini ya mteja, ombi la Till linaweza kukataliwa (REJECTED).</div>}
       <div style={{ background: activeTheme.soft, border: `1px solid ${activeTheme.border}`, borderRadius: 12, padding: 14, marginBottom: 18 }}><b>Vigezo vya {network}</b><ul style={{ marginBottom: 0, paddingLeft: 20, color: "#d1dced", lineHeight: 1.8 }}>{networkDetails[network].map(item => <li key={item}>{item}</li>)}</ul></div>
