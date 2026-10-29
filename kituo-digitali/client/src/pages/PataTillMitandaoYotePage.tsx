@@ -28,6 +28,7 @@ function dateLabel(value: unknown) {
 export default function PataTillMitandaoYotePage() {
   const { firebaseUser, profile, loading } = useAuth();
   const [network, setNetwork] = useState<Network | null>(null);
+  const [draftId] = useState(newId);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [uploads, setUploads] = useState<Record<string, UploadState>>({});
   const [applications, setApplications] = useState<ServiceApplication[]>([]);
@@ -44,12 +45,11 @@ export default function PataTillMitandaoYotePage() {
     if (!file || !firebaseUser) return;
     if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type)) { setError("Pakia picha ya JPG/PNG/WEBP au PDF."); return; }
     if (file.size > 5 * 1024 * 1024) { setError("Faili lisizidi MB 5."); return; }
-    const appId = newId();
+    const appId = draftId;
     setBusy(true); setError("");
     try {
       const path = await uploadServiceDocument(firebaseUser.uid, appId, key, file, 5, ["image/jpeg", "image/png", "image/webp", "application/pdf"]);
       setUploads(old => ({ ...old, [key]: { file, path } }));
-      set("applicationDraftId", appId);
       toast.success("Kiambatisho kimepakiwa.");
     } catch (e: any) { setError(e?.message ?? "Imeshindikana kupakia faili."); }
     finally { setBusy(false); }
@@ -70,7 +70,7 @@ export default function PataTillMitandaoYotePage() {
     }
     setBusy(true);
     try {
-      const applicationId = String(values.applicationDraftId ?? newId());
+      const applicationId = draftId;
       const payload: ServiceFormValues = {
         ...values,
         network,
