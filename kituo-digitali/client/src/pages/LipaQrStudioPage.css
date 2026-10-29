@@ -237,3 +237,9 @@
 @media (prefers-reduced-motion: reduce) {
   .lq-app, .lq-app *, .lq-app *::before, .lq-app *::after { animation:none !important; transition:none !important; }
 }
+
+
+/* Keep the interface fixed: no sliding or hover-jump effects. */
+.lq-app { overflow-x: clip; }
+.lq-button:hover:not(:disabled), .lq-button:active { transform: none !important; }
+.lq-preview, .lq-sidebar, .lq-preview-pages, .lq-artboard { animation: none !important; transition: none !important; }
