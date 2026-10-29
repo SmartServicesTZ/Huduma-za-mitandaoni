@@ -2567,3 +2567,23 @@ form,
   transition: none !important;
   scroll-behavior: auto !important;
 }
+
+
+/* Compact app/share/WhatsApp quick actions so the service catalogue stays visible. */
+html body .portal-shell .portal-content .portal-main .special-grid {
+  display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; margin: 12px 0 18px !important;
+}
+html body .portal-shell .portal-content .portal-main .special-card {
+  display: flex !important; min-width: 0 !important; min-height: 54px !important; align-items: center !important; justify-content: space-between !important; gap: 7px !important; padding: 8px 10px !important; border-radius: 12px !important; box-shadow: 0 3px 10px rgba(15,23,42,.05) !important;
+}
+html body .portal-shell .portal-content .portal-main .special-card > div { min-width: 0; }
+html body .portal-shell .portal-content .portal-main .special-card strong { display: block; font-size: 11px !important; line-height: 1.2 !important; overflow-wrap: anywhere; }
+html body .portal-shell .portal-content .portal-main .special-card small { display: block; margin-top: 3px; font-size: 9px !important; line-height: 1.25 !important; overflow-wrap: anywhere; }
+html body .portal-shell .portal-content .portal-main .special-card > svg { width: 15px !important; height: 15px !important; flex: 0 0 15px; }
+@media (max-width: 560px) {
+  html body .portal-shell .portal-content .portal-main .special-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 5px !important; }
+  html body .portal-shell .portal-content .portal-main .special-card { min-height: 58px !important; padding: 7px 6px !important; gap: 4px !important; }
+  html body .portal-shell .portal-content .portal-main .special-card strong { font-size: 9px !important; }
+  html body .portal-shell .portal-content .portal-main .special-card small { font-size: 8px !important; }
+  html body .portal-shell .portal-content .portal-main .special-card > svg { width: 13px !important; height: 13px !important; flex-basis: 13px; }
+}

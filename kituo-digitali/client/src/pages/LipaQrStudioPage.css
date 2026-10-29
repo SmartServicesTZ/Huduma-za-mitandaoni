@@ -474,3 +474,13 @@
   .lq-qr-frame { width: 58% !important; padding: 5.2% !important; }
   .lq-merchant-box { padding: 3.2% 4.5% 3% !important; }
 }
+
+
+/* Final STIKA ZA LIPA sizing: enlarge the QR print area and restore the short centered underline. */
+.lq-card-watermark { right: -5% !important; top: 9% !important; width: 54% !important; border-color: #94001bd1 !important; box-shadow: 0 0 0 8px #94001b7a, 0 0 0 17px #ffffff24, 0 0 0 25px #94001b30 !important; }
+.lq-qr-frame { width: 64% !important; padding: 1.6% !important; margin-top: 0 !important; margin-bottom: 0 !important; }
+.lq-qr-paper { padding: 1.2% !important; border: 0 !important; border-radius: 0 !important; box-shadow: 0 3px 12px #6f001a24 !important; }
+.lq-qr-corner { width: 12% !important; height: 12% !important; }
+.lq-merchant-number { position: relative; border-bottom: 0 !important; padding-bottom: 4.2% !important; }
+.lq-merchant-number::after { position: absolute; left: 50%; bottom: 0; width: 30%; height: 1.5px; border-radius: 999px; background: #e21d38; content: ""; transform: translateX(-50%); }
+@media (max-width: 700px) { .lq-qr-frame { width: 64% !important; padding: 1.6% !important; } .lq-qr-paper { padding: 1.2% !important; } }

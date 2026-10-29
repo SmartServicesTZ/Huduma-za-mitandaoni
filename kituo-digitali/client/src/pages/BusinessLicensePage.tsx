@@ -247,6 +247,7 @@ export default function BusinessLicensePage() {
       <small>Jaza taarifa za biashara yako kwa usahihi. Muonekano wa template utaonekana moja kwa moja hapa chini.</small>
     </div>
 
+    <Notice tone="warning">MUHIMU: Leseni inayotengenezwa hapa si leseni rasmi ya kisheria ya kuendesha biashara halisi. Itumie kwa maombi ya huduma za uwakala pekee, kama maombi ya SIM ya wakala, Lipa Namba na huduma za SME.</Notice>
     {!isAuthenticated && <Notice tone="warning">Ingia kwenye akaunti ili kupakua leseni. Unaweza kujaza fomu na kuona live preview kabla ya kuingia.</Notice>}
     {serviceLocked && <Notice tone="warning">Huduma ya Leseni ya Biashara imefungwa kwa sasa na admin; utoaji wa hati umesitishwa.</Notice>}
 

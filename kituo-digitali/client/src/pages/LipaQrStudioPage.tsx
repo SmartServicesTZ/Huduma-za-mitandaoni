@@ -124,7 +124,7 @@ export default function LipaQrStudioPage() {
       setQrDataUrl("");
       return () => { current = false; };
     }
-    void QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "H", margin: 2, width: 520, color: { dark: "#111111", light: "#ffffff" } })
+    void QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "H", margin: 0, width: 720, color: { dark: "#111111", light: "#ffffff" } })
       .then((url) => { if (current) setQrDataUrl(url); })
       .catch(() => { if (current) setQrDataUrl(""); });
     return () => { current = false; };

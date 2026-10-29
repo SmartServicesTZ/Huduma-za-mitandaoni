@@ -92,6 +92,17 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
     active: row.active !== false,
     fields: (() => {
       let fields = safeFields(row.fields);
+      if (/yas|tigo/i.test(id)) {
+        fields = fields.filter((field) => field.fieldName !== "businessLicense");
+        if (!fields.some((field) => field.fieldName === "hasTinNumber")) {
+          const tinOrder = fields.find((field) => field.fieldName === "tinNumber")?.order ?? 3;
+          fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, lazima uandike namba ya TIN.", order: tinOrder - 0.1 });
+        }
+        if (!fields.some((field) => field.fieldName === "tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: false, helpText: "Inahitajika ukichagua Ndiyo kwenye swali la TIN.", order: 3 });
+        fields = fields.map((field) => field.fieldName === "tinNumber" ? { ...field, required: false, label: "Namba ya TIN", placeholder: "123-123-123" } : field.fieldName === "businessLicensePhoto" ? { ...field, required: false } : field);
+        if (!fields.some((field) => field.fieldName === "hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, pakia picha ya leseni.", order: 4 });
+        if (!fields.some((field) => field.fieldName === "businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, helpText: "Inahitajika ukichagua Ndiyo. Picha iwe wazi na isomeke vizuri.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+      }
       if (id === "vodacom") {
         // Always show three separate name inputs, even if Firestore still has the legacy fullName schema.
         const nameFields = new Set(["fullName", "firstName", "middleName", "lastName", "name1", "name2", "name3"]);
@@ -134,13 +145,19 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
         ? { ...field, placeholder: field.placeholder?.startsWith("255") ? field.placeholder : "2557XXXXXXXX" }
         : field);
       const imageFields = fields.filter((field) => field.type === "IMAGE_UPLOAD");
+      const identityField = imageFields.find((field) => ["idDocument", "identityDocument", "identityPhoto"].includes(field.fieldName))
+        ?? imageFields.find((field) => !["businessNameEvidence", "businessLicensePhoto"].includes(field.fieldName))
+        ?? imageFields[0];
+      const identityFieldName = identityField?.fieldName;
       if (imageFields.length > 1) {
-        const keepFields = id === "vodacom"
-          ? new Set(["idDocument", "businessNameEvidence"])
-          : new Set([imageFields.find((field) => field.fieldName === "idDocument")?.fieldName ?? imageFields[0].fieldName]);
+        const keepFields = new Set([
+          ...(identityFieldName ? [identityFieldName] : []),
+          ...(id === "vodacom" ? ["businessNameEvidence"] : []),
+          ...(/yas|tigo/i.test(id) ? ["businessLicensePhoto"] : []),
+        ]);
         fields = fields.filter((field) => field.type !== "IMAGE_UPLOAD" || keepFields.has(field.fieldName));
       }
-      fields = fields.map((field) => field.type === "IMAGE_UPLOAD" && field.fieldName !== "businessNameEvidence" ? {
+      fields = fields.map((field) => field.type === "IMAGE_UPLOAD" && field.fieldName === identityFieldName ? {
         ...field,
         label: "Picha ya utambulisho wa mwombaji",
         helpText: "PAKIA PICHA MOJAWAPO KATI YA: Passport size ya mhusika, picha ya kitambulisho cha NIDA, au picha ya kitambulisho cha mpiga kura. Picha iwe wazi na isomeke vizuri. JPG, PNG au WebP; hadi MB 5.",
@@ -200,8 +217,10 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     fields: [
       { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Weka namba ya simu ya usajili/mawasiliano, tarakimu 10 (mfano 0712345678).", order: 1 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
-      { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 3 },
-      { fieldName: "businessLicense", label: "Leseni ya Biashara", type: "TEXTAREA", required: false, order: 4 },
+      { fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, lazima uandike namba ya TIN.", order: 2.8 },
+      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: false, helpText: "Inahitajika ukichagua Ndiyo kwenye swali la TIN.", order: 3 },
+      { fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, pakia picha ya leseni.", order: 4 },
+      { fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, helpText: "Inahitajika ukichagua Ndiyo. Picha iwe wazi na isomeke vizuri.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
     ],
   },
   {
@@ -432,6 +451,8 @@ export default function LipaNumberPage() {
   const [draftPreviews, setDraftPreviews] = useState<Record<string, DraftPreview>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [lastSubmittedNetworkId, setLastSubmittedNetworkId] = useState("");
+  const [lastSubmittedApplicationId, setLastSubmittedApplicationId] = useState("");
   const [applicationId, setApplicationId] = useState<string>(() => crypto.randomUUID());
   const [selectedApplication, setSelectedApplication] = useState<LipaApplication | null>(null);
   const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
@@ -492,6 +513,8 @@ export default function LipaNumberPage() {
     setSelectedId(id);
     setValues({});
     setErrors({});
+    setLastSubmittedNetworkId("");
+    setLastSubmittedApplicationId("");
   };
 
   const updateValue = (field: ServiceFormField, nextValue: string | number | null) => {
@@ -540,7 +563,12 @@ export default function LipaNumberPage() {
   const submit = async () => {
     if (!firebaseAuth.currentUser) { toast.error("Ingia kwanza ili kuomba Lipa Namba."); return; }
     if (!selectedNetwork) { toast.error("Chagua mtandao wenye huduma iliyo wazi."); return; }
-    const visibleFields = selectedNetwork.fields.filter((field) => field.fieldName !== "tinNumber" || values.hasTinNumber === "Ndiyo");
+    const isYasNetwork = /yas|tigo/i.test(selectedNetwork.id);
+    const hasConditionalTin = selectedNetwork.id === "vodacom" || isYasNetwork;
+    const visibleFields = selectedNetwork.fields.filter((field) =>
+      (field.fieldName !== "tinNumber" || !hasConditionalTin || values.hasTinNumber === "Ndiyo") &&
+      (field.fieldName !== "businessLicensePhoto" || !isYasNetwork || values.hasBusinessLicense === "Ndiyo")
+    );
     const nextErrors = validateServiceForm(visibleFields, values);
     for (const fieldName of ["phone", "contactPhone"]) {
       if (selectedNetwork.fields.some((field) => field.fieldName === fieldName) && values[fieldName]) {
@@ -548,8 +576,11 @@ export default function LipaNumberPage() {
         if (!/^255\d{9}$/.test(digits)) nextErrors[fieldName] = "Weka namba kamili kwa muundo wa 255XXXXXXXXX.";
       }
     }
-    if (selectedNetwork.id === "vodacom" && values.hasTinNumber === "Ndiyo" && !String(values.tinNumber ?? "").trim()) {
+    if (hasConditionalTin && values.hasTinNumber === "Ndiyo" && !String(values.tinNumber ?? "").trim()) {
       nextErrors.tinNumber = "Umechagua Ndiyo; tafadhali andika namba yako ya TIN.";
+    }
+    if (isYasNetwork && values.hasBusinessLicense === "Ndiyo" && !String(values.businessLicensePhoto ?? "").startsWith("lipaUploads/")) {
+      nextErrors.businessLicensePhoto = "Umechagua Ndiyo; pakia picha ya leseni ya biashara iliyo wazi na inayosomeka.";
     }
     if (selectedNetwork.id === "vodacom" && String(values.businessName ?? "").trim() && !String(values.businessNameEvidence ?? "").startsWith("lipaUploads/")) {
       nextErrors.businessNameEvidence = "Umeweka jina la biashara; pakia picha ya bango la eneo au picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.";
@@ -569,6 +600,8 @@ export default function LipaNumberPage() {
         fullName: [values.name1, values.name2, values.name3].map((name) => String(name ?? "").trim()).filter(Boolean).join(" "),
       } : values;
       await submitLipaApplication(applicationId, selectedNetwork.id, submissionValues);
+      setLastSubmittedNetworkId(selectedNetwork.id);
+      setLastSubmittedApplicationId(applicationId);
       toast.success("Ombi lako limetumwa.", { description: "Utaona mabadiliko ya hali kwenye historia yako." });
       await clearDraftUploads(crypto.randomUUID());
       setValues({});
@@ -590,7 +623,8 @@ export default function LipaNumberPage() {
 
   const renderField = (field: ServiceFormField) => {
     const value = valueForField(values, field);
-    if (field.fieldName === "tinNumber" && selectedNetwork?.id === "vodacom" && values.hasTinNumber !== "Ndiyo") return null;
+    if (field.fieldName === "tinNumber" && (selectedNetwork?.id === "vodacom" || /yas|tigo/i.test(selectedNetwork?.id ?? "")) && values.hasTinNumber !== "Ndiyo") return null;
+    if (field.fieldName === "businessLicensePhoto" && /yas|tigo/i.test(selectedNetwork?.id ?? "") && values.hasBusinessLicense !== "Ndiyo") return null;
     if (field.fieldName === "businessNameEvidence" && selectedNetwork?.id === "vodacom" && !String(values.businessName ?? "").trim()) return null;
     const inputId = `lipa-${field.fieldName}`;
     const common = { id: inputId, name: field.fieldName, placeholder: field.placeholder, value, required: field.required, "aria-invalid": Boolean(errors[field.fieldName]), "aria-describedby": `${inputId}-help` };
@@ -711,7 +745,7 @@ export default function LipaNumberPage() {
     <textarea id="lipa-additional-notes" rows={4} value={String(values.additionalNotes ?? "")} placeholder="Andika taarifa nyingine muhimu kuhusu ombi lako..." onChange={(event) => updateValue({fieldName:"additionalNotes",label:"Maelezo ya ziada",type:"TEXTAREA",required:false}, event.target.value)} />
     <FieldHelp field={{fieldName:"additionalNotes",label:"Maelezo ya ziada",type:"TEXTAREA",required:false}} />
   </div>
-</div></div><div className="lipa-actions"><button type="button" className="lipa-button lipa-button--outline" onClick={() => void clearDraftUploads(crypto.randomUUID())}><RefreshCw size={16} /> Anza upya</button><button type="button" className="lipa-button" disabled={!firebaseUser || submitting || selectedNetwork.fields.length === 0} onClick={() => void submit()}>{submitting ? <><RefreshCw size={16} /> Inatuma…</> : <><CloudUpload size={16} /> Tuma ombi</>}</button></div></>}</section><aside className="lipa-side-stack"><div className="lipa-info-card"><h3>Mahitaji</h3><p>{selectedNetwork?.requirements ?? "Chagua mtandao ili kuona mahitaji ya huduma hiyo."}</p>{selectedNetwork?.paymentInfo && <><h3>Malipo</h3><p>{selectedNetwork.paymentInfo}</p></>}</div><div className="lipa-info-card lipa-info-card--light"><h3>Jinsi inavyofanya kazi</h3><ul><li>Chagua mtandao ulio hai.</li><li>Jaza kila sehemu yenye alama ya nyota.</li><li>Pakia nyaraka zinazohitajika.</li><li>Fuatilia hali ya ombi lako hapa chini.</li></ul></div></aside></div>
+</div></div><div className="lipa-actions"><button type="button" className="lipa-button lipa-button--outline" onClick={() => void clearDraftUploads(crypto.randomUUID())}><RefreshCw size={16} /> Anza upya</button><button type="button" className="lipa-button" disabled={!firebaseUser || submitting || selectedNetwork.fields.length === 0} onClick={() => void submit()}>{submitting ? <><RefreshCw size={16} /> Inatuma…</> : <><CloudUpload size={16} /> Tuma ombi</>}</button></div>{lastSubmittedNetworkId && /yas|tigo/i.test(lastSubmittedNetworkId) && <div role="status" aria-live="polite" style={{marginTop:14,padding:14,border:"1px solid #86efac",borderRadius:12,background:"#ecfdf3",color:"#14532d",fontSize:13,lineHeight:1.6}}><strong>Ombi la YAS limetumwa.</strong><p style={{margin:"6px 0 10px"}}>YAS Lipa Namba inahitaji OTP. Gusa hapa kuwasiliana na Admin kupitia WhatsApp ili upate OTP na kuendelea na hatua zinazofuata.</p><a href={"https://wa.me/255698232313?text="+encodeURIComponent("Habari Admin, nimewasilisha ombi la YAS Lipa Namba. Naomba OTP ili niendelee na mchakato. Rejea ya ombi: "+lastSubmittedApplicationId)} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"10px 13px",borderRadius:9,background:"#168653",color:"#fff",fontWeight:900,textDecoration:"none"}}>GUSA HAPA — WHATSAPP ADMIN KUPATA OTP</a></div>}</>}</section><aside className="lipa-side-stack"><div className="lipa-info-card"><h3>Mahitaji</h3><p>{selectedNetwork?.requirements ?? "Chagua mtandao ili kuona mahitaji ya huduma hiyo."}</p>{selectedNetwork?.paymentInfo && <><h3>Malipo</h3><p>{selectedNetwork.paymentInfo}</p></>}</div><div className="lipa-info-card lipa-info-card--light"><h3>Jinsi inavyofanya kazi</h3><ul><li>Chagua mtandao ulio hai.</li><li>Jaza kila sehemu yenye alama ya nyota.</li><li>Pakia nyaraka zinazohitajika.</li><li>Fuatilia hali ya ombi lako hapa chini.</li></ul></div></aside></div>
     {firebaseUser && <UserLipaReport applications={applications} />}
     {firebaseUser && <section className="lipa-history"><div className="section-title"><div><span className="overline">MAOMBI YAKO</span><h2>Historia ya Lipa Namba</h2></div><span className="section-count">{applications.length}</span></div>{applications.length === 0 ? <div className="lipa-empty">Bado hujatuma ombi la Lipa Namba. Maombi yako yataonekana hapa.</div> : <div className="lipa-history-list">{applications.map((application) => <div className="lipa-history-row" key={application.id || application.applicationId}><span className="lipa-network-mark" style={{ "--network-color": networkCards.find((item) => item.id === application.networkId)?.color ?? "#24527f" } as React.CSSProperties}>{(application.network?.[0] ?? "L").toUpperCase()}</span><div><strong>{application.network}</strong><small>{displayDate(application.submittedAt)} · Rejea {application.applicationId}</small></div><span className={`lipa-status lipa-status--${statusTone[application.status]}`}>{statusLabels[application.status]}</span><button type="button" className="lipa-icon-button" aria-label={`Fungua maelezo ya ombi ${application.applicationId}`} onClick={() => setSelectedApplication(application)}><Eye size={16} /></button></div>)}</div>}</section>}
     {selectedApplication && <ApplicationModal application={selectedApplication} onClose={() => setSelectedApplication(null)} onDocument={(fieldName, label) => void openDocument(selectedApplication, fieldName, label)} />}
