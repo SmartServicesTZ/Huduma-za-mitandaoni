@@ -7,7 +7,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import GeminiFloatingChat from "./components/GeminiFloatingChat";
-import LipaQrStudioPage from "./pages/LipaQrStudioPage";
 
 function Router() {
   return (
@@ -15,7 +14,6 @@ function Router() {
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/services"} component={Home} />
-        <Route path="/lipa-qr-studio" component={LipaQrStudioPage} />
         <Route path="/workbench" component={Home} />
         <Route path="/service/:slug" component={Home} />
         <Route path="/history" component={Home} />
