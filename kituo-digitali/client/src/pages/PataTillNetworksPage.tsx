@@ -31,8 +31,6 @@ export default function PataTillNetworksPage() {
   const [, navigate] = useLocation();
   const [network, setNetwork] = useState<Network | null>(null);
   const activeTheme = network ? themes[network] : themes.HALOTEL;
-  const labelStyle: CSSProperties = { display: "grid", gap: 7, color: "#e2e8f0", fontWeight: 650, fontSize: 13 };
-  const themedInput: CSSProperties = { ...textInput, borderColor: activeTheme.border, background: "#0b1220" };
   const [values, setValues] = useState<Record<string, string>>({});
   const [identityFile, setIdentityFile] = useState<File | null>(null);
   const [floatConfirmed, setFloatConfirmed] = useState(false);
@@ -108,7 +106,7 @@ export default function PataTillNetworksPage() {
           <span style={{fontSize:13,color:"#64748b",fontWeight:650}}>Angalia vigezo na endelea <span style={{color:themes[item].accent}}>→</span></span>
         </button>)}
       </div>
-    </section> : <section style={{...cardStyle,padding:"clamp(16px,3vw,28px)",borderTop:`4px solid ${activeTheme.accent}"}}>
+    </section> : <section style={{...cardStyle,padding:"clamp(16px,3vw,28px)",borderTop:`4px solid ${activeTheme.accent}`}}>
       <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",paddingBottom:20,borderBottom:"1px solid #e9edf3",marginBottom:20}}>
         <div style={{width:92,height:68,display:"grid",placeItems:"center",background:"#fff",border:"1px solid #e5eaf1",borderRadius:12,padding:8,boxSizing:"border-box"}}><img src={logos[network]} alt={network+" logo"} style={{maxWidth:"100%",maxHeight:52,objectFit:"contain"}}/></div>
         <div style={{flex:"1 1 180px"}}><div style={{fontSize:11,fontWeight:900,letterSpacing:1.2,color:"#64748b"}}>FOMU YA MAOMBI</div><h2 style={{margin:"5px 0",fontSize:23,color:"#172033"}}>{network} Till / Uwakala</h2><span style={{display:"inline-block",fontSize:14,fontWeight:900,color:network==="HALOTEL"?"#8a5b00":activeTheme.accent,background:activeTheme.soft,padding:"7px 11px",borderRadius:8}}>{price[network]}</span></div>
