@@ -22,6 +22,21 @@ const LIPA_NETWORKS: Record<LipaNetwork, { label: string; stickerName: string }>
   halotel: { label: "Halotel", stickerName: "Lipa kwa Halotel" },
 };
 
+const NETWORK_PRESETS: Partial<Record<LipaNetwork, { lipaNumber: string; businessName: string; location: string; payload: string }>> = {
+  yas: {
+    lipaNumber: "15148616",
+    businessName: "STAWARD JACKSON NJIWA",
+    location: "KIBAHA CBD",
+    payload: "00020101021226390014tz.go.bot.tips0105025010208151486165204413153038345802TZ5921STAWARD JACKSON NJIWA6010KIBAHA CBD610561104622103082271514307051100263040240",
+  },
+  airtel: {
+    lipaNumber: "326303272",
+    businessName: "ZEFHANIA ZAKAYO MBILA",
+    location: "DAR ES SALAAM",
+    payload: "00020101021226400014tz.go.bot.tips01050250402093263032725204000053038345802TZ5921ZEFHANIA ZAKAYO MBILA6013DAR ES SALAAM610511000621303093263032726304286C",
+  },
+};
+
 const A5_WIDTH_PX = 1748;
 const A5_WIDTH_MM = 148;
 const A5_HEIGHT_MM = 210;
@@ -86,7 +101,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       </div>
       <div className="lq-merchant-box">
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
-        <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>
+        <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>{values.location && <span className="lq-merchant-location">{values.location}</span>}
       </div>
       <div className="lq-pay-banner"><strong>{LIPA_NETWORKS[network].stickerName}</strong></div>
       <p className="lq-card-subtitle">Lipa kutoka mitandao yote na benki</p>
@@ -138,7 +153,7 @@ export default function LipaQrStudioPage() {
   const guideRef = useRef<HTMLElement>(null);
   const errors = useMemo(() => validateLipaCard(values), [values]);
   const isValid = Object.keys(errors).length === 0;
-  const paymentPayload = useMemo(() => isValid ? createTipsPaymentPayload(values) : "", [isValid, values]);
+  const paymentPayload = useMemo(() => { if (!isValid) return ""; if (network === "yas" || network === "airtel") return NETWORK_PRESETS[network]!.payload; if (network === "halotel") return ""; return createTipsPaymentPayload(values); }, [isValid, values, network]);
 
   useEffect(() => {
     let current = true;
@@ -226,22 +241,27 @@ export default function LipaQrStudioPage() {
       <section className="lq-editor-panel">
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
         <label className="lq-field" htmlFor="lq-network"><span>Chagua mtandao wa stika</span>
-          <select id="lq-network" value={network} onChange={(event) => setNetwork(event.target.value as LipaNetwork)}>
+          <select id="lq-network" value={network} onChange={(event) => {
+            const nextNetwork = event.target.value as LipaNetwork;
+            setNetwork(nextNetwork);
+            const preset = NETWORK_PRESETS[nextNetwork];
+            if (preset) setValues((previous) => ({ ...previous, lipaNumber: preset.lipaNumber, businessName: preset.businessName, location: preset.location }));
+          }}>
             <option value="voda">Vodacom M-Pesa</option>
             <option value="yas">Yas</option>
             <option value="airtel">Airtel Money</option>
             <option value="halotel">Halotel</option>
           </select>
-          <small>Rangi na jina la mtandao vitabadilika kwenye stika.</small>
+          <small>{network === "halotel" ? "QR halisi ya Halotel bado haijawekwa; pakua baada ya kuongeza QR yake." : network === "yas" || network === "airtel" ? "QR halisi na taarifa za biashara ulizotuma zimefungwa ili zisibadilike." : "Rangi na jina la mtandao vitabadilika kwenye stika."}</small>
         </label>
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
-          <input id="lq-number" inputMode="numeric" autoComplete="off" maxLength={12} placeholder="Tarakimu 5–12" value={values.lipaNumber} onChange={(event) => update("lipaNumber", event.target.value)} aria-invalid={Boolean(fieldError("lipaNumber"))} />
+          <input id="lq-number" inputMode="numeric" autoComplete="off" maxLength={12} placeholder="Tarakimu 5–12" value={values.lipaNumber} readOnly={network === "yas" || network === "airtel"} onChange={(event) => update("lipaNumber", event.target.value)} aria-invalid={Boolean(fieldError("lipaNumber"))} />
           {fieldError("lipaNumber") ? <small role="alert">{fieldError("lipaNumber")}</small> : <small>Andika namba ya biashara uliyopewa na mtoa huduma.</small>}
         </label>
         <label className={`lq-field ${fieldError("businessName") ? "has-error" : ""}`} htmlFor="lq-business">
           <span>Jina la biashara <small>{values.businessName.length}/25</small></span>
-          <input id="lq-business" maxLength={25} placeholder="Mfano: Duka la Amani" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
+          <input id="lq-business" maxLength={25} placeholder="Mfano: Duka la Amani" value={values.businessName} readOnly={network === "yas" || network === "airtel"} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
           {fieldError("businessName") && <small role="alert">{fieldError("businessName")}</small>}
         </label>
       </section>
