@@ -51,7 +51,7 @@ export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumbe
   const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
   const cityField = `60${String(city.length).padStart(2, "0")}${city}`;
   const postalField = `61${String(postal.length).padStart(2, "0")}${postal}`;
-  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}${cityField}${postalField}622103080011234907051100266304`;
+  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}${cityField}${postalField}62210308001123490705110026304`;
   return body + tipsCrc16(body);
 }
 
