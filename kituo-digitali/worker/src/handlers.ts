@@ -588,8 +588,26 @@ export const submitLipaApplication = callable(async (request) => {
   const config = configured ?? fallback;
   if (!config) throw new ApiError("not-found", "Mtandao huu haujapatikana.");
   if (config.active !== true) throw new ApiError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
-  const fields = Array.isArray(config.fields) ? config.fields as Array<Record<string, unknown>> : [];
+  const fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
+  if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "businessNameEvidence")) {
+    fields.push({
+      fieldName: "businessNameEvidence",
+      label: "Ushahidi wa jina la biashara",
+      type: "IMAGE_UPLOAD",
+      required: false,
+      helpText: "Picha ya bango la biashara lenye jina linaloonekana wazi, au picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.",
+      maxSizeMb: 5,
+      accept: ["image/jpeg", "image/png", "image/webp"],
+      order: 3.25,
+    });
+  }
   const rawValues = objectValue(data.values, "Fomu");
+  if (networkId.toLowerCase().includes("vodacom") && String(rawValues.businessName ?? "").trim()) {
+    const evidencePath = String(rawValues.businessNameEvidence ?? "");
+    if (!evidencePath.startsWith(`lipaUploads/${uid}/${applicationId}/businessNameEvidence-`)) {
+      throw new ApiError("failed-precondition", "Umeweka jina la biashara. Pakia picha ya bango lenye jina linaloonekana wazi au picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.");
+    }
+  }
   const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId);
   const additionalNotes = typeof rawValues.additionalNotes === "string" ? rawValues.additionalNotes.trim().slice(0, 2000) : "";
   const openRef = db.collection("lipaOpenApplications").doc(`${uid}_${networkId}_${applicationId}`);
