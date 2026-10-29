@@ -22,7 +22,6 @@ const themes: Record<Network, { accent: string; soft: string; border: string; te
   VODACOM: { accent: "#f43f5e", soft: "#4c0519", border: "#be123c", text: "#fecdd3", gradient: "linear-gradient(120deg,#881337,#be123c)", warning: "#4c0519" },
 };
 const textInput: CSSProperties = { width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 12, border: "1px solid #334155", background: "#0b1220", color: "#f8fafc", fontSize: 15 };
-const labelStyle: CSSProperties = { display: "grid", gap: 7, color: "#dbeafe", fontWeight: 650, fontSize: 13 };
 const panelStyle: CSSProperties = { border: "1px solid #26364e", borderRadius: 18, padding: 18, background: "linear-gradient(145deg,#121d30,#0c1423)", minWidth: 0 };
 function newId() { return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `till-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 function dateLabel(value: unknown) { const date = value ? new Date(String(value)) : null; return date && !Number.isNaN(date.getTime()) ? date.toLocaleString("sw-TZ") : "—"; }
