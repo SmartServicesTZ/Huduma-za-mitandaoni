@@ -201,7 +201,34 @@ function LocalAuthModal({ onClose }: { onClose: () => void }) {
 }
 
 function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: string; setSearch: (value: string) => void }) {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  const internalRouteHistory = useRef<string[]>([]);
+  const previousRoute = useRef(location);
+  const skipHistoryPush = useRef(false);
+  useEffect(() => {
+    const markBrowserBack = () => { skipHistoryPush.current = true; };
+    window.addEventListener("popstate", markBrowserBack);
+    return () => window.removeEventListener("popstate", markBrowserBack);
+  }, []);
+  useEffect(() => {
+    if (previousRoute.current === location) return;
+    if (skipHistoryPush.current) skipHistoryPush.current = false;
+    else {
+      const stack = internalRouteHistory.current;
+      if (stack[stack.length - 1] !== previousRoute.current) stack.push(previousRoute.current);
+      if (stack.length > 60) stack.shift();
+    }
+    previousRoute.current = location;
+  }, [location]);
+  const goBackWithinSite = () => {
+    const previous = internalRouteHistory.current.pop();
+    if (previous) {
+      skipHistoryPush.current = true;
+      navigate(previous);
+    } else {
+      navigate(location.startsWith("/service/") ? "/services" : "/");
+    }
+  };
   const { isAuthenticated, user } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   useEffect(() => { const openAuth = () => setAuthOpen(true); window.addEventListener("smartservicestz-open-auth", openAuth); return () => window.removeEventListener("smartservicestz-open-auth", openAuth); }, []);
@@ -782,38 +809,6 @@ function BottomNav() {
 
 export default function Home() {
   const [location, navigate] = useLocation();
-  // Hifadhi njia za ndani zilizotembelewa ili kitufe cha Back kisitoke nje ya tovuti.
-  const internalRouteHistory = useRef<string[]>([]);
-  const previousRoute = useRef(location);
-  const skipHistoryPush = useRef(false);
-
-  useEffect(() => {
-    const markBrowserBack = () => { skipHistoryPush.current = true; };
-    window.addEventListener("popstate", markBrowserBack);
-    return () => window.removeEventListener("popstate", markBrowserBack);
-  }, []);
-
-  useEffect(() => {
-    if (previousRoute.current === location) return;
-    if (skipHistoryPush.current) {
-      skipHistoryPush.current = false;
-    } else {
-      const stack = internalRouteHistory.current;
-      if (stack[stack.length - 1] !== previousRoute.current) stack.push(previousRoute.current);
-      if (stack.length > 60) stack.shift();
-    }
-    previousRoute.current = location;
-  }, [location]);
-
-  const goBackWithinSite = () => {
-    const previous = internalRouteHistory.current.pop();
-    if (previous) {
-      skipHistoryPush.current = true;
-      navigate(previous);
-    } else {
-      navigate(location.startsWith("/service/") ? "/services" : "/");
-    }
-  };
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [serviceNotice, setServiceNotice] = useState("");
