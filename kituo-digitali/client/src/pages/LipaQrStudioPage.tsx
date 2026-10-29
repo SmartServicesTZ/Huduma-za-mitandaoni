@@ -160,13 +160,17 @@ export default function LipaQrStudioPage() {
       for (const page of pages) canvases.push(await captureArtboard(page));
       const stem = makeFileStem(values.businessName, values.lipaNumber);
       if (format === "pdf") {
-        const { jsPDF } = await import("jspdf");
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5", compress: true });
-        canvases.forEach((canvas, index) => {
-          if (index > 0) pdf.addPage("a5", "portrait");
-          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, A5_WIDTH_MM, A5_HEIGHT_MM, undefined, "FAST");
-        });
-        pdf.save(`${stem}.pdf`);
+        const { PDFDocument } = await import("pdf-lib");
+        const pdf = await PDFDocument.create();
+        const pageWidth = 148 * 72 / 25.4;
+        const pageHeight = 210 * 72 / 25.4;
+        for (const canvas of canvases) {
+          const page = pdf.addPage([pageWidth, pageHeight]);
+          const png = await pdf.embedPng(canvas.toDataURL("image/png"));
+          page.drawImage(png, { x: 0, y: 0, width: pageWidth, height: pageHeight });
+        }
+        const bytes = await pdf.save();
+        downloadBlob(new Blob([bytes], { type: "application/pdf" }), `${stem}.pdf`);
       } else {
         const width = Math.max(...canvases.map((canvas) => canvas.width));
         const height = canvases.reduce((sum, canvas) => sum + canvas.height, 0);
