@@ -394,7 +394,7 @@ function ServiceGrid({ title, services, onUse }: { title: string; services: Serv
 
 function SpecialSection() {
   const open = (item: typeof specialServices[number]) => {
-    if ("url" in item && item.url) { window.location.href = item.url; return; }
+    if ("url" in item && item.url) { const inviteUrl = item.url; if (/Android/i.test(navigator.userAgent) && inviteUrl.includes("chat.whatsapp.com/")) { const inviteCode = inviteUrl.split("chat.whatsapp.com/")[1]?.split(/[?#]/)[0]; if (inviteCode) { const fallback = encodeURIComponent(inviteUrl); window.location.href = `intent://chat.whatsapp.com/${inviteCode}#Intent;scheme=https;package=com.whatsapp;S.browser_fallback_url=${fallback};end`; return; } } window.location.href = inviteUrl; return; }
     const action = (item as unknown as { action?: string }).action;
     if (action === "whatsapp") { window.open(whatsappUrl, "_blank", "noopener,noreferrer"); return; }
     toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => window.open(whatsappUrl, "_blank") } });
