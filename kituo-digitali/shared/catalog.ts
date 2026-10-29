@@ -81,7 +81,6 @@ export const serviceCatalog: ServiceCatalogItem[] = [
 export const specialServices = [
   { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4" },
   { slug: "kikundi-bure", name: "WAZEE WA BETTING TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ" },
-  { slug: "download-app", name: "DOWNLOAD APP", tone: "blue", action: "external", url: "https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/latest/download/SmartServicesTZ.apk" },
 ] as const;;
 
 export const tutorials: TutorialItem[] = [
