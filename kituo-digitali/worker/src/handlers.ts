@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot, type Query, type Transaction } from "./firestore-rest.js";
 import { getStorage } from "./storage-rest.js";
 import { ApiError, defineWorkerSecret, callable, httpEndpoint, type ApiRequest } from "./api-adapter.js";
@@ -24,6 +24,18 @@ const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "c
 const ADMIN_LIST_LIMIT = 50;
 const FCM_PAGE_SIZE = 100;
 const FCM_SEND_CONCURRENCY = 20;
+
+function applicationDuplicateFingerprint(scope: string, values: Record<string, unknown>) {
+  const normalized = Object.entries(values)
+    .filter(([, value]) => value !== null && value !== undefined && value !== "" && !(typeof value === "string" && /^(lipaUploads|serviceUploads|lipaApplications|serviceApplications)\//.test(value)))
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => [key, typeof value === "string" ? value.trim().toLowerCase().replace(/\s+/g, " ") : value]);
+  return createHash("sha256").update(`${scope}\n${JSON.stringify(normalized)}`).digest("hex");
+}
+
+function recordValues(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
 
 type Profile = { createdAt?: unknown; role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBonusRegistrationGranted?: boolean; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; firstName?: string; phone?: string; profileImageUrl?: string; mustChangePassword?: boolean };
 
@@ -610,6 +622,7 @@ export const submitLipaApplication = callable(async (request) => {
   }
   const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId);
   const additionalNotes = typeof rawValues.additionalNotes === "string" ? rawValues.additionalNotes.trim().slice(0, 2000) : "";
+  const duplicateFingerprint = applicationDuplicateFingerprint(`lipa:${networkId}`, applicantData);
   const openRef = db.collection("lipaOpenApplications").doc(`${uid}_${networkId}_${applicationId}`);
   const finalPaths: string[] = [];
   const sourcePaths: string[] = [];
@@ -635,11 +648,22 @@ export const submitLipaApplication = callable(async (request) => {
   await db.runTransaction(async (transaction) => {
     const existingApplication = await transaction.get(applicationRef);
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
+    const previousLipaApplications = await transaction.get(db.collection("lipaApplications").where("userId", "==", uid).where("networkId", "==", networkId).limit(100));
+    const duplicate = previousLipaApplications.docs.find((document) => {
+      const previous = document.data();
+      const status = String(previous.status ?? "PENDING").toUpperCase();
+      if (status !== "PENDING" && status !== "PROCESSING") return false;
+      const previousFingerprint = typeof previous.duplicateFingerprint === "string"
+        ? previous.duplicateFingerprint
+        : applicationDuplicateFingerprint(`lipa:${networkId}`, recordValues(previous.applicantData));
+      return previousFingerprint === duplicateFingerprint;
+    });
+    if (duplicate) throw new ApiError("already-exists", "Tayari umetuma ombi la Lipa Namba lenye taarifa hizi. Subiri Admin aidhinishe au akatae ombi la awali.", { applicationId: duplicate.id });
     const application = {
       applicationId, userId: uid, userName: String(profile.name ?? ""), network: String(config.name ?? networkId), networkId, serviceId: "pata-lipa-namba",
       applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" ") || String(profile.name ?? profile.firstName ?? "Mwombaji"),
       phone: String(applicantData.phone ?? ""), businessName: String(applicantData.businessName ?? ""), nidaNumber: String(applicantData.nidaNumber ?? ""), tinNumber: String(applicantData.tinNumber ?? ""),
-      businessLicense: String(applicantData.businessLicense ?? ""), idDocumentUrl: String(applicantData.idDocument ?? ""), idDocumentType: String(applicantData.idDocumentType ?? ""), applicantData,
+      businessLicense: String(applicantData.businessLicense ?? ""), idDocumentUrl: String(applicantData.idDocument ?? ""), idDocumentType: String(applicantData.idDocumentType ?? ""), applicantData, duplicateFingerprint,
       reward: networkId.toLowerCase().includes("vodacom") ? 5000 : Number(config.reward ?? 0), additionalNotes, rewardStatus: (networkId.toLowerCase().includes("vodacom") ? 5000 : Number(config.reward ?? 0)) > 0 ? "UNPAID" : "NOT_ELIGIBLE", qualificationStatus: (networkId.toLowerCase().includes("vodacom") ? 5000 : Number(config.reward ?? 0)) > 0 ? "PENDING_CHECK" : "NOT_QUALIFIED", verifiedTransactions: 0, lipaNumber: "", rewardPaymentReference: "", rewardNote: "", status: "PENDING", rejectionReason: "", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
     };
     transaction.create(applicationRef, application);
@@ -909,13 +933,26 @@ export const createPocketWifiOrder = callable(async (request) => {
   const ref = db.collection("serviceApplications").doc(applicationId);
   const fields = [{ fieldName: "details", label: "Maelezo ya oda", type: "TEXTAREA", required: true, order: 0 }];
   const applicantData = { details };
+  const duplicateFingerprint = applicationDuplicateFingerprint("service:pata-pocket-wifi-mabando", { details, phone });
   await db.runTransaction(async (transaction) => {
     const prior = await transaction.get(ref);
     if (prior.exists) throw new ApiError("already-exists", "Namba ya oda hii tayari imetumika.");
+    const previousOrders = await transaction.get(db.collection("serviceApplications").where("userId", "==", uid).where("serviceSlug", "==", "pata-pocket-wifi-mabando").limit(100));
+    const duplicate = previousOrders.docs.find((document) => {
+      const previous = document.data();
+      const status = String(previous.status ?? "PENDING").toUpperCase();
+      if (status !== "PENDING" && status !== "PROCESSING") return false;
+      const previousValues = recordValues(previous.applicantData);
+      const previousFingerprint = typeof previous.duplicateFingerprint === "string"
+        ? previous.duplicateFingerprint
+        : applicationDuplicateFingerprint("service:pata-pocket-wifi-mabando", { details: String(previousValues.details ?? ""), phone: String(previous.orderPhone ?? "") });
+      return previousFingerprint === duplicateFingerprint;
+    });
+    if (duplicate) throw new ApiError("already-exists", "Tayari umetuma oda yenye taarifa hizi. Subiri Admin aidhinishe au akatae oda ya awali.", { applicationId: duplicate.id });
     transaction.create(ref, {
       applicationId, userId: uid, userName: String(profile.name ?? ""), serviceSlug: "pata-pocket-wifi-mabando",
       serviceName: "PATA POCKET WIFI & MABANDO", serviceFields: fields,
-      statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData,
+      statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, duplicateFingerprint,
       orderPhone: phone, orderType: "POCKET_WIFI", status: "PENDING",
       submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
     });
@@ -966,7 +1003,8 @@ export const createServiceApplication = callable(async (request) => {
     applicantData[name] = finalPath;
   }
   const applicationRef = db.collection("serviceApplications").doc(applicationId);
-  const openRef = db.collection("serviceOpenApplications").doc(`${uid}_${serviceSlug}`);
+  const duplicateFingerprint = applicationDuplicateFingerprint(`service:${serviceSlug}`, applicantData);
+  const openRef = db.collection("serviceOpenApplications").doc(`${uid}_${serviceSlug}_${applicationId}`);
   const tokenCost = Number(service.isFree === true ? 0 : service.tokenCost);
   if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) throw new ApiError("failed-precondition", "Gharama ya huduma haijawekwa sawa.");
   try {
@@ -976,8 +1014,19 @@ export const createServiceApplication = callable(async (request) => {
       if (prior.data()?.userId === uid && prior.data()?.serviceSlug === serviceSlug) return { applicationId, status: prior.data()?.status ?? "PENDING", duplicate: true };
       throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     }
+    const existingServiceApplications = await transaction.get(db.collection("serviceApplications").where("userId", "==", uid).where("serviceSlug", "==", serviceSlug).limit(100));
+    const duplicate = existingServiceApplications.docs.find((document) => {
+      const previous = document.data();
+      const status = String(previous.status ?? "PENDING").toUpperCase();
+      if (status !== "PENDING" && status !== "PROCESSING") return false;
+      const previousFingerprint = typeof previous.duplicateFingerprint === "string"
+        ? previous.duplicateFingerprint
+        : applicationDuplicateFingerprint(`service:${serviceSlug}`, recordValues(previous.applicantData));
+      return previousFingerprint === duplicateFingerprint;
+    });
+    if (duplicate) throw new ApiError("already-exists", "Tayari umetuma ombi la huduma lenye taarifa hizi. Subiri Admin aidhinishe au akatae ombi la awali.", { applicationId: duplicate.id });
     const open = await transaction.get(openRef);
-    if (open.exists) throw new ApiError("already-exists", "Una ombi la huduma hii ambalo bado linaendelea.", { applicationId: open.data()?.applicationId });
+    if (open.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     if (await serviceIsLocked(transaction, serviceSlug)) throw new ApiError("failed-precondition", "Huduma hii imefungwa kwa sasa.");
     const userRef = db.collection("users").doc(uid);
     const userSnapshot = await transaction.get(userRef);
@@ -999,7 +1048,7 @@ export const createServiceApplication = callable(async (request) => {
       ledgerRef = db.collection("tokenTransactions").doc(applicationId);
       transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
     }
-    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
+    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, duplicateFingerprint, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
     transaction.create(openRef, { applicationId, userId: uid, serviceSlug, createdAt: FieldValue.serverTimestamp() });
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(service.name ?? serviceSlug)} limepokelewa`, body: "Maombi yako yametumwa kikamilifu na yanasubiri kukaguliwa.", type: "serviceApplication", applicationId, createdAt: FieldValue.serverTimestamp() });
     return { applicationId, status: "PENDING", balanceAfter, reference: ledgerRef?.id ?? applicationId, duplicate: false };
@@ -1083,7 +1132,10 @@ export const setServiceApplicationStatus = callable(async (request) => {
     const userRef = db.collection("users").doc(String(application.userId));
     const userSnapshot = isFalseInfoRejection ? await transaction.get(userRef) : null;
     transaction.update(ref, patch);
-    if (["APPROVED", "REJECTED"].includes(status)) transaction.delete(db.collection("serviceOpenApplications").doc(`${application.userId}_${application.serviceSlug}`));
+    if (["APPROVED", "REJECTED"].includes(status)) {
+      transaction.delete(db.collection("serviceOpenApplications").doc(`${application.userId}_${application.serviceSlug}_${application.applicationId}`));
+      transaction.delete(db.collection("serviceOpenApplications").doc(`${application.userId}_${application.serviceSlug}`));
+    }
     const serviceSlug = String(application.serviceSlug ?? "").toLowerCase();
     const serviceName = String(application.serviceName ?? service?.name ?? "huduma");
     const isAccessLipa = serviceSlug.includes("access-lipa") || serviceSlug.includes("pata-lipa");
