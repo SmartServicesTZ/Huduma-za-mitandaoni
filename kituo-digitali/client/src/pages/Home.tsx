@@ -768,20 +768,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     <TokenCard />
 
     {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/latest/download/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
-    <section className={`service-discovery ${allServicesPage ? "service-discovery--all" : ""}`}>
-      <div className="service-discovery__intro">
-        <div className="service-discovery__copy">
-          <span className="service-discovery__eyebrow"><Sparkles size={14} aria-hidden="true" /> {allServicesPage ? "ORODHA YA HUDUMA" : "SMARTSERVICESTZ · DIGITAL SERVICE HUB"}</span>
-          <h2>{allServicesPage ? "HUDUMA ZOTE" : <>Huduma kwa biashara,<span> sehemu moja.</span></>}</h2>
-          <p>{allServicesPage ? `${matches.length} kati ya ${displayedServices.length} huduma zinaonekana. Tumia utafutaji au makundi kuchuja.` : "Pata leseni, TIN, Lipa, usajili na mawasiliano ya biashara kwa urahisi."}</p>
-        </div>
-        <div className="service-discovery__stats" aria-label="Muhtasari wa huduma">
-          <div className="service-discovery__stat"><span className="service-discovery__stat-icon service-discovery__stat-icon--open"><BriefcaseBusiness size={17} aria-hidden="true" /></span><span><strong>{openCount}</strong><small>Huduma zilizo wazi</small></span></div>
-          <div className="service-discovery__stat"><span className="service-discovery__stat-icon service-discovery__stat-icon--free"><Zap size={17} aria-hidden="true" /></span><span><strong>{freeCount}</strong><small>Huduma za bure</small></span></div>
-        </div>
-      </div>
-      <div className="service-discovery__filters"><span>CHUJA HUDUMA</span><div className="service-chips" role="tablist" aria-label="Makundi ya huduma">{categories.map((item) => <button key={item} type="button" className={category === item ? "active" : ""} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}</div></div>
-    </section>
+
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
   </main>;
 }
