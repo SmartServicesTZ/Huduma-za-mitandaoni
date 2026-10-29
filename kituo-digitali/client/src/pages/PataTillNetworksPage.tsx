@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { ArrowLeft, CheckCircle2, Clock3 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ const networkDetails: Record<Network, string[]> = {
   VODACOM: ["Usisajili laini kabla ya kupata maelekezo.", "Mteja awe na namba ya NIDA.", "Hakikisha una scanner au Famoco yenye scanner.", "Malipo ya TSh 40,000 yafanyike kwanza; kisha utapewa user ya kuwasha Till.", "Taarifa nyingine zitakamilishwa na Admin."],
 };
 const logos: Record<Network, string> = { HALOTEL: halotelLogo, AIRTEL: airtelLogo, VODACOM: vodacomLogo };
-const textInput: React.CSSProperties = { width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 12, border: "1px solid #334155", background: "#0b1220", color: "#f8fafc", fontSize: 15 };
+const textInput: CSSProperties = { width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 12, border: "1px solid #334155", background: "#0b1220", color: "#f8fafc", fontSize: 15 };
 const labelStyle: React.CSSProperties = { display: "grid", gap: 7, color: "#dbeafe", fontWeight: 650, fontSize: 13 };
 const panelStyle: React.CSSProperties = { border: "1px solid #26364e", borderRadius: 18, padding: 18, background: "linear-gradient(145deg,#121d30,#0c1423)", minWidth: 0 };
 function newId() { return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `till-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
@@ -48,7 +48,7 @@ export default function PataTillNetworksPage() {
     try { return await uploadServiceDocument(firebaseUser.uid, applicationId, field, file, 5, ["image/jpeg", "image/png", "image/webp", "application/pdf"]); }
     finally { setUploading(""); }
   };
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!firebaseUser?.uid || !network) { toast.error("Ingia kwanza kisha chagua mtandao."); return; }
     const phone = String(values.tillPhone ?? values.airtelPhone ?? "").replace(/\s/g, "");
