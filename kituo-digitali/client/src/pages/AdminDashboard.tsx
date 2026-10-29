@@ -483,7 +483,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   const lockBySlug = new Map<string, boolean>();
   for (const entry of serviceLocks as any[]) lockBySlug.set(String(entry.slug ?? entry.id), entry.isLocked === true);
   // Firestore inaweza kuwa na config chache tu; control panel lazima ionyeshe catalog nzima, pamoja na ZANA ZA ZIADA.
-  const configuredServices = mergeServiceCatalogDefaults(services as any[], true).filter((item: any) => String(item.slug ?? item.id) !== "utafutaji-nida" && !/\bnida\b/i.test(`${item.name ?? ""} ${item.slug ?? item.id ?? ""}`));
+  const configuredServices = mergeServiceCatalogDefaults(services as any[], false).filter((item: any) => String(item.slug ?? item.id) !== "utafutaji-nida" && !/\bnida\b/i.test(`${item.name ?? ""} ${item.slug ?? item.id ?? ""}`));
   // Dedupe kwa slug: TAFUTA NIDA ilikuwa inaonekana mara mbili ndani ya Funga/Fungua Huduma.
   const uniqueServices = new Map<string, any>();
   for (const item of configuredServices) uniqueServices.set(String(item.slug), item);
