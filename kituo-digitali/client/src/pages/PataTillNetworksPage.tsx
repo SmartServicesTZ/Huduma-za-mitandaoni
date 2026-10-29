@@ -30,6 +30,7 @@ export default function PataTillNetworksPage() {
   const [identityFile, setIdentityFile] = useState<File | null>(null);
   const [businessFile, setBusinessFile] = useState<File | null>(null);
   const [floatConfirmed, setFloatConfirmed] = useState(false);
+  const [noExistingLipa, setNoExistingLipa] = useState(false);
   const [paidConfirmed, setPaidConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
@@ -41,7 +42,7 @@ export default function PataTillNetworksPage() {
     return subscribeUserServiceApplications(firebaseUser.uid, rows => setApplications(rows.filter(row => row.serviceSlug === "pata-till-mitandao-yote")));
   }, [firebaseUser?.uid]);
   const set = (key: string, value: string) => setValues(current => ({ ...current, [key]: value }));
-  const resetForm = () => { setValues({}); setIdentityFile(null); setBusinessFile(null); setFloatConfirmed(false); setPaidConfirmed(false); setReference(""); };
+  const resetForm = () => { setValues({}); setIdentityFile(null); setBusinessFile(null); setFloatConfirmed(false); setNoExistingLipa(false); setPaidConfirmed(false); setReference(""); };
   const upload = async (field: string, file: File | null) => {
     if (!file || !firebaseUser?.uid) return "";
     setUploading(field);
@@ -56,6 +57,7 @@ export default function PataTillNetworksPage() {
       if (!values.fullName?.trim() || !/^0[67]\d{8}$/.test(values.tillPhone ?? "") || !/^0[67]\d{8}$/.test(values.contactPhone ?? "") || !/^\d{3}-\d{3}-\d{3}$/.test(values.tinNumber ?? "") || !values.idType || !values.idNumber?.trim()) { toast.error("Jaza taarifa zote za lazima na hakiki muundo wa namba."); return; }
       if (!identityFile) { toast.error("Pakia picha ya kitambulisho kinachokubalika."); return; }
       if (!floatConfirmed) { toast.error("Thibitisha kwanza kuwa float ya TSh 100,000 ipo kwenye laini."); return; }
+      if (!noExistingLipa) { toast.error("Thibitisha kuwa mteja hana Lipa Namba tayari."); return; }
     }
     if (network === "AIRTEL" && (!/^0[67]\d{8}$/.test(values.airtelPhone ?? "") || !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(values.nidaNumber ?? ""))) { toast.error("Weka namba ya Airtel na NIDA kwa muundo sahihi."); return; }
     if (network === "VODACOM" && !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(values.nidaNumber ?? "")) { toast.error("Namba ya NIDA inahitajika kwa muundo sahihi."); return; }
@@ -67,7 +69,7 @@ export default function PataTillNetworksPage() {
       const payload = {
         network, serviceType: "TILL / UWAKALA", price: price[network], ...values,
         identityDocument: identityPath, businessEvidence: businessPath,
-        floatConfirmed, paidConfirmed, otpRequired: network === "AIRTEL",
+        floatConfirmed: String(floatConfirmed), noExistingLipa: String(noExistingLipa), paidConfirmed: String(paidConfirmed), otpRequired: String(network === "AIRTEL"),
         adminInstructions: network === "AIRTEL" ? "Mteja anahitaji OTP; wasiliana naye kupitia WhatsApp." : network === "VODACOM" ? "Thibitisha malipo kabla ya kumpa user ya kuwasha Till." : "Hakiki float ya TSh 100,000, TIN na nyaraka.",
         status: "PENDING",
       };
@@ -105,6 +107,7 @@ export default function PataTillNetworksPage() {
           <label style={labelStyle}>Jina la biashara (hiari)<input style={textInput} value={values.businessName ?? ""} onChange={e=>set("businessName",e.target.value)} placeholder="Kwa wateja wenye vigezo tu"/><small style={{color:"#94a3b8"}}>Hii ni kwa wateja walio na vigezo tu.</small></label>
           <label style={{...labelStyle,gridColumn:"1 / -1"}}>VIAMBATANISHO — picha ya kitambulisho *<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e=>setIdentityFile(e.target.files?.[0] ?? null)} required style={{...textInput,background:"#7c2d12",borderColor:"#ea580c"}}/><small style={{color:"#cbd5e1"}}>JPG, PNG, WebP au PDF; kiwango cha juu MB 5.</small></label>
           <label style={{...labelStyle,gridColumn:"1 / -1",background:"#2a1b0a",padding:12,borderRadius:12,border:"1px solid #b45309"}}>Msisitizo kuhusu jina la biashara: Sehemu hii si lazima na ni kwa wateja wenye vigezo vya kutosha tu. Bila vigezo vya kutosha ombi linaweza kukataliwa. Kwa maelezo zaidi, wasiliana na wakala mkuu.</label>
+          <label style={{display:"flex",gap:10,alignItems:"flex-start",gridColumn:"1 / -1",lineHeight:1.5}}><input type="checkbox" checked={noExistingLipa} onChange={e=>setNoExistingLipa(e.target.checked)} required style={{marginTop:4}}/><span>Thibitisha kuwa mteja hana Lipa Namba tayari.</span></label>
           <label style={{display:"flex",gap:10,alignItems:"flex-start",gridColumn:"1 / -1",lineHeight:1.5}}><input type="checkbox" checked={floatConfirmed} onChange={e=>setFloatConfirmed(e.target.checked)} required style={{marginTop:4}}/><span>Thibitisha: mteja ameweka float ya TSh 100,000 kwenye laini yake. Nimehakiki float ya 100,000 imewekwa kwenye laini ya mteja.</span></label>
         </>}
         {network === "AIRTEL" && <>
