@@ -4,7 +4,6 @@ import * as QRCode from "qrcode";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import {
-  buildLipaInfoQrPayload,
   normalizeLipaNumber,
   TANZANIA_LIPA_LOCATIONS,
   validateLipaCard,
@@ -92,7 +91,7 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues }>(fun
           <h3>Au tumia app rasmi ya mtandao wako</h3>
           <div className="lq-app-step"><b>A</b><span><strong>Fungua app</strong><small>Chagua huduma ya Lipa kwa biashara.</small></span></div>
           <div className="lq-app-step"><b>B</b><span><strong>Weka namba ya Lipa</strong><small>Hakiki jina na kiasi kabla ya kuthibitisha.</small></span></div>
-          <p>QR kwenye kadi hii ni ya taarifa pekee; haiwezi kuanzisha malipo.</p>
+          <p>QR kwenye kadi hii hutumia payload rasmi uliyoweka. Hakiki kwa kuskani kabla ya kuchapisha.</p>
         </div>
       </div>
       <div className="lq-guide-network-grid">
@@ -106,7 +105,7 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues }>(fun
 });
 
 export default function LipaQrStudioPage() {
-  const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "53000" });
+  const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "53000", qrPayload: "" });
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
   const [format, setFormat] = useState<FileFormat>("pdf");
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -116,19 +115,19 @@ export default function LipaQrStudioPage() {
   const guideRef = useRef<HTMLElement>(null);
   const errors = useMemo(() => validateLipaCard(values), [values]);
   const isValid = Object.keys(errors).length === 0;
-  const qrPayload = useMemo(() => isValid ? buildLipaInfoQrPayload(values) : "", [isValid, values]);
+  const paymentPayload = useMemo(() => isValid ? values.qrPayload.trim() : "", [isValid, values.qrPayload]);
 
   useEffect(() => {
     let current = true;
-    if (!qrPayload) {
+    if (!paymentPayload) {
       setQrDataUrl("");
       return () => { current = false; };
     }
-    void QRCode.toDataURL(qrPayload, { errorCorrectionLevel: "H", margin: 0, width: 720, color: { dark: "#111111", light: "#ffffff" } })
+    void QRCode.toDataURL(paymentPayload, { errorCorrectionLevel: "M", margin: 4, width: 720, color: { dark: "#111111", light: "#ffffff" } })
       .then((url) => { if (current) setQrDataUrl(url); })
       .catch(() => { if (current) setQrDataUrl(""); });
     return () => { current = false; };
-  }, [qrPayload]);
+  }, [paymentPayload]);
 
   const update = (field: keyof LipaCardValues, value: string) => {
     const next = field === "lipaNumber" ? normalizeLipaNumber(value) : field === "postalCode" ? value.replace(/\D/g, "").slice(0, 5) : field === "businessName" ? value.slice(0, 25) : value;
@@ -137,7 +136,7 @@ export default function LipaQrStudioPage() {
 
   const validateBeforeAction = () => {
     setShowErrors(true);
-    if (!isValid || !qrDataUrl) {
+    if (!isValid || !paymentPayload || !qrDataUrl) {
       toast.error("Kamilisha taarifa zote sahihi kabla ya kuendelea.");
       return false;
     }
@@ -222,7 +221,7 @@ export default function LipaQrStudioPage() {
           <input id="lq-business" maxLength={25} placeholder="Mfano: Duka la Amani" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
           {fieldError("businessName") && <small role="alert">{fieldError("businessName")}</small>}
         </label>
-        <label className={`lq-field ${fieldError("location") ? "has-error" : ""}`} htmlFor="lq-location">
+        <label className={`lq-field ${fieldError("qrPayload") ? "has-error" : ""}`} htmlFor="lq-qr-payload">\n          <span>QR Payload rasmi ya TIPS</span>\n          <textarea id="lq-qr-payload" rows={4} maxLength={1200} spellCheck={false} placeholder="Bandika taarifa halisi za QR ulizopewa na TIPS / mtoa huduma" value={values.qrPayload} onChange={(event) => update("qrPayload", event.target.value)} aria-invalid={Boolean(fieldError("qrPayload"))} />\n          {fieldError("qrPayload") ? <small role="alert">{fieldError("qrPayload")}</small> : <small>Bandika payload ya biashara hii kutoka kwa mtoa huduma. Usitumie mfano wa mtu mwingine.</small>}\n        </label>\n        <label className={`lq-field ${fieldError("location") ? "has-error" : ""}`} htmlFor="lq-location">
           <span>Eneo</span>
           <select id="lq-location" value={values.location} onChange={(event) => update("location", event.target.value)} aria-invalid={Boolean(fieldError("location"))}>
             <option value="">Chagua eneo</option>
@@ -250,7 +249,7 @@ export default function LipaQrStudioPage() {
         </div>
         <p className="lq-print-note">Ukubwa wa A5, ubora wa 300 DPI. PNG ya kurasa mbili hutoka kama picha moja ndefu.</p>
       </section>
-      <div className="lq-disclaimer"><ShieldCheck size={16} /><p>Zana hii ni huru; haihusiani wala kuidhinishwa na Vodacom Tanzania, M-Pesa au TIPS. QR inayotengenezwa hapa ina taarifa tu, si QR rasmi ya malipo.</p></div>
+      <div className="lq-disclaimer"><ShieldCheck size={16} /><p>Zana hii ni huru; haihusiani wala kuidhinishwa na Vodacom Tanzania, M-Pesa au TIPS. Tumia payload halisi uliyopewa na TIPS / mtoa huduma. Zana hii haiundi wala kuidhinisha akaunti za malipo.</p></div>
     </aside>
 
     <section className="lq-preview">
@@ -265,7 +264,7 @@ export default function LipaQrStudioPage() {
         <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} />
         {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} />}
       </div>
-      <div className="lq-preview-footnote"><Info size={14} />QR ni maandishi ya taarifa pekee; thibitisha malipo kwenye menyu rasmi ya mtandao wako.</div>
+      <div className="lq-preview-footnote"><Info size={14} />Hakikisha QR inasomwa na inaonyesha jina na namba sahihi kabla ya kuchapisha.</div>
     </section>
 
     <div className="lq-mobile-actions">
