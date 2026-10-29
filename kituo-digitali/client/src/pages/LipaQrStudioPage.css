@@ -216,21 +216,28 @@
 .lq-mpesa-logo strong { color:#d20b2d; font-size:clamp(13px,3.4cqw,21px); font-weight:950; letter-spacing:-.04em; }
 .lq-mpesa-logo small { color:#5c6470; font-size:clamp(6px,1.5cqw,9px); font-weight:800; letter-spacing:.08em; }
 .lq-card-red {
-  flex:1; justify-content:center; gap:2.8%; padding:4% 6%;
-  background:#fff; color:#17202c; background-image:none;
+  flex: 1; justify-content: flex-start; gap: 2.8%; padding: 4% 6%;
+  background-color: #c91028;
+  background-image: linear-gradient(135deg, #d81732 0%, #bd001e 62%, #a9081c 100%);
+  color: #fff;
 }
-.lq-card-red::before { display:none !important; }
+.lq-card-red::before {
+  display: block !important;
+  position: absolute; z-index: -1; inset: 0; content: ""; pointer-events: none; opacity: .9;
+  background-image: conic-gradient(from 30deg at 50% 50%, #ffffff1e 0 60deg, transparent 60deg 120deg, #45000a16 120deg 180deg, transparent 180deg 240deg, #ffffff19 240deg 300deg, transparent 300deg);
+  background-size: 22px 20px;
+}
 .lq-qr-frame { margin-bottom:1%; }
 .lq-merchant-box {
-  width:100%; padding:2.5% 4%; border:1px solid #e5e7eb; border-radius:0;
-  box-shadow:none; gap:4px; text-align:center;
+  width: 100%; padding: 2.5% 4%; border: 1px solid #f2f2f2; border-radius: 8px;
+  color: #141922; background: #fff; box-shadow: 0 3px 12px #57000c28; gap: 4px; text-align: center;
 }
-.lq-merchant-number { padding-bottom:2%; border-bottom:1px solid #e5e7eb; color:#171717; }
+.lq-merchant-number { padding-bottom:2%; border-bottom:1px solid #df243e; color:#171717; }
 .lq-merchant-name { color:#242424; white-space:normal; overflow-wrap:anywhere; }
 .lq-pay-banner {
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-  width:100%; padding:3.2% 2%; border-radius:0; color:#d20b2d; background:#fff;
-  border-top:2px solid #d20b2d; border-bottom:2px solid #d20b2d; letter-spacing:0;
+  width:100%; padding:3.2% 2%; border-radius:8px; color:#c90b27; background:#fff;
+  border:0; letter-spacing:0; box-shadow: 0 3px 12px #57000c28;
 }
 .lq-pay-banner strong { display:block; font-size:5.4cqw; line-height:1.15; font-weight:950; }
 .lq-pay-banner small { display:block; color:#4a4a4a; font-size:2.7cqw; line-height:1.3; font-weight:650; }
@@ -253,3 +260,22 @@
 .lq-artboard { max-width: 100%; }
 .lq-app *, .lq-app *::before, .lq-app *::after { animation: none !important; scroll-behavior: auto !important; }
 .lq-button:hover:not(:disabled) { transform: none !important; }
+
+
+/* Keep download and print controls visible on phones, above any app navigation. */
+@media (max-width: 700px) {
+  .lq-mobile-actions {
+    display: grid !important;
+    position: fixed !important;
+    z-index: 99999 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+  }
+  .lq-mobile-actions .lq-button { min-height: 46px; font-size: 12px; }
+  .lq-preview-toolbar { align-items: flex-start; flex-wrap: wrap; }
+}
