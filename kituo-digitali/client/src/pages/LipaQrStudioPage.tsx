@@ -13,6 +13,14 @@ import "./LipaQrStudioPage.css";
 
 type PageMode = "card-only" | "card-and-guide";
 type FileFormat = "pdf" | "png";
+type LipaNetwork = "voda" | "yas" | "airtel" | "halotel";
+
+const LIPA_NETWORKS: Record<LipaNetwork, { label: string; stickerName: string }> = {
+  voda: { label: "Vodacom M-Pesa", stickerName: "Pesa ni M-Pesa" },
+  yas: { label: "Yas", stickerName: "Lipa kwa Yas" },
+  airtel: { label: "Airtel Money", stickerName: "Lipa kwa Airtel Money" },
+  halotel: { label: "Halotel", stickerName: "Lipa kwa Halotel" },
+};
 
 const A5_WIDTH_PX = 1748;
 const A5_WIDTH_MM = 148;
@@ -61,11 +69,11 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string }>(function CardArtboard({ values, qrDataUrl }, ref) {
-  return <article ref={ref} className="lq-artboard lq-card-artboard" data-lipa-export-page="card">
+const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork }>(function CardArtboard({ values, qrDataUrl, network }, ref) {
+  return <article ref={ref} className="lq-artboard lq-card-artboard" data-lipa-export-page="card" data-network={network}>
     <header className="lq-card-header">
       <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-      <img className="lq-mpesa-logo-image" src={`${LIPA_ASSET_BASE}mpesa-header-reference.png`} alt="Vodafone m-pesa" />
+      <span className={`lq-network-brand lq-network-brand--${network}`} aria-label={LIPA_NETWORKS[network].label}>{network === "voda" ? "M-PESA" : network === "airtel" ? "airtel money" : network === "yas" ? "YAS" : "HALOTEL"}</span>
     </header>
     <div className="lq-card-red">
       <div className="lq-card-watermark" aria-hidden="true" />
@@ -80,7 +88,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
         <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>
       </div>
-      <div className="lq-pay-banner"><strong>Pesa ni M-Pesa</strong></div>
+      <div className="lq-pay-banner"><strong>{LIPA_NETWORKS[network].stickerName}</strong></div>
       <p className="lq-card-subtitle">Lipa kutoka mitandao yote na benki</p>
     </div>
   </article>;
@@ -120,6 +128,7 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues }>(fun
 
 export default function LipaQrStudioPage() {
   const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "53000" });
+  const [network, setNetwork] = useState<LipaNetwork>("voda");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
   const [format, setFormat] = useState<FileFormat>("pdf");
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -216,6 +225,15 @@ export default function LipaQrStudioPage() {
       </div>
       <section className="lq-editor-panel">
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
+        <label className="lq-field" htmlFor="lq-network"><span>Chagua mtandao wa stika</span>
+          <select id="lq-network" value={network} onChange={(event) => setNetwork(event.target.value as LipaNetwork)}>
+            <option value="voda">Vodacom M-Pesa</option>
+            <option value="yas">Yas</option>
+            <option value="airtel">Airtel Money</option>
+            <option value="halotel">Halotel</option>
+          </select>
+          <small>Rangi na jina la mtandao vitabadilika kwenye stika.</small>
+        </label>
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
           <input id="lq-number" inputMode="numeric" autoComplete="off" maxLength={12} placeholder="Tarakimu 5–12" value={values.lipaNumber} onChange={(event) => update("lipaNumber", event.target.value)} aria-invalid={Boolean(fieldError("lipaNumber"))} />
@@ -253,7 +271,7 @@ export default function LipaQrStudioPage() {
         </div>
       </div>
       <div className="lq-preview-pages lq-print-root">
-        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} />
+        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} />
         {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} />}
       </div>
       <div className="lq-preview-footnote"><Info size={14} />Hakikisha QR inasomwa na inaonyesha jina na namba sahihi kabla ya kuchapisha.</div>
