@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { createServiceApplication, uploadServiceDocument, subscribeUserServiceApplications, type ServiceApplication } from "@/lib/firebase";
+import { formatNida } from "../../../shared/serviceForms";
 import halotelLogo from "../../public/halotel-logo.png";
 import airtelLogo from "../../public/airtel-logo.png";
 import vodacomLogo from "../../public/vodacom-logo.png";
@@ -64,18 +65,21 @@ export default function PataTillNetworksPage() {
     const phone = String(values.tillPhone ?? values.airtelPhone ?? "").replace(/\s/g, "");
     if (network === "HALOTEL") {
       if (!values.fullName?.trim() || !/^0[67]\d{8}$/.test(values.tillPhone ?? "") || !/^0[67]\d{8}$/.test(values.contactPhone ?? "") || !/^\d{3}-\d{3}-\d{3}$/.test(values.tinNumber ?? "") || !values.idType || !values.idNumber?.trim()) { toast.error("Jaza taarifa zote za lazima na hakiki muundo wa namba."); return; }
+      if (values.idType === "NIDA" && !/^\d{20}$/.test(String(values.idNumber).replace(/\D/g, ""))) { toast.error("Namba ya NIDA lazima iwe na tarakimu 20."); return; }
       if (!identityFile) { toast.error("Pakia picha ya kitambulisho kinachokubalika."); return; }
       if (!floatConfirmed) { toast.error("Thibitisha kwanza kuwa float ya TSh 100,000 ipo kwenye laini."); return; }
       if (!noExistingLipa) { toast.error("Thibitisha kuwa mteja hana Lipa Namba tayari."); return; }
     }
-    if (network === "AIRTEL" && (!/^0[67]\d{8}$/.test(values.airtelPhone ?? "") || !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(values.nidaNumber ?? ""))) { toast.error("Weka namba ya Airtel na NIDA kwa muundo sahihi."); return; }
-    if (network === "VODACOM" && !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(values.nidaNumber ?? "")) { toast.error("Namba ya NIDA inahitajika kwa muundo sahihi."); return; }
+    if (network === "AIRTEL" && (!/^0[67]\d{8}$/.test(values.airtelPhone ?? "") || !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, "")))) { toast.error("Weka namba ya Airtel na NIDA yenye tarakimu 20."); return; }
+    if (network === "VODACOM" && !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, ""))) { toast.error("Namba ya NIDA lazima iwe na tarakimu 20."); return; }
     if (network !== "HALOTEL" && !paidConfirmed) { toast.error("Thibitisha kuwa uko tayari kufanya malipo kabla ya huduma kukamilishwa."); return; }
     setBusy(true);
     try {
       const identityPath = identityFile ? await upload("identityDocument", identityFile) : "";
       const payload = {
         network, serviceType: "TILL / UWAKALA", price: price[network], ...values,
+        ...(values.nidaNumber ? { nidaNumber: formatNida(values.nidaNumber) } : {}),
+        ...(values.idType === "NIDA" && values.idNumber ? { idNumber: formatNida(values.idNumber) } : {}),
         identityDocument: identityPath,
         floatConfirmed: String(floatConfirmed), noExistingLipa: String(noExistingLipa), paidConfirmed: String(paidConfirmed), otpRequired: String(network === "AIRTEL"),
         adminInstructions: network === "AIRTEL" ? "Mteja anahitaji OTP; wasiliana naye kupitia WhatsApp." : network === "VODACOM" ? "Thibitisha malipo kabla ya kumpa user ya kuwasha Till." : "Hakiki float ya TSh 100,000, TIN na nyaraka.",
@@ -127,7 +131,7 @@ export default function PataTillNetworksPage() {
           <label style={labelStyle}>Namba ya simu ya mawasiliano *<input style={fieldStyle} value={values.contactPhone??""} onChange={e=>set("contactPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
           <label style={labelStyle}>Namba ya TIN *<input style={fieldStyle} value={values.tinNumber??""} onChange={e=>set("tinNumber",e.target.value)} required placeholder="123-123-123" pattern="[0-9]{3}-[0-9]{3}-[0-9]{3}"/></label>
           <label style={labelStyle}>Aina ya kitambulisho *<select style={fieldStyle} value={values.idType??""} onChange={e=>set("idType",e.target.value)} required><option value="">Chagua aina ya kitambulisho</option><option>NIDA</option><option>Kitambulisho cha mpiga kura</option><option>Leseni ya udereva</option></select></label>
-          <label style={labelStyle}>Namba ya kitambulisho *<input style={fieldStyle} value={values.idNumber??""} onChange={e=>set("idNumber",e.target.value)} required placeholder="Weka namba ya kitambulisho"/></label>
+          <label style={labelStyle}>Namba ya kitambulisho *<input style={fieldStyle} value={values.idNumber??""} onChange={e=>set("idNumber",values.idType==="NIDA"?e.target.value.replace(/\D/g,"").slice(0,20):e.target.value)} required inputMode={values.idType==="NIDA"?"numeric":"text"} maxLength={values.idType==="NIDA"?20:undefined} placeholder={values.idType==="NIDA"?"Tarakimu 20 za NIDA":"Weka namba ya kitambulisho"}/>{values.idType==="NIDA"&&<small style={{color:"#64748b",fontWeight:500}}>Weka tarakimu 20 bila alama au nafasi.</small>}</label>
           <label style={labelStyle}>Jina la biashara (hiari)<input style={fieldStyle} value={values.businessName??""} onChange={e=>set("businessName",e.target.value)} placeholder="Jina la biashara"/><small style={{color:"#64748b",fontWeight:500}}>Jaza kama linahusika na ombi lako.</small></label>
           <label style={{...labelStyle,gridColumn:"1 / -1"}}>Picha ya kitambulisho *<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e=>setIdentityFile(e.target.files?.[0]??null)} required style={{...fieldStyle,padding:9}}/><small style={{color:"#64748b",fontWeight:500}}>JPG, PNG, WebP au PDF; ukubwa usizidi MB 5.</small></label>
           <div style={{gridColumn:"1 / -1",padding:13,borderRadius:10,background:"#f8fafc",border:"1px solid #e2e8f0",color:"#475569",fontSize:13,lineHeight:1.65}}>Jina la biashara ni la hiari na linategemea vigezo vya mteja. Hakikisha taarifa zote zinafanana na nyaraka zako.</div>
@@ -136,11 +140,11 @@ export default function PataTillNetworksPage() {
         </>}
         {network==="AIRTEL" && <>
           <label style={labelStyle}>Namba ya simu ya Airtel *<input style={fieldStyle} value={values.airtelPhone??""} onChange={e=>set("airtelPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
-          <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value)} required placeholder="Weka namba ya NIDA" pattern="[0-9]{8}-[0-9]{5}-[0-9]{5}-[0-9]{2}"/></label>
+          <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value.replace(/\D/g,"").slice(0,20))} required inputMode="numeric" maxLength={20} placeholder="Tarakimu 20 za NIDA"/><small style={{color:"#64748b",fontWeight:500}}>Weka tarakimu 20 bila alama au nafasi.</small></label>
           <div style={{gridColumn:"1 / -1",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:11,padding:15,color:"#1e40af",fontSize:14,lineHeight:1.7}}>Malipo ya huduma ni <b>TSh 5,000</b>. Baada ya kutuma ombi, wasiliana na Admin kupitia WhatsApp ili kupata maelekezo ya OTP.</div>
         </>}
         {network==="VODACOM" && <>
-          <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value)} required placeholder="Weka namba ya NIDA" pattern="[0-9]{8}-[0-9]{5}-[0-9]{5}-[0-9]{2}"/></label>
+          <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value.replace(/\D/g,"").slice(0,20))} required inputMode="numeric" maxLength={20} placeholder="Tarakimu 20 za NIDA"/><small style={{color:"#64748b",fontWeight:500}}>Weka tarakimu 20 bila alama au nafasi.</small></label>
           <label style={labelStyle}>Namba ya mawasiliano *<input style={fieldStyle} value={values.contactPhone??""} onChange={e=>set("contactPhone",e.target.value)} required inputMode="tel" placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
           <div style={{gridColumn:"1 / -1",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:11,padding:15,color:"#5b21b6",fontSize:14,lineHeight:1.7}}>Usisajili laini kabla ya kupata maelekezo. Hakikisha una scanner au Famoco yenye scanner. Gharama ya huduma ni <b>TSh 40,000</b>.</div>
         </>}
