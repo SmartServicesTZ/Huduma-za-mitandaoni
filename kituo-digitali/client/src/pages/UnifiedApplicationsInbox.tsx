@@ -27,12 +27,12 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
   const rows=useMemo<InboxRow[]>(()=>{
     const serviceRows:InboxRow[]=serviceApplications.map((application)=>{
       const service=services.find((item)=>item.slug===application.serviceSlug||item.id===application.serviceSlug);
-      const date=application.submittedAt??application.createdAt;
+      const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
       const requestName=service?.name??application.serviceName??application.serviceSlug??"Ombi"; return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:"",phone:String((application as any).phone??application.applicantData?.phone??""),status:application.status||"PENDING",dateValue:date,dateLabel:dateLabel(date)};
     });
     const lipaRows:InboxRow[]=lipaApplications.map((application)=>{
       const network=networks.find((item)=>item.id===application.networkId||item.id===application.network||item.name===application.network);
-      const date=application.submittedAt??application.createdAt;
+      const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
       const serviceId=String((application as any).serviceId??""); const requestName=/access.*lipa|lipa.*access/i.test(serviceId)?"ACCESS YA LIPA":/wifi|wi-fi/i.test(serviceId)?"WIFI":"LIPA NAMBA"; return {id:application.applicationId||application.id,kind:"LIPA",kindLabel:requestName,person:application.applicantName||application.userName||application.phone||"Jina halijawekwa",service:network?.name??application.network??"",phone:application.phone||"",status:application.status||"PENDING",dateValue:date,dateLabel:dateLabel(date)};
     });
     const priority:Record<string,number>={PENDING:0,PROCESSING:1,APPROVED:2,REJECTED:3};
