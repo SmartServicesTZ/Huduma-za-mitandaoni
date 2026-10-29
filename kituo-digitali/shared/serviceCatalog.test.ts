@@ -33,6 +33,7 @@ describe("legacy service catalogue migration fallback", () => {
     expect(services).toEqual([
       serviceCatalog.find((service) => service.slug === "access-lipa-number"),
       serviceCatalog.find((service) => service.slug === "pata-pocket-wifi-mabando"),
+      serviceCatalog.find((service) => service.slug === "pata-till-mitandao-yote"),
     ]);
   });
 });
