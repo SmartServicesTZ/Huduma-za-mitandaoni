@@ -506,3 +506,30 @@
 .lq-field textarea:focus { border-color:#e83a54; box-shadow:0 0 0 3px #e83a5418; }
 .lq-field.has-error textarea { border-color:#dc3545; }
 @media (max-width:700px) { .lq-qr-frame { width:59% !important; padding:4.3% !important; } .lq-merchant-box { gap:7px !important; padding:3% 4.5% !important; } .lq-pay-banner { min-height:8.5% !important; } }
+
+
+/* Correct the final sticker geometry: center the underline against the number,
+   and keep only the QR's built-in quiet zone plus a hairline paper edge. */
+.lq-merchant-number::after {
+  left: 50% !important;
+  width: 90% !important;
+  transform: translateX(-50%) !important;
+}
+.lq-qr-frame {
+  padding: 0 !important;
+}
+.lq-qr-paper {
+  padding: 0 !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: none !important;
+}
+.lq-qr-paper img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+@media (max-width: 700px) {
+  .lq-qr-frame { padding: 0 !important; }
+  .lq-qr-paper { padding: 0 !important; }
+}
