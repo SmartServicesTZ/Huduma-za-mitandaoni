@@ -175,3 +175,20 @@ body{background:var(--brand-cream);font-family:"Manrope",system-ui,-apple-system
 .token-verification-status.is-verified svg{color:#2f8cff!important;fill:rgba(47,140,255,.13)!important;stroke-width:2.7!important}
 .token-verification-status.is-pending{color:#ffe0a1!important;background:rgba(180,116,21,.16)!important;border:1px solid rgba(255,210,123,.27)!important}
 @media(max-width:480px){.token-account-name{font-size:15px!important}.token-phone-line{gap:7px!important;font-size:11px!important}.token-verification-status{font-size:9px!important;padding:4px 7px!important}}
+
+
+/* SMARTSERVICESTZ — price labels use distinct non-red colors */
+.portal-service-card .free-label{
+  display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border:1px solid #bbf7d0;border-radius:999px;
+  color:#166534!important;background:#dcfce7!important;font-weight:900;
+}
+.portal-service-card .paid-label{
+  display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border:1px solid #bae6fd;border-radius:999px;
+  color:#075985!important;background:#e0f2fe!important;font-weight:900;
+}
+.portal-service-card .paid-label--5000{
+  border-color:#a7f3d0!important;color:#065f46!important;background:#d1fae5!important;
+}
+.portal-service-card .paid-label--40000{
+  border-color:#ddd6fe!important;color:#5b21b6!important;background:#ede9fe!important;
+}
