@@ -22,7 +22,7 @@ export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   if (!businessName) errors.businessName = "Weka jina la biashara.";
   else if (businessName.length > 25) errors.businessName = "Jina la biashara lisizidi herufi 25.";
   if (!TANZANIA_LIPA_LOCATIONS.includes(values.location as (typeof TANZANIA_LIPA_LOCATIONS)[number])) errors.location = "Chagua eneo kutoka kwenye orodha.";
-  if (!/^\\d{5}$/.test(values.postalCode)) errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
+  if (!/^\d{5}$/.test(values.postalCode.trim())) errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
   return errors;
 }
 
@@ -33,7 +33,7 @@ export function buildLipaInfoQrPayload(values: LipaCardValues): string {
     `Biashara: ${values.businessName.trim().toUpperCase()}`,
     `Eneo: ${values.location.trim().toUpperCase()}`,
     `Posta: ${values.postalCode.trim()}`,
-  ].join("\\n");
+  ].join("\n");
 }
 
 /** CRC-16/CCITT-FALSE used by the supplied EMV/TIPS examples. */
