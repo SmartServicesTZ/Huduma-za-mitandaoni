@@ -125,8 +125,9 @@ export class StorageFile {
     const r2 = r2BucketForPath(this.name);
     if (r2) {
       const object = await r2.head(this.name);
-      if (!object) throw Object.assign(new Error("Cloudflare R2 object not found."), { code: 404 });
-      return [{ name: this.name, size: String(object.size), contentType: object.httpMetadata?.contentType, uploaded: object.uploaded.toISOString() } as StorageMetadata] as [StorageMetadata];
+      if (object) return [{ name: this.name, size: String(object.size), contentType: object.httpMetadata?.contentType, uploaded: object.uploaded.toISOString() } as StorageMetadata] as [StorageMetadata];
+      // Older clients may have used Firebase Storage as a fallback while the same
+      // lipaUploads/ path is now routed to R2. Check the legacy bucket before failing.
     }
     const response = await storageFetch(`${objectApiUrl(bucketName(), this.name)}?fields=name,size,contentType,metadata,generation,timeCreated,updated`);
     return [await response.json() as StorageMetadata] as [StorageMetadata];
@@ -135,8 +136,12 @@ export class StorageFile {
   async delete() {
     const r2 = r2BucketForPath(this.name);
     if (r2) {
-      await r2.delete(this.name);
-      return;
+      const object = await r2.head(this.name);
+      if (object) {
+        await r2.delete(this.name);
+        return;
+      }
+      // If the object was uploaded through the legacy Firebase fallback, remove it there.
     }
     await storageFetch(objectApiUrl(bucketName(), this.name), { method: "DELETE" });
   }
@@ -145,8 +150,17 @@ export class StorageFile {
     const r2 = r2BucketForPath(this.name) ?? r2BucketForPath(destination.name);
     if (r2) {
       const source = await r2.get(this.name);
-      if (!source) throw Object.assign(new Error("Cloudflare R2 object not found."), { code: 404 });
-      await r2.put(destination.name, source.body, { httpMetadata: source.httpMetadata, customMetadata: source.customMetadata });
+      if (source) {
+        await r2.put(destination.name, source.body, { httpMetadata: source.httpMetadata, customMetadata: source.customMetadata });
+        return [destination] as [StorageFile];
+      }
+      // Backward compatibility: an upload can be in Firebase Storage when the
+      // browser used its fallback, even though lipaUploads/ paths now target R2.
+      const [metadata] = await this.getMetadata();
+      const legacyObject = await storageFetch(`${objectApiUrl(bucketName(), this.name)}?alt=media`);
+      await r2.put(destination.name, await legacyObject.arrayBuffer(), {
+        httpMetadata: { contentType: String(metadata.contentType ?? "application/octet-stream"), cacheControl: "private, no-store" },
+      });
       return [destination] as [StorageFile];
     }
     const bucket = bucketName();
