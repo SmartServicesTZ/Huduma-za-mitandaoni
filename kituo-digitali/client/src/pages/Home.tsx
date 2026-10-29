@@ -239,7 +239,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
   }, []);
   return <>
     <header className="app-header">
-      <button type="button" className="header-back-button" onClick={() => window.history.length > 1 ? window.history.back() : navigate("/")} aria-label="Rudi hatua moja nyuma"><ArrowLeft size={20}/><span>Back</span></button>
+      <button type="button" className="header-back-button" onClick={goBackWithinSite} aria-label="Rudi hatua moja nyuma"><ArrowLeft size={20}/><span>Back</span></button>
       <button className="mobile-menu" onClick={onMenu} aria-label="Fungua menyu"><Menu size={24} /></button>
       <Link href="/" className="portal-brand"><span className="portal-logo" aria-label="SmartServicesTZ logo"><i>S</i><b>S</b></span><span><b>SmartServicesTZ</b><small className="brand-subtitle">HUDUMA ZA MTANDAONI</small></span></Link>
       <label className="global-search"><Search size={18} /><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tafuta huduma, akaunti au sehemu..." aria-label="Tafuta huduma" /><kbd>Ctrl/⌘ K</kbd></label>
@@ -782,6 +782,38 @@ function BottomNav() {
 
 export default function Home() {
   const [location, navigate] = useLocation();
+  // Hifadhi njia za ndani zilizotembelewa ili kitufe cha Back kisitoke nje ya tovuti.
+  const internalRouteHistory = useRef<string[]>([]);
+  const previousRoute = useRef(location);
+  const skipHistoryPush = useRef(false);
+
+  useEffect(() => {
+    const markBrowserBack = () => { skipHistoryPush.current = true; };
+    window.addEventListener("popstate", markBrowserBack);
+    return () => window.removeEventListener("popstate", markBrowserBack);
+  }, []);
+
+  useEffect(() => {
+    if (previousRoute.current === location) return;
+    if (skipHistoryPush.current) {
+      skipHistoryPush.current = false;
+    } else {
+      const stack = internalRouteHistory.current;
+      if (stack[stack.length - 1] !== previousRoute.current) stack.push(previousRoute.current);
+      if (stack.length > 60) stack.shift();
+    }
+    previousRoute.current = location;
+  }, [location]);
+
+  const goBackWithinSite = () => {
+    const previous = internalRouteHistory.current.pop();
+    if (previous) {
+      skipHistoryPush.current = true;
+      navigate(previous);
+    } else {
+      navigate(location.startsWith("/service/") ? "/services" : "/");
+    }
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [serviceNotice, setServiceNotice] = useState("");
