@@ -654,3 +654,15 @@
 .lq-card-artboard[data-network="halotel"] .lq-pay-banner strong { color:#138b48 !important; }
 .lq-qr-paper { border-width:.2px !important; }
 @media (max-width:700px) { .lq-network-brand { width:36%; } .lq-qr-paper { border-width:.2px !important; } }
+
+
+.lq-merchant-location {
+  display:block;
+  padding-top:1.1%;
+  color:#555;
+  font-size:2.7cqw;
+  font-weight:800;
+  line-height:1.15;
+  letter-spacing:.035em;
+  text-align:center;
+}
