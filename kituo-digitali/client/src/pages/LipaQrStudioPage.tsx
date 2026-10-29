@@ -50,10 +50,11 @@ function downloadBlob(blob: Blob, filename: string) {
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string }>(function CardArtboard({ values, qrDataUrl }, ref) {
   return <article ref={ref} className="lq-artboard lq-card-artboard" data-lipa-export-page="card">
     <header className="lq-card-header">
-      <div className="lq-tips-logo" aria-label="TIPS"><strong>TIPS</strong></div>
-      <div className="lq-mpesa-logo" aria-label="Vodacom M-Pesa"><span className="lq-vodacom-mark">V</span><span><strong>M-PESA</strong><small>VODACOM</small></span></div>
+      <img className="lq-tips-logo-image" src="/lipa-assets/tips-logo-reference.png" alt="TIPS — Tanzania Instant Payment System" />
+      <img className="lq-mpesa-logo-image" src="/lipa-assets/mpesa-header-reference.png" alt="Vodafone m-pesa" />
     </header>
     <div className="lq-card-red">
+      <div className="lq-card-watermark" aria-hidden="true" />
       <div className="lq-qr-frame">
         <span className="lq-qr-corner lq-qr-tl" /><span className="lq-qr-corner lq-qr-tr" />
         <span className="lq-qr-corner lq-qr-bl" /><span className="lq-qr-corner lq-qr-br" />
@@ -65,7 +66,8 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
         <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>
       </div>
-      <div className="lq-pay-banner"><strong>Pesa ni M-Pesa</strong><small>Lipa kutoka mitandao yote na benki</small></div>
+      <div className="lq-pay-banner"><strong>Pesa ni M-Pesa</strong></div>
+      <p className="lq-card-subtitle">Lipa kutoka mitandao yote na benki</p>
     </div>
   </article>;
 });
@@ -164,7 +166,9 @@ export default function LipaQrStudioPage() {
           page.drawImage(png, { x: 0, y: 0, width: pageWidth, height: pageHeight });
         }
         const bytes = await pdf.save();
-        downloadBlob(new Blob([bytes], { type: "application/pdf" }), `${stem}.pdf`);
+        const pdfBuffer = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(pdfBuffer).set(bytes);
+        downloadBlob(new Blob([pdfBuffer], { type: "application/pdf" }), `${stem}.pdf`);
       } else {
         const width = Math.max(...canvases.map((canvas) => canvas.width));
         const height = canvases.reduce((sum, canvas) => sum + canvas.height, 0);
