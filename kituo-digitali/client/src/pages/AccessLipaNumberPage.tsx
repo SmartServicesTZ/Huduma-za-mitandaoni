@@ -128,11 +128,26 @@ export default function AccessLipaNumberPage() {
     setSubmitting(true);
     try {
       const serviceSlug = selected === "airtel" ? "access-lipa-airtel" : selected === "yas" ? "access-lipa-yas" : "access-lipa-vodacom";
+      const vodacomNames = fullName.trim().split(/\\s+/).filter(Boolean);
       const values: Record<string, string | number | null> = selected === "airtel"
         ? { network: "Airtel", phone: phone.trim(), fullName: fullName.trim(), contact: contact.trim(), nidaNumber: null, passportPhoto: null, email: null }
         : selected === "yas"
           ? { network: "Yas", phone: phone.trim(), nidaNumber: nida.trim(), passportPhoto: passportPath, contact: contact.trim(), fullName: null, email: null }
-          : { network: "Vodacom", phone: phone.trim(), fullName: fullName.trim(), email: email.trim(), contact: contact.trim(), nidaNumber: null, passportPhoto: null };
+          : {
+              network: "Vodacom",
+              phone: phone.trim(),
+              fullName: fullName.trim(),
+              firstName: vodacomNames[0] ?? "",
+              middleName: vodacomNames.length > 2 ? vodacomNames.slice(1, -1).join(" ") : (vodacomNames[1] ?? ""),
+              lastName: vodacomNames.length > 1 ? vodacomNames[vodacomNames.length - 1] : "",
+              name1: vodacomNames[0] ?? "",
+              name2: vodacomNames[1] ?? "",
+              name3: vodacomNames[2] ?? "",
+              email: email.trim(),
+              contact: contact.trim(),
+              nidaNumber: null,
+              passportPhoto: null
+            };
       const result = await createServiceApplication(applicationId, serviceSlug, values);
       setSubmittedRef(String(result.reference ?? result.applicationId ?? applicationId));
       toast.success("Ombi limetumwa kwa admin.");
