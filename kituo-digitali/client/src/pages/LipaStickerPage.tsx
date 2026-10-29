@@ -43,42 +43,61 @@ export default function LipaStickerPage() {
     setBusy(true); setError("");
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = 1600; canvas.height = 1050;
+      canvas.width = 1600; canvas.height = 2350;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Kifaa cha kutengeneza picha hakipatikani.");
+      // Airtel reference-style sticker: red patterned panel, large QR, number and name fields.
       ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = theme.main; ctx.fillRect(0, 0, canvas.width, 26);
-      ctx.fillStyle = theme.dark; ctx.fillRect(0, 26, 24, canvas.height - 26);
-      ctx.fillStyle = "#f8fafc"; ctx.fillRect(24, 26, canvas.width - 24, canvas.height - 26);
-      ctx.strokeStyle = theme.main; ctx.lineWidth = 8; ctx.strokeRect(42, 44, canvas.width - 84, canvas.height - 88);
-      ctx.fillStyle = theme.main; ctx.beginPath(); ctx.roundRect(65, 70, 1470, 180, 28); ctx.fill();
+      const red = theme.main, dark = theme.dark;
+      ctx.fillStyle = red; ctx.fillRect(0, 250, canvas.width, 1780);
+      // subtle dotted red background
+      ctx.fillStyle = "rgba(255,255,255,0.10)";
+      for (let y = 275; y < 1990; y += 42) for (let x = 20; x < 1580; x += 42) {
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+      }
+      // white top header with TIPS and network logo
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 1600, 250);
+      ctx.fillStyle = "#eef2f7"; ctx.fillRect(0, 0, 35, 250);
       const logo = new Image(); logo.src = theme.logo;
       await new Promise<void>((resolve) => { logo.onload = () => resolve(); logo.onerror = () => resolve(); });
       if (logo.naturalWidth > 0) {
-        const maxW = 190, maxH = 120, ratio = Math.min(maxW / logo.naturalWidth, maxH / logo.naturalHeight);
-        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(90, 96, 210, 128, 18); ctx.fill();
-        ctx.drawImage(logo, 100 + (maxW - logo.naturalWidth * ratio) / 2, 100 + (maxH - logo.naturalHeight * ratio) / 2, logo.naturalWidth * ratio, logo.naturalHeight * ratio);
+        const maxW = 370, maxH = 160, ratio = Math.min(maxW / logo.naturalWidth, maxH / logo.naturalHeight);
+        ctx.drawImage(logo, 105, 45, logo.naturalWidth * ratio, logo.naturalHeight * ratio);
+      } else {
+        ctx.fillStyle = red; ctx.font = "900 68px Arial"; ctx.textAlign = "right"; ctx.fillText(network, 1510, 140);
       }
-      ctx.fillStyle = theme.text; ctx.textAlign = "center"; ctx.font = "900 62px Arial";
-      ctx.fillText("LIPA KWA " + theme.label, 890, 145);
-      ctx.font = "bold 28px Arial"; ctx.fillText(network, 890, 200);
-      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(90, 300, 930, 340, 28); ctx.fill();
-      ctx.strokeStyle = theme.main; ctx.lineWidth = 8; ctx.stroke();
-      ctx.fillStyle = theme.dark; ctx.textAlign = "center"; ctx.font = "bold 30px Arial"; ctx.fillText("JINA LA MTEJA / BIASHARA", 555, 365);
-      ctx.fillStyle = theme.main;
-      const displayName = stickerNames(network, names).toUpperCase();
-      const nameSize = displayName.length > 22 ? 48 : displayName.length > 15 ? 60 : 76;
-      ctx.font = `900 ${nameSize}px Arial`; ctx.fillText(displayName, 555, 480, 850);
-      ctx.fillStyle = "#f1f5f9"; ctx.beginPath(); ctx.roundRect(145, 525, 820, 80, 18); ctx.fill();
-      ctx.fillStyle = theme.dark; ctx.font = "900 56px Arial"; ctx.fillText(digits(lipaNumber), 555, 580, 770);
+      ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = "900 42px Arial";
+      ctx.fillText("LIPA KUPITIA MTANDAO AU BENKI YOYOTE", 800, 340);
+      // QR white card
       const qrImage = new Image(); qrImage.src = qr;
       await new Promise<void>((resolve, reject) => { qrImage.onload = () => resolve(); qrImage.onerror = () => reject(new Error("QR code haikuweza kupakiwa.")); });
-      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(1080, 300, 390, 390, 28); ctx.fill();
-      ctx.drawImage(qrImage, 1105, 325, 340, 340);
-      ctx.fillStyle = theme.dark; ctx.textAlign = "center"; ctx.font = "bold 25px Arial"; ctx.fillText("SCAN QR CODE", 1275, 730);
-      ctx.fillStyle = theme.main; ctx.beginPath(); ctx.roundRect(90, 760, 1380, 120, 22); ctx.fill();
-      ctx.fillStyle = theme.text; ctx.font = "900 34px Arial"; ctx.fillText("LIPA NAMBA • " + theme.label, 780, 835);
-      ctx.fillStyle = "#64748b"; ctx.font = "22px Arial"; ctx.fillText("Tumia QR kusoma taarifa za Lipa Namba", 780, 940);
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(240, 410, 1120, 1120, 75); ctx.fill();
+      ctx.drawImage(qrImage, 325, 495, 950, 950);
+      // Lipa number field
+      ctx.textAlign = "left"; ctx.fillStyle = "#fff"; ctx.font = "900 34px Arial"; ctx.fillText("LIPA NAMBA", 95, 1600);
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(95, 1640, 1410, 205, 26); ctx.fill();
+      ctx.strokeStyle = "#ffd500"; ctx.lineWidth = 7; ctx.stroke();
+      ctx.fillStyle = "#111827"; ctx.font = "900 94px Arial"; ctx.fillText(digits(lipaNumber), 145, 1770, 1300);
+      // Name field
+      ctx.fillStyle = "#fff"; ctx.font = "900 34px Arial"; ctx.fillText("JINA", 95, 1905);
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.roundRect(95, 1935, 1410, 155, 26); ctx.fill();
+      ctx.strokeStyle = "#ffd500"; ctx.lineWidth = 7; ctx.stroke();
+      ctx.fillStyle = "#111827";
+      const displayName = stickerNames(network, names).toUpperCase();
+      const nameSize = displayName.length > 25 ? 42 : displayName.length > 18 ? 52 : 64;
+      ctx.font = `500 ${nameSize}px Arial`; ctx.fillText(displayName, 145, 2030, 1300);
+      // footer strip with accepted networks and brand
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 2110, 1600, 240);
+      ctx.fillStyle = "#111827"; ctx.font = "bold 30px Arial"; ctx.fillText("Tunapokea:", 75, 2170);
+      const networkColors = ["#ffd500", "#e31837", "#f58220", "#ed1c2e"];
+      const networkLabels = ["mixx", "M-PESA", "halo", "airtel"];
+      for (let i = 0; i < networkLabels.length; i++) {
+        const x = 80 + i * 125;
+        ctx.fillStyle = networkColors[i]; ctx.beginPath(); ctx.roundRect(x, 2190, 95, 70, 8); ctx.fill();
+        ctx.fillStyle = i === 0 ? "#102d69" : "#fff"; ctx.font = "bold 18px Arial"; ctx.textAlign = "center"; ctx.fillText(networkLabels[i], x + 47, 2232);
+      }
+      ctx.fillStyle = red; ctx.textAlign = "right"; ctx.font = "900 58px Arial"; ctx.fillText("LIPA", 1510, 2195);
+      ctx.font = "900 35px Arial"; ctx.fillText("K W A  S I M U", 1510, 2245);
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
       if (!blob) throw new Error("Stika haikuweza kutengenezwa.");
       triggerDownload(blob, `stika-lipa-${network.toLowerCase()}-${digits(lipaNumber)}.png`, "PNG");
