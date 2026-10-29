@@ -83,7 +83,7 @@ export default function GeminiFloatingChat() {
           <div style={{ padding: "0 12px 9px", background: "#fff", textAlign: "center", fontSize: 10, color: "#94a3b8" }}>Usitume password au taarifa nyeti.</div>
         </section>
       )}
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>
+      <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "flex-end", gap: 10, maxWidth: "100%" }}>
         <a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" aria-label="Pakua SmartServicesTZ App" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.9)", borderRadius: 999, background: "linear-gradient(135deg,#1d4ed8,#2563eb)", color: "#fff", boxShadow: "0 8px 26px rgba(37,99,235,.35)", fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
           <Download size={21} /> DOWNLOAD APP
         </a>
