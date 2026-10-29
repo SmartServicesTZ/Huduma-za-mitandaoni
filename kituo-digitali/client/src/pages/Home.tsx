@@ -610,7 +610,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
 
-    {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
+    {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/latest/download/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
     <section className={`service-discovery ${allServicesPage ? "service-discovery--all" : ""}`}>
       <div className="service-discovery__intro">
         <div className="service-discovery__copy">
