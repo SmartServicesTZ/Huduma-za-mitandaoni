@@ -11,6 +11,16 @@ on:
       - "kituo-digitali/pnpm-lock.yaml"
       - "kituo-digitali/vite.config.ts"
       - ".github/workflows/publish-pages.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "kituo-digitali/client/**"
+      - "kituo-digitali/shared/**"
+      - "kituo-digitali/package.json"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - "kituo-digitali/vite.config.ts"
+      - ".github/workflows/publish-pages.yml"
   workflow_dispatch:
 
 permissions:
