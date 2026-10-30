@@ -630,15 +630,18 @@ export const submitLipaApplication = callable(async (request) => {
   }
   if (networkId.toLowerCase().includes("vodacom")) {
     // Enforce an image upload even if an older saved network configuration used another field type.
-    fields = fields.map((field) => String(field.fieldName ?? "") === "businessNameEvidence" ? {
-      ...field,
-      label: "Picha ya BRELA AU eneo la biashara",
-      type: "IMAGE_UPLOAD",
-      required: false,
-      helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
-      maxSizeMb: 5,
-      accept: ["image/jpeg", "image/png", "image/webp"],
-    } : field);
+    for (let index = 0; index < fields.length; index += 1) {
+      if (String(fields[index].fieldName ?? "") !== "businessNameEvidence") continue;
+      fields[index] = {
+        ...fields[index],
+        label: "Picha ya BRELA AU eneo la biashara",
+        type: "IMAGE_UPLOAD",
+        required: false,
+        helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
+        maxSizeMb: 5,
+        accept: ["image/jpeg", "image/png", "image/webp"],
+      };
+    }
   }
   const rawValues = objectValue(data.values, "Fomu");
   if (/yas|tigo/i.test(networkId)) {
