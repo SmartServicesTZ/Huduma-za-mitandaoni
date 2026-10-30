@@ -476,6 +476,15 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
               </div>
               <label htmlFor="service-app-admin-reply-subject">Kichwa cha ujumbe</label>
               <input id="service-app-admin-reply-subject" className="service-app-admin-reply-input" value={replySubject} onChange={(event) => setReplySubject(event.target.value)} placeholder={replyMode === "request-info" ? "Tafadhali kamilisha taarifa za ombi" : "Majibu kuhusu ombi lako"} />
+              <label htmlFor="service-app-admin-reply-template">Ujumbe wa haraka (hiari)</label>
+              <select id="service-app-admin-reply-template" value="" onChange={(event)=>{if(event.target.value){setReplyBody(event.target.value);setReplyMode("reply");}}}>
+                <option value="">Chagua ujumbe wa kutumia...</option>
+                {(/vodacom|access-lipa-vodacom/i.test(String(selected.serviceSlug)+" "+String(selected.serviceName))) && <>
+                  <option value="Tuwasiliane WhatsApp au kwa simu ya kawaida kupitia namba 0698232313 kwa ajili ya OTP.">Vodacom — Wasiliana kwa OTP</option>
+                  <option value="Kwa maelezo zaidi kuhusu ombi lako la Till Vodacom, tafadhali wasiliana nasi WhatsApp au kwa simu ya kawaida kupitia namba 0698232313.">Vodacom — Maelezo ya Till</option>
+                </>}
+                <option value="Tafadhali wasilisha taarifa au nyaraka zilizokosekana ili tuendelee na ombi lako.">Omba taarifa/nyaraka zaidi</option>
+              </select>
               <label htmlFor="service-app-admin-reply-body">{replyMode === "request-info" ? "Taarifa zinazohitajika" : "Ujumbe wa admin"}</label>
               <textarea id="service-app-admin-reply-body" value={replyBody} onChange={(event) => setReplyBody(event.target.value)} placeholder={replyMode === "request-info" ? "Mwambie mtumiaji taarifa gani akamilishe..." : "Andika jibu kwa mtumiaji..."} />
               <div className="service-app-admin-actions service-app-admin-actions-inline">
