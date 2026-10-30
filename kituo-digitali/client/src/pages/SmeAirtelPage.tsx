@@ -264,7 +264,13 @@ export default function SmeAirtelPage() {
         </aside>
 
         {/* FOMU */}
-        <form onSubmit={submit} className="sa-in rounded-3xl border border-white bg-white/90 p-4 shadow-[0_20px_60px_-20px_rgba(15,23,42,.2)] backdrop-blur-xl transition-shadow duration-500 hover:shadow-[0_25px_70px_-20px_rgba(190,0,20,.25)] sm:p-7" style={{ animationDelay: "280ms" }}>
+        {reference ? <div role="status" aria-live="polite" className="sa-in rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 shadow-lg">
+          <div className="flex items-center gap-3"><CheckCircle2 size={30} className="shrink-0 text-emerald-600"/><div><h2 className="text-lg font-black">TAARIFA ZIMEWASILISHWA</h2><p className="mt-1 text-sm">Ombi lako limepokelewa kikamilifu.</p></div></div>
+          <p className="mt-4 break-all text-sm">Namba ya kumbukumbu: <strong>{reference}</strong></p>
+          {message && <p className="mt-2 text-sm">{message}</p>}
+          <p className="mt-2 text-sm">Unaweza kufuatilia hali ya ombi lako kwenye sehemu ya Maombi yangu hapa chini.</p>
+          <button type="button" onClick={() => { setReference(""); setMessage(""); setErrors({}); setForm(INITIAL); setEditingApplicationId(null); setApplicationId(newApplicationId()); }} className="mt-5 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-black text-white hover:bg-emerald-800">TUMA OMBI JINGINE</button>
+        </div> : <form onSubmit={submit} className="sa-in rounded-3xl border border-white bg-white/90 p-4 shadow-[0_20px_60px_-20px_rgba(15,23,42,.2)] backdrop-blur-xl transition-shadow duration-500 hover:shadow-[0_25px_70px_-20px_rgba(190,0,20,.25)] sm:p-7" style={{ animationDelay: "280ms" }}>
           <div className="mb-5">
             <span className="inline-flex items-center gap-1.5 text-xs font-black tracking-[.18em] text-red-700"><Sparkles size={14} /> TAARIFA ZA MWOMBAJI</span>
             <h2 className="mt-1 text-2xl font-black">Jaza fomu ya SME Airtel</h2>
@@ -346,7 +352,7 @@ export default function SmeAirtelPage() {
             {submitting ? <><LoaderCircle size={18} className="animate-spin" /> Inatuma ombi...</> : <><Send size={17} /> TUMA OMBI LA SME AIRTEL</>}
           </button>
           <p className="mt-3 text-center text-xs leading-5 text-slate-500">Kwa kutuma ombi unathibitisha kuwa taarifa ni sahihi. Zawadi ya SME huhesabiwa baada ya uthibitisho wa admin.</p>
-        </form>
+        </form>}
       </section>
 
       {/* MAOMBI YANGU */}
