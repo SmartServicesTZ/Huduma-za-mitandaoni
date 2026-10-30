@@ -78,7 +78,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     }
     return sourceFields.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }, [service.fields, service.slug]);
-  const [applicationId] = useState(newApplicationId);
+  const [applicationId, setApplicationId] = useState(newApplicationId);
   const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [values, setValues] = useState<ServiceFormValues>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -288,6 +288,11 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
       } else {
         const result = await createServiceApplication(applicationId, service.slug, submissionValues) as ResultLike;
         setSuccessReference(String(result.reference ?? result.applicationId ?? applicationId));
+        setValues({});
+        setErrors({});
+        setEditingApplicationId(null);
+        Object.values(uploads).forEach((upload) => { if (upload.previewUrl) URL.revokeObjectURL(upload.previewUrl); });
+        setUploads({});
       }
     } catch (error) {
       setFormError(errorMessage(error, "Imeshindikana kutuma ombi. Tafadhali jaribu tena."));
@@ -448,7 +453,16 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
           <h2 className="dynamic-service-card-heading">Taarifa za ombi</h2>
           {formError && <div className="dynamic-service-alert dynamic-service-alert-error" role="alert">{formError}</div>}
           {successReference && <div className="dynamic-service-alert dynamic-service-alert-success" role="status">Ombi limetumwa kikamilifu. Rejea yako ni <strong>{successReference}</strong>.</div>}
-          {fields.length ? (
+          {successReference ? (
+            <div className="dynamic-service-alert dynamic-service-alert-success" role="status" aria-live="polite">
+              <strong>TAARIFA ZIMEWASILISHWA</strong>
+              <p>Ombi lako limepokelewa kikamilifu. Namba ya kumbukumbu: <strong>{successReference}</strong>.</p>
+              <p>Unaweza kufuatilia hali ya ombi lako kwenye Historia ya maombi hapa chini.</p>
+              <button type="button" className="dynamic-service-submit" onClick={() => { setSuccessReference(""); setFormError(""); setValues({}); setErrors({}); setUploads({}); setApplicationId(newApplicationId()); }}>
+                TUMA OMBI JINGINE
+              </button>
+            </div>
+          ) : fields.length ? (
             <form className="dynamic-service-form" onSubmit={(event) => { event.preventDefault(); void submit(); }} noValidate>
               {fields.map(renderField)}
               {isVodacomLipaService(service) && <section className="rounded-xl border border-red-200 bg-red-50 p-4" style={{display:"grid",gap:12}}><h3 className="font-black text-red-900">UTHIBITISHO WA LIPA VODACOM</h3><label className="grid gap-2 text-sm font-bold text-slate-800"><span>Katika NIDA hii, Lipa hii ni ya ngapi?</span><select value={String(values.lipaSequence ?? "1")} onChange={(event)=>setValues(current=>({...current,lipaSequence:event.target.value,firstLipaConfirmed:event.target.value==="1" ? current.firstLipaConfirmed : false}))} className="h-12 rounded-lg border border-slate-300 bg-white px-3"><option value="1">Lipa ya 1</option><option value="2">Lipa ya 2</option><option value="3">Lipa ya 3</option><option value="4">Lipa ya 4</option><option value="5">Lipa ya 5</option></select></label>{String(values.lipaSequence ?? "1") !== "1" && <p className="rounded-lg bg-white p-3 text-sm font-semibold text-blue-900">Jina litakavyoonekana baada ya kukamilika: <strong>{[values.name1,values.name2,values.name3].map(value=>String(value??"").trim()).filter(Boolean).join(" ") || "Majina yako"} Store {String(values.lipaSequence ?? "2")}</strong></p>}<label className="flex items-start gap-3 text-sm font-semibold"><input type="checkbox" checked={values.mpesaAccountConfirmed === true} onChange={(event)=>setValues(current=>({...current,mpesaAccountConfirmed:event.target.checked}))}/><span>Je, unathibitisha kuwa laini hii haijafunguliwa/kuwezeshwa account ya M-PESA?</span></label>{String(values.lipaSequence ?? "1") === "1" && <label className="flex items-start gap-3 text-sm font-semibold"><input type="checkbox" checked={values.firstLipaConfirmed === true} onChange={(event)=>setValues(current=>({...current,firstLipaConfirmed:event.target.checked}))}/><span>Je, unathibitisha kuwa hii ni Lipa ya kwanza katika NIDA hii?</span></label>}</section>}
