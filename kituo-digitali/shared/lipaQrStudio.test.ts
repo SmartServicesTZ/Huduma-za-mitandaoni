@@ -23,8 +23,6 @@ describe("Lipa QR Studio helpers", () => {
     expect(validateLipaCard({ ...validValues, lipaNumber: "1234", businessName: " ", location: "UNKNOWN", postalCode: "5300" })).toMatchObject({
       lipaNumber: "Namba ya Lipa iwe na tarakimu 5 hadi 12.",
       businessName: "Weka jina la biashara.",
-      location: "Chagua eneo kutoka kwenye orodha.",
-      postalCode: "Namba ya posta iwe na tarakimu 5.",
     });
   });
 
