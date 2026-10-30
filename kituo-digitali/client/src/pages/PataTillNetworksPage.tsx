@@ -45,14 +45,15 @@ export default function PataTillNetworksPage() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState("");
   const [reference, setReference] = useState("");
+  const [requestNonce, setRequestNonce] = useState(0);
   const [applications, setApplications] = useState<ServiceApplication[]>([]);
-  const applicationId = useMemo(() => newId(), [network]);
+  const applicationId = useMemo(() => newId(), [network, requestNonce]);
   useEffect(() => {
     if (!firebaseUser?.uid) { setApplications([]); return; }
     return subscribeUserServiceApplications(firebaseUser.uid, rows => setApplications(rows.filter(row => row.serviceSlug === "pata-till-mitandao-yote")));
   }, [firebaseUser?.uid]);
   const set = (key: string, value: string) => setValues(current => ({ ...current, [key]: value }));
-  const resetForm = () => { setValues({}); setIdentityFile(null); setFloatConfirmed(false); setNoExistingLipa(false); setPaidConfirmed(false); setReference(""); };
+  const resetForm = () => { setValues({}); setIdentityFile(null); setFloatConfirmed(false); setNoExistingLipa(false); setPaidConfirmed(false); setReference(""); setRequestNonce((value) => value + 1); };
   const upload = async (field: string, file: File | null) => {
     if (!file || !firebaseUser?.uid) return "";
     setUploading(field);
@@ -87,7 +88,7 @@ export default function PataTillNetworksPage() {
       };
       const result = await createServiceApplication(applicationId, "pata-till-mitandao-yote", payload);
       setReference(String(result.reference ?? result.applicationId ?? applicationId));
-      toast.success("Ombi limetumwa kwa Admin.");
+      toast.success("TAARIFA ZIMEWASILISHWA", { description: "Ombi lako limepokelewa na limeongezwa kwenye historia." });
     } catch (error) { toast.error(error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena."); }
     finally { setBusy(false); }
   };
@@ -124,7 +125,12 @@ export default function PataTillNetworksPage() {
         <h3 style={{margin:"0 0 10px",fontSize:15,color:"#172033"}}>Kabla ya kuanza — vigezo vya {network}</h3>
         <ul style={{margin:0,paddingLeft:21,color:"#475569",lineHeight:1.8,fontSize:14}}>{networkDetails[network].map(item=><li key={item} style={{paddingLeft:3,marginBottom:3}}>{item}</li>)}</ul>
       </div>
-      <form onSubmit={submit} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,260px),1fr))",gap:17}}>
+      {reference ? <div role="status" aria-live="polite" style={{display:"grid",gap:12,padding:20,border:"1.5px solid #86efac",borderRadius:16,background:"#ecfdf3",color:"#14532d"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{display:"grid",placeItems:"center",width:42,height:42,borderRadius:"50%",background:"#16a34a",color:"#fff"}}><Check size={24}/></span><div><strong style={{fontSize:17}}>TAARIFA ZIMEWASILISHWA</strong><p style={{margin:"4px 0 0",fontSize:13}}>Ombi lako limepokelewa kikamilifu.</p></div></div>
+        <p style={{margin:0,fontSize:13}}>Namba ya kumbukumbu: <strong>{reference}</strong>. Unaweza kufuatilia hali yake kwenye sehemu ya Maombi yangu hapa chini.</p>
+        <p style={{margin:0,fontSize:13}}>Ombi litasubiri uthibitisho wa malipo na hatua za Admin kama zilivyoelekezwa.</p>
+        <button type="button" onClick={resetForm} style={{border:0,borderRadius:10,padding:"13px 18px",fontWeight:900,color:"#fff",background:activeTheme.gradient,cursor:"pointer",minHeight:48}}>TUMA OMBI JINGINE</button>
+      </div> : <form onSubmit={submit} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,260px),1fr))",gap:17}}>
         {network==="HALOTEL" && <>
           <label style={labelStyle}>Majina kamili ya mteja *<input style={fieldStyle} value={values.fullName??""} onChange={e=>set("fullName",e.target.value)} required placeholder="Majina kama yalivyo kwenye kitambulisho"/></label>
           <label style={labelStyle}>Namba ya simu ya Till *<input style={fieldStyle} value={values.tillPhone??""} onChange={e=>set("tillPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/><small style={{color:"#64748b",fontWeight:500}}>Namba 10, ianze na 06 au 07.</small></label>
@@ -153,8 +159,7 @@ export default function PataTillNetworksPage() {
           <button type="submit" disabled={busy||!!uploading} style={{border:0,borderRadius:10,padding:"14px 20px",fontWeight:850,color:"#fff",background:busy?"#94a3b8":activeTheme.gradient,cursor:busy?"wait":"pointer",flex:"1 1 230px",minHeight:49,fontSize:14,boxShadow:`0 5px 14px ${activeTheme.accent}2b`}}>{busy?(uploading?"Inapakia kiambatisho...":"Inatuma ombi..."):"TUMA OMBI LA TILL  →"}</button>
           <button type="button" onClick={()=>navigate("/")} style={{border:"1px solid #d6deea",borderRadius:10,padding:"13px 18px",fontWeight:800,color:"#334155",background:"#fff",cursor:"pointer",minHeight:49}}>RUDI DASHBOARD</button>
         </div>
-      </form>
-      {reference && <div style={{marginTop:20,padding:17,borderRadius:12,border:"1px solid #f3cf72",background:"#fffbeb",color:"#854d0e"}}><Clock3 size={22} style={{verticalAlign:"middle",marginRight:8}}/><b>Ombi limepokelewa — HALI: PENDING / HALIJAANZA KUSHUGHULIKIWA.</b><p style={{marginBottom:10,color:"#854d0e",lineHeight:1.7}}>Rejea: {reference}. Hifadhi rejea hii. Ombi la {network} halitaanza kufanyiwa kazi mpaka malipo ya {price[network]} yatakapofanyika na kuthibitishwa na Admin. Baada ya kulipa, wasiliana na 0698232313 kupitia WhatsApp na utume uthibitisho wa malipo pamoja na rejea ya ombi. Usitume OTP au PIN ya siri ya malipo.</p><a href={"https://wa.me/255698232313?text="+encodeURIComponent("Habari Admin, nimetuma ombi la "+network+" Till / Uwakala. Gharama: "+price[network]+". Naomba kuthibitisha malipo na kuwasilisha uthibitisho. Rejea ya ombi: "+reference)} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:8,background:"#15803d",color:"#fff",padding:"12px 15px",borderRadius:9,textDecoration:"none",fontWeight:850}}>WASILIANA WHATSAPP KUTHIBITISHA MALIPO</a>{network==="AIRTEL"&&<p style={{marginBottom:0,marginTop:10,color:"#854d0e"}}>Baada ya uthibitisho wa malipo, utaelekezwa kuhusu OTP ya Airtel.</p>}</div>}
+      </form>}
     </section>}
     <section style={{...cardStyle,marginTop:25}}>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{width:38,height:38,borderRadius:10,background:"#f1f5f9",display:"grid",placeItems:"center",color:"#475569"}}><Clock3 size={19}/></div><div><h2 style={{margin:0,fontSize:19,color:"#172033"}}>Maombi yangu</h2><p style={{margin:"4px 0 0",fontSize:13,color:"#64748b"}}>Angalia hali ya maombi yako ya Till.</p></div></div>
