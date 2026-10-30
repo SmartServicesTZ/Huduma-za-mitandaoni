@@ -565,6 +565,22 @@ export async function adminListServices() {
   return getCollectionOnce("services");
 }
 
+/** Read the live token price configured by Admin for a service. */
+export async function getServiceTokenConfig(slug: string): Promise<{ name: string; tokenCost: number; isFree: boolean }> {
+  const snapshot = await getDocs(query(collection(firestore, "services"), where("slug", "==", slug), limit(1)));
+  const row = snapshot.docs[0]?.data();
+  if (!row) throw new Error("Bei ya huduma haijapatikana kwenye Dashboard ya Admin. Wasiliana na admin.");
+  const tokenCost = Number(row.tokenCost);
+  if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) {
+    throw new Error("Gharama ya tokeni haijawekwa sawa kwenye Dashboard ya Admin.");
+  }
+  return {
+    name: String(row.name ?? slug),
+    tokenCost,
+    isFree: row.isFree === true || tokenCost === 0,
+  };
+}
+
 export type WebsiteHealthReport = {
   id: string;
   kind: "javascript" | "promise" | "blank-page" | "firebase";
