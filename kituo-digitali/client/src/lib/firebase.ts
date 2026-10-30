@@ -1041,9 +1041,9 @@ export async function updateServiceApplication(applicationId: string, values: Se
   return (await callable({ applicationId, values })).data as { applicationId: string; status: string; updated: boolean };
 }
 
-export async function setServiceApplicationStatus(applicationId: string, status: string, rejectionReason = "") {
+export async function setServiceApplicationStatus(applicationId: string, status: string, rejectionReason = "", allowResubmission = false) {
   const callable = createWorkerCall("setServiceApplicationStatus");
-  return (await callable({ applicationId, status, rejectionReason })).data;
+  return (await callable({ applicationId, status, rejectionReason, allowResubmission })).data;
 }
 
 export async function uploadServiceDocument(uid: string, applicationId: string, fieldName: string, file: File, maxSizeMb = 5, accept = ["image/jpeg", "image/png", "image/webp"]) {
