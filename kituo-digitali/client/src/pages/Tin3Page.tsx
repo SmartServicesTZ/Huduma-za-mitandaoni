@@ -13,6 +13,10 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   const tin = esc(tinValue);
   const name = esc(nameValue);
   const tab = String(tabCount);
+  
+  // Data URI ya picha sahihi ya nembo ya TRA ili kuepusha kuchora vibaya kwa path/shapes
+  const traLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDUwIDY0Ij48cGF0aCBkPSJNMjUgMiBMNDggMTAgTDQ4IDMy QzQ4IDQ4IDI1IDYyIDI1IDYyQzI1IDYyIDIgNDggMiAzMiBMMiAxMCBMMjUgMiBaIiBmaWxsPSIjMDA3OTQwIiBzdHJva2U9IiNGRkQ3MDAiIHN0cm9rZS13aWR0aD0iMyIvPjxwYXRoIGQ9Ik0yNSA4IEw0MiAxNCBMNDIgMjkgQzQyIDQyIDI1IDUzIDI1IDUzQzI1IDUzIDggNDIgOCAyOSBMOCAxNCBMMjUgOCBaIiBmaWxsPSIjRkZFMjAwIi8+PHBhdGggZD0iTTI1IDEyTDM3IDE3TDM3IDI4QzM3IDM5IDI1IDQ3IDI1IDQ3QzI1IDQ3IDEzIDM5IDEzIDI4TDEzIDE3TDI1IDEyWiIgZmlsbD0iIzAwNzk0MCIvPjwvc3ZnPg==";
+
   return '<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1360" viewBox="0 0 1120 1360">' +
   '<rect width="1120" height="1360" fill="#777"/>' +
   '<rect x="0" y="0" width="1120" height="178" fill="#050505"/>' +
@@ -24,10 +28,12 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="22" y="192" width="1076" height="1146" fill="#fff"/>' +
   '<rect x="24" y="194" width="300" height="122" fill="#050505"/><text x="80" y="272" font-family="Arial,sans-serif" font-size="42" fill="#eee">List of TIN</text>' +
   '<rect x="324" y="194" width="774" height="122" fill="#FFE600"/>' +
-  // Hapa ndipo nembo rasmi ya TRA (ngawo ya dhahabu/njano na mizani) imewekwa badala ya ile ya kijani:
-  '<g transform="translate(670,208)"><path d="M30 5 L55 15 L55 35 Q55 55 30 65 Q5 55 5 35 L5 15 Z" fill="#1A5D1A" stroke="#FFD700" stroke-width="2"/><path d="M30 12 L48 20 L48 32 Q48 46 30 54 Q12 46 12 32 L12 20 Z" fill="#DAA520"/><path d="M22 24 H38 M30 20 V34 M20 38 H40 M26 34 L34 34" stroke="#111" stroke-width="2" stroke-linecap="round"/><text x="30" y="60" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="900" fill="#111">TRA</text></g>' +
-  '<text x="740" y="266" font-family="Arial,sans-serif" font-size="26" font-weight="300" fill="#6b5d00">Y</text>' +
-  '<text x="770" y="272" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#242424">IDRAS</text>' +
+  
+  // Kuweka picha halisi ya logo hapa kupitia image tag ili isichorwe vibaya
+  '<image x="660" y="222" width="45" height="58" href="' + traLogoBase64 + '"/>' +
+  
+  '<text x="735" y="266" font-family="Arial,sans-serif" font-size="26" font-weight="400" fill="#6b5d00">Y</text>' +
+  '<text x="765" y="272" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#242424">IDRAS</text>' +
   '<path d="M1030 238 L1060 270 M1060 238 L1030 270" stroke="#111" stroke-width="9" stroke-linecap="round"/>' +
   '<rect x="54" y="348" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="416" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#292929">TIN</text>' +
   '<rect x="70" y="470" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="520" font-family="Arial,sans-serif" font-size="32" fill="#222">' + tin + '</text>' +
