@@ -724,3 +724,26 @@
 .lq-yas-qr { width:26% !important; padding:5.3% !important; }
 .lq-yas-footer { min-height:26% !important; }
 .lq-yas-yellow-shape { width:76% !important; }
+
+
+/* Yas / Mixx by Yas — polished independent blue sticker layout. */
+.lq-card-artboard--yas { background:#073b78 !important; }
+.lq-card-artboard--yas .lq-card-header { flex:0 0 10.5% !important; padding:2.2% 6% !important; background:#fff !important; border-bottom:4px solid #ffdf00; }
+.lq-card-artboard--yas .lq-tips-logo-image { width:35% !important; max-width:38% !important; }
+.lq-card-artboard--yas .lq-network-brand--yas { width:36% !important; }
+.lq-card-artboard--yas .lq-mixx-wordmark { transform:scale(1.04); }
+.lq-card-artboard--yas .lq-yas-body { gap:1.8% !important; padding:5% 7% 0 !important; background:radial-gradient(circle at 100% 0%,#2878c866 0 16%,transparent 16.3% 27%,#ffffff0d 27.3% 28%,transparent 28.3%),linear-gradient(145deg,#0753a0 0%,#073b78 52%,#052653 100%) !important; }
+.lq-card-artboard--yas .lq-yas-body h2 { align-self:stretch; margin:0 0 1.2% !important; padding:2.2% 3% !important; border:1px solid #ffffff45; border-radius:999px; color:#fff !important; background:#ffffff12; font-size:4.6cqw !important; font-weight:850 !important; letter-spacing:.035em; text-transform:uppercase; }
+.lq-card-artboard--yas .lq-yas-qr { width:39% !important; padding:3.5% !important; border:5px solid #fff; border-radius:16px !important; background:#fff !important; box-shadow:0 12px 30px #001b4266,0 0 0 5px #ffdf00; }
+.lq-card-artboard--yas .lq-yas-number,.lq-card-artboard--yas .lq-yas-name { max-width:88% !important; min-height:7.5% !important; padding:2.1% 5% !important; border:1px solid #dceaff; border-radius:10px !important; color:#073b78 !important; background:linear-gradient(180deg,#fff 0%,#edf5ff 100%) !important; box-shadow:0 5px 14px #001a3b38; letter-spacing:.025em !important; }
+.lq-card-artboard--yas .lq-yas-number,.lq-card-artboard--yas .lq-yas-name { display:flex; flex-direction:column; gap:4px; }
+.lq-card-artboard--yas .lq-yas-number { font-size:5.4cqw !important; font-weight:950 !important; }
+.lq-card-artboard--yas .lq-yas-number::before { content:"NAMBA YA LIPA"; color:#47709e; font-size:2.25cqw; font-weight:900; letter-spacing:.16em; }
+.lq-card-artboard--yas .lq-yas-name { font-size:3.65cqw !important; font-weight:900 !important; }
+.lq-card-artboard--yas .lq-yas-name::before { content:"JINA LA BIASHARA"; color:#47709e; font-size:2.15cqw; font-weight:900; letter-spacing:.14em; }
+.lq-card-artboard--yas .lq-yas-body p { margin:1.4% 0 0 !important; padding:1.5% 3%; border-radius:999px; color:#fff !important; background:#001f4b55; font-size:3.15cqw !important; font-weight:800 !important; }
+.lq-card-artboard--yas .lq-yas-footer { width:118% !important; min-height:19% !important; margin-right:-18% !important; }
+.lq-card-artboard--yas .lq-yas-yellow-shape { width:76% !important; border-radius:55% 0 0 0 / 48% 0 0 0 !important; background:linear-gradient(135deg,#fff05a 0%,#ffdf00 72%,#f8c900 100%) !important; box-shadow:0 -8px 22px #001a3b30; }
+.lq-card-artboard--yas .lq-yas-yellow-shape b { font-size:11.5cqw !important; }
+.lq-card-artboard--yas .lq-yas-yellow-shape small { font-size:3.2cqw !important; }
+@media (max-width:700px) { .lq-card-artboard--yas .lq-yas-qr { width:39% !important; } }
