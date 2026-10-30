@@ -4,7 +4,7 @@ import * as QRCode from "qrcode";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { consumeFirebaseTokens } from "@/lib/firebase";
+import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
 import {
   createTipsPaymentPayload,
   normalizeLipaNumber,
@@ -150,7 +150,9 @@ export default function LipaQrStudioPage() {
   const { firebaseUser, profile, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [entryStatus, setEntryStatus] = useState<"checking" | "pending" | "charging" | "paid" | "failed">("checking");
-  const [entryMessage, setEntryMessage] = useState("Thibitisha makato ili uanze kutumia huduma.");
+  const [entryMessage, setEntryMessage] = useState("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
+  const [serviceCost, setServiceCost] = useState<number | null>(null);
+  const [serviceName, setServiceName] = useState("STIKA ZA LIPA");
   const entryRequestId = useRef(crypto.randomUUID());
   const outputUsed = useRef(false);
   const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "53000" });
@@ -167,6 +169,7 @@ export default function LipaQrStudioPage() {
   const paymentPayload = useMemo(() => { if (!isValid || network === "halotel") return ""; return createTipsPaymentPayload(values); }, [isValid, values, network]);
 
   useEffect(() => {
+    let active = true;
     if (authLoading) return;
     if (!firebaseUser) {
       setEntryStatus("failed");
@@ -174,20 +177,36 @@ export default function LipaQrStudioPage() {
       return;
     }
     if (!profile) return;
-    setEntryStatus("pending");
-    setEntryMessage("Gharama ni tokeni 3. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA tu. Hata usipopakua, tokeni hazitarejeshwa.");
+    setEntryStatus("checking");
+    setEntryMessage("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
+    void getServiceTokenConfig("stika-lipa").then((config) => {
+      if (!active) return;
+      setServiceCost(config.tokenCost);
+      setServiceName(config.name);
+      setEntryStatus("pending");
+      setEntryMessage(config.isFree
+        ? "Huduma hii imewekwa BURE na Admin. Hakuna tokeni zitakazokatwa. Utaruhusiwa kupakua stika MOJA tu."
+        : `Gharama ni tokeni ${config.tokenCost} kulingana na Dashboard ya Admin. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA tu. Hata usipopakua, tokeni hazitarejeshwa.`);
+    }).catch((error) => {
+      if (!active) return;
+      setEntryStatus("failed");
+      setEntryMessage(error instanceof Error ? error.message : "Imeshindikana kusoma gharama ya huduma.");
+    });
+    return () => { active = false; };
   }, [authLoading, firebaseUser, profile]);
 
   const confirmTokenCharge = async () => {
-    if (!firebaseUser || entryStatus !== "pending") return;
+    if (!firebaseUser || entryStatus !== "pending" || serviceCost === null) return;
     setEntryStatus("charging");
     setEntryMessage("Tunasubiri uthibitisho wa makato...");
     try {
       await consumeFirebaseTokens(firebaseUser.uid, {
-        slug: "stika-lipa", name: "STIKA ZA LIPA", tokenCost: 3, kind: "paid", tokenType: "huduma",
+        slug: "stika-lipa", name: serviceName, tokenCost: serviceCost, kind: serviceCost === 0 ? "free" : "paid", tokenType: "huduma",
       }, entryRequestId.current);
       setEntryStatus("paid");
-      setEntryMessage("Tokeni 3 zimekatwa. Unaweza kupakua stika MOJA. Baada ya kupakua utarudishwa kwenye huduma.");
+      setEntryMessage(serviceCost === 0
+        ? "Huduma ni BURE. Unaweza kupakua stika MOJA."
+        : `Tokeni ${serviceCost} zimekatwa kulingana na bei ya Admin. Unaweza kupakua stika MOJA. Baada ya kupakua utarudishwa kwenye huduma.`);
     } catch (error) {
       setEntryStatus("failed");
       setEntryMessage(error instanceof Error ? error.message : "Imeshindikana kukata tokeni. Jaribu tena.");
@@ -287,7 +306,7 @@ export default function LipaQrStudioPage() {
         <div role="status" style={{marginBottom:14,padding:13,borderRadius:12,border:"1px solid #f59e0b",background:"#fffbeb",color:"#78350f",fontSize:13,fontWeight:700,lineHeight:1.5}}>
           <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
           {entryStatus === "pending" && <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
-            <button type="button" onClick={() => void confirmTokenCharge()} className="lq-button lq-button-light">NAKUBALI, KATA TOKENI 3</button>
+            <button type="button" onClick={() => void confirmTokenCharge()} className="lq-button lq-button-light">{serviceCost === 0 ? "ENDELEA BILA MAKATO" : `NAKUBALI, KATA TOKENI ${serviceCost ?? "..."}`}</button>
             <button type="button" onClick={() => setLocation("/services")} className="lq-button lq-button-outline">SITAKI, RUDI NYUMA</button>
           </div>}
           {entryStatus === "charging" && <p style={{marginTop:10}}>Inathibitisha makato...</p>}
