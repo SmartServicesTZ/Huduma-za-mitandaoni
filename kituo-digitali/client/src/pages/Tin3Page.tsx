@@ -4,7 +4,7 @@ import { Link } from "wouter";
 
 function formatTIN(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 9);
-  return digits.replace(/(\d{3})(?=\\d)/g, "$1-");
+  return digits.replace(/(\d{3})(?=\d)/g, "$1-");
 }
 function esc(value: string) {
   return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c] ?? c));
