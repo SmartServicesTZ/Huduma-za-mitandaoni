@@ -179,6 +179,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   const [selected, setSelected] = useState<ServiceApplication | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [allowResubmission, setAllowResubmission] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [replySubject, setReplySubject] = useState("");
   const [replyMode, setReplyMode] = useState<"reply" | "request-info">("reply");
@@ -199,6 +200,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     setSelected(application);
     setRejecting(false);
     setRejectReason("");
+    setAllowResubmission(false);
     setReplyBody("");
     setReplySubject("");
     setReplyMode("reply");
@@ -232,12 +234,12 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selected, documentPreview]);
 
-  const runStatus = async (status: string, reason = "") => {
+  const runStatus = async (status: string, reason = "", allowRetry = false) => {
     if (!selected) return;
     setError("");
     try {
       const completed = await onRun(
-        () => setServiceApplicationStatus(selected.applicationId || selected.id, status, reason),
+        () => setServiceApplicationStatus(selected.applicationId || selected.id, status, reason, allowRetry),
         status === "PROCESSING" ? "Ombi limehamishwa PROCESSING." : status === "APPROVED" ? "Ombi limeidhinishwa." : status === "REJECTED" ? "Ombi limekataliwa." : `Hali ya ombi imebadilishwa kuwa ${status}.`,
       );
       if (completed !== false) closeApplication();
@@ -253,7 +255,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
       setError("Sababu ya kukataa inahitajika.");
       return;
     }
-    await runStatus("REJECTED", reason);
+    await runStatus("REJECTED", reason, allowResubmission);
   };
 
   const sendApplicationMessage = async () => {
@@ -501,8 +503,23 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
               <button className="service-app-admin-close" type="button" aria-label="Close rejection dialog" onClick={() => setRejecting(false)}>×</button>
             </div>
             <form className="service-app-admin-form" onSubmit={(event) => { event.preventDefault(); void reject(); }}>
-              <label htmlFor="service-app-admin-rejection-reason">Rejection reason</label>
+              <label htmlFor="service-app-admin-rejection-template">Chagua sababu ya kukataa</label>
+              <select id="service-app-admin-rejection-template" value="" onChange={(event) => { if(event.target.value) setRejectReason(event.target.value); }}>
+                <option value="">Chagua sababu iliyo tayari...</option>
+                {(/vodacom|access-lipa-vodacom/i.test(String(selected.serviceSlug)+" "+String(selected.serviceName))) && <>
+                  <option value="Laini imewezeshwa account ya M-PESA. Tafadhali sajili laini mpya na usiwezeshe account ya M-PESA.">Laini imewezeshwa account ya M-PESA</option>
+                  <option value="NIDA hii tayari ina Lipa Namba. Hivyo basi utawezeshwa Store 2.">NIDA hii tayari ina Lipa Namba (Store 2)</option>
+                </>}
+                <option value="Taarifa ulizoweka hazilingani na taarifa za NIDA. Tafadhali hakiki na utume tena.">Taarifa hazilingani na NIDA</option>
+                <option value="Picha au nyaraka ulizowasilisha hazisomeki. Tafadhali pakia picha iliyo wazi.">Picha/nyaraka hazisomeki</option>
+                <option value="Tafadhali wasilisha taarifa zilizokosekana kisha rudia ombi.">Taarifa hazijakamilika</option>
+              </select>
+              <label htmlFor="service-app-admin-rejection-reason">Sababu / maelezo ya ziada</label>
               <textarea id="service-app-admin-rejection-reason" value={rejectReason} aria-required="true" onChange={(event) => { setRejectReason(event.target.value); setError(""); }} autoFocus />
+              <label style={{display:"flex",alignItems:"center",gap:9,fontWeight:700}}>
+                <input type="checkbox" checked={allowResubmission} onChange={(event)=>setAllowResubmission(event.target.checked)} />
+                Ruhusu mtumiaji kurekebisha taarifa na kurudia ombi hili
+              </label>
               {error && <p className="service-app-admin-error" role="alert">{error}</p>}
               <div className="service-app-admin-actions">
                 <button className="service-app-admin-button service-app-admin-button-secondary" type="button" disabled={busy} onClick={() => setRejecting(false)}>Cancel</button>
