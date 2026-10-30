@@ -101,6 +101,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
   // so deleted defaults must not be resurrected on the user portal.
   const merged = new Map<string, ServiceCatalogItem>(initialized ? [] : serviceCatalog.map((service) => [service.slug, service]));
   configured.forEach((service) => {
+    if (service.slug === "tin-3") return; // retired alias; VERIFY TIN is the single active entry
     const fallback = defaults.get(service.slug);
     // Keep newly configured Firestore services even when they do not exist in
     // the legacy local fallback catalog.
