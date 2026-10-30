@@ -31,9 +31,9 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="54" y="348" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="416" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#292929">TIN</text>' +
   '<rect x="70" y="470" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="520" font-family="Arial,sans-serif" font-size="32" fill="#222">' + tin + '</text>' +
   '<path d="M1015 492 L1035 520 M1035 492 L1015 520" stroke="#c4cbd1" stroke-width="6" stroke-linecap="round"/>' +
-  '<rect x="54" y="562" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="630" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#292929">Taxpayer Name</text>' +
-  '<rect x="70" y="684" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="734" font-family="Arial,sans-serif" font-size="33" fill="#222">' + name + '</text>' +
-  '<rect x="54" y="778" width="210" height="76" rx="10" fill="#e5e5e5" stroke="#c7c7c7" stroke-width="2"/><text x="91" y="829" font-family="Arial,sans-serif" font-size="28" fill="#222">🔄</text><text x="139" y="829" font-family="Arial,sans-serif" font-size="30" font-weight="600" fill="#222">Reset</text>' +
+  '<rect x="54" y="562" width="1012" height="106" fill="#f1f1f1"/>' +
+  '<rect x="70" y="684" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/>' +
+  '<rect x="54" y="778" width="210" height="76" rx="10" fill="#e5e5e5" stroke="#c7c7c7" stroke-width="2"/><g transform="translate(78 795) scale(1.5)" fill="none" stroke="#333" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 7a8 8 0 1 0 2 9"/><path d="M18 2v5h-5"/></g><text x="139" y="829" font-family="Arial,sans-serif" font-size="30" font-weight="600" fill="#222">Reset</text>' +
   '<rect x="832" y="778" width="218" height="76" rx="10" fill="#222"/><circle cx="875" cy="812" r="15" fill="none" stroke="#fff" stroke-width="5"/><path d="M886 824 L900 838" stroke="#fff" stroke-width="5"/><text x="918" y="829" font-family="Arial,sans-serif" font-size="31" fill="#fff">Search</text>' +
   '<line x1="54" y1="870" x2="1066" y2="870" stroke="#ddd" stroke-width="2"/>' +
   '<rect x="54" y="914" width="1012" height="78" fill="#e9e9e9" stroke="#aaa" stroke-width="2"/><line x1="310" y1="914" x2="310" y2="1080" stroke="#aaa" stroke-width="2"/>' +
@@ -96,7 +96,7 @@ export default function Tin3Page() {
                 <input id="tin-name" value={name} onChange={(e)=>setName(e.target.value)} className="w-full border-2 border-zinc-200 bg-zinc-50 px-4 py-4 rounded-2xl text-base text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-red-600 focus:bg-white focus:ring-4 focus:ring-red-100 transition" placeholder="Ingiza majina ya mlipa kodi"/>
               </div>
               <div className="flex flex-wrap gap-3 pt-1">
-                <button type="button" onClick={()=>{setTinInput("");setName("");}} className="inline-flex items-center gap-3 border-2 border-zinc-200 bg-white px-5 py-3.5 rounded-xl text-sm font-semibold text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 transition"><span className="text-lg leading-none">🔄</span><span>Reset</span></button>
+                <button type="button" onClick={()=>{setTinInput("");setName("");}} className="inline-flex items-center gap-3 border-2 border-zinc-200 bg-white px-5 py-3.5 rounded-xl text-sm font-semibold text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 transition"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4.93 19A9 9 0 0 0 20 12a9 9 0 0 0-15.07-6L3 8"/><path d="M3 3v5h5"/></svg><span>Reset</span></button>
                 <button type="button" onClick={download} className="inline-flex items-center gap-2 bg-zinc-950 text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-lg hover:bg-red-700 transition"><Download size={17}/>Download</button>
               </div>
             </div>
