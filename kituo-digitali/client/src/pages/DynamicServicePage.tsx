@@ -25,6 +25,11 @@ type UploadPreview = {
 };
 type ResultLike = { reference?: string; applicationId?: string };
 
+function isVodacomLipaService(service: DynamicService) {
+  const identity = `${service.slug} ${service.name}`.toLowerCase();
+  return identity.includes("vodacom") && identity.includes("lipa");
+}
+
 function newApplicationId() {
   return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
@@ -52,7 +57,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
   const { firebaseUser, loading: authLoading } = useAuth();
   const fields = useMemo(() => {
     const sourceFields = [...(service.fields ?? [])];
-    if (service.slug === "access-lipa-vodacom") {
+    if (isVodacomLipaService(service)) {
       // Force the visible Vodacom form to use three explicit name inputs,
       // regardless of an older Firestore service schema.
       const nameFields = new Set(["fullName", "names", "firstName", "middleName", "lastName", "name1", "name2", "name3"]);
@@ -239,7 +244,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     // Map the three visible Vodacom name fields to every legacy field name
     // accepted by older API/admin consumers, without validating hidden legacy inputs.
     let submissionValues = values;
-    if (service.slug === "access-lipa-vodacom") {
+    if (isVodacomLipaService(service)) {
       const first = String(values.name1 ?? values.firstName ?? "").trim();
       const middle = String(values.name2 ?? values.middleName ?? "").trim();
       const last = String(values.name3 ?? values.lastName ?? "").trim();
@@ -257,7 +262,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     }
     const nextErrors = validateServiceForm(fields, submissionValues);
     setErrors(nextErrors);
-    if (service.slug === "access-lipa-vodacom") {
+    if (isVodacomLipaService(service)) {
       const lipaSequence = String(submissionValues.lipaSequence ?? "1");
       const firstLipaConfirmationMissing = lipaSequence === "1" && submissionValues.firstLipaConfirmed !== true;
       if (submissionValues.mpesaAccountConfirmed !== true || firstLipaConfirmationMissing) {
@@ -446,7 +451,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
           {fields.length ? (
             <form className="dynamic-service-form" onSubmit={(event) => { event.preventDefault(); void submit(); }} noValidate>
               {fields.map(renderField)}
-              {service.slug === "access-lipa-vodacom" && <section className="rounded-xl border border-red-200 bg-red-50 p-4" style={{display:"grid",gap:12}}><h3 className="font-black text-red-900">UTHIBITISHO WA LIPA VODACOM</h3><label className="grid gap-2 text-sm font-bold text-slate-800"><span>Katika NIDA hii, Lipa hii ni ya ngapi?</span><select value={String(values.lipaSequence ?? "1")} onChange={(event)=>setValues(current=>({...current,lipaSequence:event.target.value,firstLipaConfirmed:event.target.value==="1" ? current.firstLipaConfirmed : false}))} className="h-12 rounded-lg border border-slate-300 bg-white px-3"><option value="1">Lipa ya 1</option><option value="2">Lipa ya 2</option><option value="3">Lipa ya 3</option><option value="4">Lipa ya 4</option><option value="5">Lipa ya 5</option></select></label>{String(values.lipaSequence ?? "1") !== "1" && <p className="rounded-lg bg-white p-3 text-sm font-semibold text-blue-900">Jina litakavyoonekana baada ya kukamilika: <strong>{[values.name1,values.name2,values.name3].map(value=>String(value??"").trim()).filter(Boolean).join(" ") || "Majina yako"} Store {String(values.lipaSequence ?? "2")}</strong></p>}<label className="flex items-start gap-3 text-sm font-semibold"><input type="checkbox" checked={values.mpesaAccountConfirmed === true} onChange={(event)=>setValues(current=>({...current,mpesaAccountConfirmed:event.target.checked}))}/><span>Je, unathibitisha kuwa laini hii haijafunguliwa/kuwezeshwa account ya M-PESA?</span></label>{String(values.lipaSequence ?? "1") === "1" && <label className="flex items-start gap-3 text-sm font-semibold"><input type="checkbox" checked={values.firstLipaConfirmed === true} onChange={(event)=>setValues(current=>({...current,firstLipaConfirmed:event.target.checked}))}/><span>Je, unathibitisha kuwa hii ni Lipa ya kwanza katika NIDA hii?</span></label>}</section>}
+              {isVodacomLipaService(service) && <section className="rounded-xl border border-red-200 bg-red-50 p-4" style={{display:"grid",gap:12}}><h3 className="font-black text-red-900">UTHIBITISHO WA LIPA VODACOM</h3><label className="grid gap-2 text-sm font-bold text-slate-800"><span>Katika NIDA hii, Lipa hii ni ya ngapi?</span><select value={String(values.lipaSequence ?? "1")} onChange={(event)=>setValues(current=>({...current,lipaSequence:event.target.value,firstLipaConfirmed:event.target.value==="1" ? current.firstLipaConfirmed : false}))} className="h-12 rounded-lg border border-slate-300 bg-white px-3"><option value="1">Lipa ya 1</option><option value="2">Lipa ya 2</option><option value="3">Lipa ya 3</option><option value="4">Lipa ya 4</option><option value="5">Lipa ya 5</option></select></label>{String(values.lipaSequence ?? "1") !== "1" && <p className="rounded-lg bg-white p-3 text-sm font-semibold text-blue-900">Jina litakavyoonekana baada ya kukamilika: <strong>{[values.name1,values.name2,values.name3].map(value=>String(value??"").trim()).filter(Boolean).join(" ") || "Majina yako"} Store {String(values.lipaSequence ?? "2")}</strong></p>}<label className="flex items-start gap-3 text-sm font-semibold"><input type="checkbox" checked={values.mpesaAccountConfirmed === true} onChange={(event)=>setValues(current=>({...current,mpesaAccountConfirmed:event.target.checked}))}/><span>Je, unathibitisha kuwa laini hii haijafunguliwa/kuwezeshwa account ya M-PESA?</span></label>{String(values.lipaSequence ?? "1") === "1" && <label className="flex items-start gap-3 text-sm font-semibold"><input type="checkbox" checked={values.firstLipaConfirmed === true} onChange={(event)=>setValues(current=>({...current,firstLipaConfirmed:event.target.checked}))}/><span>Je, unathibitisha kuwa hii ni Lipa ya kwanza katika NIDA hii?</span></label>}</section>}
               <div className="dynamic-service-draft-tools">
                 <span>{draftSavedAt ? `Rasimu imehifadhiwa: ${new Date(draftSavedAt).toLocaleString("sw-TZ")}` : "Rasimu huhifadhiwa kwenye kifaa hiki"}</span>
                 <button type="button" onClick={() => {
