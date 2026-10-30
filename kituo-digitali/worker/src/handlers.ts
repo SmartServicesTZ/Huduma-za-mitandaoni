@@ -616,32 +616,9 @@ export const submitLipaApplication = callable(async (request) => {
     if (!hasField("hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 4 });
     if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
   }
-  if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "businessNameEvidence")) {
-    fields.push({
-      fieldName: "businessNameEvidence",
-      label: "Picha ya BRELA AU eneo la biashara",
-      type: "IMAGE_UPLOAD",
-      required: false,
-      helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
-      maxSizeMb: 5,
-      accept: ["image/jpeg", "image/png", "image/webp"],
-      order: 3.25,
-    });
-  }
   if (networkId.toLowerCase().includes("vodacom")) {
-    // Enforce an image upload even if an older saved network configuration used another field type.
-    for (let index = 0; index < fields.length; index += 1) {
-      if (String(fields[index].fieldName ?? "") !== "businessNameEvidence") continue;
-      fields[index] = {
-        ...fields[index],
-        label: "Picha ya BRELA AU eneo la biashara",
-        type: "IMAGE_UPLOAD",
-        required: false,
-        helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
-        maxSizeMb: 5,
-        accept: ["image/jpeg", "image/png", "image/webp"],
-      };
-    }
+    fields = fields.filter((field) => !["businessName", "businessNameEvidence"].includes(String(field.fieldName ?? "")));
+    if (!fields.some((field) => String(field.fieldName ?? "") === "additionalNotes")) fields.push({ fieldName: "additionalNotes", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, order: 999 });
   }
   const rawValues = objectValue(data.values, "Fomu");
   if (/yas|tigo/i.test(networkId)) {
@@ -652,12 +629,7 @@ export const submitLipaApplication = callable(async (request) => {
       throw new ApiError("failed-precondition", "Umechagua Ndiyo kwenye swali la leseni; pakia picha ya leseni ya biashara iliyo wazi.");
     }
   }
-  if (networkId.toLowerCase().includes("vodacom") && String(rawValues.businessName ?? "").trim()) {
-    const evidencePath = String(rawValues.businessNameEvidence ?? "");
-    if (!evidencePath.startsWith(`lipaUploads/${uid}/${applicationId}/businessNameEvidence-`)) {
-      throw new ApiError("failed-precondition", "Umeweka jina la biashara. Pakia picha ya bango lenye jina linaloonekana wazi au picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.");
-    }
-  }
+
   const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId);
   const additionalNotes = typeof rawValues.additionalNotes === "string" ? rawValues.additionalNotes.trim().slice(0, 2000) : "";
   const duplicateFingerprint = applicationDuplicateFingerprint(`lipa:${networkId}`, applicantData);
