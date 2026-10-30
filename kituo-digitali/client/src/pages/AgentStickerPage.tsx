@@ -129,8 +129,8 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
 export default function AgentStickerPage(){
   const { firebaseUser, profile, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [entryStatus,setEntryStatus]=useState<"checking"|"paid"|"failed">("checking");
-  const [entryMessage,setEntryMessage]=useState("Tunakagua akaunti na kukata tokeni za huduma...");
+  const [entryStatus,setEntryStatus]=useState<"checking"|"pending"|"charging"|"paid"|"failed">("checking");
+  const [entryMessage,setEntryMessage]=useState("Thibitisha makato ili uanze kutumia huduma.");
   const entryRequestId=useRef(crypto.randomUUID());
   const outputUsed=useRef(false);
   const [network,setNetwork]=useState<NetworkKey>("airtel");
@@ -145,16 +145,19 @@ export default function AgentStickerPage(){
     if(authLoading)return;
     if(!firebaseUser){setEntryStatus("failed");setEntryMessage("Ingia kwenye akaunti yako ili kutumia huduma hii.");return;}
     if(!profile)return;
-    let active=true;
-    setEntryStatus("checking");
-    setEntryMessage("Tokeni zinakatwa kwa kufungua STIKA ZA WAKALA...");
-    void consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:"STIKA ZA WAKALA",tokenCost:8,kind:"paid",tokenType:"huduma"},entryRequestId.current).then(()=>{
-      if(active){setEntryStatus("paid");setEntryMessage("Tokeni 8 zimekatwa. Unaweza kupakua stika MOJA ya mtandao wowote. Hata usipopakua, tokeni hazitarejeshwa.");}
-    }).catch(error=>{
-      if(active){setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kukata tokeni. Jaribu tena.");}
-    });
-    return ()=>{active=false;};
+    setEntryStatus("pending");
+    setEntryMessage("Gharama ni tokeni 8. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA ya mtandao wowote. Hata usipopakua, tokeni hazitarejeshwa.");
   },[authLoading,firebaseUser,profile]);
+  const confirmTokenCharge=async()=>{
+    if(!firebaseUser||entryStatus!=="pending")return;
+    setEntryStatus("charging");setEntryMessage("Tunasubiri uthibitisho wa makato...");
+    try{
+      await consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:"STIKA ZA WAKALA",tokenCost:8,kind:"paid",tokenType:"huduma"},entryRequestId.current);
+      setEntryStatus("paid");setEntryMessage("Tokeni 8 zimekatwa. Unaweza kupakua stika MOJA ya mtandao wowote. Baada ya kupakua utarudishwa kwenye huduma.");
+    }catch(error){
+      setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kukata tokeni. Jaribu tena.");
+    }
+  };
   useEffect(()=>{
     let active=true;
     setPreviewReady(false);setPreviewError("");
@@ -185,7 +188,13 @@ export default function AgentStickerPage(){
       </header>
       <div className="grid items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold leading-relaxed text-amber-900"><strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}</div>
+          <div role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold leading-relaxed text-amber-900">
+            <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
+            {entryStatus==="pending"&&<div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" onClick={()=>void confirmTokenCharge()} className="rounded-xl bg-amber-700 px-4 py-3 text-sm font-black text-white">NAKUBALI, KATA TOKENI 8</button>
+              <button type="button" onClick={()=>setLocation("/services")} className="rounded-xl border border-amber-700 px-4 py-3 text-sm font-black text-amber-900">SITAKI, RUDI NYUMA</button>
+            </div>}
+          </div>
           <h2 className="mb-4 text-lg font-black">Taarifa za wakala</h2>
           <label className="mb-4 block"><span className="mb-2 block text-sm font-extrabold">Chagua mtandao</span>
             <select value={network} onChange={e=>setNetwork(e.target.value as NetworkKey)} className="h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-3 text-base font-semibold outline-none focus:border-slate-500">
