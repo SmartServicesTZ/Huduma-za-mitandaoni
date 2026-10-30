@@ -29,7 +29,7 @@ export default function AgentStickerPage() {
   useEffect(() => {
     const image = imageRef.current;
     const canvas = canvasRef.current;
-    if (!image || !canvas || !image.complete || !image.naturalWidth) return;
+    if (!templateReady || !image || !canvas || !image.complete || !image.naturalWidth) return;
 
     canvas.width = image.naturalWidth;
     canvas.height = image.naturalHeight;
