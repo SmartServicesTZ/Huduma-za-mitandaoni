@@ -208,10 +208,6 @@ export default function AgentStickerPage(){
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold leading-relaxed text-amber-900">
             <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
-            {entryStatus==="pending"&&<div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" onClick={()=>void confirmTokenCharge()} className="rounded-xl bg-amber-700 px-4 py-3 text-sm font-black text-white">{serviceCost===0?"ENDELEA BILA MAKATO":`NAKUBALI, KATA TOKENI ${serviceCost??"..."}`}</button>
-              <button type="button" onClick={()=>setLocation("/services")} className="rounded-xl border border-amber-700 px-4 py-3 text-sm font-black text-amber-900">SITAKI, RUDI NYUMA</button>
-            </div>}
           </div>
           <h2 className="mb-4 text-lg font-black">Taarifa za wakala</h2>
           <label className="mb-4 block"><span className="mb-2 block text-sm font-extrabold">Chagua mtandao</span>
