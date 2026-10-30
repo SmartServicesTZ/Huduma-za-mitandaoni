@@ -603,7 +603,7 @@ export const submitLipaApplication = callable(async (request) => {
   const config = configured ?? fallback;
   if (!config) throw new ApiError("not-found", "Mtandao huu haujapatikana.");
   if (config.active !== true) throw new ApiError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
-  const fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
+  let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
   if (/yas|tigo/i.test(networkId)) {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
