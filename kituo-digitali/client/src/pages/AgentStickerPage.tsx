@@ -64,10 +64,32 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
   canvas.width=W;canvas.height=H;
   const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
   if(network!=="airtel"){
-    const templates:Record<Exclude<NetworkKey,"airtel">,string>={vodacom:"Vodacom.png",halotel:"Halotel.png",yas:"Yas.png"};
+    if(network==="yas"){
+      canvas.width=W;canvas.height=H;
+      const w=canvas.width,h=canvas.height;
+      const bg=ctx.createLinearGradient(0,0,w,h);bg.addColorStop(0,"#063b8c");bg.addColorStop(.55,"#0874d8");bg.addColorStop(1,"#03265f");
+      ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+      ctx.save();ctx.globalAlpha=.18;ctx.fillStyle="#62c8ff";ctx.beginPath();ctx.arc(w+40,80,390,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(-80,h+80,360,0,Math.PI*2);ctx.fill();ctx.restore();
+      round(ctx,55,48,w-110,220,42,"rgba(3,30,78,.38)","rgba(255,255,255,.35)",3);
+      ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#ffdf00";ctx.font="900 150px Arial, sans-serif";ctx.fillText("yas",w/2,142);
+      ctx.fillStyle="#fff";ctx.font="800 42px Arial, sans-serif";ctx.fillText("WAKALA",w/2,222);
+      round(ctx,115,330,w-230,86,22,"#ffdf00");
+      ctx.fillStyle="#082d68";ctx.font="900  fiftypx Arial".replace("fifty","50");ctx.fillText("NAMBA YA WAKALA",w/2,373);
+      raisedRound(ctx,95,455,w-190,225,38,"#fff","#dceaff");
+      round(ctx,95,455,24,225,12,"#ffdf00");
+      textFit(ctx,num,w/2,568,w-300,174,"#082f68",950,false,true);
+      ctx.fillStyle="#ffdf00";ctx.fillRect(190,730,w-380,8);
+      ctx.fillStyle="#fff";ctx.font="800 44px Arial, sans-serif";ctx.fillText("JINA LA WAKALA",w/2,805);
+      raisedRound(ctx,125,850,w-250,125,30,"#fff","#dceaff");
+      textFit(ctx,nm,w/2,912,w-330,82,"#082f68",950,false,true);
+      round(ctx,55,48,w-110,h-96,42,"rgba(0,0,0,0)","#ffdf00",8);
+      return;
+    }
+    const templates:Record<Exclude<NetworkKey,"airtel"|"yas">,string>={vodacom:"Vodacom.png",halotel:"Halotel.png"};
     const template=await loadImage(asset(templates[network]));
     canvas.width=template.naturalWidth;canvas.height=template.naturalHeight;
-    ctx.drawImage(template,0,0,canvas.width,canvas.height);
+    ctx.save();ctx.beginPath();ctx.roundRect(0,0,canvas.width,canvas.height,42);ctx.clip();
+    ctx.drawImage(template,0,0,canvas.width,canvas.height);ctx.restore();
     if(network==="vodacom"){
       textFit(ctx,num,canvas.width*.5,canvas.height*.435,canvas.width*.76,canvas.height*.17,"#050505",950,false,true);
       textFit(ctx,nm,canvas.width*.5,canvas.height*.73,canvas.width*.78,canvas.height*.095,"#050505",950,false,true);
@@ -78,17 +100,9 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
       digits.forEach((digit,index)=>textFit(ctx,digit,left+step*index,canvas.height*.615,canvas.width*.105,canvas.height*.15,"#080808",950,false,true));
       textFit(ctx,nm,canvas.width*.5,canvas.height*.82,canvas.width*.78,canvas.height*.09,"#090909",950,false,true);
     }else{
-      // Preserve the existing Yas artwork; refine only the two information
-      // areas with clean white plates and high-contrast navy typography.
-      const w=canvas.width,h=canvas.height;
-      const plateX=w*.105,plateW=w*.79;
-      const numberY=h*.365,numberH=h*.145;
-      const nameY=h*.675,nameH=h*.115;
-      round(ctx,plateX,numberY,plateW,numberH,Math.max(14,w*.018),"#fff","#ffdf00",Math.max(3,w*.003));
-      round(ctx,plateX, nameY,plateW,nameH,Math.max(14,w*.018),"#fff","#ffdf00",Math.max(3,w*.003));
-      textFit(ctx,num,w*.5,numberY+numberH*.51,plateW*.91,numberH*.72,"#082f68",950,false,true);
-      textFit(ctx,nm,w*.5,nameY+nameH*.51,plateW*.91,nameH*.66,"#082f68",950,false,true);
+
     }
+    ctx.save();ctx.beginPath();ctx.roundRect(0,0,canvas.width,canvas.height,42);ctx.strokeStyle="#fff";ctx.lineWidth=10;ctx.stroke();ctx.restore();
     return;
   }
   const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,"#e30613");bg.addColorStop(.55,"#e30613");bg.addColorStop(1,"#e30613");
@@ -108,6 +122,7 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
     const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
     ctx.drawImage(logo,590,885,320,100);
   }catch{ /* keep the sticker usable if the asset is unavailable */ }
+  ctx.save();ctx.beginPath();ctx.roundRect(0,0,W,H,48);ctx.strokeStyle="#fff";ctx.lineWidth=10;ctx.stroke();ctx.restore();
 }
 
 export default function AgentStickerPage(){
