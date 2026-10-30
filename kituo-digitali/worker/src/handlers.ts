@@ -1118,7 +1118,10 @@ export const updateServiceApplication = callable(async (request) => {
       else if (Array.isArray(value) && value.every((item) => typeof item === "string" && item.length <= 300)) next[key] = value;
     }
     const now = FieldValue.serverTimestamp();
-    transaction.update(ref, { applicantData: next, status: "PENDING", rejectionReason: "", allowResubmission: false, resubmittedAt: now, updatedAt: now, editedAt: now, editedBy: uid });
+    const duplicateFingerprint = applicationDuplicateFingerprint(`service:${String(application.serviceSlug ?? "")}`, next);
+    transaction.update(ref, { applicantData: next, duplicateFingerprint, status: "PENDING", rejectionReason: "", allowResubmission: false, resubmittedAt: now, updatedAt: now, editedAt: now, editedBy: uid });
+    transaction.set(db.collection("serviceOpenApplications").doc(`${uid}_${String(application.serviceSlug ?? "")}_${applicationId}`), { applicationId, userId: uid, serviceSlug: String(application.serviceSlug ?? ""), createdAt: now });
+    transaction.set(db.collection("serviceOpenApplications").doc(`${uid}_${String(application.serviceSlug ?? "")}`), { applicationId, userId: uid, serviceSlug: String(application.serviceSlug ?? ""), createdAt: now });
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(application.serviceName ?? application.serviceSlug)} limehaririwa`, body: "Mabadiliko ya taarifa zako yamehifadhiwa. Ombi bado linasubiri kuanza kushughulikiwa.", type: "serviceApplicationEdited", applicationId, createdAt: now });
     recordAudit(transaction, uid, String(profile.role ?? "user"), "SERVICE_APPLICATION_EDITED", "serviceApplication", applicationId, previous, next, {});
     return { applicationId, status: "PENDING", updated: true };
