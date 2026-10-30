@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, RotateCcw, ShieldCheck } from "lucide-react";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { consumeFirebaseTokens } from "@/lib/firebase";
 import { triggerDownload } from "@/lib/downloadHistory";
 
 type NetworkKey = "airtel" | "vodacom" | "halotel" | "yas";
@@ -123,6 +127,12 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
 }
 
 export default function AgentStickerPage(){
+  const { firebaseUser, profile, loading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  const [entryStatus,setEntryStatus]=useState<"checking"|"paid"|"failed">("checking");
+  const [entryMessage,setEntryMessage]=useState("Tunakagua akaunti na kukata tokeni za huduma...");
+  const entryRequestId=useRef(crypto.randomUUID());
+  const outputUsed=useRef(false);
   const [network,setNetwork]=useState<NetworkKey>("airtel");
   const [agentName,setAgentName]=useState("");
   const [agentNumber,setAgentNumber]=useState("");
@@ -131,6 +141,20 @@ export default function AgentStickerPage(){
   const [previewError,setPreviewError]=useState("");
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const valid=cleanName(agentName).split(" ").filter(Boolean).length>=2 && /^\d{5,12}$/.test(cleanNumber(agentNumber));
+  useEffect(()=>{
+    if(authLoading)return;
+    if(!firebaseUser){setEntryStatus("failed");setEntryMessage("Ingia kwenye akaunti yako ili kutumia huduma hii.");return;}
+    if(!profile)return;
+    let active=true;
+    setEntryStatus("checking");
+    setEntryMessage("Tokeni zinakatwa kwa kufungua STIKA ZA WAKALA...");
+    void consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:"STIKA ZA WAKALA",tokenCost:8,kind:"paid",tokenType:"huduma"},entryRequestId.current).then(()=>{
+      if(active){setEntryStatus("paid");setEntryMessage("Tokeni 8 zimekatwa. Unaweza kupakua stika MOJA ya mtandao wowote. Hata usipopakua, tokeni hazitarejeshwa.");}
+    }).catch(error=>{
+      if(active){setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kukata tokeni. Jaribu tena.");}
+    });
+    return ()=>{active=false;};
+  },[authLoading,firebaseUser,profile]);
   useEffect(()=>{
     let active=true;
     setPreviewReady(false);setPreviewError("");
@@ -142,8 +166,15 @@ export default function AgentStickerPage(){
     return ()=>{active=false;};
   },[network,agentName,agentNumber]);
   function downloadSticker(){
-    const canvas=canvasRef.current;if(!canvas||!valid||busy||!previewReady)return;setBusy(true);
-    canvas.toBlob(blob=>{if(blob){const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");}setBusy(false);},"image/png",1);
+    const canvas=canvasRef.current;if(!canvas||!valid||busy||!previewReady||entryStatus!=="paid"||outputUsed.current)return;setBusy(true);
+    canvas.toBlob(blob=>{
+      if(blob){
+        const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();
+        triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");
+        outputUsed.current=true;toast.success("Stika limepakuliwa. Unarudishwa kwenye huduma.");setLocation("/services");
+      }else toast.error("Imeshindikana kuandaa stika. Jaribu tena.");
+      setBusy(false);
+    },"image/png",1);
   }
   function reset(){setAgentName("");setAgentNumber("");}
   const p=NETWORKS[network];
@@ -154,6 +185,7 @@ export default function AgentStickerPage(){
       </header>
       <div className="grid items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold leading-relaxed text-amber-900"><strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}</div>
           <h2 className="mb-4 text-lg font-black">Taarifa za wakala</h2>
           <label className="mb-4 block"><span className="mb-2 block text-sm font-extrabold">Chagua mtandao</span>
             <select value={network} onChange={e=>setNetwork(e.target.value as NetworkKey)} className="h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-3 text-base font-semibold outline-none focus:border-slate-500">
@@ -166,7 +198,7 @@ export default function AgentStickerPage(){
           <label className="mb-5 block"><span className="mb-2 block text-sm font-extrabold">Namba ya wakala</span>
             <input value={agentNumber} onChange={e=>setAgentNumber(cleanNumber(e.target.value))} inputMode="numeric" maxLength={12} autoComplete="off" placeholder="Andika namba ya wakala" className="h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base font-semibold outline-none focus:border-slate-500"/>
           </label>
-          <button type="button" disabled={!valid||busy||!previewReady} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{busy?"Inaandaa...":!previewReady?"Subiri preview...":"PAKUA STIKA PNG"}</button>
+          <button type="button" disabled={!valid||busy||!previewReady||entryStatus!=="paid"||outputUsed.current} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{busy?"Inaandaa...":!previewReady?"Subiri preview...":"PAKUA STIKA PNG"}</button>
           <button type="button" onClick={reset} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700"><RotateCcw className="h-4 w-4"/>Futa taarifa</button>
           {!valid&&(agentName||agentNumber)&&<p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-semibold text-amber-800">Weka angalau majina mawili na namba yenye tarakimu 5 hadi 12.</p>}
         </section>
