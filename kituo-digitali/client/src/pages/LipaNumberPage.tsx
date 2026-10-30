@@ -127,42 +127,21 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
         fields = fields.map((field) => field.fieldName === "tinNumber"
           ? { ...field, label: "Namba ya TIN", placeholder: "123-123-123", required: false, helpText: "Weka namba kwa muundo 123-123-123." }
           : field);
-        if (!fields.some((field) => field.fieldName === "businessNameEvidence")) {
-          const businessOrder = fields.find((field) => field.fieldName === "businessName")?.order ?? 3;
-          fields.push({
-            fieldName: "businessNameEvidence",
-            label: "Ushahidi wa jina la biashara",
-            type: "IMAGE_UPLOAD",
-            required: false,
-            helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
-            maxSizeMb: 5,
-            accept: ["image/jpeg", "image/png", "image/webp"],
-            order: businessOrder + 0.25,
-          });
-        }
-        // Force this field to remain an image upload even when an older admin config has a different type.
-        fields = fields.map((field) => field.fieldName === "businessNameEvidence" ? {
-          ...field,
-          label: "Picha ya BRELA AU eneo la biashara",
-          type: "IMAGE_UPLOAD",
-          required: false,
-          helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
-          maxSizeMb: 5,
-          accept: ["image/jpeg", "image/png", "image/webp"],
-        } : field);
+        fields = fields.filter((field) => !["businessName", "businessNameEvidence"].includes(field.fieldName));
+        fields.push({ fieldName: "additionalNotes", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, placeholder: "Andika maelezo mengine kama yapo...", helpText: "Sehemu hii si lazima kujaza.", order: 999 });
       }
       fields = fields.map((field) => field.type === "PHONE"
         ? { ...field, placeholder: field.placeholder?.startsWith("255") ? field.placeholder : "2557XXXXXXXX" }
         : field);
       const imageFields = fields.filter((field) => field.type === "IMAGE_UPLOAD");
       const identityField = imageFields.find((field) => ["idDocument", "identityDocument", "identityPhoto"].includes(field.fieldName))
-        ?? imageFields.find((field) => !["businessNameEvidence", "businessLicensePhoto"].includes(field.fieldName))
+        ?? imageFields.find((field) => field.fieldName !== "businessLicensePhoto")
         ?? imageFields[0];
       const identityFieldName = identityField?.fieldName;
       if (imageFields.length > 1) {
         const keepFields = new Set([
           ...(identityFieldName ? [identityFieldName] : []),
-          ...(id === "vodacom" ? ["businessNameEvidence"] : []),
+          
           ...(/yas|tigo/i.test(id) ? ["businessLicensePhoto"] : []),
         ]);
         fields = fields.filter((field) => field.type !== "IMAGE_UPLOAD" || keepFields.has(field.fieldName));
@@ -206,7 +185,6 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
       { fieldName: "name1", label: "Jina la 1", type: "TEXT", placeholder: "Jina la kwanza", required: true, helpText: "Andika jina la kwanza la mwombaji.", order: 0 },
       { fieldName: "name2", label: "Jina la 2", type: "TEXT", placeholder: "Jina la pili", required: true, helpText: "Andika jina la pili la mwombaji.", order: 1 },
       { fieldName: "name3", label: "Jina la 3", type: "TEXT", placeholder: "Jina la tatu", required: true, helpText: "Andika jina la tatu la mwombaji.", order: 2 },
-      { fieldName: "businessName", label: "Majina ya Biashara", type: "TEXT", required: false, order: 3 },
       { fieldName: "phone", label: "Namba ya simu ya kuwezesha Lipa (ya wakala)", type: "PHONE", placeholder: "2557XXXXXXXX", required: true, helpText: "Weka namba yako ya wakala inayoanza na 255. Namba hii haitakiwi kuwa tayari imewezeshwa akaunti ya M-Pesa.", order: 4 },
       { fieldName: "contactPhone", label: "Namba ya mawasiliano ya wakala", type: "PHONE", placeholder: "2557XXXXXXXX", required: true, helpText: "Weka namba yako mwenyewe ya mawasiliano, si namba ya mteja. Tumia muundo wa 255.", order: 4.5 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 5 },
@@ -485,9 +463,6 @@ export default function LipaNumberPage() {
     if (isYasNetwork && values.hasBusinessLicense === "Ndiyo" && !String(values.businessLicensePhoto ?? "").startsWith("lipaUploads/")) {
       nextErrors.businessLicensePhoto = "Umechagua Ndiyo; pakia picha ya leseni ya biashara iliyo wazi na inayosomeka.";
     }
-    if (selectedNetwork.id === "vodacom" && String(values.businessName ?? "").trim() && !String(values.businessNameEvidence ?? "").startsWith("lipaUploads/")) {
-      nextErrors.businessNameEvidence = "Umeweka jina la biashara; pakia picha ya bango la eneo au picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.";
-    }
     if (selectedNetwork.id === "vodacom" && values.mpesaAccountConfirmed !== "true") nextErrors.mpesaAccountConfirmed = "Thibitisha kuwa laini hii haina akaunti ya M-PESA.";
     if (selectedNetwork.id === "vodacom" && String(values.lipaSequence ?? "1") === "1" && values.firstLipaConfirmed !== "true") nextErrors.firstLipaConfirmed = "Thibitisha kuwa hii ni Lipa ya kwanza katika NIDA hii.";
     for (const field of selectedNetwork.fields.filter((item) => item.type === "IMAGE_UPLOAD" || item.type === "FILE_UPLOAD")) {
@@ -540,7 +515,6 @@ export default function LipaNumberPage() {
     const value = valueForField(values, field);
     if (field.fieldName === "tinNumber" && (selectedNetwork?.id === "vodacom" || /yas|tigo/i.test(selectedNetwork?.id ?? "")) && values.hasTinNumber !== "Ndiyo") return null;
     if (field.fieldName === "businessLicensePhoto" && /yas|tigo/i.test(selectedNetwork?.id ?? "") && values.hasBusinessLicense !== "Ndiyo") return null;
-    if (field.fieldName === "businessNameEvidence" && selectedNetwork?.id === "vodacom" && !String(values.businessName ?? "").trim()) return null;
     const inputId = `lipa-${field.fieldName}`;
     const common = { id: inputId, name: field.fieldName, placeholder: field.placeholder, value, required: field.required, "aria-invalid": Boolean(errors[field.fieldName]), "aria-describedby": `${inputId}-help` };
     const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -568,7 +542,7 @@ export default function LipaNumberPage() {
     if (field.type === "TEXTAREA") control = <textarea {...common} rows={4} onChange={onChange} />;
     else if (field.type === "DROPDOWN") control = <span className="lipa-select-wrap"><select {...common} onChange={onChange}><option value="">Chagua {field.label.toLowerCase()}</option>{(field.options ?? []).map((option) => <option key={option} value={option}>{option}</option>)}</select><ChevronDown size={16} /></span>;
     else control = <input {...common} type={field.type === "NUMBER" ? "number" : field.type === "DATE" ? "date" : field.type === "PHONE" ? "tel" : "text"} inputMode={field.type === "NUMBER" ? "decimal" : field.type === "PHONE" || field.type === "TIN" || field.type === "NIDA" ? "numeric" : undefined} onChange={onChange} />;
-    return <label className={`lipa-field ${errors[field.fieldName] ? "has-error" : ""}`} htmlFor={inputId}><span className="lipa-field-label"><strong>{field.label}{field.required && <em> *</em>}</strong>{field.type !== "TEXT" && <small>{field.type}</small>}</span>{control}<span id={`${inputId}-help`}><FieldHelp field={field} error={errors[field.fieldName]} /></span>{selectedId === "vodacom" && field.fieldName === "businessName" && value.trim() && <small className="lipa-business-warning" role="status">Umeweka jina la biashara. Hakikisha mteja ana taarifa zote zinazohitajika, ikiwemo BRELA na nyaraka nyingine husika.</small>}</label>;
+    return <label className={`lipa-field ${errors[field.fieldName] ? "has-error" : ""}`} htmlFor={inputId}><span className="lipa-field-label"><strong>{field.label}{field.required && <em> *</em>}</strong>{field.type !== "TEXT" && <small>{field.type}</small>}</span>{control}<span id={`${inputId}-help`}><FieldHelp field={field} error={errors[field.fieldName]} /></span></label>;
   };
 
   return <main className="portal-main lipa-page">
