@@ -17,7 +17,7 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect width="1120" height="1360" fill="#777"/>' +
   '<rect x="0" y="0" width="1120" height="178" fill="#050505"/>' +
   '<path d="M50 80 L70 58 L92 80 V115 H76 V91 H64 V115 H50 Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>' +
-  '<rect x="142" y="32" width="550" height="116" rx="58" fill="#303030"/><text x="170" y="105" font-family="Arial,sans-serif" font-size="40" fill="#eee">axpayersportal.tra.go.tz</text>' +
+  '<rect x="142" y="32" width="550" height="116" rx="58" fill="#303030"/><text x="170" y="105" font-family="Arial,sans-serif" font-size="40" fill="#eee">taxpayersportal.tra.go.tz</text>' +
   '<path d="M760 62 V112 M735 87 H785" stroke="#fff" stroke-width="7" stroke-linecap="round"/>' +
   '<rect x="887" y="56" width="52" height="58" rx="12" fill="none" stroke="#fff" stroke-width="5"/><text x="913" y="96" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">' + tab + '</text>' +
   '<circle cx="1050" cy="62" r="5" fill="#fff"/><circle cx="1050" cy="88" r="5" fill="#fff"/><circle cx="1050" cy="114" r="5" fill="#fff"/>' +
@@ -58,7 +58,7 @@ export default function Tin3Page() {
   const [tinInput, setTinInput] = useState("");
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
-  const [tabCount, setTabCount] = useState(16);
+  const [tabCount, setTabCount] = useState(() => Math.floor(Math.random() * 20) + 1);
   const tin = formatTIN(tinInput);
   const words = name.trim().split(/\s+/).filter(Boolean);
   const valid = tin.replace(/\D/g, "").length === 9 && words.length === 3;
