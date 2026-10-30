@@ -258,8 +258,12 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     const nextErrors = validateServiceForm(fields, submissionValues);
     setErrors(nextErrors);
     if (service.slug === "access-lipa-vodacom") {
-      if (!submissionValues.mpesaAccountConfirmed || !submissionValues.firstLipaConfirmed) {
-        setFormError("Thibitisha kuwa laini haina account ya M-PESA na jibu sahihi kuhusu nafasi ya Lipa kwenye NIDA.");
+      const lipaSequence = String(submissionValues.lipaSequence ?? "1");
+      const firstLipaConfirmationMissing = lipaSequence === "1" && submissionValues.firstLipaConfirmed !== true;
+      if (submissionValues.mpesaAccountConfirmed !== true || firstLipaConfirmationMissing) {
+        setFormError(lipaSequence === "1"
+          ? "Thibitisha kuwa laini haina account ya M-PESA na kuwa hii ni Lipa ya kwanza kwenye NIDA."
+          : "Thibitisha kuwa laini hii haina account ya M-PESA.");
         return;
       }
     }
