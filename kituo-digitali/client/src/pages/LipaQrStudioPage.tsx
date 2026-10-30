@@ -306,11 +306,6 @@ export default function LipaQrStudioPage() {
       <section className="lq-editor-panel">
         <div role="status" style={{marginBottom:14,padding:13,borderRadius:12,border:"1px solid #f59e0b",background:"#fffbeb",color:"#78350f",fontSize:13,fontWeight:700,lineHeight:1.5}}>
           <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
-          {entryStatus === "pending" && <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
-            <button type="button" onClick={() => void confirmTokenCharge()} className="lq-button lq-button-light">{serviceCost === 0 ? "ENDELEA BILA MAKATO" : `NAKUBALI, KATA TOKENI ${serviceCost ?? "..."}`}</button>
-            <button type="button" onClick={() => setLocation("/services")} className="lq-button lq-button-outline">SITAKI, RUDI NYUMA</button>
-          </div>}
-          {entryStatus === "charging" && <p style={{marginTop:10}}>Inathibitisha makato...</p>}
         </div>
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
         <label className="lq-field" htmlFor="lq-network"><span>Chagua mtandao wa stika</span>
