@@ -18,11 +18,21 @@ function round(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,
   ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
   if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}
 }
-function textFit(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,max:number,size:number,color:string,weight=900){
+function raisedRound(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,r:number,fill:string,stroke="#e0e0e0"){
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,.22)";
+  ctx.shadowBlur=8;
+  ctx.shadowOffsetY=4;
+  round(ctx,x,y,w,h,r,fill,stroke,2);
+  ctx.restore();
+}
+function textFit(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,max:number,size:number,color:string,weight=900,shadow=false){
   let s=size;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=color;
-  ctx.font=`${weight} ${s}px Arial, Helvetica, sans-serif`;
+  ctx.font=`${weight} ${s}px Arial Black, Arial, Helvetica, sans-serif`;
   while(ctx.measureText(value).width>max&&s>22){s-=3;ctx.font=`${weight} ${s}px Arial, Helvetica, sans-serif`;}
+  if(shadow){ctx.shadowColor="rgba(255,255,255,.42)";ctx.shadowBlur=3;ctx.shadowOffsetY=2;}
   ctx.fillText(value,x,y,max);
+  ctx.shadowColor="transparent";ctx.shadowBlur=0;ctx.shadowOffsetY=0;
 }
 function brand(ctx:CanvasRenderingContext2D,n:NetworkKey){
   ctx.save();ctx.textAlign="center";ctx.textBaseline="middle";
@@ -68,21 +78,24 @@ function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:string,num
     textFit(ctx,"*** Hakiki jina la wakala kabla hujathibitisha muamala wako.",750,968,1350,34,"#fff",700);
     ctx.textAlign="center";ctx.font="700 26px Arial";ctx.fillStyle="#fff";ctx.fillText("halotel.co.tz      •      halopesa *150*88#      •      Hotline 100",750,1022);
   }else{
-    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,network==="yas"?"#0878ce":network==="airtel"?"#f20c1b":"#f10b1c");bg.addColorStop(.55,network==="yas"?"#064d9d":network==="airtel"?"#e0001b":"#df0019");bg.addColorStop(1,network==="yas"?"#052b66":"#b90018");
+    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,network==="yas"?"#0878ce":network==="airtel"?"#e30613":"#f10b1c");bg.addColorStop(.55,network==="yas"?"#064d9d":network==="airtel"?"#e30613":"#df0019");bg.addColorStop(1,network==="yas"?"#052b66":network==="airtel"?"#e30613":"#b90018");
     ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-    // Clean solid field and a fine inset outline, matching the rectangular source stickers.
-    round(ctx,18,18,W-36,H-36,48,"rgba(0,0,0,0)","#fff",7);
+    // Thick inset outline and raised white panels match the supplied Airtel reference.
+    round(ctx,18,18,W-36,H-36,48,"rgba(0,0,0,0)","#fff",9);
     brand(ctx,network);
-    textFit(ctx,"NAMBA YA WAKALA",750,300,1360,104,"#fff",950);
+    textFit(ctx,"NAMBA YA WAKALA",750,300,1360,112,"#fff",950,true);
     if(network==="yas")textFit(ctx,"AGENT NUMBER",750,365,1000,35,"#d9edff",800);
-    round(ctx,65,380,1370,220,36,"#fff","#e8e8e8",5);
+    raisedRound(ctx,65,380,1370,220,36,"#fff");
     textFit(ctx,num,750,490,1280,176,network==="yas"?"#073b79":"#050505",950);
-    textFit(ctx,network==="airtel"?"JINA":network==="vodacom"?"JINA LA WAKALA":"JINA LA WAKALA",750,685,1150,66,"#fff",900);
-    round(ctx,70,735,1360,160,34,"#fff","#e6e6e6",5);
-    textFit(ctx,nm,750,815,1280,88,network==="yas"?"#073b79":"#050505",950);
+    textFit(ctx,network==="airtel"?"JINA":network==="vodacom"?"JINA LA WAKALA":"JINA LA WAKALA",750,685,1150,72,"#fff",950,true);
+    raisedRound(ctx,70,735,1360,160,34,"#fff");
+    textFit(ctx,nm,750,815,1280,96,network==="yas"?"#073b79":"#050505",950);
     if(network==="airtel"){
-      ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 86px Arial";ctx.fillText("airtel",750,975);
-      ctx.font="700 40px Arial";ctx.fillText("Money",750,1015);
+      // Footer is the Airtel-only lockup from the reference, with safe bottom padding.
+      ctx.save();
+      ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(675,958);ctx.bezierCurveTo(640,905,585,922,590,970);ctx.bezierCurveTo(594,1015,642,1010,658,980);ctx.bezierCurveTo(633,1000,620,982,634,964);ctx.bezierCurveTo(649,944,668,950,675,958);ctx.fill();
+      ctx.textAlign="left";ctx.textBaseline="middle";ctx.font="900 86px Arial Black, Arial";ctx.fillText("airtel",690,965);
+      ctx.restore();
     }else if(network==="vodacom"){
       ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 86px Arial";ctx.fillText("◉ vodacom",750,975);
       ctx.font="800 40px Arial";ctx.fillText("m-pesa",750,1015);
