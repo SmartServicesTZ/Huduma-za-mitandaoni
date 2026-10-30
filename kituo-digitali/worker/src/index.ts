@@ -400,7 +400,7 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
   }
 
   if (!configured) {
-    return jsonResponse({ error: { message: "AI haijaunganishwa bado. Admin aweke angalau moja ya siri hizi kwenye Cloudflare Worker: GROQ_API_KEY, OPENROUTER_API_KEY au GEMINI_API_KEY." } }, 503, cors);
+    return jsonResponse({ error: { message: "Huduma ya AI haipatikani kwa sasa. Tafadhali jaribu tena baadaye au wasiliana na huduma kwa wateja." } }, 503, cors);
   }
   console.error("All configured AI providers failed", { attempts: errors });
   return jsonResponse({ error: { message: "AI zote zilizosanidiwa hazijajibu kwa sasa. Mfumo umejaribu watoa huduma mbadala; jaribu tena baada ya muda mfupi." } }, 503, cors);
