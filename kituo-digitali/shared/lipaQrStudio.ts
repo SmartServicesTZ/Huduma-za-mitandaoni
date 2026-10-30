@@ -17,11 +17,11 @@ export function normalizeLipaNumber(value: string): string {
 
 export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   const errors: LipaCardErrors = {};
+  // Eneo na posta si sehemu za fomu hii; zisizuie QR kuzalishwa.
   if (!/^\d{5,12}$/.test(values.lipaNumber)) errors.lipaNumber = "Namba ya Lipa iwe na tarakimu 5 hadi 12.";
   const businessName = values.businessName.trim();
   if (!businessName) errors.businessName = "Weka jina la biashara.";
   else if (businessName.length > 25) errors.businessName = "Jina la biashara lisizidi herufi 25.";
-  if (!TANZANIA_LIPA_LOCATIONS.includes(values.location as (typeof TANZANIA_LIPA_LOCATIONS)[number])) errors.location = "Chagua eneo kutoka kwenye orodha.";
   if (!/^\d{5}$/.test(values.postalCode.trim())) errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
   return errors;
 }
