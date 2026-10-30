@@ -1099,7 +1099,9 @@ export const updateServiceApplication = callable(async (request) => {
     if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
     const application = snapshot.data()!;
     if (String(application.userId ?? "") !== uid) throw new ApiError("permission-denied", "Huwezi kuhariri ombi la mtumiaji mwingine.");
-    if (String(application.status ?? "PENDING") !== "PENDING") throw new ApiError("failed-precondition", "Ombi haliwezi kuhaririwa kwa sababu tayari limeanza kushughulikiwa.");
+    const currentStatus = String(application.status ?? "PENDING");
+    const isAllowedRejectedRetry = currentStatus === "REJECTED" && application.allowResubmission === true;
+    if (currentStatus !== "PENDING" && !isAllowedRejectedRetry) throw new ApiError("failed-precondition", "Ombi haliwezi kuhaririwa kwa sababu halijaruhusiwa kurudiwa au tayari limeanza kushughulikiwa.");
     const previous = application.applicantData && typeof application.applicantData === "object" ? application.applicantData as Record<string, unknown> : {};
     const next: Record<string, unknown> = { ...previous };
     for (const [key, value] of Object.entries(incoming)) {
@@ -1116,7 +1118,7 @@ export const updateServiceApplication = callable(async (request) => {
       else if (Array.isArray(value) && value.every((item) => typeof item === "string" && item.length <= 300)) next[key] = value;
     }
     const now = FieldValue.serverTimestamp();
-    transaction.update(ref, { applicantData: next, updatedAt: now, editedAt: now, editedBy: uid });
+    transaction.update(ref, { applicantData: next, status: "PENDING", rejectionReason: "", allowResubmission: false, resubmittedAt: now, updatedAt: now, editedAt: now, editedBy: uid });
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(application.serviceName ?? application.serviceSlug)} limehaririwa`, body: "Mabadiliko ya taarifa zako yamehifadhiwa. Ombi bado linasubiri kuanza kushughulikiwa.", type: "serviceApplicationEdited", applicationId, createdAt: now });
     recordAudit(transaction, uid, String(profile.role ?? "user"), "SERVICE_APPLICATION_EDITED", "serviceApplication", applicationId, previous, next, {});
     return { applicationId, status: "PENDING", updated: true };
