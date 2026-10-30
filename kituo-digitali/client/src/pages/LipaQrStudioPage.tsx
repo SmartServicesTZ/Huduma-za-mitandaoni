@@ -1,8 +1,10 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, Info, Printer, ShieldCheck, WalletCards } from "lucide-react";
 import * as QRCode from "qrcode";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { consumeFirebaseTokens } from "@/lib/firebase";
 import {
   createTipsPaymentPayload,
   normalizeLipaNumber,
@@ -145,6 +147,12 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues }>(fun
 });
 
 export default function LipaQrStudioPage() {
+  const { firebaseUser, profile, loading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  const [entryStatus, setEntryStatus] = useState<"checking" | "paid" | "failed">("checking");
+  const [entryMessage, setEntryMessage] = useState("Tunakagua akaunti na kukata tokeni za huduma...");
+  const entryRequestId = useRef(crypto.randomUUID());
+  const outputUsed = useRef(false);
   const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "53000" });
   const [network, setNetwork] = useState<LipaNetwork>("voda");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
@@ -157,6 +165,33 @@ export default function LipaQrStudioPage() {
   const errors = useMemo(() => validateLipaCard(values), [values]);
   const isValid = Object.keys(errors).length === 0;
   const paymentPayload = useMemo(() => { if (!isValid || network === "halotel") return ""; return createTipsPaymentPayload(values); }, [isValid, values, network]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!firebaseUser) {
+      setEntryStatus("failed");
+      setEntryMessage("Ingia kwenye akaunti yako ili kutumia huduma hii.");
+      return;
+    }
+    if (!profile) return;
+    let active = true;
+    setEntryStatus("checking");
+    setEntryMessage("Tokeni zinakatwa kwa kufungua STIKA ZA LIPA...");
+    void consumeFirebaseTokens(firebaseUser.uid, {
+      slug: "stika-lipa", name: "STIKA ZA LIPA", tokenCost: 3, kind: "paid", tokenType: "huduma",
+    }, entryRequestId.current).then(() => {
+      if (active) {
+        setEntryStatus("paid");
+        setEntryMessage("Tokeni 3 zimekatwa. Unaweza kutengeneza na kupakua stika MOJA. Hata usipopakua, tokeni hazitarejeshwa.");
+      }
+    }).catch((error) => {
+      if (active) {
+        setEntryStatus("failed");
+        setEntryMessage(error instanceof Error ? error.message : "Imeshindikana kukata tokeni. Jaribu tena.");
+      }
+    });
+    return () => { active = false; };
+  }, [authLoading, firebaseUser, profile]);
 
   useEffect(() => {
     let current = true;
@@ -185,6 +220,7 @@ export default function LipaQrStudioPage() {
   };
 
   const exportFile = async () => {
+    if (entryStatus !== "paid" || outputUsed.current) { toast.error(entryStatus === "paid" ? "Stika hii tayari imetumika. Fungua huduma tena kwa stika nyingine." : entryMessage); return; }
     if (!validateBeforeAction()) return;
     const pages = [cardRef.current, ...(pageMode === "card-and-guide" ? [guideRef.current] : [])].filter((item): item is HTMLElement => Boolean(item));
     if (!pages.length) {
@@ -219,7 +255,9 @@ export default function LipaQrStudioPage() {
           if (index < canvases.length - 1) await new Promise((resolve) => window.setTimeout(resolve, 450));
         }
       }
-      toast.success(format === "png" && pageMode === "card-and-guide" ? "Picha mbili tofauti zimeandaliwa: stika na maelekezo." : `Faili la ${format.toUpperCase()} limeandaliwa kwa ubora wa kuchapisha wa A5.`);
+      outputUsed.current = true;
+      toast.success(format === "png" && pageMode === "card-and-guide" ? "Stika na maelekezo vimepakuliwa. Rudi kwenye huduma." : `Stika limepakuliwa. Rudi kwenye huduma.`);
+      setLocation("/services");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kuandaa faili. Jaribu tena.");
     } finally {
@@ -228,12 +266,15 @@ export default function LipaQrStudioPage() {
   };
 
   const printCard = () => {
+    if (entryStatus !== "paid" || outputUsed.current) { toast.error("Huduma hii imeshatumika au bado haijalipiwa."); return; }
     if (!validateBeforeAction()) return;
+    outputUsed.current = true;
     window.print();
+    setLocation("/services");
   };
 
   const fieldError = (field: keyof LipaCardValues) => showErrors ? errors[field] : undefined;
-  const readyToDownload = isValid && Boolean(qrDataUrl) && !exporting;
+  const readyToDownload = isValid && Boolean(qrDataUrl) && !exporting && entryStatus === "paid" && !outputUsed.current;
 
   return <main className="lq-app">
     <aside className="lq-sidebar">
@@ -242,6 +283,9 @@ export default function LipaQrStudioPage() {
         <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>STIKA ZA LIPA</strong><small>Tengeneza kadi ya Lipa</small></span></span>
       </div>
       <section className="lq-editor-panel">
+        <div role="status" style={{marginBottom:14,padding:13,borderRadius:12,border:"1px solid #f59e0b",background:"#fffbeb",color:"#78350f",fontSize:13,fontWeight:700,lineHeight:1.5}}>
+          <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
+        </div>
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
         <label className="lq-field" htmlFor="lq-network"><span>Chagua mtandao wa stika</span>
           <select id="lq-network" value={network} onChange={(event) => setNetwork(event.target.value as LipaNetwork)}>
@@ -284,7 +328,7 @@ export default function LipaQrStudioPage() {
       <div className="lq-preview-toolbar">
         <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa kadi</strong><small>A5 · 300 DPI</small></div>
         <div className="lq-toolbar-actions">
-          <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Pakua ${format.toUpperCase()}`}</button>
+          <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload || entryStatus !== "paid" || outputUsed.current} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Pakua ${format.toUpperCase()}`}</button>
           <button type="button" className="lq-button lq-button-outline" onClick={printCard} disabled={!readyToDownload}><Printer size={16} />Chapisha</button>
         </div>
       </div>
