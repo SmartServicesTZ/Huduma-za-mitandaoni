@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Download, RotateCcw } from "lucide-react";
+import { ArrowLeft, Download, X } from "lucide-react";
 import { Link } from "wouter";
 
 function formatTIN(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 9);
-  return digits.replace(/(\d{3})(?=\d)/g, "$1-");
+  const digits = value.replace(/\\D/g, "").slice(0, 9);
+  return digits.replace(/(\\d{3})(?=\\d)/g, "$1-");
 }
 function esc(value: string) {
   return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c] ?? c));
@@ -28,14 +28,12 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<text x="740" y="266" font-family="Arial,sans-serif" font-size="26" font-weight="300" fill="#6b5d00">Y</text>' +
   '<text x="770" y="272" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#242424">IDRAS</text>' +
   '<path d="M1030 238 L1060 270 M1060 238 L1030 270" stroke="#111" stroke-width="9" stroke-linecap="round"/>' +
-  '<rect x="54" y="348" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="416" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#292929">TIN</text>' +
-  '<rect x="70" y="470" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="520" font-family="Arial,sans-serif" font-size="35" fill="#222">' + tin + '</text>' +
+  '<rect x="54" y="348" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="416" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#292929">TIN</text>' +
+  '<rect x="70" y="470" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="520" font-family="Arial,sans-serif" font-size="32" fill="#222">' + tin + '</text>' +
   '<path d="M1015 492 L1035 520 M1035 492 L1015 520" stroke="#c4cbd1" stroke-width="6" stroke-linecap="round"/>' +
   '<rect x="54" y="562" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="630" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#292929">Taxpayer Name</text>' +
   '<rect x="70" y="684" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="734" font-family="Arial,sans-serif" font-size="33" fill="#222">' + name + '</text>' +
-  '<path d="M1015 706 L1035 734 M1035 706 L1015 734" stroke="#c4cbd1" stroke-width="6" stroke-linecap="round"/>' +
-  '<rect x="54" y="778" width="190" height="76" rx="10" fill="#e5e5e5" stroke="#c7c7c7" stroke-width="2"/>' +
-  '<path d="M96 806 A17 17 0 1 1 88 824 M88 824 L88 813 M88 824 L99 824" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="124" y="829" font-family="Arial,sans-serif" font-size="30" font-weight="600" fill="#222">RESET</text>' +
+  '<rect x="54" y="778" width="210" height="76" rx="10" fill="#e5e5e5" stroke="#c7c7c7" stroke-width="2"/><text x="91" y="829" font-family="Arial,sans-serif" font-size="28" fill="#222">🔄</text><text x="139" y="829" font-family="Arial,sans-serif" font-size="30" font-weight="600" fill="#222">Reset</text>' +
   '<rect x="832" y="778" width="218" height="76" rx="10" fill="#222"/><circle cx="875" cy="812" r="15" fill="none" stroke="#fff" stroke-width="5"/><path d="M886 824 L900 838" stroke="#fff" stroke-width="5"/><text x="918" y="829" font-family="Arial,sans-serif" font-size="31" fill="#fff">Search</text>' +
   '<line x1="54" y1="870" x2="1066" y2="870" stroke="#ddd" stroke-width="2"/>' +
   '<rect x="54" y="914" width="1012" height="78" fill="#e9e9e9" stroke="#aaa" stroke-width="2"/><line x1="310" y1="914" x2="310" y2="1080" stroke="#aaa" stroke-width="2"/>' +
@@ -74,29 +72,42 @@ export default function Tin3Page() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-red-950 p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
-        <Link href="/" className="inline-flex items-center gap-2 text-white mb-4"><ArrowLeft size={18}/>Back</Link>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-5 md:p-6 rounded-2xl shadow-xl border border-zinc-200">
-            <div className="space-y-5">
+        <Link href="/" className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-5 transition"><ArrowLeft size={18}/>Back</Link>
+        <div className="grid lg:grid-cols-2 gap-6 items-start">
+          <section className="bg-white rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-700 to-red-600 px-6 py-5 text-white">
+              <p className="text-xs uppercase tracking-[0.22em] text-red-100 font-semibold">Huduma za mitandaoni</p>
+              <h1 className="text-2xl font-bold mt-1">VERIFY TIN</h1>
+              <p className="text-sm text-red-100 mt-1">Jaza taarifa kwa usahihi kuona muonekano wa matokeo.</p>
+            </div>
+            <div className="p-5 sm:p-7 space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-zinc-700">TIN</label>
-                <input value={tinInput} onChange={(e)=>setTinInput(e.target.value)} className="w-full border border-zinc-300 bg-zinc-50 p-3 rounded-lg mt-2 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition" placeholder="Ingiza TIN yako"/>
+                <label htmlFor="tin-number" className="block text-sm font-bold text-zinc-800 mb-2">Namba ya TIN</label>
+                <div className="relative">
+                  <input id="tin-number" inputMode="numeric" autoComplete="off" value={tin} onChange={(e)=>setTinInput(e.target.value.replace(/\\D/g, "").slice(0, 9))} className="w-full border-2 border-zinc-200 bg-zinc-50 px-4 py-4 pr-12 rounded-2xl text-lg font-semibold tracking-wider text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-red-600 focus:bg-white focus:ring-4 focus:ring-red-100 transition" placeholder="123-123-123" maxLength={11} />
+                  {tinInput && <button type="button" aria-label="Futa namba ya TIN" onClick={()=>setTinInput("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"><X size={18}/></button>}
+                </div>
+                <p className="text-xs text-zinc-500 mt-2">Namba 9 pekee. Mfumo utaweka alama za (-) moja kwa moja.</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-zinc-700">Majina ya Mlipa Kodi</label>
-                <input value={name} onChange={(e)=>setName(e.target.value)} className="w-full border p-2 rounded mt-1" placeholder="Ingiza majina ya mlipa kodi"/>
+                <label htmlFor="tin-name" className="block text-sm font-bold text-zinc-800 mb-2">Majina ya Mlipa Kodi</label>
+                <input id="tin-name" value={name} onChange={(e)=>setName(e.target.value)} className="w-full border-2 border-zinc-200 bg-zinc-50 px-4 py-4 rounded-2xl text-base text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-red-600 focus:bg-white focus:ring-4 focus:ring-red-100 transition" placeholder="Ingiza majina ya mlipa kodi"/>
               </div>
               <div className="flex flex-wrap gap-3 pt-1">
-                <button onClick={()=>{setTinInput("");setName("");}} className="flex items-center gap-2 border border-zinc-300 px-4 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-100 transition"><RotateCcw size={16}/>Reset</button>
-                <button onClick={download} className="flex items-center gap-2 bg-zinc-900 text-white px-5 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-700 transition"><Download size={16}/>Download</button>
+                <button type="button" onClick={()=>{setTinInput("");setName("");}} className="inline-flex items-center gap-3 border-2 border-zinc-200 bg-white px-5 py-3.5 rounded-xl text-sm font-semibold text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 transition"><span className="text-lg leading-none">🔄</span><span>Reset</span></button>
+                <button type="button" onClick={download} className="inline-flex items-center gap-2 bg-zinc-950 text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-lg hover:bg-red-700 transition"><Download size={17}/>Download</button>
               </div>
             </div>
-          </div>
-          <div className="bg-zinc-800 p-2 rounded-xl">
-            <img src={previewUrl} alt="preview" className="w-full h-auto rounded" />
-          </div>
+          </section>
+          <section className="bg-zinc-800/80 p-3 sm:p-4 rounded-3xl border border-white/10 shadow-xl">
+            <div className="flex items-center justify-between px-2 pt-1 pb-3 text-white">
+              <p className="text-sm font-semibold">Muonekano wa picha</p>
+              <span className="text-xs text-zinc-300">Preview</span>
+            </div>
+            <img src={previewUrl} alt="Preview ya matokeo ya VERIFY TIN" className="w-full h-auto rounded-xl bg-white shadow-lg"/>
+          </section>
         </div>
       </div>
     </div>
