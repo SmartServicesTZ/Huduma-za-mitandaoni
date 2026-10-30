@@ -482,7 +482,15 @@ export default function LipaNumberPage() {
       if (nextErrors[field.fieldName] && valueForField(values, field).startsWith("lipaUploads/")) delete nextErrors[field.fieldName];
     }
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) { toast.error("Tafadhali rekebisha taarifa zilizoainishwa kwenye fomu."); return; }
+    if (Object.keys(nextErrors).length > 0) {
+      const errorDetails = Object.entries(nextErrors).map(([fieldName, message]) => {
+        const field = selectedNetwork.fields.find((item) => item.fieldName === fieldName);
+        const label = field?.label ?? (fieldName === "mpesaAccountConfirmed" ? "Uthibitisho wa M-PESA" : fieldName === "firstLipaConfirmed" ? "Uthibitisho wa Lipa ya kwanza" : fieldName);
+        return `${label}: ${message}`;
+      });
+      toast.error("Kuna taarifa zinazohitaji kurekebishwa.", { description: errorDetails.join(" • "), duration: 10000 });
+      return;
+    }
     setSubmitting(true);
     try {
       const submissionValues: ServiceFormValues = selectedNetwork.id === "vodacom" ? {
