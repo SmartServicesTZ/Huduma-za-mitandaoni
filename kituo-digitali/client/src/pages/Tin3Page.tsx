@@ -24,9 +24,10 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="22" y="192" width="1076" height="1146" fill="#fff"/>' +
   '<rect x="24" y="194" width="300" height="122" fill="#050505"/><text x="80" y="272" font-family="Arial,sans-serif" font-size="42" fill="#eee">List of TIN</text>' +
   '<rect x="324" y="194" width="774" height="122" fill="#FFE600"/>' +
-  '<g transform="translate(670,208)"><path d="M30 5 L55 15 L55 35 Q55 55 30 65 Q5 55 5 35 L5 15 Z" fill="#1A5D1A" stroke="#FFD700" stroke-width="2"/><text x="30" y="40" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="900" fill="#FFD700">TRA</text></g>' +
+  '<g transform="translate(675,211)" stroke="#17652b" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M30 8 V55 M12 20 H48 M30 8 L25 14 M30 8 L35 14 M18 20 L8 43 M18 20 L28 43 M42 20 L32 43 M42 20 L52 43 M8 43 Q18 53 28 43 M32 43 Q42 53 52 43 M20 57 H40 M15 63 H45"/></g><text x="705" y="286" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="900" fill="#17652b">TRA</text>' +
   '<text x="740" y="266" font-family="Arial,sans-serif" font-size="26" font-weight="300" fill="#6b5d00">Y</text>' +
   '<text x="770" y="272" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#242424">IDRAS</text>' +
+  '<g transform="rotate(-24 560 760)" opacity="0.20"><text x="560" y="770" text-anchor="middle" font-family="Arial,sans-serif" font-size="150" font-weight="900" letter-spacing="12" fill="#c00000" stroke="#c00000" stroke-width="2">DEMO</text><text x="560" y="820" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="700" letter-spacing="5" fill="#c00000">SAMPLE • NOT OFFICIAL</text></g>' +
   '<path d="M1030 238 L1060 270 M1060 238 L1030 270" stroke="#111" stroke-width="9" stroke-linecap="round"/>' +
   '<rect x="54" y="348" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="416" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#292929">TIN</text>' +
   '<rect x="70" y="470" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="520" font-family="Arial,sans-serif" font-size="32" fill="#222">' + tin + '</text>' +
