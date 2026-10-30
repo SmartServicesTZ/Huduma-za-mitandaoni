@@ -3,7 +3,7 @@ import { Download, RotateCcw, ShieldCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { consumeFirebaseTokens } from "@/lib/firebase";
+import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
 import { triggerDownload } from "@/lib/downloadHistory";
 
 type NetworkKey = "airtel" | "vodacom" | "halotel" | "yas";
@@ -130,7 +130,9 @@ export default function AgentStickerPage(){
   const { firebaseUser, profile, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [entryStatus,setEntryStatus]=useState<"checking"|"pending"|"charging"|"paid"|"failed">("checking");
-  const [entryMessage,setEntryMessage]=useState("Thibitisha makato ili uanze kutumia huduma.");
+  const [entryMessage,setEntryMessage]=useState("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
+  const [serviceCost,setServiceCost]=useState<number|null>(null);
+  const [serviceName,setServiceName]=useState("STIKA ZA WAKALA");
   const entryRequestId=useRef(crypto.randomUUID());
   const outputUsed=useRef(false);
   const [network,setNetwork]=useState<NetworkKey>("airtel");
@@ -142,18 +144,33 @@ export default function AgentStickerPage(){
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const valid=cleanName(agentName).split(" ").filter(Boolean).length>=2 && /^\d{5,12}$/.test(cleanNumber(agentNumber));
   useEffect(()=>{
+    let active=true;
     if(authLoading)return;
     if(!firebaseUser){setEntryStatus("failed");setEntryMessage("Ingia kwenye akaunti yako ili kutumia huduma hii.");return;}
     if(!profile)return;
-    setEntryStatus("pending");
-    setEntryMessage("Gharama ni tokeni 8. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA ya mtandao wowote. Hata usipopakua, tokeni hazitarejeshwa.");
+    setEntryStatus("checking");setEntryMessage("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
+    void getServiceTokenConfig("stika-mawakala").then(config=>{
+      if(!active)return;
+      setServiceCost(config.tokenCost);setServiceName(config.name);
+      setEntryStatus("pending");
+      setEntryMessage(config.isFree
+        ? "Huduma hii imewekwa BURE na Admin. Hakuna tokeni zitakazokatwa. Utaruhusiwa kupakua stika MOJA ya mtandao wowote."
+        : `Gharama ni tokeni ${config.tokenCost} kulingana na Dashboard ya Admin. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA ya mtandao wowote. Hata usipopakua, tokeni hazitarejeshwa.`);
+    }).catch(error=>{
+      if(!active)return;
+      setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kusoma gharama ya huduma.");
+    });
+    return ()=>{active=false;};
   },[authLoading,firebaseUser,profile]);
   const confirmTokenCharge=async()=>{
-    if(!firebaseUser||entryStatus!=="pending")return;
+    if(!firebaseUser||entryStatus!=="pending"||serviceCost===null)return;
     setEntryStatus("charging");setEntryMessage("Tunasubiri uthibitisho wa makato...");
     try{
-      await consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:"STIKA ZA WAKALA",tokenCost:8,kind:"paid",tokenType:"huduma"},entryRequestId.current);
-      setEntryStatus("paid");setEntryMessage("Tokeni 8 zimekatwa. Unaweza kupakua stika MOJA ya mtandao wowote. Baada ya kupakua utarudishwa kwenye huduma.");
+      await consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:serviceName,tokenCost:serviceCost,kind:serviceCost===0?"free":"paid",tokenType:"huduma"},entryRequestId.current);
+      setEntryStatus("paid");
+      setEntryMessage(serviceCost===0
+        ? "Huduma ni BURE. Unaweza kupakua stika MOJA ya mtandao wowote."
+        : `Tokeni ${serviceCost} zimekatwa kulingana na bei ya Admin. Unaweza kupakua stika MOJA ya mtandao wowote. Baada ya kupakua utarudishwa kwenye huduma.`);
     }catch(error){
       setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kukata tokeni. Jaribu tena.");
     }
@@ -191,7 +208,7 @@ export default function AgentStickerPage(){
           <div role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold leading-relaxed text-amber-900">
             <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
             {entryStatus==="pending"&&<div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" onClick={()=>void confirmTokenCharge()} className="rounded-xl bg-amber-700 px-4 py-3 text-sm font-black text-white">NAKUBALI, KATA TOKENI 8</button>
+              <button type="button" onClick={()=>void confirmTokenCharge()} className="rounded-xl bg-amber-700 px-4 py-3 text-sm font-black text-white">{serviceCost===0?"ENDELEA BILA MAKATO":`NAKUBALI, KATA TOKENI ${serviceCost??"..."}`}</button>
               <button type="button" onClick={()=>setLocation("/services")} className="rounded-xl border border-amber-700 px-4 py-3 text-sm font-black text-amber-900">SITAKI, RUDI NYUMA</button>
             </div>}
           </div>
