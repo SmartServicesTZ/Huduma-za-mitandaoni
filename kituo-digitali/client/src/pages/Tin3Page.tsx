@@ -24,8 +24,7 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="22" y="192" width="1076" height="1146" fill="#fff"/>' +
   '<rect x="24" y="194" width="300" height="122" fill="#050505"/><text x="80" y="272" font-family="Arial,sans-serif" font-size="42" fill="#eee">List of TIN</text>' +
   '<rect x="324" y="194" width="774" height="122" fill="#FFE600"/>' +
-  // Hapa ndipo nembo rasmi ya TRA (ngawo ya dhahabu/njano na mizani) imewekwa badala ya ile ya kijani:
-  '<g transform="translate(670,208)"><path d="M30 5 L55 15 L55 35 Q55 55 30 65 Q5 55 5 35 L5 15 Z" fill="#1A5D1A" stroke="#FFD700" stroke-width="2"/><path d="M30 12 L48 20 L48 32 Q48 46 30 54 Q12 46 12 32 L12 20 Z" fill="#DAA520"/><path d="M22 24 H38 M30 20 V34 M20 38 H40 M26 34 L34 34" stroke="#111" stroke-width="2" stroke-linecap="round"/><text x="30" y="60" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="900" fill="#111">TRA</text></g>' +
+  '<g transform="translate(670,208)"><path d="M30 5 L55 15 L55 35 Q55 55 30 65 Q5 55 5 35 L5 15 Z" fill="#1A5D1A" stroke="#FFD700" stroke-width="2"/><text x="30" y="40" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="900" fill="#FFD700">TRA</text></g>' +
   '<text x="740" y="266" font-family="Arial,sans-serif" font-size="26" font-weight="300" fill="#6b5d00">Y</text>' +
   '<text x="770" y="272" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#242424">IDRAS</text>' +
   '<path d="M1030 238 L1060 270 M1060 238 L1030 270" stroke="#111" stroke-width="9" stroke-linecap="round"/>' +
@@ -33,8 +32,7 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="70" y="470" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="520" font-family="Arial,sans-serif" font-size="32" fill="#222">' + tin + '</text>' +
   '<path d="M1015 492 L1035 520 M1035 492 L1015 520" stroke="#c4cbd1" stroke-width="6" stroke-linecap="round"/>' +
   '<rect x="54" y="562" width="1012" height="106" fill="#f1f1f1"/><text x="98" y="630" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#292929">Taxpayer Name</text>' +
-  '<rect x="70" y="684" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="734" font-family="Arial,sans-serif" font-size="32" fill="#222">' + name + '</text>' +
-  '<path d="M1015 706 L1035 734 M1035 706 L1015 734" stroke="#c4cbd1" stroke-width="6" stroke-linecap="round"/>' +
+  '<rect x="70" y="684" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/>' +
   '<rect x="54" y="778" width="210" height="76" rx="10" fill="#e5e5e5" stroke="#c7c7c7" stroke-width="2"/><path d="M 94 812 A 12 12 0 0 1 76 828 M 76 828 L 82 820 M 76 828 L 86 830 M 76 832 A 12 12 0 0 1 94 816 M 94 816 L 88 824 M 94 816 L 84 814" fill="none" stroke="#222" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><text x="139" y="829" font-family="Arial,sans-serif" font-size="30" font-weight="600" fill="#222">Reset</text>' +
   '<rect x="832" y="778" width="218" height="76" rx="10" fill="#222"/><circle cx="875" cy="812" r="15" fill="none" stroke="#fff" stroke-width="5"/><path d="M886 824 L900 838" stroke="#fff" stroke-width="5"/><text x="918" y="829" font-family="Arial,sans-serif" font-size="31" fill="#fff">Search</text>' +
   '<line x1="54" y1="870" x2="1066" y2="870" stroke="#ddd" stroke-width="2"/>' +
