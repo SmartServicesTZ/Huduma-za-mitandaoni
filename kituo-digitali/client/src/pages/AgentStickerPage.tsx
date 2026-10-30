@@ -10,103 +10,86 @@ const NETWORKS: Record<NetworkKey,Palette> = {
   halotel:{label:"Halotel HaloPesa",base:"#f12618",deep:"#c90013",accent:"#ff8a00",ink:"#151515",brand:"halopesa",sub:""},
   yas:{label:"Yas",base:"#0754b8",deep:"#06265f",accent:"#ffdf00",ink:"#092d63",brand:"yas",sub:"wakala"},
 };
-const W=1200,H=1500;
-const cleanName=(v:string)=>v.trim().replace(/\s+/g," ").toUpperCase();
-const cleanNumber=(v:string)=>v.replace(/\D/g,"").slice(0,12);
+const W=1500,H=1050;
+const cleanName=(v:string)=>v.trim().replace(/\\s+/g," ").toUpperCase();
+const cleanNumber=(v:string)=>v.replace(/\\D/g,"").slice(0,12);
 
-function rounded(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,r:number,fill:string,stroke?:string,line=1){
+function round(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,r:number,fill:string,stroke?:string,line=1){
   ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
   if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}
 }
-function fitText(ctx:CanvasRenderingContext2D,text:string,x:number,y:number,max:number,size:number,color:string,weight=900){
+function textFit(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,max:number,size:number,color:string,weight=900){
   let s=size;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=color;
   ctx.font=`${weight} ${s}px Arial, Helvetica, sans-serif`;
-  while(ctx.measureText(text).width>max&&s>24){s-=3;ctx.font=`${weight} ${s}px Arial, Helvetica, sans-serif`;}
-  ctx.fillText(text,x,y,max);
+  while(ctx.measureText(value).width>max&&s>22){s-=3;ctx.font=`${weight} ${s}px Arial, Helvetica, sans-serif`;}
+  ctx.fillText(value,x,y,max);
 }
-function drawBrand(ctx:CanvasRenderingContext2D,network:NetworkKey,p:Palette){
-  ctx.save();ctx.textAlign="left";ctx.textBaseline="middle";
-  if(network==="airtel"){
-    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(116,125,36,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=p.base;ctx.beginPath();ctx.arc(116,125,20,0,Math.PI*2);ctx.fill();
-    ctx.font="900 104px Arial";ctx.fillStyle="#fff";ctx.fillText("airtel",175,110);
-    ctx.font="700 48px Arial";ctx.fillText("money",183,170);
-  }else if(network==="vodacom"){
-    ctx.strokeStyle="#fff";ctx.lineWidth=22;ctx.beginPath();ctx.arc(116,125,43,.3,Math.PI*1.8);ctx.stroke();
-    ctx.font="900 80px Arial";ctx.fillStyle="#fff";ctx.fillText("vodacom",185,115);
-    ctx.font="800 48px Arial";ctx.fillText("M-PESA",190,177);
-    // Simu ndogo inayoashiria M-Pesa
-    rounded(ctx,930,65,72,125,13,"#fff");rounded(ctx,939,77,54,92,5,p.base);
-    ctx.fillStyle=p.base;ctx.beginPath();ctx.arc(966,179,5,0,Math.PI*2);ctx.fill();
-  }else if(network==="halotel"){
-    ctx.fillStyle=p.base;ctx.font="900 98px Arial";ctx.fillText("halopesa",120,130);
-    ctx.fillStyle=p.accent;ctx.beginPath();ctx.arc(80,130,26,0,Math.PI*2);ctx.fill();
+function brand(ctx:CanvasRenderingContext2D,n:NetworkKey){
+  ctx.save();ctx.textAlign="center";ctx.textBaseline="middle";
+  if(n==="airtel"){
+    // Airtel Money wordmark at top and repeated at the foot, like the supplied reference.
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(505,95);ctx.bezierCurveTo(440,10,330,38,335,112);ctx.bezierCurveTo(340,190,430,182,455,127);ctx.bezierCurveTo(410,164,385,135,408,103);ctx.bezierCurveTo(438,65,486,83,505,95);ctx.fill();
+    ctx.fillStyle="#fff";ctx.textAlign="left";ctx.font="900 112px Arial";ctx.fillText("airtel",520,100);
+    ctx.font="800 62px Arial";ctx.fillText("Money",530,170);
+  }else if(n==="vodacom"){
+    // Vodacom round mark and M-Pesa wordmark in a centered top lockup.
+    ctx.strokeStyle="#fff";ctx.lineWidth=24;ctx.beginPath();ctx.arc(405,112,48,.25,Math.PI*1.8);ctx.stroke();
+    ctx.fillStyle="#fff";ctx.textAlign="left";ctx.font="900 108px Arial";ctx.fillText("vodacom",485,105);
+    ctx.font="800 60px Arial";ctx.fillText("m-pesa",510,175);
+  }else if(n==="halotel"){
+    ctx.fillStyle="#ed1018";ctx.textAlign="center";ctx.font="900 145px Arial";ctx.fillText("halopesa",750,100);
+    ctx.fillStyle="#ed1018";ctx.beginPath();ctx.arc(260,100,39,0,Math.PI*2);ctx.fill();
   }else{
-    ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(75,90);ctx.quadraticCurveTo(90,48,150,55);ctx.quadraticCurveTo(210,60,208,115);ctx.quadraticCurveTo(205,170,135,188);ctx.quadraticCurveTo(90,190,75,155);ctx.closePath();ctx.fill();
-    ctx.fillStyle=p.ink;ctx.font="900 92px Arial";ctx.fillText("yas",94,128);
-    ctx.fillStyle="#fff";ctx.font="800 70px Arial";ctx.fillText("Wakala",300,130);
+    ctx.fillStyle="#ffdf00";ctx.font="900 125px Arial";ctx.fillText("yas",750,110);
+    ctx.fillStyle="#fff";ctx.font="700 48px Arial";ctx.fillText("WAKALA",750,175);
   }
   ctx.restore();
 }
 function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:string,number:string){
   const ctx=canvas.getContext("2d");if(!ctx)return;
   canvas.width=W;canvas.height=H;
-  const p=NETWORKS[network];
-  const grad=ctx.createLinearGradient(0,0,W,H);grad.addColorStop(0,p.base);grad.addColorStop(.58,p.deep);grad.addColorStop(1,p.base);
-  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-  // Premium layered curves and subtle geometric texture
-  ctx.save();ctx.globalAlpha=.16;ctx.strokeStyle="#fff";ctx.lineWidth=10;
-  for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(1120,360+i*20,270+i*65,Math.PI*.35,Math.PI*1.25);ctx.stroke();}
-  ctx.restore();
+  const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
   if(network==="halotel"){
-    ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(W,0);ctx.lineTo(W,330);ctx.quadraticCurveTo(570,210,0,365);ctx.closePath();ctx.fill();
-    ctx.fillStyle=p.accent;ctx.beginPath();ctx.moveTo(0,285);ctx.quadraticCurveTo(600,110,W,270);ctx.lineTo(W,355);ctx.quadraticCurveTo(560,220,0,390);ctx.closePath();ctx.fill();
-    drawBrand(ctx,network,p);
-    fitText(ctx,"NAMBA YA WAKALA",600,440,1020,76,"#fff");
-    fitText(ctx,"AGENT CODE",925,505,360,40,"#fff",800);
-    // Six-digit ticket-like number cells
-    const digits=cleanNumber(number)||"123456";
-    const count=Math.max(6,digits.length),boxW=Math.min(170,1000/count),gap=12,total=count*boxW+(count-1)*gap,start=(W-total)/2;
-    for(let i=0;i<count;i++){rounded(ctx,start+i*(boxW+gap),565,boxW,150,24,"#fff","#ffd2c8",3);fitText(ctx,digits[i]||"•",start+i*(boxW+gap)+boxW/2,640,boxW-18,108,"#111");}
-    fitText(ctx,"Jina la Wakala",600,790,850,54,"#fff");
-    rounded(ctx,72,850,1056,145,34,"#fff","#ffd5cf",3);
-    fitText(ctx,cleanName(name)||"JINA LA WAKALA",600,923,980,66,"#111");
-    fitText(ctx,"*** Hakiki jina la wakala kabla ya kuthibitisha muamala wako.",600,1100,1050,31,"#fff",700);
-    ctx.fillStyle="#fff";ctx.font="700 29px Arial";ctx.textAlign="center";ctx.fillText("halotel.co.tz     •     HaloPesa     •     Hotline 100",600,1375);
+    // White upper field and the orange/red sweeping bands from the user's HaloPesa sample.
+    ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+    const g=ctx.createLinearGradient(0,180,W,570);g.addColorStop(0,"#ff7a00");g.addColorStop(.45,"#ff3212");g.addColorStop(1,"#e60012");
+    ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(0,245);ctx.quadraticCurveTo(710,145,1500,245);ctx.lineTo(1500,1050);ctx.lineTo(0,1050);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#ff8b00";ctx.beginPath();ctx.moveTo(0,275);ctx.quadraticCurveTo(640,185,1500,285);ctx.lineTo(1500,370);ctx.quadraticCurveTo(730,245,0,390);ctx.closePath();ctx.fill();
+    brand(ctx,network);
+    textFit(ctx,"Namba ya Wakala",750,345,1260,92,"#fff",900);
+    textFit(ctx,"AGENT CODE",1110,420,340,48,"#fff",800);
+    const digits=num.split("");const gap=12,boxW=Math.min(205,1320/digits.length),total=digits.length*boxW+(digits.length-1)*gap,left=(W-total)/2;
+    digits.forEach((d,i)=>{const x=left+i*(boxW+gap);round(ctx,x,485,boxW,175,24,"#fff","#f4d5d5",3);textFit(ctx,d,x+boxW/2,573,boxW-18,135,"#080808",950);});
+    // thin white rules flanking the label, as in the supplied artwork
+    ctx.strokeStyle="#fff";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(90,735);ctx.lineTo(510,735);ctx.moveTo(990,735);ctx.lineTo(1410,735);ctx.stroke();
+    textFit(ctx,"Jina la Wakala",750,735,440,58,"#fff",900);
+    round(ctx,90,780,1320,135,30,"#fff","#f4dddd",3);
+    textFit(ctx,nm,750,848,1240,78,"#090909",950);
+    textFit(ctx,"*** Hakiki jina la wakala kabla hujathibitisha muamala wako.",750,968,1350,34,"#fff",700);
+    ctx.textAlign="center";ctx.font="700 26px Arial";ctx.fillStyle="#fff";ctx.fillText("halotel.co.tz      •      halopesa *150*88#      •      Hotline 100",750,1022);
   }else{
-    drawBrand(ctx,network,p);
-    if(network==="yas"){
-      fitText(ctx,"NAMBA YA WAKALA",600,330,1020,76,"#fff");
-      fitText(ctx,"AGENT NUMBER",600,390,800,28,"#d9eaff",800);
-    }else{
-      fitText(ctx,"NAMBA YA WAKALA",600,335,1050,76,"#fff");
-    }
-    rounded(ctx,72,405,1056,230,34,"#fff",network==="yas"?"#ffdf00":"#ffdce0",5);
-    fitText(ctx,cleanNumber(number)||"0000000",600,520,990,160,network==="yas"?"#082d68":"#080808",950);
-    // Number plate lower accent
-    rounded(ctx,72,690,1056,12,6,p.accent);
-    fitText(ctx,"JINA LA WAKALA",600,790,900,62,"#fff");
-    rounded(ctx,72,860,1056,155,32,"#fff",network==="yas"?"#ffdf00":"#ffdce0",4);
-    fitText(ctx,cleanName(name)||"JINA LA WAKALA",600,938,980,72,p.ink,950);
+    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,network==="yas"?"#0878ce":network==="airtel"?"#f20c1b":"#f10b1c");bg.addColorStop(.55,network==="yas"?"#064d9d":network==="airtel"?"#e0001b":"#df0019");bg.addColorStop(1,network==="yas"?"#052b66":"#b90018");
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Clean solid field and a fine inset outline, matching the rectangular source stickers.
+    round(ctx,18,18,W-36,H-36,48,"rgba(0,0,0,0)","#fff",7);
+    brand(ctx,network);
+    textFit(ctx,"NAMBA YA WAKALA",750,300,1360,104,"#fff",950);
+    if(network==="yas")textFit(ctx,"AGENT NUMBER",750,365,1000,35,"#d9edff",800);
+    round(ctx,65,380,1370,220,36,"#fff","#e8e8e8",5);
+    textFit(ctx,num,750,490,1280,176,network==="yas"?"#073b79":"#050505",950);
+    textFit(ctx,network==="airtel"?"JINA":network==="vodacom"?"JINA LA WAKALA":"JINA LA WAKALA",750,685,1150,66,"#fff",900);
+    round(ctx,70,735,1360,160,34,"#fff","#e6e6e6",5);
+    textFit(ctx,nm,750,815,1280,88,network==="yas"?"#073b79":"#050505",950);
     if(network==="airtel"){
-      ctx.fillStyle="#fff";ctx.font="italic 700 37px Arial";ctx.textAlign="left";ctx.fillText("Urahisi, Kasi na Usalama",75,1210);
-      ctx.textAlign="right";ctx.font="900 70px Arial";ctx.fillText("airtel",1110,1285);
-      ctx.font="700 32px Arial";ctx.fillText("money",1110,1330);
+      ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 86px Arial";ctx.fillText("airtel",750,975);
+      ctx.font="700 40px Arial";ctx.fillText("Money",750,1015);
     }else if(network==="vodacom"){
-      // White/red M-Pesa footer with phone illustration
-      ctx.save();ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(0,1190);ctx.quadraticCurveTo(500,1060,W,1160);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
-      rounded(ctx,115,1170,170,250,28,"#111");rounded(ctx,128,1187,144,208,16,p.base);
-      ctx.fillStyle="#fff";ctx.font="900 29px Arial";ctx.textAlign="center";ctx.fillText("m-pesa",200,1290);
-      ctx.fillStyle=p.base;ctx.font="900 54px Arial";ctx.textAlign="right";ctx.fillText("vodacom",1110,1300);
-      ctx.font="800 30px Arial";ctx.fillText("M-PESA",1110,1350);ctx.restore();
+      ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 86px Arial";ctx.fillText("◉ vodacom",750,975);
+      ctx.font="800 40px Arial";ctx.fillText("m-pesa",750,1015);
     }else{
-      ctx.fillStyle="#fff";ctx.font="800 40px Arial";ctx.textAlign="left";ctx.fillText("Lipa  •  Tuma  •  Pokea",80,1210);
-      rounded(ctx,930,1110,95,190,18,"#fff");rounded(ctx,942,1125,71,150,10,p.deep);
-      ctx.fillStyle=p.accent;ctx.font="900 76px Arial";ctx.textAlign="right";ctx.fillText("yas",1100,1370);
+      ctx.fillStyle="#ffdf00";ctx.textAlign="center";ctx.font="900 84px Arial";ctx.fillText("yas",750,980);
     }
   }
-  // Outer keyline
-  ctx.strokeStyle=network==="yas"?"#ffdf00":"#ffffffd9";ctx.lineWidth=9;ctx.beginPath();ctx.roundRect(20,20,W-40,H-40,38);ctx.stroke();
 }
 
 export default function AgentStickerPage(){
