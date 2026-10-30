@@ -1018,12 +1018,17 @@ export async function adminListLipaApplications() {
 }
 
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
-  let active = true;
-  void readAllDocuments((cursor) => query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
-    if (!active) return;
-    callback(documents.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
-  }).catch((error) => { if (active) onError?.(error); });
-  return () => { active = false; };
+  // Keep the user's history live so a newly submitted application appears without refreshing.
+  const applicationsQuery = query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(100));
+  return onSnapshot(applicationsQuery, (snapshot) => {
+    const rows = snapshot.docs.map((item) => ({
+      id: item.id,
+      ...item.data(),
+      submittedAt: timestampValue(item.data().submittedAt),
+      updatedAt: timestampValue(item.data().updatedAt),
+    } as LipaApplication));
+    callback(rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
+  }, (error) => onError?.(error));
 }
 
 export async function createPocketWifiOrder(applicationId: string, details: string, phone: string) {
