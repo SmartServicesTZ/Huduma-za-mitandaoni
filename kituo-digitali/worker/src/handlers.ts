@@ -619,14 +619,26 @@ export const submitLipaApplication = callable(async (request) => {
   if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "businessNameEvidence")) {
     fields.push({
       fieldName: "businessNameEvidence",
-      label: "Ushahidi wa jina la biashara",
+      label: "Picha ya BRELA AU eneo la biashara",
       type: "IMAGE_UPLOAD",
       required: false,
-      helpText: "Picha ya bango la biashara lenye jina linaloonekana wazi, au picha ya cheti cha BRELA kilichosajiliwa kwa jina hilo.",
+      helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
       maxSizeMb: 5,
       accept: ["image/jpeg", "image/png", "image/webp"],
       order: 3.25,
     });
+  }
+  if (networkId.toLowerCase().includes("vodacom")) {
+    // Enforce an image upload even if an older saved network configuration used another field type.
+    fields = fields.map((field) => String(field.fieldName ?? "") === "businessNameEvidence" ? {
+      ...field,
+      label: "Picha ya BRELA AU eneo la biashara",
+      type: "IMAGE_UPLOAD",
+      required: false,
+      helpText: "Pakia picha MOJA: cheti cha BRELA kilichosajiliwa kwa jina hilo AU picha ya bango la eneo la biashara inayoonyesha jina hilo wazi.",
+      maxSizeMb: 5,
+      accept: ["image/jpeg", "image/png", "image/webp"],
+    } : field);
   }
   const rawValues = objectValue(data.values, "Fomu");
   if (/yas|tigo/i.test(networkId)) {
