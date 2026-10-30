@@ -126,7 +126,7 @@ export default function PataTillNetworksPage() {
         <ul style={{margin:0,paddingLeft:21,color:"#475569",lineHeight:1.8,fontSize:14}}>{networkDetails[network].map(item=><li key={item} style={{paddingLeft:3,marginBottom:3}}>{item}</li>)}</ul>
       </div>
       {reference ? <div role="status" aria-live="polite" style={{display:"grid",gap:12,padding:20,border:"1.5px solid #86efac",borderRadius:16,background:"#ecfdf3",color:"#14532d"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{display:"grid",placeItems:"center",width:42,height:42,borderRadius:"50%",background:"#16a34a",color:"#fff"}}><Check size={24}/></span><div><strong style={{fontSize:17}}>TAARIFA ZIMEWASILISHWA</strong><p style={{margin:"4px 0 0",fontSize:13}}>Ombi lako limepokelewa kikamilifu.</p></div></div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{display:"grid",placeItems:"center",width:42,height:42,borderRadius:"50%",background:"#16a34a",color:"#fff"}}><CheckCircle2 size={24}/></span><div><strong style={{fontSize:17}}>TAARIFA ZIMEWASILISHWA</strong><p style={{margin:"4px 0 0",fontSize:13}}>Ombi lako limepokelewa kikamilifu.</p></div></div>
         <p style={{margin:0,fontSize:13}}>Namba ya kumbukumbu: <strong>{reference}</strong>. Unaweza kufuatilia hali yake kwenye sehemu ya Maombi yangu hapa chini.</p>
         <p style={{margin:0,fontSize:13}}>Ombi litasubiri uthibitisho wa malipo na hatua za Admin kama zilivyoelekezwa.</p>
         <button type="button" onClick={resetForm} style={{border:0,borderRadius:10,padding:"13px 18px",fontWeight:900,color:"#fff",background:activeTheme.gradient,cursor:"pointer",minHeight:48}}>TUMA OMBI JINGINE</button>
