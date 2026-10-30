@@ -48,6 +48,7 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="450" y="1100" width="82" height="78" fill="#fafafa" stroke="#ddd"/><text x="491" y="1152" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" fill="#666">▶</text>' +
   '<rect x="532" y="1100" width="82" height="78" fill="#fafafa" stroke="#ddd"/><text x="573" y="1152" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" fill="#666">⏭</text>' +
   '<rect x="720" y="1100" width="170" height="78" fill="#fff" stroke="#ddd" stroke-width="2"/><text x="772" y="1152" font-family="Arial,sans-serif" font-size="31" fill="#333">10</text><path d="M842 1130 L862 1130 L852 1144 Z" fill="#666"/>' +
+  '<text x="560" y="1192" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#b91c1c">SAMPLE • NOT OFFICIAL — SI UTHIBITISHO WA TRA</text>' +
   '<rect x="24" y="1200" width="1074" height="138" fill="#050505"/><text x="64" y="1282" font-family="Arial,sans-serif" font-size="33" fill="#fff">Together We Build Our Nation</text>' +
   '<rect x="710" y="1218" width="180" height="92" rx="10" fill="#555"/><text x="800" y="1277" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" fill="#ddd">Select</text>' +
   '<rect x="902" y="1218" width="166" height="92" rx="10" fill="#555"/><text x="985" y="1277" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" fill="#ddd">Close</text>' +
