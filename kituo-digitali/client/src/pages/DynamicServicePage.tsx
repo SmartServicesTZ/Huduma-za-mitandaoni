@@ -452,7 +452,6 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
         <section className="dynamic-service-card">
           <h2 className="dynamic-service-card-heading">Taarifa za ombi</h2>
           {formError && <div className="dynamic-service-alert dynamic-service-alert-error" role="alert">{formError}</div>}
-          {successReference && <div className="dynamic-service-alert dynamic-service-alert-success" role="status">Ombi limetumwa kikamilifu. Rejea yako ni <strong>{successReference}</strong>.</div>}
           {successReference ? (
             <div className="dynamic-service-alert dynamic-service-alert-success" role="status" aria-live="polite">
               <strong>TAARIFA ZIMEWASILISHWA</strong>
