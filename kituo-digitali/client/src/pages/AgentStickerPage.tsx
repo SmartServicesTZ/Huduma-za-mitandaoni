@@ -11,8 +11,14 @@ const NETWORKS: Record<NetworkKey,Palette> = {
   yas:{label:"Yas",base:"#0754b8",deep:"#06265f",accent:"#ffdf00",ink:"#092d63",brand:"yas",sub:"wakala"},
 };
 const W=1500,H=1050;
-const cleanName=(v:string)=>v.trim().replace(/\\s+/g," ").toUpperCase();
-const cleanNumber=(v:string)=>v.replace(/\\D/g,"").slice(0,12);
+const cleanName=(v:string)=>v.trim().replace(/\s+/g," ").toUpperCase();
+const cleanNumber=(v:string)=>v.replace(/\D/g,"").slice(0,12);
+const asset=(name:string)=>import.meta.env.BASE_URL+name;
+function loadImage(src:string){
+  return new Promise<HTMLImageElement>((resolve,reject)=>{
+    const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error(`Asset haikupatikana: ${src}`));image.src=src;
+  });
+}
 
 function round(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,r:number,fill:string,stroke?:string,line=1){
   ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
@@ -37,10 +43,7 @@ function textFit(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,max
 function brand(ctx:CanvasRenderingContext2D,n:NetworkKey){
   ctx.save();ctx.textAlign="center";ctx.textBaseline="middle";
   if(n==="airtel"){
-    // Airtel Money wordmark at top and repeated at the foot, like the supplied reference.
-    ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(505,95);ctx.bezierCurveTo(440,10,330,38,335,112);ctx.bezierCurveTo(340,190,430,182,455,127);ctx.bezierCurveTo(410,164,385,135,408,103);ctx.bezierCurveTo(438,65,486,83,505,95);ctx.fill();
-    ctx.fillStyle="#fff";ctx.textAlign="left";ctx.font="900 112px Arial";ctx.fillText("airtel",520,100);
-    ctx.font="800 62px Arial";ctx.fillText("Money",530,170);
+    // Airtel is rendered from airtel-logo-white.png in drawSticker().
   }else if(n==="vodacom"){
     // Vodacom round mark and M-Pesa wordmark in a centered top lockup.
     ctx.strokeStyle="#fff";ctx.lineWidth=24;ctx.beginPath();ctx.arc(405,112,48,.25,Math.PI*1.8);ctx.stroke();
@@ -55,7 +58,7 @@ function brand(ctx:CanvasRenderingContext2D,n:NetworkKey){
   }
   ctx.restore();
 }
-function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:string,number:string){
+async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:string,number:string){
   const ctx=canvas.getContext("2d");if(!ctx)return;
   canvas.width=W;canvas.height=H;
   const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
@@ -83,6 +86,13 @@ function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:string,num
     // Thick inset outline and raised white panels match the supplied Airtel reference.
     round(ctx,18,18,W-36,H-36,48,"rgba(0,0,0,0)","#fff",9);
     brand(ctx,network);
+    if(network==="airtel"){
+      try{
+        const logo=await loadImage(asset("airtel-logo-white.png"));
+        ctx.drawImage(logo,500,24,500,190);
+        ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="800 58px Arial Black, Arial";ctx.fillText("Money",750,214);
+      }catch{ /* keep the sticker usable if the asset is unavailable */ }
+    }
     textFit(ctx,"NAMBA YA WAKALA",750,300,1360,112,"#fff",950,true);
     if(network==="yas")textFit(ctx,"AGENT NUMBER",750,365,1000,35,"#d9edff",800);
     raisedRound(ctx,65,380,1370,220,36,"#fff");
@@ -91,11 +101,11 @@ function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:string,num
     raisedRound(ctx,70,735,1360,160,34,"#fff");
     textFit(ctx,nm,750,815,1280,96,network==="yas"?"#073b79":"#050505",950);
     if(network==="airtel"){
-      // Footer is the Airtel-only lockup from the reference, with safe bottom padding.
-      ctx.save();
-      ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(675,958);ctx.bezierCurveTo(640,905,585,922,590,970);ctx.bezierCurveTo(594,1015,642,1010,658,980);ctx.bezierCurveTo(633,1000,620,982,634,964);ctx.bezierCurveTo(649,944,668,950,675,958);ctx.fill();
-      ctx.textAlign="left";ctx.textBaseline="middle";ctx.font="900 86px Arial Black, Arial";ctx.fillText("airtel",690,965);
-      ctx.restore();
+      // Footer uses the official Airtel-only logo asset with safe bottom padding.
+      try{
+        const logo=await loadImage(asset("airtel-logo-white.png"));
+        ctx.drawImage(logo,620,900,260,124);
+      }catch{ /* keep the sticker usable if the asset is unavailable */ }
     }else if(network==="vodacom"){
       ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 86px Arial";ctx.fillText("◉ vodacom",750,975);
       ctx.font="800 40px Arial";ctx.fillText("m-pesa",750,1015);
@@ -112,7 +122,7 @@ export default function AgentStickerPage(){
   const [busy,setBusy]=useState(false);
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const valid=cleanName(agentName).split(" ").filter(Boolean).length>=2 && /^\d{5,12}$/.test(cleanNumber(agentNumber));
-  useEffect(()=>{if(canvasRef.current)drawSticker(canvasRef.current,network,agentName,agentNumber);},[network,agentName,agentNumber]);
+  useEffect(()=>{if(canvasRef.current)void drawSticker(canvasRef.current,network,agentName,agentNumber);},[network,agentName,agentNumber]);
   function downloadSticker(){
     const canvas=canvasRef.current;if(!canvas||!valid||busy)return;setBusy(true);
     canvas.toBlob(blob=>{if(blob){const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");}setBusy(false);},"image/png",1);
