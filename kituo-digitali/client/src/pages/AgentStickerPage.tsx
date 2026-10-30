@@ -26,17 +26,18 @@ function round(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,
 }
 function raisedRound(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,r:number,fill:string,stroke="#e0e0e0"){
   ctx.save();
-  ctx.shadowColor="rgba(0,0,0,.22)";
-  ctx.shadowBlur=8;
-  ctx.shadowOffsetY=4;
+  ctx.shadowColor="rgba(0,0,0,.30)";
+  ctx.shadowBlur=10;
+  ctx.shadowOffsetY=6;
   round(ctx,x,y,w,h,r,fill,stroke,2);
   ctx.restore();
 }
-function textFit(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,max:number,size:number,color:string,weight=900,shadow=false){
+function textFit(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,max:number,size:number,color:string,weight=900,shadow=false,extraBlack=false){
   let s=size;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=color;
   ctx.font=`${weight} ${s}px Arial Black, Arial, Helvetica, sans-serif`;
   while(ctx.measureText(value).width>max&&s>22){s-=3;ctx.font=`${weight} ${s}px Arial, Helvetica, sans-serif`;}
   if(shadow){ctx.shadowColor="rgba(255,255,255,.42)";ctx.shadowBlur=3;ctx.shadowOffsetY=2;}
+  if(extraBlack){ctx.lineWidth=2.5;ctx.strokeStyle=color;ctx.strokeText(value,x,y,max);}
   ctx.fillText(value,x,y,max);
   ctx.shadowColor="transparent";ctx.shadowBlur=0;ctx.shadowOffsetY=0;
 }
@@ -88,23 +89,22 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
     brand(ctx,network);
     if(network==="airtel"){
       try{
-        const logo=await loadImage(asset("airtel-logo-white.png"));
-        ctx.drawImage(logo,500,24,500,190);
-        ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="800 58px Arial Black, Arial";ctx.fillText("Money",750,214);
+        const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
+        ctx.drawImage(logo,510,42,480,150);
       }catch{ /* keep the sticker usable if the asset is unavailable */ }
     }
     textFit(ctx,"NAMBA YA WAKALA",750,300,1360,112,"#fff",950,true);
     if(network==="yas")textFit(ctx,"AGENT NUMBER",750,365,1000,35,"#d9edff",800);
     raisedRound(ctx,65,380,1370,220,36,"#fff");
-    textFit(ctx,num,750,490,1280,176,network==="yas"?"#073b79":"#050505",950);
+    textFit(ctx,num,750,490,1280,176,network==="yas"?"#073b79":"#050505",950,false,true);
     textFit(ctx,network==="airtel"?"JINA":network==="vodacom"?"JINA LA WAKALA":"JINA LA WAKALA",750,685,1150,72,"#fff",950,true);
     raisedRound(ctx,70,735,1360,160,34,"#fff");
-    textFit(ctx,nm,750,815,1280,96,network==="yas"?"#073b79":"#050505",950);
+    textFit(ctx,nm,750,815,1280,96,network==="yas"?"#073b79":"#050505",950,false,true);
     if(network==="airtel"){
       // Footer uses the official Airtel-only logo asset with safe bottom padding.
       try{
-        const logo=await loadImage(asset("airtel-logo-white.png"));
-        ctx.drawImage(logo,620,900,260,124);
+        const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
+        ctx.drawImage(logo,590,885,320,100);
       }catch{ /* keep the sticker usable if the asset is unavailable */ }
     }else if(network==="vodacom"){
       ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 86px Arial";ctx.fillText("◉ vodacom",750,975);
