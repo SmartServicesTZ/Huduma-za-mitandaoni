@@ -22,7 +22,6 @@ export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   const businessName = values.businessName.trim();
   if (!businessName) errors.businessName = "Weka jina la biashara.";
   else if (businessName.length > 25) errors.businessName = "Jina la biashara lisizidi herufi 25.";
-  if (!/^\d{5}$/.test(values.postalCode.trim())) errors.postalCode = "Namba ya posta iwe na tarakimu 5.";
   return errors;
 }
 
