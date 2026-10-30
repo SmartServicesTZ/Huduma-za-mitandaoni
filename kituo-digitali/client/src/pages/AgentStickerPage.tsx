@@ -32,6 +32,14 @@ function raisedRound(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:n
   round(ctx,x,y,w,h,r,fill,stroke,2);
   ctx.restore();
 }
+function drawStickerFrame(ctx:CanvasRenderingContext2D,w:number,h:number){
+  ctx.save();
+  ctx.beginPath();ctx.roundRect(8,8,w-16,h-16,Math.min(44,w*.055,h*.08));
+  ctx.strokeStyle="rgba(0,0,0,.28)";ctx.lineWidth=Math.max(12,Math.min(w,h)*.025);ctx.stroke();
+  ctx.beginPath();ctx.roundRect(13,13,w-26,h-26,Math.min(40,w*.05,h*.075));
+  ctx.strokeStyle="#fff";ctx.lineWidth=Math.max(4,Math.min(w,h)*.009);ctx.stroke();
+  ctx.restore();
+}
 function textFit(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,max:number,size:number,color:string,weight=900,shadow=false,extraBlack=false){
   let s=size;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=color;
   ctx.font=`${weight} ${s}px Arial Black, Arial, Helvetica, sans-serif`;
@@ -64,28 +72,7 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
   canvas.width=W;canvas.height=H;
   const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
   if(network!=="airtel"){
-    if(network==="yas"){
-      canvas.width=W;canvas.height=H;
-      const w=canvas.width,h=canvas.height;
-      const bg=ctx.createLinearGradient(0,0,w,h);bg.addColorStop(0,"#063b8c");bg.addColorStop(.55,"#0874d8");bg.addColorStop(1,"#03265f");
-      ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
-      ctx.save();ctx.globalAlpha=.18;ctx.fillStyle="#62c8ff";ctx.beginPath();ctx.arc(w+40,80,390,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(-80,h+80,360,0,Math.PI*2);ctx.fill();ctx.restore();
-      round(ctx,55,48,w-110,220,42,"rgba(3,30,78,.38)","rgba(255,255,255,.35)",3);
-      ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#ffdf00";ctx.font="900 150px Arial, sans-serif";ctx.fillText("yas",w/2,142);
-      ctx.fillStyle="#fff";ctx.font="800 42px Arial, sans-serif";ctx.fillText("WAKALA",w/2,222);
-      round(ctx,115,330,w-230,86,22,"#ffdf00");
-      ctx.fillStyle="#082d68";ctx.font="900  fiftypx Arial".replace("fifty","50");ctx.fillText("NAMBA YA WAKALA",w/2,373);
-      raisedRound(ctx,95,455,w-190,225,38,"#fff","#dceaff");
-      round(ctx,95,455,24,225,12,"#ffdf00");
-      textFit(ctx,num,w/2,568,w-300,174,"#082f68",950,false,true);
-      ctx.fillStyle="#ffdf00";ctx.fillRect(190,730,w-380,8);
-      ctx.fillStyle="#fff";ctx.font="800 44px Arial, sans-serif";ctx.fillText("JINA LA WAKALA",w/2,805);
-      raisedRound(ctx,125,850,w-250,125,30,"#fff","#dceaff");
-      textFit(ctx,nm,w/2,912,w-330,82,"#082f68",950,false,true);
-      round(ctx,55,48,w-110,h-96,42,"rgba(0,0,0,0)","#ffdf00",8);
-      return;
-    }
-    const templates:Record<Exclude<NetworkKey,"airtel"|"yas">,string>={vodacom:"Vodacom.png",halotel:"Halotel.png"};
+    const templates:Record<Exclude<NetworkKey,"airtel">,string>={vodacom:"Vodacom.png",halotel:"Halotel.png",yas:"Yas.png"};
     const template=await loadImage(asset(templates[network]));
     canvas.width=template.naturalWidth;canvas.height=template.naturalHeight;
     ctx.save();ctx.beginPath();ctx.roundRect(0,0,canvas.width,canvas.height,42);ctx.clip();
@@ -99,10 +86,20 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
       const step=digits.length>1?span/(digits.length-1):0;
       digits.forEach((digit,index)=>textFit(ctx,digit,left+step*index,canvas.height*.615,canvas.width*.105,canvas.height*.15,"#080808",950,false,true));
       textFit(ctx,nm,canvas.width*.5,canvas.height*.82,canvas.width*.78,canvas.height*.09,"#090909",950,false,true);
-    }else{
-
+      // Make the USSD instruction in the original footer easy to read without hiding the artwork.
+      const footerY=canvas.height*.965;
+      ctx.save();
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.font=`900 ${Math.max(30,canvas.height*.038)}px Arial, Helvetica, sans-serif`;
+      ctx.lineWidth=5;ctx.strokeStyle="rgba(145,20,0,.8)";
+      ctx.strokeText("*150*88#",canvas.width*.445,footerY);
+      ctx.fillStyle="#fff";ctx.fillText("*150*88#",canvas.width*.445,footerY);
+      ctx.restore();
+    }else if(network==="yas"){
+      textFit(ctx,num,canvas.width*.5,canvas.height*.445,canvas.width*.66,canvas.height*.13,"#101010",950,false,true);
+      textFit(ctx,nm,canvas.width*.5,canvas.height*.735,canvas.width*.72,canvas.height*.12,"#101010",950,false,true);
     }
-    ctx.save();ctx.beginPath();ctx.roundRect(0,0,canvas.width,canvas.height,42);ctx.strokeStyle="#fff";ctx.lineWidth=10;ctx.stroke();ctx.restore();
+    drawStickerFrame(ctx,canvas.width,canvas.height);
     return;
   }
   const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,"#e30613");bg.addColorStop(.55,"#e30613");bg.addColorStop(1,"#e30613");
@@ -122,7 +119,7 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
     const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
     ctx.drawImage(logo,590,885,320,100);
   }catch{ /* keep the sticker usable if the asset is unavailable */ }
-  ctx.save();ctx.beginPath();ctx.roundRect(0,0,W,H,48);ctx.strokeStyle="#fff";ctx.lineWidth=10;ctx.stroke();ctx.restore();
+  drawStickerFrame(ctx,W,H);
 }
 
 export default function AgentStickerPage(){
