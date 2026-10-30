@@ -54,7 +54,7 @@ export default function AccessLipaNumberPage() {
   const [name2, setName2] = useState("");
   const [name3, setName3] = useState("");
   const [lipaSequence, setLipaSequence] = useState("1");
-  const [mpesaAccountConfirmed: mpesaAccountConfirmed ? 1 : 0, setMpesaAccountConfirmed] = useState(false);
+  const [mpesaAccountConfirmed, setMpesaAccountConfirmed] = useState(false);
   const [firstLipaConfirmed, setFirstLipaConfirmed] = useState(false);
   const [contact, setContact] = useState("");
   const [nida, setNida] = useState("");
@@ -182,7 +182,7 @@ export default function AccessLipaNumberPage() {
               name2: name2.trim(),
               name3: name3.trim(),
               lipaSequence,
-              mpesaAccountConfirmed,
+              mpesaAccountConfirmed: mpesaAccountConfirmed ? 1 : 0,
               firstLipaConfirmed: lipaSequence === "1" && firstLipaConfirmed ? 1 : 0,
               email: email.trim(),
               contact: contact.trim(),
