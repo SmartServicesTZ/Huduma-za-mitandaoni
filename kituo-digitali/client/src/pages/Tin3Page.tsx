@@ -3,8 +3,8 @@ import { ArrowLeft, Download, X } from "lucide-react";
 import { Link } from "wouter";
 
 function formatTIN(value: string) {
-  const digits = value.replace(/\\D/g, "").slice(0, 9);
-  return digits.replace(/(\\d{3})(?=\\d)/g, "$1-");
+  const digits = value.replace(/\D/g, "").slice(0, 9);
+  return digits.replace(/(\d{3})(?=\\d)/g, "$1-");
 }
 function esc(value: string) {
   return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c] ?? c));
@@ -86,7 +86,7 @@ export default function Tin3Page() {
               <div>
                 <label htmlFor="tin-number" className="block text-sm font-bold text-zinc-800 mb-2">Namba ya TIN</label>
                 <div className="relative">
-                  <input id="tin-number" inputMode="numeric" autoComplete="off" value={tin} onChange={(e)=>setTinInput(e.target.value.replace(/\\D/g, "").slice(0, 9))} className="w-full border-2 border-zinc-200 bg-zinc-50 px-4 py-4 pr-12 rounded-2xl text-lg font-semibold tracking-wider text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-red-600 focus:bg-white focus:ring-4 focus:ring-red-100 transition" placeholder="123-123-123" maxLength={11} />
+                  <input id="tin-number" inputMode="numeric" autoComplete="off" value={tin} onChange={(e)=>setTinInput(e.target.value.replace(/\D/g, "").slice(0, 9))} className="w-full border-2 border-zinc-200 bg-zinc-50 px-4 py-4 pr-12 rounded-2xl text-lg font-semibold tracking-wider text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-red-600 focus:bg-white focus:ring-4 focus:ring-red-100 transition" placeholder="123-123-123" maxLength={11} />
                   {tinInput && <button type="button" aria-label="Futa namba ya TIN" onClick={()=>setTinInput("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-600 transition"><X size={18}/></button>}
                 </div>
                 <p className="text-xs text-zinc-500 mt-2">Namba 9 pekee. Mfumo utaweka alama za (-) moja kwa moja.</p>
