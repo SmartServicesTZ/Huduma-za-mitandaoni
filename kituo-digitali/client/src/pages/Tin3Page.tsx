@@ -63,31 +63,28 @@ export default function Tin3Page() {
 
   const download = () => {
     const image = new Image();
-    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
     image.onload = () => {
       const canvas = document.createElement("canvas");
       canvas.width = 2240;
       canvas.height = 2720;
       const context = canvas.getContext("2d");
-      if (!context) {
-        URL.revokeObjectURL(svgUrl);
-        return;
-      }
+      if (!context) return;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((pngBlob) => {
-        URL.revokeObjectURL(svgUrl);
-        if (!pngBlob) return;
-        const pngUrl = URL.createObjectURL(pngBlob);
-        const a = document.createElement("a");
-        a.href = pngUrl;
-        a.download = `${tin || "TIN"}.png`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
-      }, "image/png");
+      const pngDataUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = pngDataUrl;
+      a.download = `${tin || "TIN"}.png`;
+      a.type = "image/png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     };
-    image.onerror = () => URL.revokeObjectURL(svgUrl);
-    image.src = svgUrl;
+    image.onerror = () => {
+      alert("Imeshindikana kutengeneza PNG. Tafadhali jaribu tena.");
+    };
+    image.src = previewUrl;
   };
 
   return (
