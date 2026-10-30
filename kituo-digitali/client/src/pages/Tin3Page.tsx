@@ -62,13 +62,32 @@ export default function Tin3Page() {
   const previewUrl = useMemo(() => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), [svg]);
 
   const download = () => {
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${tin || "TIN"}.svg`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const image = new Image();
+    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 2240;
+      canvas.height = 2720;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(svgUrl);
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((pngBlob) => {
+        URL.revokeObjectURL(svgUrl);
+        if (!pngBlob) return;
+        const pngUrl = URL.createObjectURL(pngBlob);
+        const a = document.createElement("a");
+        a.href = pngUrl;
+        a.download = `${tin || "TIN"}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+      }, "image/png");
+    };
+    image.onerror = () => URL.revokeObjectURL(svgUrl);
+    image.src = svgUrl;
   };
 
   return (
