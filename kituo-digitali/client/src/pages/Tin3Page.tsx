@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Download, RotateCcw, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Download, RotateCcw } from "lucide-react";
 import { Link } from "wouter";
 
 function formatTIN(value: string) {
@@ -10,13 +10,13 @@ function esc(value: string) {
   return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c] ?? c));
 }
 function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
-  const tin = esc(tinValue || "139-992-482");
-  const name = esc(nameValue || "FASIL ALEX SHAYO");
+  const tin = esc(tinValue);
+  const name = esc(nameValue);
   const tab = String(tabCount);
   return '<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1360" viewBox="0 0 1120 1360">' +
   '<rect width="1120" height="1360" fill="#777"/>' +
   '<rect x="0" y="0" width="1120" height="178" fill="#050505"/>' +
-  '<path d="M50 80 L70 58 L92 80 V115 H76 V91 H64 V115 H50 Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>' +
+  '<path d="M50 80 L70 62 L92 80 V115 H76 V91 H64 V115 H50 Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>' +
   '<rect x="142" y="32" width="550" height="116" rx="58" fill="#303030"/><text x="170" y="105" font-family="Arial,sans-serif" font-size="40" fill="#eee">taxpayersportal.tra.go.tz</text>' +
   '<path d="M760 62 V112 M735 87 H785" stroke="#fff" stroke-width="7" stroke-linecap="round"/>' +
   '<rect x="887" y="56" width="52" height="58" rx="12" fill="none" stroke="#fff" stroke-width="5"/><text x="913" y="96" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">' + tab + '</text>' +
@@ -35,7 +35,7 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="70" y="684" width="980" height="76" fill="#fff" stroke="#d0d0d0" stroke-width="2"/><text x="88" y="734" font-family="Arial,sans-serif" font-size="33" fill="#222">' + name + '</text>' +
   '<path d="M1015 706 L1035 734 M1035 706 L1015 734" stroke="#c4cbd1" stroke-width="6" stroke-linecap="round"/>' +
   '<rect x="54" y="778" width="190" height="76" rx="10" fill="#e5e5e5" stroke="#c7c7c7" stroke-width="2"/>' +
-  '<path d="M91 800 A18 18 0 1 1 84 827 M84 827 L84 810 M84 827 L101 827" fill="none" stroke="#333" stroke-width="5"/><text x="118" y="829" font-family="Arial,sans-serif" font-size="31" fill="#222">Reset</text>' +
+  '<path d="M96 806 A17 17 0 1 1 88 824 M88 824 L88 813 M88 824 L99 824" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><text x="124" y="829" font-family="Arial,sans-serif" font-size="30" font-weight="600" fill="#222">RESET</text>' +
   '<rect x="832" y="778" width="218" height="76" rx="10" fill="#222"/><circle cx="875" cy="812" r="15" fill="none" stroke="#fff" stroke-width="5"/><path d="M886 824 L900 838" stroke="#fff" stroke-width="5"/><text x="918" y="829" font-family="Arial,sans-serif" font-size="31" fill="#fff">Search</text>' +
   '<line x1="54" y1="870" x2="1066" y2="870" stroke="#ddd" stroke-width="2"/>' +
   '<rect x="54" y="914" width="1012" height="78" fill="#e9e9e9" stroke="#aaa" stroke-width="2"/><line x1="310" y1="914" x2="310" y2="1080" stroke="#aaa" stroke-width="2"/>' +
@@ -56,9 +56,9 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
 }
 
 export default function Tin3Page() {
-  const [tinInput, setTinInput] = useState("139-992-482");
-  const [name, setName] = useState("FASIL ALEX SHAYO");
-  const [tabCount, setTabCount] = useState(16);
+  const [tinInput, setTinInput] = useState("");
+  const [name, setName] = useState("");
+  const tabCount = 16;
   const tin = formatTIN(tinInput);
   const svg = useMemo(() => makeScreenshot(tin, name.trim().toUpperCase(), tabCount), [tin, name, tabCount]);
   const previewUrl = useMemo(() => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), [svg]);
@@ -78,19 +78,19 @@ export default function Tin3Page() {
       <div className="max-w-5xl mx-auto">
         <Link href="/" className="inline-flex items-center gap-2 text-white mb-4"><ArrowLeft size={18}/>Back</Link>
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded-xl">
-            <div className="space-y-4">
+          <div className="bg-white p-5 md:p-6 rounded-2xl shadow-xl border border-zinc-200">
+            <div className="space-y-5">
               <div>
-                <label className="text-sm font-bold">TIN</label>
-                <input value={tinInput} onChange={(e)=>setTinInput(e.target.value)} className="w-full border p-2 rounded mt-1" placeholder="139-992-482"/>
+                <label className="block text-sm font-semibold text-zinc-700">TIN</label>
+                <input value={tinInput} onChange={(e)=>setTinInput(e.target.value)} className="w-full border border-zinc-300 bg-zinc-50 p-3 rounded-lg mt-2 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition" placeholder="Ingiza TIN yako"/>
               </div>
               <div>
-                <label className="text-sm font-bold">Taxpayer Name</label>
-                <input value={name} onChange={(e)=>setName(e.target.value)} className="w-full border p-2 rounded mt-1" placeholder="FASIL ALEX SHAYO"/>
+                <label className="block text-sm font-semibold text-zinc-700">Majina ya Mlipa Kodi</label>
+                <input value={name} onChange={(e)=>setName(e.target.value)} className="w-full border p-2 rounded mt-1" placeholder="Ingiza majina ya mlipa kodi"/>
               </div>
-              <div className="flex gap-2">
-                <button onClick={()=>{setTinInput("");setName("");}} className="flex items-center gap-1 border px-3 py-2 rounded"><RotateCcw size={16}/>Reset</button>
-                <button onClick={download} className="flex items-center gap-1 bg-black text-white px-4 py-2 rounded"><Download size={16}/>Download SVG</button>
+              <div className="flex flex-wrap gap-3 pt-1">
+                <button onClick={()=>{setTinInput("");setName("");}} className="flex items-center gap-2 border border-zinc-300 px-4 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-100 transition"><RotateCcw size={16}/>Reset</button>
+                <button onClick={download} className="flex items-center gap-2 bg-zinc-900 text-white px-5 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-700 transition"><Download size={16}/>Download SVG</button>
                 <button onClick={()=>setTabCount(Math.floor(Math.random()*20)+1)} className="flex items-center gap-1 border px-3 py-2 rounded"><ImageIcon size={16}/>{tabCount}</button>
               </div>
             </div>
