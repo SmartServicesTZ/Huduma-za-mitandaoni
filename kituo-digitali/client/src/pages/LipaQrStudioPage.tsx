@@ -78,7 +78,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     <header className={`lq-card-header lq-card-header--${network}`}>
       <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
       <div className={`lq-network-brand lq-network-brand--${network}`} aria-label={LIPA_NETWORKS[network].label}>
-        {isAirtel ? <><span className="lq-airtel-symbol">◉</span><span className="lq-airtel-wordmark"><b>airtel</b><small>money</small></span></> : isYas ? <span className="lq-mixx-wordmark"><b>mixx</b><small>By <i>yas</i></small></span> : network === "voda" ? <span className="lq-voda-wordmark">◉ M-PESA</span> : <span>HALOTEL</span>}
+        {isAirtel ? <><span className="lq-airtel-symbol">◉</span><span className="lq-airtel-wordmark"><b>airtel</b><small>money</small></span></> : isYas ? <span className="lq-mixx-wordmark"><b>mixx</b><small>By <i>yas</i></small></span> : network === "voda" ? <span className="lq-voda-lockup"><b className="lq-voda-symbol">◉</b><span><strong>vodacom</strong><small>M-PESA</small></span><b className="lq-voda-phone">▯</b></span> : <span>HALOTEL</span>}
       </div>
     </header>
     {isYas ? <section className="lq-yas-body">
