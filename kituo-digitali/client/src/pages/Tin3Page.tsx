@@ -1,4 +1,4 @@
-Import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Download, RotateCcw, Image as ImageIcon } from "lucide-react";
 import { Link } from "wouter";
 
