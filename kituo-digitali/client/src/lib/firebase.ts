@@ -875,7 +875,7 @@ export type LipaApplication = {
   submittedAt?: unknown;
   updatedAt?: unknown;
 };
-export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
+export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; allowResubmission?: boolean; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
 export async function seedServiceCatalog() {
   const callable = createWorkerCall("seedServiceCatalog");
   return (await callable({})).data as { createdServices: number; createdNetworks: number };
