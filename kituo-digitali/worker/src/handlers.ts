@@ -1132,6 +1132,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
   const status = text(data.status, 40);
   if (status === "PENDING") throw new ApiError("invalid-argument", "Hali PENDING huwekwa ombi linapotumwa.");
   const rejectionReason = typeof data.rejectionReason === "string" ? data.rejectionReason.trim().slice(0, 1000) : "";
+  const allowResubmission = status === "REJECTED" && data.allowResubmission === true;
   if (status === "REJECTED" && rejectionReason.length < 3) throw new ApiError("invalid-argument", "Sababu ya kukataliwa inahitajika.");
   const ref = db.collection("serviceApplications").doc(applicationId);
   const applicationSnapshot = await ref.get();
@@ -1151,7 +1152,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
     const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
     if (status === "PROCESSING") Object.assign(patch, { processedAt: now, processedBy: uid });
     if (status === "APPROVED") Object.assign(patch, { approvedAt: now, approvedBy: uid, rejectionReason: "" });
-    if (status === "REJECTED") Object.assign(patch, { rejectedAt: now, rejectedBy: uid, rejectionReason });
+    if (status === "REJECTED") Object.assign(patch, { rejectedAt: now, rejectedBy: uid, rejectionReason, allowResubmission });
     const isFalseInfoRejection = status === "REJECTED" && /(fake|feki|uongo|uwongo|taarifa za uongo|taarifa feki|taarifa zisizo sahihi|si sahihi|sio kweli|si kweli|udangany|forged|false information)/i.test(rejectionReason);
     const userRef = db.collection("users").doc(String(application.userId));
     const userSnapshot = isFalseInfoRejection ? await transaction.get(userRef) : null;
