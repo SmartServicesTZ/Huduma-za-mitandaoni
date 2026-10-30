@@ -26,7 +26,7 @@ function isPaymentGated(application: ServiceApplication): boolean {
   const network = String(data.network ?? "").toUpperCase();
   const tillPayment = slug === "pata-till-mitandao-yote" && network !== "HALOTEL" && network !== "";
   const paidService = slug === "access-lipa-yas" || slug === "access-lipa-airtel" || slug === "access-lipa-vodacom" || tillPayment;
-  return paidService && String(data.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID";
+  return paidService && application.status === "PENDING" && String(data.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID";
 }
 type RunAction = (action: () => Promise<unknown>, successMessage: string) => void | boolean | Promise<void | boolean>;
 type DocumentAction = "preview" | "open" | "download";
