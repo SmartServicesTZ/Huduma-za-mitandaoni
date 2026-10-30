@@ -401,6 +401,9 @@ export const consumeTokens = callable(async (request) => {
     // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
     const cost = serviceId === "yanga-africans" ? 6 : (isAgentId && (!Number.isSafeInteger(configuredCost) || configuredCost <= 0) ? 2 : configuredCost);
     if (!Number.isSafeInteger(cost) || cost <= 0 || cost > 100000) throw new ApiError("failed-precondition", "Gharama ya huduma haijawekwa sawa. Wasiliana na admin.");
+    // The user must confirm the exact price shown from the Admin dashboard.
+    // If Admin changes the price while the page is open, reject instead of charging a different amount.
+    if (requestedCost !== cost) throw new ApiError("failed-precondition", "Bei ya huduma imebadilika kwenye Dashboard ya Admin. Rudi nyuma kisha fungua huduma tena ili kuona bei mpya.");
     const serviceName = String(service.name ?? data.serviceName ?? serviceId).slice(0, 180);
     const userSnapshot = await transaction.get(userRef);
     const profile = userSnapshot.data() as Profile | undefined;
