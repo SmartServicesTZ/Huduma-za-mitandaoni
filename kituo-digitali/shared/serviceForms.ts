@@ -32,7 +32,7 @@ export type DynamicService = {
   statusOptions?: string[];
   fields?: ServiceFormField[];
 };
-export type ServiceFormValues = Record<string, string | number | null>;
+export type ServiceFormValues = Record<string, string | number | boolean | null>;
 
 export function formatNida(input: string): string {
   const digits = input.replace(/\D/g, "").slice(0, 20);
