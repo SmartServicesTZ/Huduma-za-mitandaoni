@@ -54,7 +54,7 @@ export default function AccessLipaNumberPage() {
   const [name2, setName2] = useState("");
   const [name3, setName3] = useState("");
   const [lipaSequence, setLipaSequence] = useState("1");
-  const [mpesaAccountConfirmed, setMpesaAccountConfirmed] = useState(false);
+  const [mpesaAccountConfirmed: mpesaAccountConfirmed ? 1 : 0, setMpesaAccountConfirmed] = useState(false);
   const [firstLipaConfirmed, setFirstLipaConfirmed] = useState(false);
   const [contact, setContact] = useState("");
   const [nida, setNida] = useState("");
@@ -137,8 +137,8 @@ export default function AccessLipaNumberPage() {
     setName2(String(data.name2 ?? data.middleName ?? ""));
     setName3(String(data.name3 ?? data.lastName ?? ""));
     setLipaSequence(String(data.lipaSequence ?? "1"));
-    setMpesaAccountConfirmed(data.mpesaAccountConfirmed === true);
-    setFirstLipaConfirmed(data.firstLipaConfirmed === true);
+    setMpesaAccountConfirmed(data.mpesaAccountConfirmed === true || data.mpesaAccountConfirmed === "1" || data.mpesaAccountConfirmed === "true");
+    setFirstLipaConfirmed(data.firstLipaConfirmed === true || data.firstLipaConfirmed === "1" || data.firstLipaConfirmed === "true");
     setContact(String(data.contact ?? ""));
     setNida(String(data.nidaNumber ?? ""));
     setTinNumber(String(data.tinNumber ?? ""));
@@ -183,7 +183,7 @@ export default function AccessLipaNumberPage() {
               name3: name3.trim(),
               lipaSequence,
               mpesaAccountConfirmed,
-              firstLipaConfirmed: lipaSequence === "1" ? firstLipaConfirmed : false,
+              firstLipaConfirmed: lipaSequence === "1" && firstLipaConfirmed ? 1 : 0,
               email: email.trim(),
               contact: contact.trim(),
               nidaNumber: null,
