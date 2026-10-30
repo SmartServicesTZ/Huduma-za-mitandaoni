@@ -72,12 +72,22 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
       textFit(ctx,num,canvas.width*.5,canvas.height*.435,canvas.width*.76,canvas.height*.17,"#050505",950,false,true);
       textFit(ctx,nm,canvas.width*.5,canvas.height*.73,canvas.width*.78,canvas.height*.095,"#050505",950,false,true);
     }else if(network==="halotel"){
-      const centers=[.108,.268,.428,.588,.748,.908];
-      num.slice(0,6).split("").forEach((digit,index)=>textFit(ctx,digit,canvas.width*centers[index],canvas.height*.615,canvas.width*.12,canvas.height*.15,"#080808",950,false,true));
+      const digits=num.split("");
+      const left=canvas.width*.105, right=canvas.width*.895, span=right-left;
+      const step=digits.length>1?span/(digits.length-1):0;
+      digits.forEach((digit,index)=>textFit(ctx,digit,left+step*index,canvas.height*.615,canvas.width*.105,canvas.height*.15,"#080808",950,false,true));
       textFit(ctx,nm,canvas.width*.5,canvas.height*.82,canvas.width*.78,canvas.height*.09,"#090909",950,false,true);
     }else{
-      textFit(ctx,num,canvas.width*.5,canvas.height*.435,canvas.width*.67,canvas.height*.16,"#ffd400",950,false,true);
-      textFit(ctx,nm,canvas.width*.5,canvas.height*.73,canvas.width*.68,canvas.height*.105,"#ffd400",950,false,true);
+      // Preserve the existing Yas artwork; refine only the two information
+      // areas with clean white plates and high-contrast navy typography.
+      const w=canvas.width,h=canvas.height;
+      const plateX=w*.105,plateW=w*.79;
+      const numberY=h*.365,numberH=h*.145;
+      const nameY=h*.675,nameH=h*.115;
+      round(ctx,plateX,numberY,plateW,numberH,Math.max(14,w*.018),"#fff","#ffdf00",Math.max(3,w*.003));
+      round(ctx,plateX, nameY,plateW,nameH,Math.max(14,w*.018),"#fff","#ffdf00",Math.max(3,w*.003));
+      textFit(ctx,num,w*.5,numberY+numberH*.51,plateW*.91,numberH*.72,"#082f68",950,false,true);
+      textFit(ctx,nm,w*.5,nameY+nameH*.51,plateW*.91,nameH*.66,"#082f68",950,false,true);
     }
     return;
   }
@@ -105,11 +115,22 @@ export default function AgentStickerPage(){
   const [agentName,setAgentName]=useState("");
   const [agentNumber,setAgentNumber]=useState("");
   const [busy,setBusy]=useState(false);
+  const [previewReady,setPreviewReady]=useState(false);
+  const [previewError,setPreviewError]=useState("");
   const canvasRef=useRef<HTMLCanvasElement|null>(null);
   const valid=cleanName(agentName).split(" ").filter(Boolean).length>=2 && /^\d{5,12}$/.test(cleanNumber(agentNumber));
-  useEffect(()=>{if(canvasRef.current)void drawSticker(canvasRef.current,network,agentName,agentNumber);},[network,agentName,agentNumber]);
+  useEffect(()=>{
+    let active=true;
+    setPreviewReady(false);setPreviewError("");
+    if(canvasRef.current){
+      void drawSticker(canvasRef.current,network,agentName,agentNumber)
+        .then(()=>{if(active)setPreviewReady(true);})
+        .catch(()=>{if(active){setPreviewError("Picha ya mtandao haikuweza kupakiwa. Jaribu tena.");setPreviewReady(false);}});
+    }
+    return ()=>{active=false;};
+  },[network,agentName,agentNumber]);
   function downloadSticker(){
-    const canvas=canvasRef.current;if(!canvas||!valid||busy)return;setBusy(true);
+    const canvas=canvasRef.current;if(!canvas||!valid||busy||!previewReady)return;setBusy(true);
     canvas.toBlob(blob=>{if(blob){const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");}setBusy(false);},"image/png",1);
   }
   function reset(){setAgentName("");setAgentNumber("");}
@@ -133,14 +154,14 @@ export default function AgentStickerPage(){
           <label className="mb-5 block"><span className="mb-2 block text-sm font-extrabold">Namba ya wakala</span>
             <input value={agentNumber} onChange={e=>setAgentNumber(cleanNumber(e.target.value))} inputMode="numeric" maxLength={12} autoComplete="off" placeholder="Andika namba ya wakala" className="h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base font-semibold outline-none focus:border-slate-500"/>
           </label>
-          <button type="button" disabled={!valid||busy} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{busy?"Inaandaa...":"PAKUA STIKA PNG"}</button>
+          <button type="button" disabled={!valid||busy||!previewReady} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{busy?"Inaandaa...":!previewReady?"Subiri preview...":"PAKUA STIKA PNG"}</button>
           <button type="button" onClick={reset} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700"><RotateCcw className="h-4 w-4"/>Futa taarifa</button>
           {!valid&&(agentName||agentNumber)&&<p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-semibold text-amber-800">Weka angalau majina mawili na namba yenye tarakimu 5 hadi 12.</p>}
         </section>
         <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-black">Muonekano wa stika</h2><p className="text-xs text-slate-500">{p.label} · Hakikisho la moja kwa moja</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">LIVE PREVIEW</span></div>
           <div className="flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/></div>
-          <p className="mt-3 text-center text-xs text-slate-500">Faili la PNG litakuwa sawa kabisa na muonekano huu.</p>
+          <p className="mt-3 text-center text-xs text-slate-500">{previewError||(!previewReady?"Inapakia muundo wa stika...":"PNG itapakuliwa kwa mwonekano huu huu.")}</p>
         </section>
       </div>
     </div>
