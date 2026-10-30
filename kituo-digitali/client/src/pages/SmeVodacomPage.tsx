@@ -310,7 +310,13 @@ export default function SmeVodacomPage() {
               </div>
             </div>
 
-            <form onSubmit={submit} noValidate className="mt-6 space-y-5">
+            {reference ? <div role="status" aria-live="polite" className="sv-in mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
+              <div className="flex items-center gap-3"><CheckCircle2 size={30} className="shrink-0 text-emerald-600"/><div><h2 className="text-lg font-black">TAARIFA ZIMEWASILISHWA</h2><p className="mt-1 text-sm">Ombi lako limepokelewa kikamilifu.</p></div></div>
+              <p className="mt-4 break-all text-sm">Namba ya kumbukumbu: <strong>{reference}</strong></p>
+              {message && <p className="mt-2 text-sm">{message}</p>}
+              <p className="mt-2 text-sm">Unaweza kufuatilia hali ya ombi lako kwenye sehemu ya Maombi yangu hapa chini.</p>
+              <button type="button" onClick={() => { setReference(""); setMessage(""); setErrors({}); setForm(INITIAL); setEditingApplicationId(null); setApplicationId(newApplicationId()); }} className="mt-5 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-black text-white hover:bg-emerald-800">TUMA OMBI JINGINE</button>
+            </div> : <form onSubmit={submit} noValidate className="mt-6 space-y-5">
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="group">
                   <label htmlFor="sme-full-name" className="text-sm font-extrabold">Majina kamili <span className="text-red-600">*</span></label>
@@ -383,7 +389,7 @@ export default function SmeVodacomPage() {
                 {submitting ? <><LoaderCircle size={19} className="animate-spin" /> {editingApplicationId ? "Inahifadhi mabadiliko..." : "Inatuma ombi..."}</> : <><Send size={18} /> {editingApplicationId ? "HIFADHI MABADILIKO" : "TUMA OMBI LA SME VODACOM"}</>}
               </button>
               <p className="text-center text-xs leading-5 text-slate-500">Taarifa zako zitatumwa kwa ajili ya kushughulikia ombi la SME VODACOM.</p>
-            </form>
+            </form>}
           </section>
         </div>
 
