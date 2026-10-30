@@ -259,7 +259,7 @@ export default function LipaQrStudioPage() {
         </label>
         <label className={`lq-field ${fieldError("businessName") ? "has-error" : ""}`} htmlFor="lq-business">
           <span>Jina la biashara <small>{values.businessName.length}/25</small></span>
-          <input id="lq-business" maxLength={25} placeholder="Mfano: Duka la Amani" value={values.businessName} readOnly={network === "yas" || network === "airtel"} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
+          <input id="lq-business" maxLength={25} placeholder="Mfano: Duka la Amani" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
           {fieldError("businessName") && <small role="alert">{fieldError("businessName")}</small>}
         </label>
       </section>
