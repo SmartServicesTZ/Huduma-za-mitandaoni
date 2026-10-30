@@ -63,56 +63,41 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
   const ctx=canvas.getContext("2d");if(!ctx)return;
   canvas.width=W;canvas.height=H;
   const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
-  if(network==="halotel"){
-    // White upper field and the orange/red sweeping bands from the user's HaloPesa sample.
-    ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
-    const g=ctx.createLinearGradient(0,180,W,570);g.addColorStop(0,"#ff7a00");g.addColorStop(.45,"#ff3212");g.addColorStop(1,"#e60012");
-    ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(0,245);ctx.quadraticCurveTo(710,145,1500,245);ctx.lineTo(1500,1050);ctx.lineTo(0,1050);ctx.closePath();ctx.fill();
-    ctx.fillStyle="#ff8b00";ctx.beginPath();ctx.moveTo(0,275);ctx.quadraticCurveTo(640,185,1500,285);ctx.lineTo(1500,370);ctx.quadraticCurveTo(730,245,0,390);ctx.closePath();ctx.fill();
-    brand(ctx,network);
-    textFit(ctx,"Namba ya Wakala",750,345,1260,92,"#fff",900);
-    textFit(ctx,"AGENT CODE",1110,420,340,48,"#fff",800);
-    const digits=num.split("");const gap=12,boxW=Math.min(205,1320/digits.length),total=digits.length*boxW+(digits.length-1)*gap,left=(W-total)/2;
-    digits.forEach((d,i)=>{const x=left+i*(boxW+gap);round(ctx,x,485,boxW,175,24,"#fff","#f4d5d5",3);textFit(ctx,d,x+boxW/2,573,boxW-18,135,"#080808",950);});
-    // thin white rules flanking the label, as in the supplied artwork
-    ctx.strokeStyle="#fff";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(90,735);ctx.lineTo(510,735);ctx.moveTo(990,735);ctx.lineTo(1410,735);ctx.stroke();
-    textFit(ctx,"Jina la Wakala",750,735,440,58,"#fff",900);
-    round(ctx,90,780,1320,135,30,"#fff","#f4dddd",3);
-    textFit(ctx,nm,750,848,1240,78,"#090909",950);
-    textFit(ctx,"*** Hakiki jina la wakala kabla hujathibitisha muamala wako.",750,968,1350,34,"#fff",700);
-    ctx.textAlign="center";ctx.font="700 26px Arial";ctx.fillStyle="#fff";ctx.fillText("halotel.co.tz      •      halopesa *150*88#      •      Hotline 100",750,1022);
-  }else{
-    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,network==="yas"?"#0878ce":network==="airtel"?"#e30613":"#f10b1c");bg.addColorStop(.55,network==="yas"?"#064d9d":network==="airtel"?"#e30613":"#df0019");bg.addColorStop(1,network==="yas"?"#052b66":network==="airtel"?"#e30613":"#b90018");
-    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-    // Thick inset outline and raised white panels match the supplied Airtel reference.
-    round(ctx,18,18,W-36,H-36,48,"rgba(0,0,0,0)","#fff",9);
-    brand(ctx,network);
-    if(network==="airtel"){
-      try{
-        const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
-        ctx.drawImage(logo,510,42,480,150);
-      }catch{ /* keep the sticker usable if the asset is unavailable */ }
-    }
-    textFit(ctx,"NAMBA YA WAKALA",750,300,1360,112,"#fff",950,true);
-    if(network==="yas")textFit(ctx,"AGENT NUMBER",750,365,1000,35,"#d9edff",800);
-    raisedRound(ctx,65,380,1370,220,36,"#fff");
-    textFit(ctx,num,750,490,1280,176,network==="yas"?"#073b79":"#050505",950,false,true);
-    textFit(ctx,network==="airtel"?"JINA":network==="vodacom"?"JINA LA WAKALA":"JINA LA WAKALA",750,685,1150,72,"#fff",950,true);
-    raisedRound(ctx,70,735,1360,160,34,"#fff");
-    textFit(ctx,nm,750,815,1280,96,network==="yas"?"#073b79":"#050505",950,false,true);
-    if(network==="airtel"){
-      // Footer uses the official Airtel-only logo asset with safe bottom padding.
-      try{
-        const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
-        ctx.drawImage(logo,590,885,320,100);
-      }catch{ /* keep the sticker usable if the asset is unavailable */ }
-    }else if(network==="vodacom"){
-      ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="900 86px Arial";ctx.fillText("◉ vodacom",750,975);
-      ctx.font="800 40px Arial";ctx.fillText("m-pesa",750,1015);
+  if(network!=="airtel"){
+    const templates:Record<Exclude<NetworkKey,"airtel">,string>={vodacom:"Vodacom.png",halotel:"Halotel.png",yas:"Yas.png"};
+    const template=await loadImage(asset(templates[network]));
+    canvas.width=template.naturalWidth;canvas.height=template.naturalHeight;
+    ctx.drawImage(template,0,0,canvas.width,canvas.height);
+    if(network==="vodacom"){
+      textFit(ctx,num,canvas.width*.5,canvas.height*.435,canvas.width*.76,canvas.height*.17,"#050505",950,false,true);
+      textFit(ctx,nm,canvas.width*.5,canvas.height*.73,canvas.width*.78,canvas.height*.095,"#050505",950,false,true);
+    }else if(network==="halotel"){
+      const centers=[.108,.268,.428,.588,.748,.908];
+      num.slice(0,6).split("").forEach((digit,index)=>textFit(ctx,digit,canvas.width*centers[index],canvas.height*.615,canvas.width*.12,canvas.height*.15,"#080808",950,false,true));
+      textFit(ctx,nm,canvas.width*.5,canvas.height*.82,canvas.width*.78,canvas.height*.09,"#090909",950,false,true);
     }else{
-      ctx.fillStyle="#ffdf00";ctx.textAlign="center";ctx.font="900 84px Arial";ctx.fillText("yas",750,980);
+      textFit(ctx,num,canvas.width*.5,canvas.height*.435,canvas.width*.67,canvas.height*.16,"#ffd400",950,false,true);
+      textFit(ctx,nm,canvas.width*.5,canvas.height*.73,canvas.width*.68,canvas.height*.105,"#ffd400",950,false,true);
     }
+    return;
   }
+  const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,"#e30613");bg.addColorStop(.55,"#e30613");bg.addColorStop(1,"#e30613");
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  round(ctx,18,18,W-36,H-36,48,"rgba(0,0,0,0)","#fff",9);
+  try{
+    const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
+    ctx.drawImage(logo,510,42,480,150);
+  }catch{ /* keep the sticker usable if the asset is unavailable */ }
+  textFit(ctx,"NAMBA YA WAKALA",750,300,1360,112,"#fff",950,true);
+  raisedRound(ctx,65,380,1370,220,36,"#fff");
+  textFit(ctx,num,750,490,1280,176,"#050505",950,false,true);
+  textFit(ctx,"JINA",750,685,1150,72,"#fff",950,true);
+  raisedRound(ctx,70,735,1360,160,34,"#fff");
+  textFit(ctx,nm,750,815,1280,96,"#050505",950,false,true);
+  try{
+    const logo=await loadImage(asset("airtel-logo-horizontal-white.png"));
+    ctx.drawImage(logo,590,885,320,100);
+  }catch{ /* keep the sticker usable if the asset is unavailable */ }
 }
 
 export default function AgentStickerPage(){
