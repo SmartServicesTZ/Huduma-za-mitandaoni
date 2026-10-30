@@ -90,8 +90,7 @@ export default function Tin3Page() {
               </div>
               <div className="flex flex-wrap gap-3 pt-1">
                 <button onClick={()=>{setTinInput("");setName("");}} className="flex items-center gap-2 border border-zinc-300 px-4 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-100 transition"><RotateCcw size={16}/>Reset</button>
-                <button onClick={download} className="flex items-center gap-2 bg-zinc-900 text-white px-5 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-700 transition"><Download size={16}/>Download SVG</button>
-                <button onClick={()=>setTabCount(Math.floor(Math.random()*20)+1)} className="flex items-center gap-1 border px-3 py-2 rounded"><ImageIcon size={16}/>{tabCount}</button>
+                <button onClick={download} className="flex items-center gap-2 bg-zinc-900 text-white px-5 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-700 transition"><Download size={16}/>Download</button>
               </div>
             </div>
           </div>
