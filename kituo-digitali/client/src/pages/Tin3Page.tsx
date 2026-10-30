@@ -24,7 +24,7 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="22" y="192" width="1076" height="1146" fill="#fff"/>' +
   '<rect x="24" y="194" width="300" height="122" fill="#050505"/><text x="80" y="272" font-family="Arial,sans-serif" font-size="42" fill="#eee">List of TIN</text>' +
   '<rect x="324" y="194" width="774" height="122" fill="#FFE600"/>' +
-  '<image href="https://tanzaniarevenueauthority.com/__l5e/assets-v1/9ed2717a-a163-42b3-99d6-5b14eed98682/tra-logo.png" x="650" y="204" width="92" height="104" preserveAspectRatio="xMidYMid meet"/>' +
+  '<image href="data:image/png;base64,REPLACE_B64" x="650" y="204" width="92" height="104" preserveAspectRatio="xMidYMid meet"/>' +
   '<text x="740" y="266" font-family="Arial,sans-serif" font-size="26" font-weight="300" fill="#6b5d00">Y</text>' +
   '<text x="770" y="272" font-family="Arial,sans-serif" font-size="43" font-weight="900" fill="#242424">IDRAS</text>' +
   '<g transform="rotate(-24 560 760)" opacity="0.20"><text x="560" y="770" text-anchor="middle" font-family="Arial,sans-serif" font-size="150" font-weight="900" letter-spacing="12" fill="#c00000" stroke="#c00000" stroke-width="2">DEMO</text><text x="560" y="820" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="700" letter-spacing="5" fill="#c00000">SAMPLE • NOT OFFICIAL</text></g>' +
