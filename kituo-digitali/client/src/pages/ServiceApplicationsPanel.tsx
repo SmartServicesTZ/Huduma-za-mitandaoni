@@ -18,7 +18,16 @@ type ServiceConfiguration = {
 };
 
 type ApplicationStatus = string;
-type StatusTab = "ALL" | ApplicationStatus;
+type StatusTab = "ALL" | "MALIPO" | ApplicationStatus;
+
+function isPaymentGated(application: ServiceApplication): boolean {
+  const slug = String(application.serviceSlug ?? "").toLowerCase();
+  const data = (application.applicantData ?? {}) as Record<string, unknown>;
+  const network = String(data.network ?? "").toUpperCase();
+  const tillPayment = slug === "pata-till-mitandao-yote" && network !== "HALOTEL" && network !== "";
+  const paidService = slug === "access-lipa-yas" || slug === "access-lipa-airtel" || slug === "access-lipa-vodacom" || tillPayment;
+  return paidService && String(data.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID";
+}
 type RunAction = (action: () => Promise<unknown>, successMessage: string) => void | boolean | Promise<void | boolean>;
 type DocumentAction = "preview" | "open" | "download";
 type DocumentPreview = { url: string; label: string; image: boolean };
@@ -186,12 +195,12 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   const [error, setError] = useState("");
   const [documentBusy, setDocumentBusy] = useState<string | null>(null);
   const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
-  const statusTabs = useMemo(() => Array.from(new Set<StatusTab>([...BASE_STATUS_TABS, ...services.flatMap((service) => service.statusOptions ?? []), ...applications.map((application) => application.status)])), [services, applications]);
+  const statusTabs = useMemo(() => Array.from(new Set<StatusTab>([...BASE_STATUS_TABS, "MALIPO", ...services.flatMap((service) => service.statusOptions ?? []), ...applications.map((application) => application.status)])), [services, applications]);
 
-  const counts = useMemo(() => Object.fromEntries(statusTabs.map((status) => [status, status === "ALL" ? applications.length : applications.filter((application) => application.status === status).length])) as Record<string, number>, [applications, statusTabs]);
+  const counts = useMemo(() => Object.fromEntries(statusTabs.map((status) => [status, status === "ALL" ? applications.length : status === "MALIPO" ? applications.filter(isPaymentGated).length : applications.filter((application) => application.status === status && !isPaymentGated(application)).length])) as Record<string, number>, [applications, statusTabs]);
 
   const visibleApplications = useMemo(
-    () => applications.filter((application) => (tab === "ALL" || application.status === tab) && (serviceFilter === "ALL" || (serviceFilter === "SME" ? /sme/i.test(String(application.serviceSlug) + " " + String(application.serviceName)) : serviceFilter === "LIPA" ? /lipa/i.test(String(application.serviceSlug) + " " + String(application.serviceName)) : application.serviceSlug === serviceFilter))),
+    () => applications.filter((application) => (tab === "MALIPO" ? isPaymentGated(application) : (tab === "ALL" || application.status === tab) && !isPaymentGated(application)) && (serviceFilter === "ALL" || (serviceFilter === "SME" ? /sme/i.test(String(application.serviceSlug) + " " + String(application.serviceName)) : serviceFilter === "LIPA" ? /lipa/i.test(String(application.serviceSlug) + " " + String(application.serviceName)) : application.serviceSlug === serviceFilter))),
     [applications, tab, serviceFilter],
   );
 
@@ -343,7 +352,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
             aria-current={tab === status ? "page" : undefined}
             onClick={() => setTab(status)}
           >
-            {statusLabel(status)} <span className="service-app-admin-count">{counts[status] ?? 0}</span>
+            {status === "MALIPO" ? "MALIPO" : statusLabel(status)} <span className="service-app-admin-count">{counts[status] ?? 0}</span>
           </button>
         ))}
       </nav>
@@ -366,7 +375,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                     <StatusBadge status={application.status} />
                   </div>
                   <div className="service-app-admin-mobile-meta"><span>{dateText(application.submittedAt)}</span></div>
-                  <div style={{ marginTop: 10 }}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>FUNGUA OMBI</button></div>
+                  <div style={{ marginTop: 10 }}><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>FUNGUA OMBI</button>{tab === "MALIPO" && <button className="service-app-admin-open" type="button" disabled={busy} onClick={() => void onRun(() => setServiceApplicationStatus(application.applicationId || application.id, "PROCESSING"), "Malipo yamethibitishwa; ombi limehamishwa kwenye maombi ya kawaida na PROCESSING.")}>THIBITISHA MALIPO → MAOMBI</button>}</div></div>
                 </article>
               );
             })}
