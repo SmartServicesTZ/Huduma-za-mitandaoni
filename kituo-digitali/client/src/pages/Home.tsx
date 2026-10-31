@@ -732,7 +732,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     };
     void getPublicSiteSettingsOnce().then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined);
     const refreshTimer = window.setInterval(() => { void getPublicSiteSettingsOnce({ force: true }).then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined); }, 45_000);
-    const stopLocks = subscribeToCollection("serviceLocks", (rows) => setServiceLockOverrides({ ...Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true])), "cheti-tin": false }));
+    const stopLocks = subscribeToCollection("serviceLocks", (rows) => { const overrides = Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true])); const tinLock = rows.find((item) => ["cheti-tin", "cheti-cha-tin", "cheti-tin-certificate", "tin-certificate"].includes(String(item.slug ?? item.id).toLowerCase())); if (tinLock) overrides["cheti-tin"] = tinLock.isLocked === true; setServiceLockOverrides(overrides); });
     return () => { active = false; window.clearInterval(refreshTimer); stopLocks(); };
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
@@ -755,7 +755,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
         : serviceCatalog.find((service) => service.slug === "cheti-tin")
       : undefined
   );
-  const tinCertificate = tinFallback ? { ...tinFallback, kind: tinFallback.kind === "locked" ? (Number(tinFallback.tokenCost ?? 0) <= 0 ? "free" as const : "paid" as const) : tinFallback.kind } : undefined;
+  const tinCertificate = tinFallback ? { ...tinFallback, kind: isServiceLocked("cheti-tin", serviceLockOverrides["cheti-tin"], tinFallback.kind === "locked") ? "locked" as const : tinFallback.kind === "locked" ? (Number(tinFallback.tokenCost ?? 0) <= 0 ? "free" as const : "paid" as const) : tinFallback.kind } : undefined;
   const main = tinCertificate
     ? [tinCertificate, mainBase.find((service) => service.slug === "leseni-biashara"), ...mainBase.filter((service) => service.slug !== "leseni-biashara" && service.slug !== "cheti-tin")].filter(Boolean) as ServiceCatalogItem[]
     : mainBase;
