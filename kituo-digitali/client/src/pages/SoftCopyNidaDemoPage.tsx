@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Download, ShieldAlert } from "lucide-react";
 import { useLocation } from "wouter";
 
+const ASSET_BASE_URL = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+
 const CARD_DESIGN = {
   lines: [
     "JAMHURI YA MUUNGANO WA TANZANIA",
@@ -16,10 +18,47 @@ const CARD_DESIGN = {
     border: "#477e77",
   },
   assets: {
-    ngao: "/images/ngao.png",
-    bendera: "/images/bendera.png",
+    ngao: `${ASSET_BASE_URL}images/ngao.png`,
+    bendera: `${ASSET_BASE_URL}images/bendera.png`,
   }
 };
+
+function loadCardImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Imeshindikana kupakia picha ya kitambulisho: ${src}`));
+    image.src = src;
+  });
+}
+
+function containImageRect(image: HTMLImageElement, x: number, y: number, maxWidth: number, maxHeight: number) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const scale = Math.min(maxWidth / sourceWidth, maxHeight / sourceHeight);
+  const width = sourceWidth * scale;
+  const height = sourceHeight * scale;
+  return { x: x + (maxWidth - width) / 2, y: y + (maxHeight - height) / 2, width, height };
+}
+
+function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const targetRatio = width / height;
+  const sourceRatio = sourceWidth / sourceHeight;
+  let sourceX = 0;
+  let sourceY = 0;
+  let cropWidth = sourceWidth;
+  let cropHeight = sourceHeight;
+  if (sourceRatio > targetRatio) {
+    cropWidth = sourceHeight * targetRatio;
+    sourceX = (sourceWidth - cropWidth) / 2;
+  } else {
+    cropHeight = sourceWidth / targetRatio;
+    sourceY = (sourceHeight - cropHeight) / 2;
+  }
+  ctx.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, x, y, width, height);
+}
 
 export default function SoftCopyNidaDemoPage() {
   const [, navigate] = useLocation();
@@ -70,7 +109,7 @@ export default function SoftCopyNidaDemoPage() {
     reader.readAsDataURL(file);
   }
 
-  function downloadCard() {
+  async function downloadCard() {
     if (!firstName.trim() || !lastName.trim() || !idNumber.trim() || !dobInput) {
       window.alert("Tafadhali jaza taarifa zote muhimu kabla ya kupakua.");
       return;
@@ -78,26 +117,26 @@ export default function SoftCopyNidaDemoPage() {
 
     const canvas = document.createElement("canvas");
     canvas.width = 1600;
-    canvas.height = 1000;
+    canvas.height = 1045;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // 1. Mandhari ya Gradient
-    const gradient = ctx.createLinearGradient(0, 0, 1600, 1000);
+    const gradient = ctx.createLinearGradient(0, 0, 1600, 1045);
     gradient.addColorStop(0, CARD_DESIGN.colors.backgroundStart);
     gradient.addColorStop(0.5, CARD_DESIGN.colors.backgroundMid);
     gradient.addColorStop(1, CARD_DESIGN.colors.backgroundEnd);
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1600, 1000);
+    ctx.fillRect(0, 0, 1600, 1045);
 
     // 2. Taswira ya Mlima kwa nyuma
     ctx.fillStyle = "rgba(160, 60, 40, 0.10)";
     ctx.beginPath();
-    ctx.moveTo(250, 750);
+    ctx.moveTo(250, 800);
     ctx.lineTo(450, 380);
     ctx.lineTo(580, 500);
     ctx.lineTo(750, 280);
-    ctx.lineTo(950, 750);
+    ctx.lineTo(950, 800);
     ctx.closePath();
     ctx.fill();
 
@@ -105,7 +144,7 @@ export default function SoftCopyNidaDemoPage() {
       // Ukingo wa nje
       ctx.strokeStyle = CARD_DESIGN.colors.border;
       ctx.lineWidth = 10;
-      ctx.strokeRect(16, 16, 1568, 968);
+      ctx.strokeRect(16, 16, 1568, 1013);
 
       // Mistari 4 ya Juu
       ctx.textAlign = "center";
@@ -128,7 +167,7 @@ export default function SoftCopyNidaDemoPage() {
       ctx.textAlign = "left";
       ctx.fillStyle = "#101d24";
       ctx.font = "bold 44px Arial";
-      ctx.fillText(formattedNidaNumber, 75, 230);
+      ctx.fillText(formattedNidaNumber, 75, 255);
 
       // Taarifa za Kushoto
       const drawFieldExact = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
@@ -145,25 +184,25 @@ export default function SoftCopyNidaDemoPage() {
         ctx.fillText(value || "—", 380, y + 10);
       };
 
-      drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 320);
-      drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 430);
-      drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 540);
-      drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 650);
+      drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 350);
+      drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 465);
+      drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 580);
+      drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 695);
 
       // Sahihi
       ctx.font = "bold 18px Arial";
       ctx.fillStyle = "#1f3a34";
-      ctx.fillText("SAINI", 75, 760);
+      ctx.fillText("SAINI", 75, 815);
       ctx.font = "14px Arial";
       ctx.fillStyle = "#555555";
-      ctx.fillText("Signature", 75, 782);
+      ctx.fillText("Signature", 75, 837);
 
       ctx.font = "italic 36px cursive";
       ctx.fillStyle = "#0a192f";
-      ctx.fillText(signature || fullName, 190, 775);
+      ctx.fillText(signature || fullName, 190, 830);
 
       // Picha ya Mtumiaji
-      const pX = 1120, pY = 270, pW = 390, pH = 480;
+      const pX = 1110, pY = 320, pW = 390, pH = 500;
       ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.fillRect(pX, pY, pW, pH);
       ctx.strokeStyle = CARD_DESIGN.colors.border;
@@ -180,7 +219,7 @@ export default function SoftCopyNidaDemoPage() {
       if (photo) {
         const userImg = new Image();
         userImg.onload = () => {
-          ctx.drawImage(userImg, pX + 10, pY + 10, pW - 20, pH - 20);
+          drawCoverImage(ctx, userImg, pX + 10, pY + 10, pW - 20, pH - 20);
           triggerDownload();
         };
         userImg.onerror = triggerDownload;
@@ -190,34 +229,23 @@ export default function SoftCopyNidaDemoPage() {
       }
     };
 
-    // Kupakia Ngao na Bendera kabla ya kuchora Canvas
-    let loadedCount = 0;
-    const totalAssets = 2;
+    try {
+      const [ngaoImg, benderaImg] = await Promise.all([
+        loadCardImage(CARD_DESIGN.assets.ngao),
+        loadCardImage(CARD_DESIGN.assets.bendera),
+      ]);
 
-    const checkLoaded = () => {
-      loadedCount++;
-      if (loadedCount === totalAssets) {
-        finalizeCanvas();
-      }
-    };
+      // Draw into bounded boxes while preserving each source image's aspect ratio.
+      // The boxes stay clear of the four centered header lines.
+      const ngaoRect = containImageRect(ngaoImg, 55, 22, 170, 125);
+      ctx.drawImage(ngaoImg, ngaoRect.x, ngaoRect.y, ngaoRect.width, ngaoRect.height);
+      const benderaRect = containImageRect(benderaImg, 1375, 30, 170, 105);
+      ctx.drawImage(benderaImg, benderaRect.x, benderaRect.y, benderaRect.width, benderaRect.height);
 
-    // Ngao (Kushoto)
-    const ngaoImg = new Image();
-    ngaoImg.onload = () => {
-      ctx.drawImage(ngaoImg, 70, 35, 90, 90);
-      checkLoaded();
-    };
-    ngaoImg.onerror = checkLoaded;
-    ngaoImg.src = CARD_DESIGN.assets.ngao;
-
-    // Bendera (Kulia)
-    const benderaImg = new Image();
-    benderaImg.onload = () => {
-      ctx.drawImage(benderaImg, 1400, 45, 110, 75);
-      checkLoaded();
-    };
-    benderaImg.onerror = checkLoaded;
-    benderaImg.src = CARD_DESIGN.assets.bendera;
+      finalizeCanvas();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Imeshindikana kupakia nembo ya kitambulisho.");
+    }
   }
 
   return (
@@ -249,7 +277,7 @@ export default function SoftCopyNidaDemoPage() {
         <div style={{ marginTop: 26 }}>
           <h2 style={{ fontSize: 20, marginBottom: 12 }}>PREVIEW YA KITAMBULISHO</h2>
           <div style={{
-            position: "relative", overflow: "hidden", aspectRatio: "1.6 / 1",
+            position: "relative", overflow: "hidden", aspectRatio: "1.53 / 1",
             width: "100%", borderRadius: 16, border: `2px solid ${CARD_DESIGN.colors.border}`,
             padding: "clamp(12px,3vw,28px)", boxSizing: "border-box",
             background: "linear-gradient(125deg, #d4edda 0%, #bee5eb 50%, #78c6d7 100%)",
@@ -263,10 +291,10 @@ export default function SoftCopyNidaDemoPage() {
             </div>
 
             {/* Ngao halisi (Kushoto) kwenye Preview */}
-            <img src={CARD_DESIGN.assets.ngao} alt="Ngao" style={{ position: "absolute", left: 20, top: 14, width: "50px", height: "50px", objectFit: "contain" }} />
+            <img src={CARD_DESIGN.assets.ngao} alt="Ngao" style={{ position: "absolute", left: "3%", top: "2%", width: "12%", height: "18%", objectFit: "contain", objectPosition: "center", display: "block" }} />
             
             {/* Bendera halisi (Kulia) kwenye Preview */}
-            <img src={CARD_DESIGN.assets.bendera} alt="Bendera" style={{ position: "absolute", right: 20, top: 14, width: "65px", height: "45px", objectFit: "contain" }} />
+            <img src={CARD_DESIGN.assets.bendera} alt="Bendera" style={{ position: "absolute", right: "3%", top: "3%", width: "14%", height: "13%", objectFit: "contain", objectPosition: "center", display: "block" }} />
 
             {/* Mistari 4 ya Juu */}
             <div style={{ position: "relative", textAlign: "center", lineHeight: 1.15 }}>
