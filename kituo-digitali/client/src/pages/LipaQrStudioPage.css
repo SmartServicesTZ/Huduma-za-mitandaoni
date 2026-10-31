@@ -892,3 +892,9 @@
 .lq-network-check{display:grid;place-items:center;width:21px;height:21px;margin-left:auto;border:1px solid #d7dce3;border-radius:50%;color:transparent;background:#fff;font-size:12px;font-weight:950}
 .lq-network-option.is-selected .lq-network-check{border-color:#c90020;color:#fff;background:#c90020}
 @media(max-width:700px){.lq-network-option{min-height:56px}.lq-network-logo{flex-basis:40px;width:40px;height:40px}}
+
+
+/* Render the exact operator logo image assets supplied in the repository. */
+.lq-network-logo img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit}
+.lq-network-logo--voda,.lq-network-logo--yas,.lq-network-logo--airtel,.lq-network-logo--halotel{padding:5px;background:#fff}
+.lq-network-logo--yas{background:#fff}
