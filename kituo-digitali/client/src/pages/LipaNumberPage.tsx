@@ -522,6 +522,17 @@ export default function LipaNumberPage() {
     toast.info("Rekebisha taarifa zilizoombwa. Ombi lilelile litatumwa tena.");
   };
 
+  useEffect(() => {
+    const requestedId = new URLSearchParams(window.location.search).get("edit");
+    if (!requestedId || !configs.length || !applications.length) return;
+    const target = applications.find((item) => item.applicationId === requestedId && item.status === "REJECTED");
+    if (!target) return;
+    editRejectedApplication(target);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("edit");
+    window.history.replaceState({}, "", url.toString());
+  }, [applications, configs]);
+
   const openDocument = async (app: LipaApplication, fieldName: string, label: string) => {
     setDocumentLoading(true);
     try {
