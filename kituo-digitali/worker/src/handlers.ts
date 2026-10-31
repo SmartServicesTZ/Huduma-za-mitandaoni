@@ -688,6 +688,90 @@ export const submitLipaApplication = callable(async (request) => {
   }
 });
 
+export const updateLipaApplication = callable(async (request) => {
+  const uid = authUid(request);
+  const profile = await profileFor(uid, request.profile as Profile | undefined);
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii haiwezi kuhariri maombi.");
+  const data = objectValue(request.data, "Hariri ombi la Lipa Namba");
+  const applicationId = text(data.applicationId, 80);
+  const incoming = objectValue(data.values, "Taarifa za ombi");
+  const ref = db.collection("lipaApplications").doc(applicationId);
+  const currentSnapshot = await ref.get();
+  if (!currentSnapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
+  const current = currentSnapshot.data()!;
+  if (String(current.userId ?? "") !== uid) throw new ApiError("permission-denied", "Huwezi kuhariri ombi la mtu mwingine.");
+  if (String(current.status ?? "") !== "REJECTED") throw new ApiError("failed-precondition", "Ni maombi yaliyokataliwa pekee yanayoweza kuhaririwa na kutumwa tena.");
+  const networkId = String(current.networkId ?? "");
+  const configSnapshot = await db.collection("lipaServices").doc(networkId).get();
+  const config = configSnapshot.exists ? configSnapshot.data()! : defaultLipaServices.find((item) => String(item.id) === networkId);
+  if (!config) throw new ApiError("not-found", "Mipangilio ya mtandao huu haikupatikana.");
+  const fields = Array.isArray(config.fields) ? config.fields as Array<Record<string, unknown>> : [];
+  const previous = recordValues(current.applicantData);
+  const next = { ...previous };
+  const allowed = new Set(fields.map((field) => String(field.fieldName ?? "")));
+  const finalPaths: string[] = [];
+  const sourcePaths: string[] = [];
+  try {
+    for (const [key, value] of Object.entries(incoming)) {
+      if (!allowed.has(key)) continue;
+      const field = fields.find((item) => String(item.fieldName ?? "") === key)!;
+      const type = String(field.type ?? "TEXT");
+      if (["IMAGE_UPLOAD", "FILE_UPLOAD"].includes(type)) {
+        if (typeof value !== "string" || !value.trim()) {
+          if (field.required === true) throw new ApiError("invalid-argument", `${String(field.label ?? key)} inahitajika.`);
+          delete next[key];
+          continue;
+        }
+        const pathValue = value.trim();
+        if (pathValue === previous[key]) { next[key] = pathValue; continue; }
+        const expectedPrefix = `lipaUploads/${uid}/${applicationId}/`;
+        if (!pathValue.startsWith(expectedPrefix) || pathValue.includes("..")) throw new ApiError("invalid-argument", `Pakia ${String(field.label ?? key).toLowerCase()} tena.`);
+        const sourceFile = bucket.file(pathValue);
+        const [metadata] = await sourceFile.getMetadata().catch(() => { throw new ApiError("invalid-argument", `Faili la ${String(field.label ?? key).toLowerCase()} halijapatikana.`); });
+        const accepted = Array.isArray(field.accept) ? field.accept : type === "IMAGE_UPLOAD" ? ["image/jpeg", "image/png", "image/webp"] : [];
+        const maxSize = Math.min(Number(field.maxSizeMb ?? 5), 10) * 1024 * 1024;
+        if (Number(metadata.size) > maxSize || (accepted.length && !accepted.includes(String(metadata.contentType)))) throw new ApiError("invalid-argument", `Aina au ukubwa wa ${String(field.label ?? key).toLowerCase()} haurusiwi.`);
+        const fileName = pathValue.split("/").pop()?.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 80) ?? "document";
+        const finalPath = `lipaApplications/${applicationId}/documents/${key}-${fileName}`;
+        await sourceFile.copy(bucket.file(finalPath));
+        sourcePaths.push(pathValue); finalPaths.push(finalPath); next[key] = finalPath;
+        continue;
+      }
+      if (value === null || value === undefined || value === "") {
+        if (field.required === true) throw new ApiError("invalid-argument", `${String(field.label ?? key)} inahitajika.`);
+        delete next[key]; continue;
+      }
+      if (typeof value === "string") {
+        if (value.length > 2000) throw new ApiError("invalid-argument", `${String(field.label ?? key)} ni ndefu sana.`);
+        next[key] = value.trim();
+      } else if (typeof value === "number" && Number.isFinite(value)) next[key] = value;
+      else if (typeof value === "boolean") next[key] = value;
+      else throw new ApiError("invalid-argument", "Taarifa za fomu si sahihi.");
+    }
+    const duplicateFingerprint = applicationDuplicateFingerprint(`lipa:${networkId}`, next);
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists || String(snapshot.data()?.userId ?? "") !== uid || String(snapshot.data()?.status ?? "") !== "REJECTED") throw new ApiError("failed-precondition", "Ombi limebadilika; lifungue upya kisha ujaribu tena.");
+      const now = FieldValue.serverTimestamp();
+      transaction.update(ref, {
+        applicantData: next, duplicateFingerprint,
+        applicantName: [next.firstName, next.middleName, next.lastName].filter(Boolean).join(" ") || String(next.fullName ?? current.applicantName ?? profile.name ?? "Mwombaji"),
+        phone: String(next.phone ?? ""), businessName: String(next.businessName ?? ""), nidaNumber: String(next.nidaNumber ?? ""), tinNumber: String(next.tinNumber ?? ""),
+        businessLicense: String(next.businessLicense ?? ""), idDocumentUrl: String(next.idDocument ?? ""), idDocumentType: String(next.idDocumentType ?? ""),
+        additionalNotes: String(next.additionalNotes ?? ""), status: "PENDING", rejectionReason: "", resubmittedAt: now, updatedAt: now,
+      });
+      transaction.set(db.collection("lipaOpenApplications").doc(`${uid}_${networkId}_${applicationId}`), { applicationId, userId: uid, networkId, createdAt: now });
+      transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: "Ombi la Lipa Namba limetumwa tena", body: "Marekebisho yako yamehifadhiwa. Ombi lilelile limerudishwa PENDING kwa ajili ya ukaguzi wa Admin.", type: "lipaApplicationResubmitted", applicationId, createdAt: now });
+      recordAudit(transaction, uid, String(profile.role ?? "user"), "LIPA_APPLICATION_RESUBMITTED", "lipaApplication", applicationId, { status: "REJECTED" }, { status: "PENDING", applicantData: next }, {});
+    });
+    await Promise.all(sourcePaths.map((path) => bucket.file(path).delete().catch(() => undefined)));
+    return { applicationId, status: "PENDING", updated: true };
+  } catch (error) {
+    await Promise.all(finalPaths.map((path) => bucket.file(path).delete().catch(() => undefined)));
+    throw error;
+  }
+});
+
 export const setLipaApplicationStatus = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid, request.profile as Profile | undefined);
