@@ -81,7 +81,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "appli
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createPocketWifiOrder: "applications", createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
-  submitLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
+  submitLipaApplication: "applications", updateLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
   getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", createTokenPurchaseOrder: "payments",
   markUserMessageRead: "read", registerFcmToken: "profile", sendPushNotification: "admin", syncAuthClaims: "auth",
 };
@@ -705,7 +705,20 @@ export const updateLipaApplication = callable(async (request) => {
   const configSnapshot = await db.collection("lipaServices").doc(networkId).get();
   const config = configSnapshot.exists ? configSnapshot.data()! : defaultLipaServices.find((item) => String(item.id) === networkId);
   if (!config) throw new ApiError("not-found", "Mipangilio ya mtandao huu haikupatikana.");
-  const fields = Array.isArray(config.fields) ? config.fields as Array<Record<string, unknown>> : [];
+  let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
+  if (/yas|tigo/i.test(networkId)) {
+    for (let index = fields.length - 1; index >= 0; index -= 1) {
+      const name = String(fields[index].fieldName ?? "");
+      if (name === "businessLicense") fields.splice(index, 1);
+      else if (name === "tinNumber" || name === "businessLicensePhoto") fields[index] = { ...fields[index], required: false };
+    }
+    const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
+    if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
+    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
+    if (!hasField("hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 4 });
+    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+  }
+  if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "additionalNotes")) fields.push({ fieldName: "additionalNotes", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, order: 999 });
   const previous = recordValues(current.applicantData);
   const next = { ...previous };
   const allowed = new Set(fields.map((field) => String(field.fieldName ?? "")));
