@@ -1799,7 +1799,8 @@ function normalizeLicenseRequest(data: LicenseRequest) {
     principalBranch: data.principalBranch === "PRINCIPAL" || data.principalBranch === "BRANCH" ? data.principalBranch : "",
     // Accept any region name supplied by the user; do not validate against a fixed region list.
     region: titleCaseLocation(typeof data.region === "string" ? data.region.trim().slice(0, 80) : ""),
-    ward: titleCaseLocation(cleanText(data.ward, "Kata", 100)),
+    // Kata is optional; some business locations do not use a ward value in the submitted address.
+    ward: titleCaseLocation(typeof data.ward === "string" ? data.ward.trim().slice(0, 100) : ""),
     street: titleCaseLocation(cleanText(data.street, "Mtaa / Kijiji", 140)),
     tin: cleanText(data.tin, "TIN", 40).toUpperCase(),
     licenseFee: Number(data.licenseFee),
