@@ -18,11 +18,11 @@ function statusClass(status:string):string {
   if(value==="processing")return "unified-inbox-status-processing";
   return "unified-inbox-status-pending";
 }
-export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect}:{
+export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect,initialKind="ALL"}:{
   serviceApplications:ServiceApplication[]; lipaApplications:LipaApplication[]; services:any[]; networks:any[];
-  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void;
+  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void; initialKind?:InboxKind;
 }) {
-  const [kindFilter,setKindFilter]=useState<InboxKind>("ALL");
+  const [kindFilter,setKindFilter]=useState<InboxKind>(initialKind);
   const [statusFilter,setStatusFilter]=useState<InboxStatus>("ALL");
   const rows=useMemo<InboxRow[]>(()=>{
     const serviceRows:InboxRow[]=serviceApplications.map((application)=>{
