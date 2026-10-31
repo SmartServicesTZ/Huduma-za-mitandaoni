@@ -28,8 +28,9 @@ export default function SoftCopyNidaDemoPage() {
     }
     const canvas = document.createElement("canvas");
     canvas.width = 1600; canvas.height = 1000;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    const ctx = context;
     const gradient = ctx.createLinearGradient(0, 0, 1600, 1000);
     gradient.addColorStop(0, "#f7fbff"); gradient.addColorStop(1, "#dcecff");
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1600, 1000);
