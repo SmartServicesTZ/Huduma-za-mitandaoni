@@ -39,7 +39,7 @@ type AgentData = { name: string; agentId: string; phone: string; type: string; r
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
 const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", "Team Reader": "TR", Supervisor: "SV" };
-const agentIdTokenCost = (agentType: string) => agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Team Reader" || agentType === "Supervisor" ? 10 : 0;
+const agentIdTokenCost = (agentType: string) => ["Freelancer", "Team Leader", "Team Reader", "Supervisor"].includes(agentType) ? 10 : 0;
 const locationData = tanzaniaLocations as unknown as { regions: Record<string, { districts: Record<string, string[]> }> };
 const tanzaniaRegions = Object.keys(locationData.regions).sort((a, b) => a.localeCompare(b));
 const districtsForRegion = (selectedRegion: string) => Object.keys(locationData.regions[selectedRegion]?.districts ?? {}).sort((a, b) => a.localeCompare(b));
@@ -278,9 +278,9 @@ export default function AgentIdPage() {
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       }
       if (!paid) {
-        const slug = NETWORK_SERVICE_SLUG[network];
+        const slug = "kitambulisho-wakala";
         const config = await getServiceTokenConfig(slug);
-        const roleCost = agentIdTokenCost(type);
+        const roleCost = Number(tokenCost ?? agentIdTokenCost(type));
         if (!Number.isSafeInteger(roleCost) || roleCost <= 0) throw new Error("Aina ya wakala haijatambuliwa. Chagua aina sahihi.");
         const accepted = window.confirm(`Unakaribia kupakua ${config.name} (${type}). Gharama ni tokeni ${roleCost}. Tokeni zitakatwa mara moja kwa kitambulisho hiki (mbele na nyuma). Endelea?`);
         if (!accepted) return;
