@@ -541,8 +541,9 @@ function HistoryPage() {
   </main>;
 }
 function MyApplicationsPage() {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, user: accountUser } = useAuth();
   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+  const [paymentApplication, setPaymentApplication] = useState<any | null>(null);
   const [serviceApplications, setServiceApplications] = useState<any[]>([]);
   const [lipaApplications, setLipaApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -587,7 +588,7 @@ function MyApplicationsPage() {
       title: String(item.serviceName || item.serviceSlug || "Ombi la huduma"),
       category: "Huduma",
       status: String(item.status || "PENDING").toUpperCase(),
-      paymentRequired: String(item.serviceSlug ?? "").toLowerCase() === "pata-till-mitandao-yote" && ["AIRTEL", "VODACOM"].includes(String(item.applicantData?.network ?? "").toUpperCase()) && String(item.applicantData?.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID",
+      paymentRequired: String(item.serviceSlug ?? "").toLowerCase() === "pata-till-mitandao-yote" && String(item.status ?? "PENDING").toUpperCase() === "PENDING" && ["AIRTEL", "VODACOM"].includes(String(item.applicantData?.network ?? "").toUpperCase()) && String(item.applicantData?.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID",
       reference: String(item.applicationId || item.id),
       phone: String(item.phone ?? item.applicantData?.phone ?? ""),
       date: item.updatedAt ?? item.submittedAt ?? item.createdAt,
@@ -642,7 +643,7 @@ function MyApplicationsPage() {
                 {item.phone && <span>Simu: {item.phone}</span>}
                 <span>{date ? new Date(date).toLocaleString("sw-TZ") : "Tarehe haijatajwa"}</span>
               </div>
-              {item.paymentRequired && <div style={{padding:11,borderRadius:9,background:"#fff7ed",border:"1px solid #fdba74",color:"#9a3412",fontSize:13}}><strong>OMBI HALIJAANZA KUSHUGHULIKIWA</strong><p style={{margin:"5px 0 0"}}>Fanya malipo ili ombi lako lianze kufanyiwa kazi. Wasiliana na Admin kupitia WhatsApp 0698232313.</p></div>}
+              {item.paymentRequired && <div style={{padding:11,borderRadius:9,background:"#fff7ed",border:"1px solid #fdba74",color:"#9a3412",fontSize:13}}><strong>OMBI HALIJAANZA KUSHUGHULIKIWA</strong><p style={{margin:"5px 0 0"}}>Fanya malipo ili ombi lako lianze kufanyiwa kazi. Wasiliana na Admin kupitia WhatsApp 0698232313.</p></div>}{item.paymentRequired && <button type="button" onClick={(event) => { event.stopPropagation(); setPaymentApplication(item); }} style={{justifySelf:"start",padding:"11px 16px",border:0,borderRadius:10,background:"#166534",color:"#fff",fontWeight:900,cursor:"pointer"}}><CreditCard size={16}/> FANYA MALIPO SASA</button>}
               {item.reason && <div style={{padding:10,borderRadius:9,background:"#fef2f2",color:"#991b1b",fontSize:13}}><strong>Sababu ya kukataliwa:</strong> {item.reason}</div>}
               {item.message && <div style={{padding:10,borderRadius:9,background:"#eff6ff",color:"#1e3a8a",fontSize:13}}><strong>Ujumbe wa Admin:</strong> {item.message}</div>}
               <button type="button" onClick={(event) => { event.stopPropagation(); setSelectedApplication(item); }} style={{justifySelf:"start",display:"inline-flex",alignItems:"center",gap:6,padding:"6px 9px",border:0,borderRadius:8,background:"#e0e7ff",color:"#3730a3",fontSize:11,fontWeight:800,cursor:"pointer"}}><Eye size={13}/> Fungua taarifa</button>
@@ -653,6 +654,7 @@ function MyApplicationsPage() {
         </div>}
       <p style={{fontSize:12,color:"#64748b",marginTop:16}}>Ikiwa hali bado ni “LINASUBIRI” au “LINAFANYIWA KAZI”, hutahitaji kutuma ombi lilelile tena. Fungua ombi hili kufuatilia rejea yake au wasiliana na support.</p>
     </section>}
+    <>{paymentApplication && <div role="presentation" onClick={() => setPaymentApplication(null)} style={{position:"fixed",inset:0,zIndex:10010,display:"grid",placeItems:"center",padding:14,background:"rgba(2,6,23,.76)"}}><section role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()} style={{width:"min(100%,480px)",padding:22,borderRadius:18,background:"#fff",color:"#0f172a"}}><button type="button" onClick={() => setPaymentApplication(null)}>Funga ×</button><h2>LIPA KWA AZAM PESA</h2><h3>{String(paymentApplication.raw?.applicantData?.network ?? "").toUpperCase()==="AIRTEL" ? "TSh 5,000" : "TSh 40,000"}</h3><p>Lipa Namba: <strong>29126823</strong></p><p>Jina la akaunti: <strong>Steward Tz</strong></p><p>Fanya malipo kwa Azam Pesa, kisha bonyeza hapa chini kuthibitisha kupitia WhatsApp.</p><button type="button" onClick={() => { const d=paymentApplication.raw?.applicantData ?? {}; const n=String(d.network ?? "").toUpperCase(); const m=["Habari Admin, nimelipia PATA TILL MITANDAO YOTE.","Jina: "+String(accountUser?.name ?? "—"),"Simu: "+String(accountUser?.phone ?? firebaseUser?.phoneNumber ?? "—"),"Mtandao: "+n,"Jina la mteja: "+String(d.fullName ?? "—"),"Namba ya Till: "+String(d.tillPhone ?? d.airtelPhone ?? "—"),"Kiasi: "+(n==="AIRTEL"?"TSh 5,000":"TSh 40,000"),"Azam Pesa Lipa Namba: 29126823","Akaunti: Steward Tz","Rejea: "+String(paymentApplication.reference ?? paymentApplication.id)].join("\n"); window.open("https://wa.me/255698232313?text="+encodeURIComponent(m),"_blank","noopener,noreferrer"); }} style={{width:"100%",padding:14,border:0,borderRadius:10,background:"#16a34a",color:"#fff",fontWeight:900}}>TAYARI NIMELIPIA – THIBITISHA</button><small>Admin atahakiki malipo kabla ombi halijaanza kushughulikiwa.</small></section></div>}</>
     {selectedApplication && <div role="presentation" onClick={() => setSelectedApplication(null)} style={{position:"fixed",inset:0,zIndex:10000,display:"grid",placeItems:"center",padding:14,background:"rgba(2,6,23,.72)",backdropFilter:"blur(5px)"}}>
       <section role="dialog" aria-modal="true" aria-labelledby="my-application-detail-title" onClick={(event) => event.stopPropagation()} style={{width:"min(100%,680px)",maxHeight:"88dvh",overflowY:"auto",padding:20,borderRadius:18,background:"#fff",color:"#0f172a",boxShadow:"0 24px 70px rgba(0,0,0,.3)"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
