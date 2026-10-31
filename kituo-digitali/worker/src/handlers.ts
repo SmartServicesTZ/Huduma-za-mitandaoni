@@ -1138,7 +1138,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
   const serviceSnapshot = await db.collection("services").where("slug", "==", applicationBefore.serviceSlug).limit(1).get();
   const service = serviceSnapshot.docs[0]?.data();
   const statusOptions = Array.isArray(service?.statusOptions) ? service.statusOptions : Array.isArray(applicationBefore.statusOptions) ? applicationBefore.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"];
-  if (!statusOptions.includes(status)) throw new ApiError("failed-precondition", "Hali hii haipo kwenye status options za huduma.");
+  if (status !== "PAYMENT_CONFIRMED" && !statusOptions.includes(status)) throw new ApiError("failed-precondition", "Hali hii haipo kwenye status options za huduma.");
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
