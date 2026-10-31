@@ -1084,19 +1084,49 @@ export async function setServiceApplicationStatus(applicationId: string, status:
   return (await callable({ applicationId, status, rejectionReason, allowResubmission })).data;
 }
 
+async function compressServiceImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 1600;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) { bitmap.close(); return file; }
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    let quality = 0.76;
+    let blob: Blob | null = null;
+    do {
+      blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (!blob || blob.size <= 900 * 1024 || quality <= 0.48) break;
+      quality -= 0.08;
+    } while (quality >= 0.48);
+    if (!blob || blob.size >= file.size) return file;
+    const baseName = file.name.replace(/\\.[^.]+$/, "") || "document";
+    return new File([blob], `${baseName}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
+  } catch {
+    return file;
+  }
+}
+
 export async function uploadServiceDocument(uid: string, applicationId: string, fieldName: string, file: File, maxSizeMb = 5, accept = ["image/jpeg", "image/png", "image/webp"]) {
   if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(fieldName)) throw new Error("Jina la field si sahihi.");
   if (firebaseAuth.currentUser?.uid !== uid) throw new Error("Akaunti haijathibitishwa. Ingia tena.");
   if (!accept.includes(file.type)) throw new Error("Aina ya faili hairuhusiwi.");
   const sizeLimit = Math.min(Math.max(maxSizeMb, 1), 5);
   if (file.size < 1 || file.size > sizeLimit * 1024 * 1024) throw new Error(`Faili liwe chini ya ${sizeLimit} MB.`);
+  const uploadFile = await compressServiceImage(file);
+  if (uploadFile.size > sizeLimit * 1024 * 1024) throw new Error("Picha bado ni kubwa. Chagua picha yenye ukubwa mdogo zaidi.");
   const user = firebaseAuth.currentUser;
   if (!user) throw new Error("Ingia kwanza.");
   const token = await user.getIdToken();
   const form = new FormData();
   form.append("applicationId", applicationId);
   form.append("fieldName", fieldName);
-  form.append("file", file, file.name || "document");
+  form.append("file", uploadFile, uploadFile.name || "document");
   const response = await fetch(`${workerBaseUrl()}/upload/service-document`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
