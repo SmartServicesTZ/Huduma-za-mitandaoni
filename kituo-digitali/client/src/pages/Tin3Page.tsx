@@ -64,44 +64,54 @@ export default function Tin3Page() {
   const download = () => {
     if (downloadStatus === "downloading") return;
     setDownloadStatus("downloading");
+
     const finish = (status: "idle" | "done") => {
       setDownloadStatus(status);
-      if (status === "done") window.setTimeout(() => setDownloadStatus("idle"), 1800);
+      if (status === "done") window.setTimeout(() => setDownloadStatus("idle"), 3500);
     };
+    const saveDataUrl = (dataUrl: string) => {
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `${tin || "VERIFY-TIN"}.png`;
+      link.rel = "noopener";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      finish("done");
+    };
+
+    // Convert the preview to a PNG before saving; keep a data URL so Android
+    // browsers do not lose a temporary blob URL before the download starts.
     const image = new Image();
     image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 2240;
-      canvas.height = 2720;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        finish("idle");
-        alert("Imeshindikana kutengeneza picha. Tafadhali jaribu tena.");
-        return;
-      }
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          finish("idle");
-          alert("Imeshindikana kutengeneza PNG. Tafadhali jaribu tena.");
-          return;
-        }
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${tin || "TIN"}.png`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 2240;
+        canvas.height = 2720;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Kivinjari hakikuweza kuandaa picha.");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        saveDataUrl(canvas.toDataURL("image/png"));
+      } catch {
+        // If PNG conversion is blocked by the mobile browser, still provide
+        // the original image as a downloadable SVG instead of doing nothing.
+        const svgUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+        const link = document.createElement("a");
+        link.href = svgUrl;
+        link.download = `${tin || "VERIFY-TIN"}.svg`;
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
         finish("done");
-      }, "image/png");
+      }
     };
     image.onerror = () => {
       finish("idle");
-      alert("Imeshindikana kutengeneza PNG. Tafadhali jaribu tena.");
+      alert("Imeshindikana kuandaa picha. Jaribu tena au fungua preview kisha ihifadhi.");
     };
     image.src = previewUrl;
   };
