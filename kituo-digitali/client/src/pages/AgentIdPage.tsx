@@ -210,13 +210,16 @@ export default function AgentIdPage() {
   useEffect(() => {
     let active = true;
     setTokenCost(null);
-    void getServiceTokenConfig(NETWORK_SERVICE_SLUG[network]).then(() => {
-      if (active) setTokenCost(agentIdTokenCost(type));
+    void getServiceTokenConfig("kitambulisho-wakala").then((config) => {
+      if (active) {
+        const configured = Number(config.agentTypeTokenCosts?.[type]);
+        setTokenCost(Number.isSafeInteger(configured) && configured > 0 ? configured : agentIdTokenCost(type));
+      }
     }).catch((error) => {
-      if (active) { setTokenCost(null); toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya mtandao."); }
+      if (active) { setTokenCost(null); toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala."); }
     });
     return () => { active = false; };
-  }, [network, type]);
+  }, [type]);
 
   useEffect(() => { setSavedRecordId(""); }, [network, name, phone, type, region, district, area, issueDate]);
 
@@ -312,8 +315,8 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button>
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
-        <p className="aid-choice-note">Chagua mkao, kisha pakua mbele na nyuma kivyake. Kila kitambulisho cha mtandao kina gharama yake; makato hufanyika mara moja kwa kitambulisho chote (mbele na nyuma).</p>
-        <div className="aid-choice-note" role="status">{tokenCost === null ? "Inasoma gharama ya tokeni..." : tokenCost === 0 ? "Gharama ya mtandao huu: BURE" : `Gharama ya ${network === "Mbeya One Company Limited" ? "MBEYA ONE" : network}: tokeni ${tokenCost}`}</div>
+        <p className="aid-choice-note">Chagua mtandao na aina ya wakala, kisha pakua mbele na nyuma kivyake. Gharama inategemea aina ya wakala, si mtandao; makato hufanyika mara moja kwa kitambulisho chote (mbele na nyuma).</p>
+        <div className="aid-choice-note" role="status">{tokenCost === null ? "Inasoma gharama ya tokeni..." : tokenCost === 0 ? "Gharama ya mtandao huu: BURE" : `Gharama ya ${type}: tokeni ${tokenCost}`}</div>
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{display:"block",width:"auto",height:"auto",maxWidth:"100%",maxHeight:"100%",objectFit:"contain",flex:"0 0 auto"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
