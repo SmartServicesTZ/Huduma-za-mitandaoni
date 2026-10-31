@@ -1082,34 +1082,34 @@ export default function Home() {
     };
   }, [isAuthenticated, firebaseUser?.uid]);
   useEffect(() => {
-    let cancelled = false;
-    void getCollectionOnce("services").then((rows) => {
-    if (cancelled) return;
-    setServices(rows.map((item) => {
-      const rawSlug = String(item.slug ?? item.id);
-      const slug = ["thibitisha-tin", "verify-tin", "tin-3"].includes(rawSlug) ? "verify-tin" : rawSlug;
-      const fallbackName = slug === "verify-tin" ? "VERIFY TIN" : slug === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : String(item.name ?? "Huduma");
-      return {
-        slug,
-        name: getPortalServiceName(slug, fallbackName),
-        description: String(slug === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""),
-        icon: String(item.icon ?? "sparkles"),
-        tokenCost: Number(item.tokenCost ?? 0),
-        tokenType: item.tokenType === "nida" ? "nida" : "huduma",
-        category: String(item.category ?? "Huduma kuu"),
-        kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"],
-        actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined,
-        order: Number(item.order ?? 9999),
-        fields: Array.isArray(item.fields) ? item.fields : undefined,
-        active: item.active !== false,
-        isVisible: item.isVisible !== false,
-        isLocked: item.isLocked === true,
-        maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined,
-      };
-    }));
-    setServicesLoading(false);
-    }).catch(() => { if (!cancelled) setServicesLoading(false); });
-    return () => { cancelled = true; };
+    let active = true;
+    const unsubscribe = subscribeToCollection("services", (rows) => {
+      if (!active) return;
+      setServices(rows.map((item) => {
+        const rawSlug = String(item.slug ?? item.id);
+        const slug = ["thibitisha-tin", "verify-tin", "tin-3"].includes(rawSlug) ? "verify-tin" : rawSlug;
+        const fallbackName = slug === "verify-tin" ? "VERIFY TIN" : slug === "sme-airtel-mkataba" ? "SME AIRTEL MKATABA" : String(item.name ?? "Huduma");
+        return {
+          slug,
+          name: getPortalServiceName(slug, fallbackName),
+          description: String(slug === "sme-airtel-mkataba" ? "Jaza na hakiki mkataba wa SME wa Airtel." : item.description ?? ""),
+          icon: String(item.icon ?? "sparkles"),
+          tokenCost: Number(item.tokenCost ?? 0),
+          tokenType: item.tokenType === "nida" ? "nida" : "huduma",
+          category: String(item.category ?? "Huduma kuu"),
+          kind: (item.isLocked ? "locked" : item.isFree || Number(item.tokenCost ?? 0) <= 0 ? "free" : "paid") as ServiceCatalogItem["kind"],
+          actionUrl: typeof item.actionUrl === "string" ? item.actionUrl : undefined,
+          order: Number(item.order ?? 9999),
+          fields: Array.isArray(item.fields) ? item.fields : undefined,
+          active: item.active !== false,
+          isVisible: item.isVisible !== false,
+          isLocked: item.isLocked === true,
+          maintenanceMessage: typeof item.maintenanceMessage === "string" ? item.maintenanceMessage : undefined,
+        };
+      }));
+      setServicesLoading(false);
+    }, () => { if (active) setServicesLoading(false); });
+    return () => { active = false; unsubscribe(); };
   }, []);
   useEffect(() => {
     let cancelled = false;
