@@ -207,7 +207,7 @@ export default function AdminDashboard() {
         cachedRead("transactions", hasPermission("manageReports") && needs("overview", "transactions", "reports"), adminListTransactions, [], force),
         cachedRead("messages", hasPermission("manageMessages") && needs("messages"), () => adminListCollection("messages"), [], force),
         cachedRead(`security:${auditCollection}`, hasPermission("viewAuditLogs") && needs("security"), () => getRecentSecurityLogs(auditCollection), { rows: [], cursor: null, hasMore: false }, force),
-        cachedRead("siteSettings", (hasPermission("manageSettings") && needs("services", "serviceControl", "cms", "templates")) || (hasPermission("manageTokens") && needs("tokens")), adminGetSiteSettings, null, force),
+        cachedRead("siteSettings", (hasPermission("manageSettings") && needs("services", "serviceControl", "cms", "templates", "appearance")) || (hasPermission("manageTokens") && needs("tokens")), adminGetSiteSettings, null, force),
         cachedRead("serviceLocks", hasPermission("manageServices") && needs("services", "serviceControl"), () => adminListCollection("serviceLocks"), [], force),
         cachedRead("lipaServices", canManageLipaApplications && needs("applications", "lipa"), () => adminListCollection("lipaServices"), [], force),
         cachedRead("lipaApplications", canManageLipaApplications && needs("applications", "lipaReport", "lipa"), adminListLipaApplications, [], force),
