@@ -17,6 +17,31 @@ import type { User } from "firebase/auth";
 
 type UseAuthOptions = { redirectOnUnauthenticated?: boolean; redirectPath?: string };
 
+// Share one Firebase auth observer across the app. Multiple page/header hooks
+// must not independently race while a route is mounting or unmounting.
+let sharedFirebaseUser: User | null = firebaseAuth.currentUser;
+let sharedAuthReady = false;
+let sharedAuthObserverStarted = false;
+const sharedAuthSubscribers = new Set<(user: User | null) => void>();
+function subscribeToSharedAuth(callback: (user: User | null) => void) {
+  sharedAuthSubscribers.add(callback);
+  callback(sharedFirebaseUser);
+  if (!sharedAuthObserverStarted) {
+    sharedAuthObserverStarted = true;
+    void authPersistenceReady.then(() => {
+      onAuthStateChanged(firebaseAuth, (nextUser) => {
+        sharedFirebaseUser = nextUser;
+        sharedAuthReady = true;
+        sharedAuthSubscribers.forEach((subscriber) => subscriber(nextUser));
+      });
+    }).catch(() => {
+      sharedAuthReady = true;
+      sharedAuthSubscribers.forEach((subscriber) => subscriber(sharedFirebaseUser));
+    });
+  }
+  return () => { sharedAuthSubscribers.delete(callback); };
+}
+
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
   // Reuse the already-restored Firebase user immediately when nested pages mount.
@@ -24,38 +49,30 @@ export function useAuth(options?: UseAuthOptions) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(() => firebaseAuth.currentUser);
   const [profile, setProfile] = useState<FirebaseProfile | null>(null);
   const [authClaims, setAuthClaims] = useState<FirebaseRoleClaims | null>(null);
-  // Always wait for this hook's first onAuthStateChanged callback.
-  // authStateReady may already be resolved while this component is mounting;
-  // rendering guest UI before the listener callback causes an 'Ingia kwanza' flash.
-  const [loading, setLoading] = useState(true);
+  // Keep the session state available across route changes and component remounts.
+  const [loading, setLoading] = useState(!sharedAuthReady);
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     let active = true;
-    let unsubscribe = () => {};
-    void authPersistenceReady.then(() => {
+    const receiveAuthState = (nextUser: User | null) => {
       if (!active) return;
-      unsubscribe = onAuthStateChanged(firebaseAuth, (nextUser) => {
-        if (!active) return;
-        setFirebaseUser(nextUser);
-        setProfile(null);
-        setAuthClaims(null);
-        setError(null);
-        // Auth state is authoritative. A delayed or unavailable profile must
-        // not make the user appear signed out or block navigation.
-        setLoading(false);
-        if (nextUser) {
-          void ensureAuthenticatedProfile(nextUser).then(async () => {
-            const nextClaims = await syncFirebaseAuthClaims();
-            if (active) setAuthClaims(nextClaims);
-          }).catch((cause) => {
-            if (active) setError(cause);
-          });
-        }
-      });
-    }).catch((cause) => {
-      if (active) { setError(cause); setLoading(false); }
-    });
+      setFirebaseUser(nextUser);
+      setProfile(null);
+      setAuthClaims(null);
+      setError(null);
+      if (sharedAuthReady) setLoading(false);
+      if (nextUser) {
+        void ensureAuthenticatedProfile(nextUser).then(async () => {
+          const nextClaims = await syncFirebaseAuthClaims();
+          if (active) setAuthClaims(nextClaims);
+        }).catch((cause) => {
+          if (active) setError(cause);
+        });
+      }
+    };
+    const unsubscribe = subscribeToSharedAuth(receiveAuthState);
+    if (sharedAuthReady) setLoading(false);
     return () => { active = false; unsubscribe(); };
   }, []);
 
