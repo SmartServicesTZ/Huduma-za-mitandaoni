@@ -238,7 +238,7 @@ export default function AdminDashboard() {
       }
     } finally { setLoadingData(false); }
   };
-  useEffect(() => { void refresh(); }, [canManage, panel]);
+  useEffect(() => { void refresh(); }, [canManage, panel]);\n  useEffect(() => { if (panel !== "applications") setSelectedInboxApplication(null); }, [panel]);
 
   // Keep the applications badge current even while the admin is viewing another panel.
   // A lightweight inbox refresh runs on entry and every 30 seconds.
@@ -320,7 +320,7 @@ export default function AdminDashboard() {
         <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU</span><h2>MAOMBI YA HUDUMA</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi ya huduma na LIPA NAMBA yameunganishwa kwenye list moja. Kila ombi lina aina yake na linafunguka kwa vitendo vyake maalum.</p></div><ClipboardList size={22}/></div>
         <UnifiedApplicationsInbox serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} networks={lipaServices} onSelect={(kind, id) => { setSelectedInboxApplication({ kind, id }); setSelectedInboxSession((value) => value + 1); }} />
         {selectedInboxApplication && <div style={{marginTop:16}}>
-          <button type="button" className="button button--secondary button--small" onClick={() => setSelectedInboxApplication(null)} style={{marginBottom:12}}>← Rudi kwenye list ya maombi</button>
+          <button type="button" className="button button--secondary button--small" onClick={() => { setSelectedInboxApplication(null); setSelectedInboxSession((value) => value + 1); }} style={{marginBottom:12}}>← Rudi kwenye list ya maombi</button>
           {selectedInboxApplication.kind === "SERVICE"
             ? <ServiceApplicationsPanel key={`service-${selectedInboxSession}`} applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} hideList initialSelectedId={selectedInboxApplication.id} />
             : <LipaApplicationsPanel key={`lipa-${selectedInboxSession}`} applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} hideList initialSelectedId={selectedInboxApplication.id} />}
