@@ -192,7 +192,7 @@ export default function AccessLipaNumberPage() {
       const result = editingApplicationId
         ? await updateServiceApplication(editingApplicationId, values)
         : await createServiceApplication(applicationId, serviceSlug, values);
-      setSubmittedRef(String(result.reference ?? result.applicationId ?? applicationId));
+      setSubmittedRef(String(("reference" in result ? result.reference : result.applicationId) ?? applicationId));
       toast.success("Ombi limetumwa kwa admin.");
       if (passportPath.startsWith("serviceUploads/")) await removeServiceUpload(passportPath).catch(() => undefined);
       setPassportPath(""); setPassportName("");
