@@ -66,7 +66,7 @@ if (usingFirebaseEmulators) {
 }
 // Local persistence is configured at Auth initialization; Firebase Auth itself
 // restores sessions after refresh and browser restarts where the browser permits it.
-export const authPersistenceReady = Promise.resolve();
+export const authPersistenceReady = firebaseAuth.authStateReady();
 function workerBaseUrl() {
   const configured = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "").trim();
   const productionFallback = "https://huduma-za-mtandao-api.stewardjackson999.workers.dev";
@@ -86,6 +86,9 @@ function isQuotaFailure(status: number, code: string, message: string) {
 }
 
 async function invokeWorker<TResponse>(name: string, data: unknown, authUser?: User): Promise<TResponse> {
+  // Wait until Firebase has restored the persisted browser session before
+  // treating currentUser === null as a genuine signed-out state.
+  await authPersistenceReady;
   if (Date.now() < workerQuotaCooldownUntil) {
     throw Object.assign(new Error("Matumizi ya database yamefikia kikomo kwa muda. Mfumo unasubiri kabla ya kujaribu tena; tafadhali subiri dakika moja."), { code: "api/quota-cooldown" });
   }
