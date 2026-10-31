@@ -15,6 +15,12 @@ const CARD_DESIGN = {
     backgroundEnd: "#78c6d7",
     border: "#477e77",
   },
+  // Njia za picha kwenye folda ya public ya mradi wako
+  assets: {
+    ngao: "/images/ngao.png",
+    bendera: "/images/bendera.png",
+    twigaBg: "/images/twiga-bg.png",
+  }
 };
 
 export default function SoftCopyNidaDemoPage() {
@@ -86,114 +92,69 @@ export default function SoftCopyNidaDemoPage() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1600, 1000);
 
-    // 2. Taswira ya Mlima na Mandhari ya Nyuma (Background Artwork)
-    ctx.fillStyle = "rgba(160, 60, 40, 0.12)";
-    ctx.beginPath();
-    ctx.moveTo(250, 750);
-    ctx.lineTo(450, 380);
-    ctx.lineTo(580, 500);
-    ctx.lineTo(750, 280);
-    ctx.lineTo(950, 750);
-    ctx.closePath();
-    ctx.fill();
+    // Kazi ya kumaliza kuchora na kupakua Canvas
+    const finalizeCanvas = () => {
+      // Ukingo wa nje
+      ctx.strokeStyle = CARD_DESIGN.colors.border;
+      ctx.lineWidth = 10;
+      ctx.strokeRect(16, 16, 1568, 968);
 
-    // Mistari ya kiusalama ya nyuma
-    for (let i = 0; i < 6; i++) {
-      ctx.beginPath();
-      ctx.strokeStyle = "rgba(20,100,90,0.08)";
-      ctx.lineWidth = 4;
-      ctx.ellipse(750, 500, 250 + i * 70, 150 + i * 40, -0.2, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+      // Mistari 4 ya Juu (Vichwa vya Habari)
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#1b2a4a";
+      ctx.font = "bold 22px Arial";
+      ctx.fillText(CARD_DESIGN.lines[0], 800, 55);
 
-    // 3. Ukingo wa nje wa kadi
-    ctx.strokeStyle = CARD_DESIGN.colors.border;
-    ctx.lineWidth = 10;
-    ctx.strokeRect(16, 16, 1568, 968);
+      ctx.font = "bold 38px Arial";
+      ctx.fillText(CARD_DESIGN.lines[1], 800, 98);
 
-    // 4. NEMBO YA KUSHOTO (Ngao ya Taifa ya Mfano)
-    ctx.fillStyle = "#1b4d3e";
-    ctx.beginPath();
-    ctx.arc(130, 95, 42, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f5d061";
-    ctx.beginPath();
-    ctx.arc(130, 95, 32, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#1b4d3e";
-    ctx.font = "bold 22px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("TZ", 130, 103);
+      ctx.font = "bold 16px Arial";
+      ctx.fillStyle = "#333333";
+      ctx.fillText(CARD_DESIGN.lines[2], 800, 126);
 
-    // 5. BENDERA YA KULIA
-    ctx.fillStyle = "#114422";
-    ctx.fillRect(1410, 60, 90, 55);
-    ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.moveTo(1410, 60); ctx.lineTo(1500, 60); ctx.lineTo(1410, 115); ctx.fill();
-    ctx.fillStyle = "#ffcc00";
-    ctx.beginPath();
-    ctx.moveTo(1410, 80); ctx.lineTo(1470, 60); ctx.lineTo(1410, 95); ctx.fill();
-    ctx.strokeStyle = "#444"; ctx.lineWidth = 2; ctx.strokeRect(1410, 60, 90, 55);
+      ctx.font = "bold 18px Arial";
+      ctx.fillStyle = "#1b2a4a";
+      ctx.fillText(CARD_DESIGN.lines[3], 800, 153);
 
-    // 6. MISTARI 4 YA JUU (Vichwa vya Habari)
-    ctx.textAlign = "center";
-    // Mstari 1
-    ctx.fillStyle = "#1b2a4a";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText(CARD_DESIGN.lines[0], 800, 55);
-    // Mstari 2
-    ctx.font = "bold 38px Arial";
-    ctx.fillText(CARD_DESIGN.lines[1], 800, 98);
-    // Mstari 3
-    ctx.font = "bold 16px Arial";
-    ctx.fillStyle = "#333333";
-    ctx.fillText(CARD_DESIGN.lines[2], 800, 126);
-    // Mstari 4
-    ctx.font = "bold 18px Arial";
-    ctx.fillStyle = "#1b2a4a";
-    ctx.fillText(CARD_DESIGN.lines[3], 800, 153);
+      // Namba ya Kitambulisho
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#101d24";
+      ctx.font = "bold 44px Arial";
+      ctx.fillText(formattedNidaNumber, 75, 230);
 
-    // 7. Namba ya Kitambulisho
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#101d24";
-    ctx.font = "bold 44px Arial";
-    ctx.fillText(formattedNidaNumber, 75, 230);
+      // Taarifa za Kushoto
+      const drawFieldExact = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
+        ctx.font = "bold 18px Arial";
+        ctx.fillStyle = "#1f3a34";
+        ctx.fillText(labelKiswahili, 75, y);
 
-    // 8. Taarifa za Sehemu ya Kushoto
-    const drawFieldExact = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#555555";
+        ctx.fillText(labelEnglish, 75, y + 20);
+
+        ctx.font = "bold 32px Arial";
+        ctx.fillStyle = "#112222";
+        ctx.fillText(value || "—", 380, y + 10);
+      };
+
+      drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 320);
+      drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 430);
+      drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 540);
+      drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 650);
+
+      // Sahihi
       ctx.font = "bold 18px Arial";
       ctx.fillStyle = "#1f3a34";
-      ctx.fillText(labelKiswahili, 75, y);
-
+      ctx.fillText("SAINI", 75, 760);
       ctx.font = "14px Arial";
       ctx.fillStyle = "#555555";
-      ctx.fillText(labelEnglish, 75, y + 20);
+      ctx.fillText("Signature", 75, 782);
 
-      ctx.font = "bold 32px Arial";
-      ctx.fillStyle = "#112222";
-      ctx.fillText(value || "—", 380, y + 10);
-    };
+      ctx.font = "italic 36px cursive";
+      ctx.fillStyle = "#0a192f";
+      ctx.fillText(signature || fullName, 190, 775);
 
-    drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 320);
-    drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 430);
-    drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 540);
-    drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 650);
-
-    // Sahihi
-    ctx.font = "bold 18px Arial";
-    ctx.fillStyle = "#1f3a34";
-    ctx.fillText("SAINI", 75, 760);
-    ctx.font = "14px Arial";
-    ctx.fillStyle = "#555555";
-    ctx.fillText("Signature", 75, 782);
-
-    ctx.font = "italic 36px cursive";
-    ctx.fillStyle = "#0a192f";
-    ctx.fillText(signature || fullName, 190, 775);
-
-    // 9. Kuchora Picha Upande wa Kulia
-    const drawPhotoAndSave = () => {
+      // Picha ya Mtumiaji
       const pX = 1120, pY = 270, pW = 390, pH = 480;
       ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.fillRect(pX, pY, pW, pH);
@@ -201,28 +162,65 @@ export default function SoftCopyNidaDemoPage() {
       ctx.lineWidth = 6;
       ctx.strokeRect(pX, pY, pW, pH);
 
+      const triggerDownload = () => {
+        const link = document.createElement("a");
+        link.download = "national-identity-card.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      };
+
       if (photo) {
-        const image = new Image();
-        image.onload = () => {
-          ctx.drawImage(image, pX + 10, pY + 10, pW - 20, pH - 20);
-          triggerDownload(canvas);
+        const userImg = new Image();
+        userImg.onload = () => {
+          ctx.drawImage(userImg, pX + 10, pY + 10, pW - 20, pH - 20);
+          triggerDownload();
         };
-        image.onerror = () => triggerDownload(canvas);
-        image.src = photo;
-        return;
+        userImg.onerror = triggerDownload;
+        userImg.src = photo;
+      } else {
+        triggerDownload();
       }
-
-      triggerDownload(canvas);
     };
 
-    const triggerDownload = (targetCanvas: HTMLCanvasElement) => {
-      const link = document.createElement("a");
-      link.download = "national-identity-card.png";
-      link.href = targetCanvas.toDataURL("image/png");
-      link.click();
+    // Kupakia picha za Ngao, Bendera, na Twiga Background kabla ya kuchora Canvas
+    let loadedCount = 0;
+    const totalAssets = 3;
+
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount === totalAssets) {
+        finalizeCanvas();
+      }
     };
 
-    drawPhotoAndSave();
+    // 1. Ngao (Kushoto)
+    const ngaoImg = new Image();
+    ngaoImg.onload = () => {
+      ctx.drawImage(ngaoImg, 75, 45, 90, 90);
+      checkAllLoaded();
+    };
+    ngaoImg.onerror = checkAllLoaded;
+    ngaoImg.src = CARD_DESIGN.assets.ngao;
+
+    // 2. Bendera (Kulia)
+    const benderaImg = new Image();
+    benderaImg.onload = () => {
+      ctx.drawImage(benderaImg, 1400, 50, 110, 70);
+      checkAllLoaded();
+    };
+    benderaImg.onerror = checkAllLoaded;
+    benderaImg.src = CARD_DESIGN.assets.bendera;
+
+    // 3. Twiga/Mlima kwa nyuma (Background Image)
+    const twigaImg = new Image();
+    twigaImg.onload = () => {
+      ctx.globalAlpha = 0.25; // Kufanya iwe hafifu nyuma
+      ctx.drawImage(twigaImg, 200, 200, 900, 600);
+      ctx.globalAlpha = 1.0;
+      checkAllLoaded();
+    };
+    twigaImg.onerror = checkAllLoaded;
+    twigaImg.src = CARD_DESIGN.assets.twigaBg;
   }
 
   return (
@@ -260,20 +258,14 @@ export default function SoftCopyNidaDemoPage() {
             background: "linear-gradient(125deg, #d4edda 0%, #bee5eb 50%, #78c6d7 100%)",
             color: "#112222", boxShadow: "0 8px 24px rgba(0,0,0,.16)"
           }}>
-            {/* Taswira ya Mlima kwa nyuma kwenye Preview */}
-            <div style={{ position: "absolute", inset: 0, opacity: 0.12, pointerEvents: "none", overflow: "hidden" }}>
-              <svg width="100%" height="100%" viewBox="0 0 1000 625" preserveAspectRatio="none">
-                <polygon points="150,500 320,240 420,380 580,180 780,500" fill="#a03c28" />
-              </svg>
-            </div>
+            {/* Picha halisi ya Twiga/Mlima kwa nyuma kwenye Preview */}
+            <div style={{ position: "absolute", inset: 0, opacity: 0.25, pointerEvents: "none", backgroundImage: `url(${CARD_DESIGN.assets.twigaBg})`, backgroundSize: "cover", backgroundPosition: "center" }} />
 
-            {/* Nembo ya Kushoto (Ngao) kwenye Preview */}
-            <div style={{ position: "absolute", left: 24, top: 16, width: 38, height: 38, borderRadius: "50%", background: "#1b4d3e", border: "2px solid #f5d061", display: "grid", placeItems: "center", color: "#f5d061", fontWeight: 900, fontSize: 11 }}>TZ</div>
+            {/* Picha halisi ya Ngao (Kushoto) kwenye Preview */}
+            <img src={CARD_DESIGN.assets.ngao} alt="Ngao" style={{ position: "absolute", left: 24, top: 16, width: "42px", height: "42px", objectFit: "contain" }} />
             
-            {/* Bendera ya Kulia kwenye Preview */}
-            <div style={{ position: "absolute", right: 24, top: 16, width: 50, height: 32, background: "#114422", border: "1px solid #444", overflow: "hidden" }}>
-              <div style={{ position: "absolute", width: "100%", height: "100%", background: "linear-gradient(135deg, #000 50%, #ffcc00 50%)" }} />
-            </div>
+            {/* Picha halisi ya Bendera (Kulia) kwenye Preview */}
+            <img src={CARD_DESIGN.assets.bendera} alt="Bendera" style={{ position: "absolute", right: 24, top: 16, width: "55px", height: "35px", objectFit: "contain" }} />
 
             {/* Mistari 4 ya Juu */}
             <div style={{ position: "relative", textAlign: "center", lineHeight: 1.15 }}>
@@ -338,7 +330,7 @@ export default function SoftCopyNidaDemoPage() {
                 </div>
               </div>
 
-              {/* Boksi la picha lililopunguzwa urefu */}
+              {/* Boksi la picha */}
               <div style={{
                 width: "27%", minWidth: "22%", height: "82%", alignSelf: "center",
                 border: `2px solid ${CARD_DESIGN.colors.border}`,
