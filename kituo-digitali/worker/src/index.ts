@@ -12,6 +12,7 @@ import {
   createPocketWifiOrder,
   createServiceApplication,
   updateServiceApplication,
+  updateLipaApplication,
   createLipaDocumentUploadUrl,
   createTokenPurchaseOrder,
   ensureDefaultServiceCatalog,
@@ -33,6 +34,7 @@ import {
   setServiceApplicationStatus,
   setServiceLock,
   submitLipaApplication,
+  updateLipaApplication,
   syncAuthClaims,
   updateUserAccess,
   updateLipaRewardTracking,
@@ -54,7 +56,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   listAdminUsers, listServiceApplications, replyToLipaApplication, replyToServiceApplication,
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
-  setServiceApplicationStatus, setServiceLock, submitLipaApplication, syncAuthClaims, updateUserAccess, updateLipaRewardTracking, verifyUser,
+  setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateLipaApplication, syncAuthClaims, updateUserAccess, updateLipaRewardTracking, verifyUser,
 };
 const webhook: HttpRoute = fimipayWebhook;
 function paymentFlowsEnabled(env: Env) {
