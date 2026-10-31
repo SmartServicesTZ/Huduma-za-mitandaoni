@@ -133,6 +133,7 @@ const writePolicy: Record<string, { permission: string; targetType: string }> = 
   services: { permission: "manageServices", targetType: "service" },
   lipaServices: { permission: "manageServices", targetType: "lipaService" },
   announcements: { permission: "manageContent", targetType: "announcement" },
+  advertisements: { permission: "manageContent", targetType: "advertisement" },
   tutorialVideos: { permission: "manageContent", targetType: "tutorialVideo" },
   messages: { permission: "manageMessages", targetType: "message" },
   licenseTemplates: { permission: "manageLicenses", targetType: "licenseTemplate" },
