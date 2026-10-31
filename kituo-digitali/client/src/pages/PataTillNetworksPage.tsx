@@ -33,7 +33,7 @@ function newId() { return typeof crypto !== "undefined" && crypto.randomUUID ? c
 function dateLabel(value: unknown) { const date = value ? new Date(String(value)) : null; return date && !Number.isNaN(date.getTime()) ? date.toLocaleString("sw-TZ") : "—"; }
 
 export default function PataTillNetworksPage() {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, user: accountUser } = useAuth();
   const [, navigate] = useLocation();
   const [network, setNetwork] = useState<Network | null>(null);
   const activeTheme = network ? themes[network] : themes.HALOTEL;
@@ -47,6 +47,7 @@ export default function PataTillNetworksPage() {
   const [reference, setReference] = useState("");
   const [requestNonce, setRequestNonce] = useState(0);
   const [applications, setApplications] = useState<ServiceApplication[]>([]);
+  const [paymentApplication, setPaymentApplication] = useState<ServiceApplication | null>(null);
   const applicationId = useMemo(() => newId(), [network, requestNonce]);
   useEffect(() => {
     if (!firebaseUser?.uid) { setApplications([]); return; }
@@ -163,8 +164,42 @@ export default function PataTillNetworksPage() {
     </section>}
     <section style={{...cardStyle,marginTop:25}}>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{width:38,height:38,borderRadius:10,background:"#f1f5f9",display:"grid",placeItems:"center",color:"#475569"}}><Clock3 size={19}/></div><div><h2 style={{margin:0,fontSize:19,color:"#172033"}}>Maombi yangu</h2><p style={{margin:"4px 0 0",fontSize:13,color:"#64748b"}}>Angalia hali ya maombi yako ya Till.</p></div></div>
-      {applications.length===0?<p style={{color:"#64748b",fontSize:14,marginBottom:0}}>Bado hujatuma maombi ya Till kupitia kipengele hiki.</p>:<div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:620}}><thead><tr>{["Mteja","Mtandao","Till / Lipa","Hali","Malipo","Tarehe"].map(x=><th key={x} style={{textAlign:"left",padding:12,borderBottom:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569"}}>{x}</th>)}</tr></thead><tbody>{applications.map(app=>{const paymentPending=["AIRTEL","VODACOM"].includes(String(app.applicantData?.network??"").toUpperCase())&&String(app.applicantData?.paymentStatus??"UNPAID").toUpperCase()!=="PAID";const visibleStatus=paymentPending?"MALIPO HAYAJATHIBITISHWA":String(app.status??"PENDING");return <tr key={app.id}>{[String(app.applicantData?.fullName??app.applicantData?.airtelPhone??app.applicantData?.nidaNumber??"—"),String(app.applicantData?.network??"—"),String(app.applicantData?.tillPhone??app.applicantData?.airtelPhone??"—"),visibleStatus,String(app.applicantData?.price??"—"),dateLabel(app.submittedAt??app.updatedAt)].map((v,i)=><td key={i} style={{padding:12,borderBottom:"1px solid #edf0f5",color:i===3&&v==="APPROVED"?"#15803d":i===3&&paymentPending?"#b45309":"#475569",fontWeight:i===3?800:400}}>{v}</td>)}</tr>})}</tbody></table></div>}
+      {applications.length===0?<p style={{color:"#64748b",fontSize:14,marginBottom:0}}>Bado hujatuma maombi ya Till kupitia kipengele hiki.</p>:<div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:620}}><thead><tr>{["Mteja","Mtandao","Till / Lipa","Hali","Malipo","Tarehe","Hatua"].map(x=><th key={x} style={{textAlign:"left",padding:12,borderBottom:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569"}}>{x}</th>)}</tr></thead><tbody>{applications.map(app=>{const networkName=String(app.applicantData?.network??"").toUpperCase();const paymentPending=["AIRTEL","VODACOM"].includes(networkName)&&String(app.applicantData?.paymentStatus??"UNPAID").toUpperCase()!=="PAID";const visibleStatus=paymentPending?"MALIPO HAYAJATHIBITISHWA":String(app.status??"PENDING");return <tr key={app.id}>{[String(app.applicantData?.fullName??app.applicantData?.airtelPhone??app.applicantData?.nidaNumber??"—"),String(app.applicantData?.network??"—"),String(app.applicantData?.tillPhone??app.applicantData?.airtelPhone??"—"),visibleStatus,String(app.applicantData?.price??"—"),dateLabel(app.submittedAt??app.updatedAt)].map((v,i)=><td key={i} style={{padding:12,borderBottom:"1px solid #edf0f5",color:i===3&&v==="APPROVED"?"#15803d":i===3&&paymentPending?"#b45309":"#475569",fontWeight:i===3?800:400}}>{v}</td>)}<td style={{padding:12,borderBottom:"1px solid #edf0f5"}}>{paymentPending&&<button type="button" onClick={()=>setPaymentApplication(app)} style={{border:0,borderRadius:9,padding:"10px 13px",background:"#15803d",color:"#fff",fontWeight:850,cursor:"pointer",whiteSpace:"nowrap"}}>FANYA MALIPO</button>}</td></tr>})}</tbody></table></div>}
       {applications.some(app=>["AIRTEL","VODACOM"].includes(String(app.applicantData?.network??"").toUpperCase())&&String(app.applicantData?.paymentStatus??"UNPAID").toUpperCase()!=="PAID")&&<div role="status" style={{marginTop:14,padding:16,border:"1px solid #f4c56a",borderRadius:12,background:"#fff8e8",color:"#854d0e",lineHeight:1.65}}><strong style={{display:"block",fontSize:14}}>OMBI LAKO HALIJAANZA KUFANYIWA KAZI</strong><p style={{margin:"6px 0"}}>Sababu: Hujafanya malipo au malipo yako bado hayajathibitishwa. Fanya malipo ili ombi lako lianze kufanyiwa kazi.</p><p style={{margin:"6px 0 0"}}>Kwa mawasiliano zaidi: <strong>0698232313</strong></p><a href={"https://wa.me/255698232313?text="+encodeURIComponent("Habari Admin, naomba kuthibitisha malipo ya ombi langu la Till.")} target="_blank" rel="noreferrer" style={{display:"inline-flex",marginTop:10,background:"#15803d",color:"#fff",padding:"10px 13px",borderRadius:9,textDecoration:"none",fontWeight:800}}>WASILIANA WHATSAPP 0698232313</a></div>}
     </section>
+
+    {paymentApplication && (() => {
+      const data = paymentApplication.applicantData ?? {};
+      const networkName = String(data.network ?? "").toUpperCase();
+      const accountName = String(accountUser?.name ?? [accountUser?.firstName, accountUser?.lastName].filter(Boolean).join(" ") ?? firebaseUser?.displayName ?? "Mwanachama");
+      const accountPhone = String(accountUser?.phone ?? "");
+      const requestNames = String(data.fullName ?? data.businessName ?? data.airtelPhone ?? data.nidaNumber ?? "—");
+      const amount = String(data.price ?? (networkName === "AIRTEL" ? "TSh 5,000" : "TSh 40,000"));
+      const message = [
+        "HABARI STEWARD TZ, NIMELIPIA OMBI LA HUDUMA.",
+        "Jina la akaunti: " + accountName,
+        "Namba ya simu ya akaunti: " + (accountPhone || "Haijawekwa"),
+        "Aina ya ombi: " + networkName + " TILL / UWAKALA",
+        "Majina ya ombi: " + requestNames,
+        "Kiasi: " + amount,
+        "Lipa Namba ya Azam Pesa: 29126823",
+        "Jina la mpokeaji: Steward Tz",
+        "Tafadhali hakiki malipo yangu na anzeni kushughulikia ombi langu."
+      ].join("\\n");
+      const whatsapp = "https://wa.me/255698232313?text=" + encodeURIComponent(message);
+      return <div role="dialog" aria-modal="true" aria-label="Taarifa za malipo" style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(15,23,42,.65)",display:"grid",placeItems:"center",padding:16}}>
+        <div style={{width:"min(100%,480px)",background:"#fff",borderRadius:18,padding:22,boxShadow:"0 20px 60px rgba(0,0,0,.25)",color:"#172033"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}><h3 style={{margin:0,fontSize:21}}>FANYA MALIPO</h3><button type="button" onClick={()=>setPaymentApplication(null)} aria-label="Funga" style={{border:0,background:"#f1f5f9",borderRadius:9,padding:"7px 12px",fontSize:20,cursor:"pointer"}}>×</button></div>
+          <p style={{color:"#64748b",fontSize:14,lineHeight:1.6}}>Lipa kiasi kilichoonyeshwa kupitia Azam Pesa, kisha thibitisha kwa WhatsApp.</p>
+          <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:13,padding:16,display:"grid",gap:9}}>
+            <div><small style={{color:"#64748b"}}>LIPA NAMBA (AZAM PESA)</small><div style={{fontSize:25,fontWeight:900,letterSpacing:1}}>29126823</div></div>
+            <div><small style={{color:"#64748b"}}>JINA LA MPOKEA</small><div style={{fontSize:17,fontWeight:800}}>Steward Tz</div></div>
+            <div><small style={{color:"#64748b"}}>KIASI CHA KULIPA</small><div style={{fontSize:20,fontWeight:900,color:"#15803d"}}>{amount}</div></div>
+          </div>
+          <button type="button" onClick={()=>{window.open(whatsapp,"_blank","noopener,noreferrer");setPaymentApplication(null);}} style={{width:"100%",marginTop:16,border:0,borderRadius:11,padding:15,background:"#15803d",color:"#fff",fontSize:15,fontWeight:900,cursor:"pointer"}}>TAYARI NIMELIPIA — THIBITISHA</button>
+          <p style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:0}}>Ukithibitisha, WhatsApp itafunguka ikiwa na taarifa za akaunti na ombi lako tayari.</p>
+        </div>
+      </div>;
+    })()}
   </main>;
 }
