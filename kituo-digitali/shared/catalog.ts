@@ -59,6 +59,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "HUDUMA ZA WAKALA"),
   paid("cheti-tin", "TIN CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "HUDUMA ZA WAKALA"),
+  paid("soft-copy-nida", "SOFT COPY NIDA", "Tengeneza kadi binafsi ya mfano yenye alama DEMO – NOT OFFICIAL.", "id-card", "HUDUMA ZA WAKALA"),
   free("verify-tin", "VERIFY TIN", "Jaza taarifa zako za TIN na tengeneza mwonekano wa mfano usio uthibitisho rasmi wa TRA.", "image-search", "HUDUMA ZA WAKALA"),
   paid("mpiga-kura", "SOFT COPY YA MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "HUDUMA ZA WAKALA"),
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "HUDUMA ZA WAKALA"),
