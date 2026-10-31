@@ -5,11 +5,11 @@ import { Download, Upload, RotateCcw, LoaderCircle } from "lucide-react";
 import { triggerDownload } from "@/lib/downloadHistory";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
-import { consumeFirebaseTokens, createAgentRecord } from "@/lib/firebase";
-import { serviceCatalog } from "../../../shared/catalog";
+import { consumeFirebaseTokens, createAgentRecord, getServiceTokenConfig } from "@/lib/firebase";
 import tanzaniaLocations from "@/data/tanzaniaLocations.json";
 
 type Network = "Airtel" | "Vodacom" | "Yas" | "Halotel" | "Mbeya One Company Limited" | "Huduma za Mtandaoni";
+const NETWORK_SERVICE_SLUG: Record<Network, string> = { Airtel: "kitambulisho-wakala-airtel", Halotel: "kitambulisho-wakala-halotel", Yas: "kitambulisho-wakala-yas", Vodacom: "kitambulisho-wakala-vodacom", "Mbeya One Company Limited": "kitambulisho-wakala-mbeya", "Huduma za Mtandaoni": "kitambulisho-wakala-mbeya" };
 /** color/dark = rangi kuu na ya giza, hl = rangi ya mwangaza (highlight), accent = rangi nyepesi ya mandharinyuma ya chips. */
 type NetworkCfg = { logo: string; color: string; dark: string; hl: string; accent: string; slogan: string; footer: string; pattern: string };
 
@@ -173,6 +173,7 @@ async function exportCard(source: HTMLElement, size: { w: number; h: number }, f
 export default function AgentIdPage() {
   const { firebaseUser } = useAuth();
   const [paid, setPaid] = useState(false);
+  const [tokenCost, setTokenCost] = useState<number | null>(null);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [network, setNetwork] = useState<Network>("Airtel");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
@@ -202,6 +203,17 @@ export default function AgentIdPage() {
     setPaid(false);
     setRequestId(crypto.randomUUID());
   }, [network, orientation, name, phone, type, region, district, area, issueDate, photo]);
+
+  useEffect(() => {
+    let active = true;
+    setTokenCost(null);
+    void getServiceTokenConfig(NETWORK_SERVICE_SLUG[network]).then((config) => {
+      if (active) setTokenCost(config.tokenCost);
+    }).catch((error) => {
+      if (active) { setTokenCost(null); toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya mtandao."); }
+    });
+    return () => { active = false; };
+  }, [network]);
 
   useEffect(() => { setSavedRecordId(""); }, [network, name, phone, type, region, district, area, issueDate]);
 
@@ -259,10 +271,17 @@ export default function AgentIdPage() {
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       }
       if (!paid) {
-        const service = serviceCatalog.find((item) => item.slug === "kitambulisho-wakala") ?? { slug: "kitambulisho-wakala", name: "KITAMBULISHO CHA WAKALA", tokenCost: 2, kind: "paid" as const };
-        await consumeFirebaseTokens(firebaseUser.uid, service, requestId);
+        const slug = NETWORK_SERVICE_SLUG[network];
+        const config = await getServiceTokenConfig(slug);
+        if (!Number.isSafeInteger(config.tokenCost) || config.tokenCost < 0) throw new Error("Bei ya mtandao haijawekwa sawa. Wasiliana na Admin.");
+        const accepted = window.confirm(config.tokenCost === 0
+          ? `${config.name} imewekwa BURE. Unataka kuendelea kupakua?`
+          : `Unakaribia kupakua ${config.name}. Gharama ni tokeni ${config.tokenCost}. Tokeni zitakatwa mara moja kwa kitambulisho hiki (mbele na nyuma). Endelea?`);
+        if (!accepted) return;
+        await consumeFirebaseTokens(firebaseUser.uid, { slug, name: config.name, tokenCost: config.tokenCost, kind: config.tokenCost === 0 ? "free" : "paid", tokenType: "huduma" }, requestId);
+        setTokenCost(config.tokenCost);
         setPaid(true);
-        toast.success("Tokeni zimekatwa. Watermark imeondolewa; kitambulisho kiko tayari.");
+        toast.success(config.tokenCost === 0 ? "Kitambulisho hiki ni bure. Unaweza kupakua pande zote." : `Tokeni ${config.tokenCost} zimekatwa kwa ${network}. Unaweza kupakua mbele na nyuma bila kukatwa tena.`);
       }
       // Tengeneza faili tofauti kwa kila upande, kisha pakua mbele na nyuma kila moja kivyake.
       const blobs = await Promise.all(jobs.map((job) => exportCard(job.el, job.size, job.filename)));
@@ -288,7 +307,8 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button>
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
-        <p className="aid-choice-note">Chagua mkao, kisha pakua mbele na nyuma kivyake. Kila upande una kitufe na rangi yake.</p>
+        <p className="aid-choice-note">Chagua mkao, kisha pakua mbele na nyuma kivyake. Kila kitambulisho cha mtandao kina gharama yake; makato hufanyika mara moja kwa kitambulisho chote (mbele na nyuma).</p>
+        <div className="aid-choice-note" role="status">{tokenCost === null ? "Inasoma gharama ya tokeni..." : tokenCost === 0 ? "Gharama ya mtandao huu: BURE" : `Gharama ya ${network === "Mbeya One Company Limited" ? "MBEYA ONE" : network}: tokeni ${tokenCost}`}</div>
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{display:"block",width:"auto",height:"auto",maxWidth:"100%",maxHeight:"100%",objectFit:"contain",flex:"0 0 auto"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
@@ -301,8 +321,8 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho mbele au nyuma">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa mbele"} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG</small></span></button>
-          <button type="button" className="aid-download-back" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa nyuma"} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa mbele"} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
+          <button type="button" className="aid-download-back" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa nyuma"} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
         </div>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
