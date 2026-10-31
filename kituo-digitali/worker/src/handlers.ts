@@ -239,7 +239,9 @@ export const adminWrite = callable(async (request) => {
   const collectionName = text(data.collection, 80);
   const policy = writePolicy[collectionName];
   if (!policy) throw new ApiError("invalid-argument", "Collection hairuhusiwi.");
-  requirePermission(actor, policy.permission);
+  const requestedValues = data.values && typeof data.values === "object" && !Array.isArray(data.values) ? data.values as Record<string, unknown> : {};
+  const isTokenBonusSettings = collectionName === "siteSettings" && Object.keys(requestedValues).length === 1 && "tokenBonusConfig" in requestedValues;
+  requirePermission(actor, isTokenBonusSettings ? "manageTokens" : policy.permission);
   if (collectionName === "lipaServices" && actor.role !== "super_admin") throw new ApiError("permission-denied", "Mipangilio ya mitandao ya Lipa inabadilishwa na Super Admin pekee.");
   if (collectionName === "siteSettings" && actor.role !== "super_admin" && typeof data.values === "object" && data.values !== null && !Array.isArray(data.values)) {
     const values = data.values as Record<string, unknown>;
@@ -250,6 +252,14 @@ export const adminWrite = callable(async (request) => {
   if (collectionName === "siteSettings" && id !== "public") throw new ApiError("invalid-argument", "Site settings ID si sahihi.");
   const targetRef = db.collection(collectionName).doc(id);
   const patch = safePatch(data.values);
+  if (collectionName === "siteSettings" && patch.tokenBonusConfig !== undefined) {
+    const config = objectValue(patch.tokenBonusConfig, "Mipangilio ya bonasi");
+    for (const key of ["registrationBonus", "dailyBonus"] as const) {
+      const amount = Number(config[key]);
+      if (!Number.isSafeInteger(amount) || amount < 0 || amount > 10000) throw new ApiError("invalid-argument", `Bonasi ya ${key} lazima iwe namba kamili kati ya 0 na 10,000.`);
+    }
+    patch.tokenBonusConfig = { registrationBonus: Number(config.registrationBonus), dailyBonus: Number(config.dailyBonus) };
+  }
   if (collectionName === "services" || collectionName === "lipaServices") {
     const slug = text(patch.slug ?? patch.id ?? id, 120);
     if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/.test(slug)) throw new ApiError("invalid-argument", "Slug si sahihi.");
@@ -1570,7 +1580,8 @@ export const claimRegistrationPhone = callable(async (request) => {
     }
 
     const config = settingsSnap.exists ? ((settingsSnap.data()?.tokenBonusConfig ?? {}) as Record<string, unknown>) : {};
-    const registrationBonus = 12; // Kiasi kilichowekwa: akaunti mpya hupata tokeni 12 mara moja.
+    const configuredRegistrationBonus = Number(config.registrationBonus ?? 12);
+    const registrationBonus = Number.isSafeInteger(configuredRegistrationBonus) && configuredRegistrationBonus >= 0 && configuredRegistrationBonus <= 10000 ? configuredRegistrationBonus : 12;
     const existingProfile = profileSnap.exists ? profileSnap.data() as Profile : null;
     const currentOther = Number(existingProfile?.tokenBalanceOther ?? existingProfile?.tokenBalance ?? 0);
     const shouldGrantBonus = registrationBonus > 0 && existingProfile?.tokenBonusRegistrationGranted !== true;
