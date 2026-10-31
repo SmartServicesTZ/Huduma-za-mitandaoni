@@ -600,6 +600,7 @@ function MyApplicationsPage() {
       title: `Lipa Namba — ${String(item.network || item.networkId || "Mtandao")}`,
       category: "Lipa Namba",
       status: String(item.status || "PENDING").toUpperCase(),
+      paymentRequired: false,
       reference: String(item.applicationId || item.id),
       phone: String(item.phone ?? ""),
       date: item.updatedAt ?? item.submittedAt,
