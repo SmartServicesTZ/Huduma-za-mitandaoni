@@ -34,7 +34,7 @@ const COMPANY_LABELS: Record<Network, string> = {
 const LAND = { w: 560, h: 350 };
 const PORT = { w: 320, h: 520 };
 
-type AgentData = { name: string; agentId: string; phone: string; type: string; region: string; district: string; area: string; issueDate: string };
+type AgentData = { name: string; agentId: string; phone: string; type: string; tokenCost: number; region: string; district: string; area: string; issueDate: string };
 
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
@@ -129,6 +129,31 @@ async function toSameOriginDataUrl(src: string) {
  * (560x350 au 320x520), bila transform wala media-query za simu. Kwa hiyo picha ni ileile
  * kwenye simu na kompyuta, na ubora ni mara 3.
  */
+
+/** Subiri kila faili limalize kuhifadhiwa kabla ya kuanzisha la pili (hasa Android native bridge). */
+async function downloadBlobAndWait(blob: Blob, name: string, type: string) {
+  await new Promise<void>((resolve, reject) => {
+    const finish = (event: Event) => {
+      const detail = (event as CustomEvent<{ name?: string }>).detail;
+      if (detail?.name !== name) return;
+      cleanup();
+      resolve();
+    };
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Upakuaji umechukua muda mrefu. Angalia Downloads kabla ya kujaribu tena."));
+    }, 90000);
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("smartservicestz-download-complete", finish);
+      window.removeEventListener("smartservicestz-download-fallback", finish);
+    };
+    window.addEventListener("smartservicestz-download-complete", finish);
+    window.addEventListener("smartservicestz-download-fallback", finish);
+    triggerDownload(blob, name, type);
+  });
+}
+
 async function exportCard(source: HTMLElement, size: { w: number; h: number }, filename: string) {
   const host = document.createElement("div");
   host.setAttribute("aria-hidden", "true");
@@ -197,10 +222,10 @@ export default function AgentIdPage() {
   const portFrontRef = useRef<HTMLDivElement>(null);
   const portBackRef = useRef<HTMLDivElement>(null);
   const cfg = NETWORKS[network];
-  const data: AgentData = { name, agentId, phone, type, region, district, area, issueDate };
+  const data: AgentData = { name, agentId, phone, type, tokenCost: tokenCost ?? 0, region, district, area, issueDate };
 
-  // QR iwe na Agent ID fupi na ya moja kwa moja; JSON ndefu ilifanya alama iwe na msongamano na kushindwa kuskan kwenye picha ndogo.
-  const qrText = useMemo(() => agentId.trim(), [agentId]);
+  // QR inabeba taarifa nne muhimu ili skani ionyeshe majina, Agent ID, cheo na mkoa.
+  const qrText = useMemo(() => JSON.stringify({ Majina: name.trim(), "Agent ID": agentId.trim(), "Aina ya cheo": type, Mkoa: region }), [name, agentId, type, region]);
 
   useEffect(() => {
     setPaid(false);
@@ -230,7 +255,7 @@ export default function AgentIdPage() {
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(qrText, { width: 768, margin: 2, errorCorrectionLevel: "M", color: { dark: "#071426", light: "#ffffff" } })
+    QRCode.toDataURL(qrText, { width: 1024, margin: 4, errorCorrectionLevel: "H", color: { dark: "#071426", light: "#ffffff" } })
       .then((url) => { if (!cancelled) setQr(url); })
       .catch(() => { if (!cancelled) setQr(""); });
     return () => { cancelled = true; };
@@ -286,13 +311,14 @@ export default function AgentIdPage() {
         await consumeFirebaseTokens(firebaseUser.uid, { slug, name: config.name, tokenCost: roleCost, kind: "paid", tokenType: "huduma", agentType: type }, requestId);
         setTokenCost(roleCost);
         setPaid(true);
+        // Subiri React iondoe watermark kwenye preview kabla ya kutengeneza PNG.
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
         toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}.`);
       }
       // Faili mbili tofauti: mbele na nyuma, zote zikiwa kwenye mkao uliochaguliwa.
       const blobs = await Promise.all(jobs.map((job) => exportCard(job.el, job.size, job.filename)));
       for (let index = 0; index < blobs.length; index++) {
-        triggerDownload(blobs[index], jobs[index].filename, "PNG");
-        if (index < blobs.length - 1) await new Promise<void>((resolve) => window.setTimeout(resolve, 700));
+        await downloadBlobAndWait(blobs[index], jobs[index].filename, "PNG");
       }
       setDownloadedSides(["front", "back"]);
       toast.success("Kitambulisho kimepakuliwa: picha mbili tofauti (mbele na nyuma).");
@@ -314,21 +340,20 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button>
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
-        <p className="aid-choice-note">Chagua mtandao na aina ya wakala, kisha pakua mbele na nyuma kivyake. Gharama inategemea aina ya wakala, si mtandao; makato hufanyika mara moja kwa kitambulisho chote (mbele na nyuma).</p>
-        <div className="aid-choice-note" role="status">{tokenCost === null ? "Inasoma gharama ya tokeni..." : tokenCost === 0 ? "Gharama ya mtandao huu: BURE" : `Gharama ya ${type}: tokeni ${tokenCost}`}</div>
+        <p className="aid-choice-note">Chagua mtandao na aina ya wakala, kisha pakua picha mbili tofauti za mbele na nyuma.</p>
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{display:"block",width:"auto",height:"auto",maxWidth:"100%",maxHeight:"100%",objectFit:"contain",flex:"0 0 auto"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
         <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
         <label className="aid-field"><span>Agent ID</span><input value={agentId} readOnly aria-readonly="true" /></label>
         <label className="aid-field"><span>Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
-        <label className="aid-field"><span>Cheo · {tokenCost === null ? "Bei inasomwa" : `Tokeni ${tokenCost}`}</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Team Reader</option><option>Supervisor</option></select></label>
+        <label className="aid-field"><span>Cheo · {tokenCost === null ? "Inasoma tokeni" : `Tokeni ${tokenCost}`}</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Team Reader</option><option>Supervisor</option></select></label>
         <label className="aid-field"><span>Mkoa</span><select value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} required><option value="">Chagua mkoa</option>{tanzaniaRegions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Wilaya</span><select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!region} required><option value="">Chagua wilaya</option>{districtsForRegion(region).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Kata / Eneo</span><input value={area} maxLength={30} onChange={(e) => setArea(e.target.value)} /></label>
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua picha mbili tofauti: mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "Inaandaa picha mbili..." : "PAKUA KITAMBULISHO"}</b><small>{orientLabel} · PNG mbili · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `Tokeni ${tokenCost}`}</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua picha mbili tofauti: mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "Inaandaa picha mbili..." : "PAKUA KITAMBULISHO"}</b><small>{orientLabel} · picha 2 tofauti (mbele na nyuma)</small></span></button>
         </div>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
@@ -370,7 +395,7 @@ function CardWatermark({ paid }: { paid: boolean }) {
 }
 
 /* ============================ KULALA · MBELE ============================ */
-function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
+function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, tokenCost, region, district, area, issueDate, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
   return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
@@ -389,7 +414,7 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
       <div className="idl-rule-line" />
       <div className="idl-grid">
         <div><small>PHONE</small><b><Words text={phone} fallback="—" /></b></div>
-        <div><small>TYPE</small><b><Words text={type} fallback="—" /></b></div>
+        <div><small>TYPE / TOKENI</small><b><Words text={`${type} · ${tokenCost} TOKENI`} fallback="—" /></b></div>
         <div><small>REGION</small><b><Words text={region} fallback="—" /></b></div>
         <div><small>AREA</small><b><Words text={`${district || "—"} / ${area || "—"}`} /></b></div>
         <div className="wide"><small>COMPANY</small><b><Words text={COMPANY_LABELS[network]} /></b></div>
@@ -441,7 +466,7 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
 }
 
 /* ============================ KUSIMAMA · MBELE ============================ */
-function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
+function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, tokenCost, region, district, area, issueDate, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
     <CardWatermark paid={paid} />
@@ -458,7 +483,7 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
     </div>
     <div className="idp-photo">{photo ? <img src={photo} alt="Wakala" /> : <PhotoPlaceholder />}</div>
     <div className="idp-name" style={{ fontSize: portraitNameSize(displayName) }}><div><Words text={displayName} /></div></div>
-    <div className="idp-pillrow"><span className="idp-pill">✓ <Words text={(type || "AGENT").toUpperCase()} /></span></div>
+    <div className="idp-pillrow"><span className="idp-pill">✓ <Words text={`${(type || "AGENT").toUpperCase()} · ${tokenCost} TOKENI`} /></span></div>
     <div className="idp-grid">
       <div><small><Words text="AGENT ID" /></small><b><Words text={agentId} fallback="—" /></b></div>
       <div><small>SIMU</small><b><Words text={phone} fallback="—" /></b></div>
@@ -624,8 +649,8 @@ const AGENT_ID_CSS = `
 .idl-rules h4{margin:2px 0 10px;font-size:10px;font-weight:900;letter-spacing:.04em;color:var(--d)}
 .idl-rl{display:flex;align-items:flex-start;gap:8px;margin:0 0 9px;font-size:9.4px;line-height:1.38;color:#475569}
 .idl-rl i{flex:0 0 17px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-size:8px;font-weight:900}
-.idl-qr-wrap{position:relative;flex:0 0 154px;text-align:center}
-.idl-qr-tile{width:148px;height:148px;box-sizing:border-box;margin:0 auto;padding:7px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.18);border:1px solid #e5eaf2}
+.idl-qr-wrap{position:relative;flex:0 0 180px;text-align:center}
+.idl-qr-tile{width:168px;height:168px;box-sizing:border-box;margin:0 auto;padding:7px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.18);border:1px solid #e5eaf2}
 .idl-qr-tile img,.idl-qr-empty{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .idl-qr-label{margin-top:6px;font-size:8px;font-weight:900;letter-spacing:.1em;color:var(--d)}
 .idl-info{margin:0 22px 9px;padding:8px 12px;display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:6px 12px;border-radius:12px;background:var(--accent)}
@@ -667,7 +692,7 @@ const AGENT_ID_CSS = `
 .idp-dates b{display:block;margin-top:2px;font-size:10.5px;font-weight:900;color:var(--d)}
 
 /* nyuma */
-.idp-qr-tile{position:relative;z-index:3;flex:0 0 auto;width:126px;height:126px;box-sizing:border-box;margin:-32px auto 0;padding:8px;border-radius:22px;background:#fff;border:1px solid #e5eaf2;box-shadow:0 12px 26px rgba(15,23,42,.22)}
+.idp-qr-tile{position:relative;z-index:3;flex:0 0 auto;width:140px;height:140px;box-sizing:border-box;margin:-32px auto 0;padding:8px;border-radius:22px;background:#fff;border:1px solid #e5eaf2;box-shadow:0 12px 26px rgba(15,23,42,.22)}
 .idp-qr-tile img,.idp-qr-empty{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .idp-qr-label{margin-top:7px;text-align:center;font-size:8.5px;font-weight:900;letter-spacing:.14em;color:var(--d)}
 .idp-back{flex:1;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;padding:10px 22px 10px}
