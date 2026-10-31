@@ -66,7 +66,10 @@ if (usingFirebaseEmulators) {
 }
 // Local persistence is configured at Auth initialization; Firebase Auth itself
 // restores sessions after refresh and browser restarts where the browser permits it.
-export const authPersistenceReady = firebaseAuth.authStateReady();
+export let authPersistenceHasResolved = false;
+export const authPersistenceReady = firebaseAuth.authStateReady().then(() => {
+  authPersistenceHasResolved = true;
+});
 function workerBaseUrl() {
   const configured = String(import.meta.env.VITE_CLOUDFLARE_WORKER_URL ?? "").trim();
   const productionFallback = "https://huduma-za-mtandao-api.stewardjackson999.workers.dev";
