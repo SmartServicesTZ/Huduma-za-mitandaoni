@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 const CARD_DESIGN = {
   title: "JAMHURI YA MUUNGANO WA TANZANIA",
   subtitle: "KITAMBULISHO CHA TAIFA",
-  subtext: "THE UNITED REPUBLIC OF TANZANIA — NATIONAL IDENTITY CARD",
+  subtext: "THE UNITED REPUBLIC OF TANZANIA — CITIZEN IDENTITY CARD",
   colors: {
     backgroundStart: "#d4edda",
     backgroundMid: "#bee5eb",
@@ -13,20 +13,6 @@ const CARD_DESIGN = {
     text: "#112222",
     muted: "#315c56",
     border: "#477e77",
-  },
-  labels: {
-    firstName: "JINA LA KWANZA",
-    firstNameSub: "Given Name",
-    middleName: "JINA LA KATI",
-    middleNameSub: "Middle Name",
-    lastName: "JINA LA MWISHO",
-    lastNameSub: "Last Name",
-    dob: "TAREHE YA KUZALIWA",
-    dobSub: "Date of Birth",
-    gender: "JINSIA",
-    genderSub: "Sex",
-    signature: "SAHIHI",
-    signatureSub: "Signature",
   },
 };
 
@@ -36,14 +22,47 @@ export default function SoftCopyNidaDemoPage() {
   const [middleName, setMiddleName] = useState("Mjeshi");
   const [lastName, setLastName] = useState("Bakari");
   const [idNumber, setIdNumber] = useState("19950505611050000111");
-  const [dob, setDob] = useState("05-05-1995");
+  const [dobInput, setDobInput] = useState("1995-10-05");
   const [gender, setGender] = useState("F");
   const [photo, setPhoto] = useState("");
   const [signature, setSignature] = useState("");
+
   const fullName = useMemo(
     () => [firstName, middleName, lastName].filter(Boolean).join(" ").toUpperCase(),
     [firstName, middleName, lastName]
   );
+
+  // Kubadilisha tarehe kwenda mfumo wa "05 OCT 1995"
+  const formattedDob = useMemo(() => {
+    if (!dobInput) return "05 OCT 1995";
+    // Kama imeingizwa kama YYYY-MM-DD au DD-MM-YYYY
+    const parts = dobInput.split(/[-/]/);
+    if (parts.length === 3) {
+      let year, monthNum, day;
+      if (parts[0].length === 4) {
+        year = parts[0]; monthNum = parts[1]; day = parts[2];
+      } else {
+        day = parts[0]; monthNum = parts[1]; year = parts[2];
+      }
+      const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+      const mIndex = parseInt(monthNum, 10) - 1;
+      const monthStr = months[mIndex] || "OCT";
+      return `${day} ${monthStr} ${year}`.toUpperCase();
+    }
+    return dobInput.toUpperCase();
+  }, [dobInput]);
+
+  // Kupanga namba ya NIDA kuwa 12345678-12345-12345-12
+  const formattedNidaNumber = useMemo(() => {
+    const raw = idNumber.replace(/\D/g, "");
+    if (raw.length >= 20) {
+      return `${raw.slice(0,8)}-${raw.slice(8,13)}-${raw.slice(13,18)}-${raw.slice(18,20)}`;
+    } else if (raw.length > 0) {
+      // Kama ni fupi, iweke kwa jinsi ilivyo au ijalizie
+      return idNumber.toUpperCase();
+    }
+    return "19950505-61105-00001-11";
+  }, [idNumber]);
 
   function readImage(file?: File) {
     if (!file || !file.type.startsWith("image/")) return;
@@ -53,7 +72,7 @@ export default function SoftCopyNidaDemoPage() {
   }
 
   function downloadCard() {
-    if (!firstName.trim() || !lastName.trim() || !idNumber.trim() || !dob) {
+    if (!firstName.trim() || !lastName.trim() || !idNumber.trim() || !dobInput) {
       window.alert("Tafadhali jaza taarifa zote muhimu kabla ya kupakua.");
       return;
     }
@@ -72,66 +91,83 @@ export default function SoftCopyNidaDemoPage() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1600, 1000);
 
-    // 2. Mistari ya nyuma ya duara
-    for (let i = 0; i < 12; i++) {
+    // 2. Taswira ya Mlima kwa nyuma (Kama ilivyo kwenye kadi halisi)
+    ctx.fillStyle = "rgba(40, 120, 100, 0.12)";
+    ctx.beginPath();
+    ctx.moveTo(300, 750);
+    ctx.lineTo(600, 350);
+    ctx.lineTo(850, 550);
+    ctx.lineTo(1100, 300);
+    ctx.lineTo(1450, 750);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Mistari ya nyuma ya kiusalama
+    for (let i = 0; i < 8; i++) {
       ctx.beginPath();
-      ctx.strokeStyle = "rgba(20,100,90,0.12)";
-      ctx.lineWidth = 5;
-      ctx.arc(800, 500, 150 + i * 65, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(20,100,90,0.10)";
+      ctx.lineWidth = 4;
+      ctx.ellipse(750, 500, 200 + i * 80, 120 + i * 45, -0.2, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // 3. Ukingo wa nje
+    // 4. Ukingo wa nje
     ctx.strokeStyle = CARD_DESIGN.colors.border;
     ctx.lineWidth = 10;
     ctx.strokeRect(16, 16, 1568, 968);
 
-    // 4. Vichwa vya habari (Katikati)
+    // 5. Vichwa vya habari (Katikati)
     ctx.textAlign = "center";
     ctx.fillStyle = "#1b2a4a";
-    ctx.font = "bold 30px Arial";
-    ctx.fillText(CARD_DESIGN.title, 800, 70);
-    ctx.font = "bold 50px Arial";
-    ctx.fillText(CARD_DESIGN.subtitle, 800, 125);
-    ctx.font = "bold 20px Arial";
+    ctx.font = "bold 26px Arial";
+    ctx.fillText(CARD_DESIGN.title, 800, 75);
+    ctx.font = "bold 44px Arial";
+    ctx.fillText(CARD_DESIGN.subtitle, 800, 130);
+    ctx.font = "bold 18px Arial";
     ctx.fillStyle = "#333333";
-    ctx.fillText(CARD_DESIGN.subtext, 800, 160);
+    ctx.fillText(CARD_DESIGN.subtext, 800, 165);
 
-    // 5. Namba ya Kitambulisho
+    // 6. Namba ya Kitambulisho
     ctx.textAlign = "left";
     ctx.fillStyle = "#101d24";
-    ctx.font = "bold 46px Arial";
-    ctx.fillText(idNumber.toUpperCase(), 75, 235);
+    ctx.font = "bold 48px Arial";
+    ctx.fillText(formattedNidaNumber, 75, 245);
 
-    // 6. Taarifa za Sehemu ya Kushoto
-    const drawRow = (label: string, sub: string, val: string, y: number) => {
-      ctx.font = "bold 22px Arial";
-      ctx.fillStyle = "#112222";
-      ctx.fillText(label + " :   " + val, 75, y);
-      ctx.font = "16px Arial";
+    // 7. Sehemu ya Taarifa (Maswali na Majibu yenye Font tofauti)
+    const drawField = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
+      // Swali / Lebo (Ndogo, Kiswahili juu, Kiingereza chini)
+      ctx.font = "bold 19px Arial";
+      ctx.fillStyle = "#1f3a34";
+      ctx.fillText(labelKiswahili, 75, y);
+
+      ctx.font = "15px Arial";
       ctx.fillStyle = "#555555";
-      ctx.fillText(sub, 75, y + 24);
+      ctx.fillText(labelEnglish, 75, y + 22);
+
+      // Jibu (Kubwa, Zito, Tofauti na swali)
+      ctx.font = "bold 34px Arial";
+      ctx.fillStyle = "#112222";
+      ctx.fillText(value || "—", 420, y + 15);
     };
 
-    drawRow(CARD_DESIGN.labels.firstName, CARD_DESIGN.labels.firstNameSub, firstName.toUpperCase() || "—", 320);
-    drawRow(CARD_DESIGN.labels.middleName, CARD_DESIGN.labels.middleNameSub, middleName.toUpperCase() || "—", 410);
-    drawRow(CARD_DESIGN.labels.lastName, CARD_DESIGN.labels.lastNameSub, lastName.toUpperCase() || "—", 500);
-    drawRow(CARD_DESIGN.labels.dob, CARD_DESIGN.labels.dobSub, dob || "—", 590);
-    drawRow(CARD_DESIGN.labels.gender, CARD_DESIGN.labels.genderSub, gender.toUpperCase(), 680);
+    drawField("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 340);
+    drawField("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 450);
+    drawField("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 560);
+    drawField("JINSI", "Sex", gender.toUpperCase(), 670);
 
     // Sahihi
-    ctx.font = "bold 22px Arial";
-    ctx.fillStyle = "#112222";
-    ctx.fillText(CARD_DESIGN.labels.signature + " :", 75, 770);
-    ctx.font = "16px Arial";
+    ctx.font = "bold 19px Arial";
+    ctx.fillStyle = "#1f3a34";
+    ctx.fillText("SAINI", 75, 780);
+    ctx.font = "15px Arial";
     ctx.fillStyle = "#555555";
-    ctx.fillText(CARD_DESIGN.labels.signatureSub, 75, 794);
+    ctx.fillText("Signature", 75, 802);
 
-    ctx.font = "italic 42px cursive";
+    ctx.font = "italic 40px cursive";
     ctx.fillStyle = "#0a192f";
-    ctx.fillText(signature || fullName, 190, 785);
+    ctx.fillText(signature || fullName, 220, 795);
 
-    // 7. Kuchora Picha Upande wa Kulia na Kuhifadhi
+    // 8. Kuchora Picha Upande wa Kulia (Inaishia vizuri kulingana na urefu wa kadi)
     const drawPhotoAndSave = () => {
       const pX = 1120, pY = 280, pW = 390, pH = 520;
       ctx.fillStyle = "rgba(255,255,255,0.9)";
@@ -184,7 +220,7 @@ export default function SoftCopyNidaDemoPage() {
           <label>Jina la kati<input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="Mjeshi" /></label>
           <label>Jina la mwisho<input className="input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Bakari" /></label>
           <label>Namba ya Kitambulisho<input className="input" value={idNumber} onChange={e => setIdNumber(e.target.value)} placeholder="19950505611050000111" /></label>
-          <label>Tarehe ya kuzaliwa<input className="input" value={dob} onChange={e => setDob(e.target.value)} placeholder="05-05-1995" /></label>
+          <label>Tarehe ya kuzaliwa<input className="input" type="date" value={dobInput} onChange={e => setDobInput(e.target.value)} /></label>
           <label>Jinsia<select className="input" value={gender} onChange={e => setGender(e.target.value)}><option value="M">M</option><option value="F">F</option></select></label>
           <label>Sahihi (andika jina)<input className="input" value={signature} onChange={e => setSignature(e.target.value)} placeholder="S.tj" /></label>
           <label style={{ gridColumn: "1 / -1" }}>Picha (hiari)<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => readImage(e.target.files?.[0])} /></label>
@@ -199,11 +235,13 @@ export default function SoftCopyNidaDemoPage() {
             background: "linear-gradient(125deg, #d4edda 0%, #bee5eb 50%, #78c6d7 100%)",
             color: CARD_DESIGN.colors.text, boxShadow: "0 8px 24px rgba(0,0,0,.16)"
           }}>
-            <div aria-hidden="true" style={{
-              position: "absolute", inset: 0, opacity: .45,
-              backgroundImage: `repeating-radial-gradient(circle at 52% 50%, transparent 0 25px, rgba(20,100,90,0.18) 27px 29px, transparent 31px 55px)`
-            }} />
-            
+            {/* Taswira ya nyuma ya mlima kwenye Preview */}
+            <div style={{ position: "absolute", inset: 0, opacity: 0.15, pointerEvents: "none", overflow: "hidden" }}>
+              <svg width="100%" height="100%" viewBox="0 0 1000 625" preserveAspectRatio="none">
+                <polygon points="200,500 450,200 650,380 850,150 1100,500" fill="#145a4a" />
+              </svg>
+            </div>
+
             <div style={{ position: "relative", textAlign: "center", lineHeight: 1.2 }}>
               <div style={{ fontWeight: 900, fontSize: "clamp(9px,1.8vw,17px)", color: "#1b2a4a" }}>{CARD_DESIGN.title}</div>
               <div style={{ fontWeight: 900, fontSize: "clamp(12px,2.8vw,28px)", color: "#1b2a4a" }}>{CARD_DESIGN.subtitle}</div>
@@ -212,32 +250,28 @@ export default function SoftCopyNidaDemoPage() {
 
             <div style={{ position: "relative", display: "flex", gap: 12, height: "72%", marginTop: 8 }}>
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
-                <div style={{ fontWeight: 900, fontSize: "clamp(11px,2.2vw,23px)", overflowWrap: "anywhere", color: "#101d24" }}>{idNumber || "19950505611050000111"}</div>
+                <div style={{ fontWeight: 900, fontSize: "clamp(11px,2.2vw,22px)", overflowWrap: "anywhere", color: "#101d24", letterSpacing: "1px" }}>{formattedNidaNumber}</div>
                 
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA KWANZA : {firstName.toUpperCase() || "SOPHIA"}</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#1f3a34" }}>JINA : { (firstName + " " + middleName).trim().toUpperCase() || "SOPHIA MJESHI" }</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Given Name</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA KATI : {middleName.toUpperCase() || "MJESHI"}</div>
-                  <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Middle Name</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA MWISHO : {lastName.toUpperCase() || "BAKARI"}</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#1f3a34" }}>JINA LA MWISHO : { lastName.toUpperCase() || "BAKARI" }</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Last Name</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>TAREHE YA KUZALIWA : {dob || "05-05-1995"}</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#1f3a34" }}>TAREHE YA KUZALIWA : { formattedDob }</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Date of Birth</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINSIA : {gender.toUpperCase()}</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#1f3a34" }}>JINSI : { gender.toUpperCase() }</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Sex</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>SAHIHI :</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#1f3a34" }}>SAINI :</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Signature</div>
-                  <div style={{ fontFamily: "cursive", fontStyle: "italic", fontSize: "clamp(9px,1.8vw,17px)", marginTop: -10, marginLeft: 50 }}>{signature || fullName}</div>
+                  <div style={{ fontFamily: "cursive", fontStyle: "italic", fontSize: "clamp(9px,1.8vw,16px)", marginTop: -8, marginLeft: 45 }}>{signature || fullName}</div>
                 </div>
               </div>
 
