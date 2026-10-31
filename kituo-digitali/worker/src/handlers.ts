@@ -423,7 +423,7 @@ export const consumeTokens = callable(async (request) => {
     if (service.isFree === true && configuredCost <= 0 && !isAgentId) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     // Bei ya kitambulisho cha wakala huamuliwa upande wa server kwa aina iliyochaguliwa.
     const agentType = typeof data.agentType === "string" ? data.agentType.trim().slice(0, 40) : "";
-    let roleCost = agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Team Reader" || agentType === "Supervisor" ? 10 : 0;
+    let roleCost = ["Freelancer", "Team Leader", "Team Reader", "Supervisor"].includes(agentType) ? 10 : 0;
     if (isAgentId) {
       if (roleCost === 0) throw new ApiError("invalid-argument", "Aina ya wakala haijatambuliwa.");
       const masterSnapshot = await transaction.get(db.collection("services").where("slug", "==", "kitambulisho-wakala").limit(1));
@@ -435,7 +435,7 @@ export const consumeTokens = callable(async (request) => {
         if (!Number.isSafeInteger(parsedRoleCost) || parsedRoleCost <= 0 || parsedRoleCost > 100000) {
           throw new ApiError("failed-precondition", "Bei ya aina ya wakala haijawekwa sawa kwenye Dashboard ya Admin.");
         }
-        roleCost = parsedRoleCost;
+        roleCost = agentType === "Freelancer" && parsedRoleCost === 5 ? 10 : parsedRoleCost;
       }
     }
     // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
