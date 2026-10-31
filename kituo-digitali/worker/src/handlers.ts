@@ -1157,7 +1157,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
       recordAudit(transaction, uid, String(actor.role), "TILL_PAYMENT_CONFIRMED", "serviceApplication", applicationId, { paymentStatus: applicantData.paymentStatus ?? "UNPAID" }, { paymentStatus: "PAID" }, { network: tillNetwork });
       return { applicationId, status: from, paymentStatus: "PAID", paymentConfirmed: true };
     }
-    if (requiresTillPayment && String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID") throw new ApiError("failed-precondition", "Thibitisha kwanza malipo ya Till kabla ya kubadilisha hali ya ombi.");
+    if (requiresTillPayment && status !== "REJECTED" && String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID") throw new ApiError("failed-precondition", "Thibitisha kwanza malipo ya Till kabla ya kuanza kushughulikia ombi. Unaweza kulikataa ikiwa mteja hajalipa.");
     if (status === from) throw new ApiError("failed-precondition", `Ombi tayari lina hali ya ${status}.`);
     const now = FieldValue.serverTimestamp();
     const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
