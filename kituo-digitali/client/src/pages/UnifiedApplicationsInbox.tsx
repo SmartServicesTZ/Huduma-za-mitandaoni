@@ -87,7 +87,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       <div className="unified-inbox-mobile-list">{visibleRows.map((row)=><article className={"unified-inbox-mobile-item status-row-"+(row.paymentGated?"no-payment":String(row.status).toLowerCase())} key={row.kind+":"+row.id}>
         <div className="unified-inbox-mobile-top"><span className="unified-inbox-kind">{row.kindLabel}</span><span className={"unified-inbox-status "+(row.paymentGated?"unified-inbox-status-no-payment":statusClass(String(row.status)))}>{row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></div>
         <h3>{row.person}</h3>
-        <div className="unified-inbox-mobile-meta"><span>Aina: {row.kindLabel}</span><span>Mtandao: {row.service||"—"}</span>{row.phone&&<span>Simu: {row.phone}</span><span>{row.dateLabel}</span></div>
+        <div className="unified-inbox-mobile-meta"><span>Aina: {row.kindLabel}</span><span>Mtandao: {row.service||"—"}</span>{row.phone&&<span>Simu: {row.phone}</span>}<span>{row.dateLabel}</span></div>
         <button type="button" className="unified-inbox-open" onClick={()=>onSelect(row.kind,row.id)}>Fungua ombi</button>
       </article>)}</div>
     </>}
