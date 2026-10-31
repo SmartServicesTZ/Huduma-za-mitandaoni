@@ -34,7 +34,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       const data=(application.applicantData??{}) as Record<string,unknown>;
       const network=String(data.network??"").toUpperCase();
       const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
-      const paidService=["access-lipa-yas","access-lipa-airtel","access-lipa-vodacom"].includes(slug)||tillPayment;
+      const paidService=tillPayment;
       const paymentGated=paidService && String(application.status??"PENDING").toUpperCase()==="PENDING" && String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
       return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:network,phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
     });
