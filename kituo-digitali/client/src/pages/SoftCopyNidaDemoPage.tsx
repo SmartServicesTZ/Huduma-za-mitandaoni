@@ -151,7 +151,6 @@ export default function SoftCopyNidaDemoPage() {
         return;
       }
 
-      // Eneo la picha linaachwa tupu kwa mfano huu.
       triggerDownload(canvas);
     };
 
@@ -162,15 +161,6 @@ export default function SoftCopyNidaDemoPage() {
       link.click();
     };
 
-    // Alama ya DEMO inaweka wazi kuwa huu si kitambulisho rasmi.
-    ctx.save();
-    ctx.translate(800, 520);
-    ctx.rotate(-Math.PI / 7);
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(180, 0, 0, 0.20)";
-    ctx.font = "bold 104px Arial";
-    ctx.fillText("MFANO / DEMO", 0, 0);
-    ctx.restore();
     drawPhotoAndSave();
   }
 
@@ -197,7 +187,7 @@ export default function SoftCopyNidaDemoPage() {
           <label>Tarehe ya kuzaliwa<input className="input" value={dob} onChange={e => setDob(e.target.value)} placeholder="05-05-1995" /></label>
           <label>Jinsia<select className="input" value={gender} onChange={e => setGender(e.target.value)}><option value="M">M</option><option value="F">F</option></select></label>
           <label>Sahihi (andika jina)<input className="input" value={signature} onChange={e => setSignature(e.target.value)} placeholder="S.tj" /></label>
-          <label style={{ gridColumn: "1 / -1" }}>Picha (hiari — imeachwa wazi)<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => readImage(e.target.files?.[0])} /></label>
+          <label style={{ gridColumn: "1 / -1" }}>Picha (hiari)<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => readImage(e.target.files?.[0])} /></label>
         </div>
 
         <div style={{ marginTop: 26 }}>
@@ -214,7 +204,6 @@ export default function SoftCopyNidaDemoPage() {
               backgroundImage: `repeating-radial-gradient(circle at 52% 50%, transparent 0 25px, rgba(20,100,90,0.18) 27px 29px, transparent 31px 55px)`
             }} />
             
-            <div style={{ position: "absolute", zIndex: 2, left: "50%", top: "52%", transform: "translate(-50%,-50%) rotate(-18deg)", color: "rgba(180,0,0,.22)", fontWeight: 950, fontSize: "clamp(24px,7vw,72px)", whiteSpace: "nowrap", pointerEvents: "none" }}>MFANO / DEMO</div>
             <div style={{ position: "relative", textAlign: "center", lineHeight: 1.2 }}>
               <div style={{ fontWeight: 900, fontSize: "clamp(9px,1.8vw,17px)", color: "#1b2a4a" }}>{CARD_DESIGN.title}</div>
               <div style={{ fontWeight: 900, fontSize: "clamp(12px,2.8vw,28px)", color: "#1b2a4a" }}>{CARD_DESIGN.subtitle}</div>
