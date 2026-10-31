@@ -343,7 +343,6 @@ export default function AgentIdPage() {
     } finally { setBusy(false); }
   };
 
-  const orientLabel = orientation === "landscape" ? "Kulala" : "Kusimama";
   const formComplete = Boolean(photo.trim() && name.trim() && phone.trim() && region.trim() && district.trim() && area.trim() && issueDate.trim() && type.trim());
 
   return <main className="portal-main aid-page">
@@ -410,7 +409,7 @@ function CardWatermark({ paid }: { paid: boolean }) {
 }
 
 /* ============================ KULALA · MBELE ============================ */
-function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, tokenCost, region, district, area, issueDate, paid }: FrontProps) {
+function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
   return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
