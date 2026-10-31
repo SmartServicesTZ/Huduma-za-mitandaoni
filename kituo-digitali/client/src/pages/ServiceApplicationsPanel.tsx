@@ -249,7 +249,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     try {
       const completed = await onRun(
         () => setServiceApplicationStatus(selected.applicationId || selected.id, status, reason, allowRetry),
-        status === "PROCESSING" ? "Ombi limehamishwa PROCESSING." : status === "APPROVED" ? "Ombi limeidhinishwa." : status === "REJECTED" ? "Ombi limekataliwa." : `Hali ya ombi imebadilishwa kuwa ${status}.`,
+        status === "PAYMENT_CONFIRMED" ? "Malipo yamethibitishwa; sasa ombi linaweza kuanza kushughulikiwa." : status === "PROCESSING" ? "Ombi limehamishwa PROCESSING." : status === "APPROVED" ? "Ombi limeidhinishwa." : status === "REJECTED" ? "Ombi limekataliwa." : `Hali ya ombi imebadilishwa kuwa ${status}.`,
       );
       if (completed !== false) closeApplication();
       else setError("Mabadiliko hayajahifadhiwa. Kagua ujumbe wa hitilafu na ujaribu tena.");
@@ -375,7 +375,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                     <StatusBadge status={application.status} />
                   </div>
                   <div className="service-app-admin-mobile-meta"><span>{dateText(application.submittedAt)}</span></div>
-                  <div style={{ marginTop: 10 }}><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>FUNGUA OMBI</button>{tab === "MALIPO" && <button className="service-app-admin-open" type="button" disabled={busy} onClick={() => void onRun(() => setServiceApplicationStatus(application.applicationId || application.id, "PROCESSING"), "Malipo yamethibitishwa; ombi limehamishwa kwenye maombi ya kawaida na PROCESSING.")}>THIBITISHA MALIPO → MAOMBI</button>}</div></div>
+                  <div style={{ marginTop: 10 }}><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>FUNGUA OMBI</button>{tab === "MALIPO" && <button className="service-app-admin-open" type="button" disabled={busy} onClick={() => void onRun(() => setServiceApplicationStatus(application.applicationId || application.id, "PAYMENT_CONFIRMED"), "Malipo yamethibitishwa. Ombi limehamishwa kwenye maombi ya kawaida; sasa unaweza kulipeleka PROCESSING.")}>THIBITISHA MALIPO</button>}</div></div>
                 </article>
               );
             })}
@@ -504,7 +504,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
             {selected.rejectionReason && <p className="service-app-admin-error"><strong>Rejection reason:</strong> {selected.rejectionReason}</p>}
             {error && <p className="service-app-admin-error" role="alert">{error}</p>}
             <div className="service-app-admin-actions">
-              {(selected.statusOptions ?? selectedService?.statusOptions ?? ["PENDING", "PROCESSING", "APPROVED", "REJECTED"]).filter((status) => status !== "PENDING" && status !== selected.status).map((status) => status === "REJECTED" ? <button key={status} className="service-app-admin-button service-app-admin-button-danger" type="button" disabled={busy} onClick={() => { setError(""); setRejecting(true); }}>Reject / Badili uamuzi</button> : <button key={status} className="service-app-admin-button" type="button" disabled={busy} onClick={() => void runStatus(status)}>{status === "PROCESSING" ? "Move to processing" : status === "APPROVED" ? "Approve / Badili uamuzi" : `Set ${status}`}</button>)}
+              {isPaymentGated(selected) ? <button className="service-app-admin-button" type="button" disabled={busy} onClick={() => void runStatus("PAYMENT_CONFIRMED")}>THIBITISHA MALIPO</button> : (selected.statusOptions ?? selectedService?.statusOptions ?? ["PENDING", "PROCESSING", "APPROVED", "REJECTED"]).filter((status) => status !== "PENDING" && status !== selected.status).map((status) => status === "REJECTED" ? <button key={status} className="service-app-admin-button service-app-admin-button-danger" type="button" disabled={busy} onClick={() => { setError(""); setRejecting(true); }}>Reject / Badili uamuzi</button> : <button key={status} className="service-app-admin-button" type="button" disabled={busy} onClick={() => void runStatus(status)}>{status === "PROCESSING" ? "Move to processing" : status === "APPROVED" ? "Approve / Badili uamuzi" : `Set ${status}`}</button>)}
             </div>
           </div>
         </div>
