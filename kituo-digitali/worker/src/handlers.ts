@@ -537,9 +537,13 @@ export const setServiceLock = callable(async (request) => {
       transaction.set(serviceRef, { isLocked: after, updatedAt: now }, { merge: true });
     } else if (matchingServices?.docs.length) {
       matchingServices.docs.forEach((serviceDoc) => transaction.set(serviceDoc.ref, { isLocked: after, updatedAt: now }, { merge: true }));
+    } else {
+      // Create a minimal catalog record when a legacy/default service has not
+      // been seeded yet; the portal merges its known display details by slug.
+      transaction.set(serviceRef, { slug, isLocked: after, createdAt: now, updatedAt: now }, { merge: true });
     }
     recordAudit(transaction, uid, String(actor.role), after ? "LOCK_SERVICE" : "UNLOCK_SERVICE", "service", slug, { isLocked: before }, { isLocked: after });
-    return { slug, isLocked: after, syncedToPublicCatalog: directService.exists || Boolean(matchingServices?.docs.length) };
+    return { slug, isLocked: after, syncedToPublicCatalog: true };
   });
 });
 
