@@ -15,6 +15,10 @@ const CARD_DESIGN = {
     backgroundEnd: "#78c6d7",
     border: "#477e77",
   },
+  assets: {
+    ngao: "/images/ngao.png",
+    bendera: "/images/bendera.png",
+  }
 };
 
 export default function SoftCopyNidaDemoPage() {
@@ -97,117 +101,123 @@ export default function SoftCopyNidaDemoPage() {
     ctx.closePath();
     ctx.fill();
 
-    // 3. Ukingo wa nje
-    ctx.strokeStyle = CARD_DESIGN.colors.border;
-    ctx.lineWidth = 10;
-    ctx.strokeRect(16, 16, 1568, 968);
+    const finalizeCanvas = () => {
+      // Ukingo wa nje
+      ctx.strokeStyle = CARD_DESIGN.colors.border;
+      ctx.lineWidth = 10;
+      ctx.strokeRect(16, 16, 1568, 968);
 
-    // 4. Kuchora Ngao ya Taifa (Kushoto) moja kwa moja kwenye Canvas ili kuzuia hitilafu ya faili
-    ctx.fillStyle = "#1b4d3e";
-    ctx.beginPath();
-    ctx.arc(120, 95, 40, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f5d061";
-    ctx.beginPath();
-    ctx.arc(120, 95, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#1b4d3e";
-    ctx.font = "bold 20px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("TZ", 120, 102);
+      // Mistari 4 ya Juu
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#1b2a4a";
+      ctx.font = "bold 22px Arial";
+      ctx.fillText(CARD_DESIGN.lines[0], 800, 55);
 
-    // 5. Kuchora Bendera ya Tanzania (Kulia) moja kwa moja kwenye Canvas
-    ctx.fillStyle = "#114422";
-    ctx.fillRect(1400, 60, 100, 60);
-    ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.moveTo(1400, 60); ctx.lineTo(1500, 60); ctx.lineTo(1400, 120); ctx.fill();
-    ctx.fillStyle = "#ffcc00";
-    ctx.beginPath();
-    ctx.moveTo(1400, 85); ctx.lineTo(1470, 60); ctx.lineTo(1400, 105); ctx.fill();
-    ctx.strokeStyle = "#333"; ctx.lineWidth = 2; ctx.strokeRect(1400, 60, 100, 60);
+      ctx.font = "bold 38px Arial";
+      ctx.fillText(CARD_DESIGN.lines[1], 800, 98);
 
-    // 6. Mistari 4 ya Juu
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#1b2a4a";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText(CARD_DESIGN.lines[0], 800, 55);
+      ctx.font = "bold 16px Arial";
+      ctx.fillStyle = "#333333";
+      ctx.fillText(CARD_DESIGN.lines[2], 800, 126);
 
-    ctx.font = "bold 38px Arial";
-    ctx.fillText(CARD_DESIGN.lines[1], 800, 98);
+      ctx.font = "bold 18px Arial";
+      ctx.fillStyle = "#1b2a4a";
+      ctx.fillText(CARD_DESIGN.lines[3], 800, 153);
 
-    ctx.font = "bold 16px Arial";
-    ctx.fillStyle = "#333333";
-    ctx.fillText(CARD_DESIGN.lines[2], 800, 126);
+      // Namba ya Kitambulisho
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#101d24";
+      ctx.font = "bold 44px Arial";
+      ctx.fillText(formattedNidaNumber, 75, 230);
 
-    ctx.font = "bold 18px Arial";
-    ctx.fillStyle = "#1b2a4a";
-    ctx.fillText(CARD_DESIGN.lines[3], 800, 153);
+      // Taarifa za Kushoto
+      const drawFieldExact = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
+        ctx.font = "bold 18px Arial";
+        ctx.fillStyle = "#1f3a34";
+        ctx.fillText(labelKiswahili, 75, y);
 
-    // 7. Namba ya Kitambulisho
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#101d24";
-    ctx.font = "bold 44px Arial";
-    ctx.fillText(formattedNidaNumber, 75, 230);
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#555555";
+        ctx.fillText(labelEnglish, 75, y + 20);
 
-    // 8. Taarifa za Kushoto
-    const drawFieldExact = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
+        ctx.font = "bold 32px Arial";
+        ctx.fillStyle = "#112222";
+        ctx.fillText(value || "—", 380, y + 10);
+      };
+
+      drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 320);
+      drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 430);
+      drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 540);
+      drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 650);
+
+      // Sahihi
       ctx.font = "bold 18px Arial";
       ctx.fillStyle = "#1f3a34";
-      ctx.fillText(labelKiswahili, 75, y);
-
+      ctx.fillText("SAINI", 75, 760);
       ctx.font = "14px Arial";
       ctx.fillStyle = "#555555";
-      ctx.fillText(labelEnglish, 75, y + 20);
+      ctx.fillText("Signature", 75, 782);
 
-      ctx.font = "bold 32px Arial";
-      ctx.fillStyle = "#112222";
-      ctx.fillText(value || "—", 380, y + 10);
-    };
+      ctx.font = "italic 36px cursive";
+      ctx.fillStyle = "#0a192f";
+      ctx.fillText(signature || fullName, 190, 775);
 
-    drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 320);
-    drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 430);
-    drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 540);
-    drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 650);
+      // Picha ya Mtumiaji
+      const pX = 1120, pY = 270, pW = 390, pH = 480;
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.fillRect(pX, pY, pW, pH);
+      ctx.strokeStyle = CARD_DESIGN.colors.border;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(pX, pY, pW, pH);
 
-    // Sahihi
-    ctx.font = "bold 18px Arial";
-    ctx.fillStyle = "#1f3a34";
-    ctx.fillText("SAINI", 75, 760);
-    ctx.font = "14px Arial";
-    ctx.fillStyle = "#555555";
-    ctx.fillText("Signature", 75, 782);
-
-    ctx.font = "italic 36px cursive";
-    ctx.fillStyle = "#0a192f";
-    ctx.fillText(signature || fullName, 190, 775);
-
-    // 9. Picha ya Mtumiaji
-    const pX = 1120, pY = 270, pW = 390, pH = 480;
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
-    ctx.fillRect(pX, pY, pW, pH);
-    ctx.strokeStyle = CARD_DESIGN.colors.border;
-    ctx.lineWidth = 6;
-    ctx.strokeRect(pX, pY, pW, pH);
-
-    const triggerDownload = () => {
-      const link = document.createElement("a");
-      link.download = "national-identity-card.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    };
-
-    if (photo) {
-      const userImg = new Image();
-      userImg.onload = () => {
-        ctx.drawImage(userImg, pX + 10, pY + 10, pW - 20, pH - 20);
-        triggerDownload();
+      const triggerDownload = () => {
+        const link = document.createElement("a");
+        link.download = "national-identity-card.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
       };
-      userImg.onerror = triggerDownload;
-      userImg.src = photo;
-    } else {
-      triggerDownload();
-    }
+
+      if (photo) {
+        const userImg = new Image();
+        userImg.onload = () => {
+          ctx.drawImage(userImg, pX + 10, pY + 10, pW - 20, pH - 20);
+          triggerDownload();
+        };
+        userImg.onerror = triggerDownload;
+        userImg.src = photo;
+      } else {
+        triggerDownload();
+      }
+    };
+
+    // Kupakia Ngao na Bendera kabla ya kuchora Canvas
+    let loadedCount = 0;
+    const totalAssets = 2;
+
+    const checkLoaded = () => {
+      loadedCount++;
+      if (loadedCount === totalAssets) {
+        finalizeCanvas();
+      }
+    };
+
+    // Ngao (Kushoto)
+    const ngaoImg = new Image();
+    ngaoImg.onload = () => {
+      ctx.drawImage(ngaoImg, 70, 35, 90, 90);
+      checkLoaded();
+    };
+    ngaoImg.onerror = checkLoaded;
+    ngaoImg.src = CARD_DESIGN.assets.ngao;
+
+    // Bendera (Kulia)
+    const benderaImg = new Image();
+    benderaImg.onload = () => {
+      ctx.drawImage(benderaImg, 1400, 45, 110, 75);
+      checkLoaded();
+    };
+    benderaImg.onerror = checkLoaded;
+    benderaImg.src = CARD_DESIGN.assets.bendera;
   }
 
   return (
@@ -252,13 +262,11 @@ export default function SoftCopyNidaDemoPage() {
               </svg>
             </div>
 
-            {/* Ngao safi kwenye Preview */}
-            <div style={{ position: "absolute", left: 24, top: 16, width: "40px", height: "40px", borderRadius: "50%", background: "#1b4d3e", border: "2px solid #f5d061", display: "grid", placeItems: "center", color: "#f5d061", fontWeight: 900, fontSize: 11 }}>TZ</div>
+            {/* Ngao halisi (Kushoto) kwenye Preview */}
+            <img src={CARD_DESIGN.assets.ngao} alt="Ngao" style={{ position: "absolute", left: 20, top: 14, width: "50px", height: "50px", objectFit: "contain" }} />
             
-            {/* Bendera safi kwenye Preview */}
-            <div style={{ position: "absolute", right: 24, top: 16, width: "55px", height: "35px", background: "#114422", border: "1px solid #444", overflow: "hidden" }}>
-              <div style={{ position: "absolute", width: "100%", height: "100%", background: "linear-gradient(135deg, #000 50%, #ffcc00 50%)" }} />
-            </div>
+            {/* Bendera halisi (Kulia) kwenye Preview */}
+            <img src={CARD_DESIGN.assets.bendera} alt="Bendera" style={{ position: "absolute", right: 20, top: 14, width: "65px", height: "45px", objectFit: "contain" }} />
 
             {/* Mistari 4 ya Juu */}
             <div style={{ position: "relative", textAlign: "center", lineHeight: 1.15 }}>
