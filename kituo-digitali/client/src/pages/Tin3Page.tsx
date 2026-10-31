@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, Download, X, LoaderCircle, Check } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { consumeFirebaseTokens } from "@/lib/firebase";
 
 function formatTIN(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 9);
@@ -53,6 +55,7 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
 }
 
 export default function Tin3Page() {
+  const { firebaseUser } = useAuth();
   const [tinInput, setTinInput] = useState("");
   const [name, setName] = useState("");
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "done">("idle");
@@ -69,16 +72,33 @@ export default function Tin3Page() {
       setDownloadStatus(status);
       if (status === "done") window.setTimeout(() => setDownloadStatus("idle"), 3500);
     };
-    const saveDataUrl = (dataUrl: string) => {
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `${tin || "VERIFY-TIN"}.png`;
-      link.rel = "noopener";
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      finish("done");
+    const saveDataUrl = async (dataUrl: string, extension = "png") => {
+      if (!firebaseUser?.uid) {
+        finish("idle");
+        alert("Ingia kwenye akaunti yako ili kutumia tokeni na kupakua VERIFY TIN.");
+        return;
+      }
+      try {
+        await consumeFirebaseTokens(firebaseUser.uid, {
+          slug: "verify-tin",
+          name: "VERIFY TIN",
+          tokenCost: 2,
+          kind: "paid",
+          tokenType: "huduma",
+        }, crypto.randomUUID());
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `${tin || "VERIFY-TIN"}.${extension}`;
+        link.rel = "noopener";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        finish("done");
+      } catch (error) {
+        finish("idle");
+        alert(error instanceof Error ? error.message : "Imeshindikana kukata tokeni na kupakua picha.");
+      }
     };
 
     // Convert the preview to a PNG before saving; keep a data URL so Android
@@ -94,19 +114,12 @@ export default function Tin3Page() {
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        saveDataUrl(canvas.toDataURL("image/png"));
+        void saveDataUrl(canvas.toDataURL("image/png"), "png");
       } catch {
         // If PNG conversion is blocked by the mobile browser, still provide
         // the original image as a downloadable SVG instead of doing nothing.
         const svgUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-        const link = document.createElement("a");
-        link.href = svgUrl;
-        link.download = `${tin || "VERIFY-TIN"}.svg`;
-        link.rel = "noopener";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        finish("done");
+        void saveDataUrl(svgUrl, "svg");
       }
     };
     image.onerror = () => {
