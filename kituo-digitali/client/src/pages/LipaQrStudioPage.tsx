@@ -151,8 +151,6 @@ export default function LipaQrStudioPage() {
   const [, setLocation] = useLocation();
   const [entryStatus, setEntryStatus] = useState<"checking" | "paid" | "failed">("checking");
   const [entryMessage, setEntryMessage] = useState("Inafungua huduma...");
-  const [serviceCost, setServiceCost] = useState<number | null>(null);
-  const [serviceName, setServiceName] = useState("STIKA ZA LIPA");
   const entryRequestId = useRef(crypto.randomUUID());
   const outputUsed = useRef(false);
   const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "53000" });
@@ -183,8 +181,6 @@ export default function LipaQrStudioPage() {
       try {
         const config = await getServiceTokenConfig("stika-lipa");
         if (!active) return;
-        setServiceCost(config.tokenCost);
-        setServiceName(config.name);
         await consumeFirebaseTokens(firebaseUser.uid, {
           slug: "stika-lipa", name: config.name, tokenCost: config.tokenCost,
           kind: config.isFree || config.tokenCost === 0 ? "free" : "paid", tokenType: "huduma",
