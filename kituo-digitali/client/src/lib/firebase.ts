@@ -592,7 +592,7 @@ export async function adminListServices() {
 
 /** Read the live token price configured by Admin for a service. */
 export async function getServiceTokenConfig(slug: string): Promise<{ name: string; tokenCost: number; isFree: boolean }> {
-  const snapshot = await getDocs(query(collection(firestore, "services"), where("slug", "==", slug), limit(1)));
+  const snapshot = await getDocsFromServer(query(collection(firestore, "services"), where("slug", "==", slug), limit(1)));
   const row = snapshot.docs[0]?.data();
   if (!row) throw new Error("Bei ya huduma haijapatikana kwenye Dashboard ya Admin. Wasiliana na admin.");
   const tokenCost = Number(row.tokenCost);
