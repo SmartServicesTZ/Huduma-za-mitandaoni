@@ -285,6 +285,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const [rewardFilter, setRewardFilter] = useState<RewardFilter>("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("submittedAt");
   const [descending, setDescending] = useState(true);
+  const autoOpenedApplicationId = useRef<string | null>(null);
   const [selected, setSelected] = useState<LipaApplication | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -393,9 +394,11 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   };
 
   useEffect(() => {
-    if (!initialSelectedId) return;
+    if (!initialSelectedId || autoOpenedApplicationId.current === initialSelectedId) return;
     const application = applications.find((item) => (item.applicationId || item.id) === initialSelectedId);
-    if (application) openApplication(application);
+    if (!application) return;
+    autoOpenedApplicationId.current = initialSelectedId;
+    openApplication(application);
   }, [initialSelectedId, applications]);
 
   const loadDocument = async (field: ServiceFormField, action: "preview" | "download") => {
