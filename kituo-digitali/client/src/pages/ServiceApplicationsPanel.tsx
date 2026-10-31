@@ -400,7 +400,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                       <td>{application.userName || "Jina halijawekwa"}</td>
                       <td>{service?.name ?? application.serviceName ?? "—"}</td>
                       <td>{dateText(application.submittedAt)}</td>
-                      <td><StatusBadge status={application.status} /></td>
+                      <td><StatusBadge status={application.status} paymentGated={isPaymentGated(application)} /></td>
                       <td>
                         <button className="service-app-admin-open" type="button" onClick={(event) => { event.stopPropagation(); openApplication(application); }}>
                           Open
