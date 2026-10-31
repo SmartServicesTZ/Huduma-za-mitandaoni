@@ -244,7 +244,7 @@ export default function AgentIdPage() {
           setTokenCost(Number.isSafeInteger(configured) && configured > 0 ? configured : agentIdTokenCost(type));
         }
       }).catch((error) => {
-        if (active && tokenCost === null) toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala.");
+        if (active) toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala.");
       });
     };
     refreshPrice();
