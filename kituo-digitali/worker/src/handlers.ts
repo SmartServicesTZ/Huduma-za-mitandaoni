@@ -360,7 +360,7 @@ export const claimDailyTokenBonus = callable(async (request) => {
     const settingsSnap = await transaction.get(settingsRef);
     const settings = settingsSnap.exists ? settingsSnap.data()! : {};
     const config = (settings.tokenBonusConfig ?? {}) as Record<string, unknown>;
-    const dailyBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.dailyBonus ?? 6))));
+    const dailyBonus = Math.max(0, Math.min(10000, Math.floor(Number(config.dailyBonus ?? 3))));
     const profile = userSnap.data() as Profile;
     // Usajili siku hii unatoa tokeni za usajili pekee; bonus ya kila siku huanza siku inayofuata.
     const createdAt = profile.createdAt;
