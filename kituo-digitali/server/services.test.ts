@@ -16,7 +16,8 @@ describe("HUDUMA ZA MTANDAONI portal", () => {
     const caller = appRouter.createCaller(createPublicContext());
     const services = await caller.portal.services();
     expect(services.length).toBeGreaterThanOrEqual(serviceCatalog.length);
-    expect(services.some((service) => /nida|nin/i.test(`${service.slug} ${service.name}`))).toBe(false);
+    const nidaServices = services.filter((service) => /nida|nin/i.test(`${service.slug} ${service.name}`));
+    expect(nidaServices.map((service) => service.slug)).toEqual(["soft-copy-nida"]);
     expect(services.find((service) => service.slug === "cheti-tin")?.tokenCost).toBe(2);
   });
 
