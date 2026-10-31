@@ -260,7 +260,7 @@ export default function LipaQrStudioPage() {
   };
 
   const printCard = () => {
-    if (entryStatus !== "paid" || outputUsed.current) { toast.error("Tumia kitufe cha Pakua ili kukamilisha huduma na makato ya tokeni."); return; }
+    if (entryStatus !== "ready" || outputUsed.current) { toast.error("Pakua stika kwanza ili kukamilisha huduma na makato ya tokeni."); return; }
     if (!validateBeforeAction()) return;
     outputUsed.current = true;
     window.print();
