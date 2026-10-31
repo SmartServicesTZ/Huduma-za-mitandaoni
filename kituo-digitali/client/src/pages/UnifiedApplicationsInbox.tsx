@@ -28,10 +28,10 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     const serviceRows:InboxRow[]=serviceApplications.map((application)=>{
       const service=services.find((item)=>item.slug===application.serviceSlug||item.id===application.serviceSlug);
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
+      const slug=String(application.serviceSlug??"").toLowerCase();
       const fullName=String(service?.name??application.serviceName??application.serviceSlug??"Ombi");
       const requestName=slug==="pata-till-mitandao-yote"?"TILL":slug.includes("access-lipa")?"ACCESS":fullName;
       const data=(application.applicantData??{}) as Record<string,unknown>;
-      const slug=String(application.serviceSlug??"").toLowerCase();
       const network=String(data.network??"").toUpperCase();
       const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
       const paidService=["access-lipa-yas","access-lipa-airtel","access-lipa-vodacom"].includes(slug)||tillPayment;
