@@ -236,15 +236,25 @@ export default function AgentIdPage() {
   useEffect(() => {
     let active = true;
     setTokenCost(null);
-    void getServiceTokenConfig("kitambulisho-wakala").then((config) => {
-      if (active) {
-        const configured = Number(config.agentTypeTokenCosts?.[type]);
-        setTokenCost(Number.isSafeInteger(configured) && configured > 0 ? configured : agentIdTokenCost(type));
-      }
-    }).catch((error) => {
-      if (active) { setTokenCost(null); toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala."); }
-    });
-    return () => { active = false; };
+    const refreshPrice = () => {
+      if (document.visibilityState === "hidden") return;
+      void getServiceTokenConfig("kitambulisho-wakala").then((config) => {
+        if (active) {
+          const configured = Number(config.agentTypeTokenCosts?.[type]);
+          setTokenCost(Number.isSafeInteger(configured) && configured > 0 ? configured : agentIdTokenCost(type));
+        }
+      }).catch((error) => {
+        if (active && tokenCost === null) toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala.");
+      });
+    };
+    refreshPrice();
+    window.addEventListener("focus", refreshPrice);
+    document.addEventListener("visibilitychange", refreshPrice);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refreshPrice);
+      document.removeEventListener("visibilitychange", refreshPrice);
+    };
   }, [type]);
 
   useEffect(() => { setSavedRecordId(""); }, [network, name, phone, type, region, district, area, issueDate]);
