@@ -333,7 +333,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
           const context = canvas.getContext("2d");
           if (context) {
             context.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
-            const compressed = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+            const compressed = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
             if (compressed && compressed.size < fileBlob.size) fileBlob = compressed;
           }
           imageBitmap.close();
@@ -345,7 +345,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
       if (action === "download") {
         const anchor = document.createElement("a");
         anchor.href = fileUrl;
-        anchor.download = `${field.fieldName || "document"}${fileBlob.type === "image/jpeg" ? ".jpg" : ""}`;
+        anchor.download = `${field.fieldName || "document"}${fileBlob.type === "image/png" ? ".png" : ""}`;
         document.body.appendChild(anchor);
         anchor.click();
         anchor.remove();
