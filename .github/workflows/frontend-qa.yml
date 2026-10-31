@@ -43,6 +43,8 @@ jobs:
         run: pnpm check
       - name: Run frontend tests
         run: pnpm test
+      - name: Test Firestore security rules in emulator
+        run: pnpm test:firestore:rules
       - name: Build frontend and server bundle
         run: pnpm build
 
