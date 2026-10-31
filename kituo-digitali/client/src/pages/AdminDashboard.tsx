@@ -346,7 +346,7 @@ export default function AdminDashboard() {
 
   if (loading) return <main className="admin-guard"><RefreshCw className="spin" /> Inakagua ruhusa za admin...</main>;
   if (!canManage) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Ukurasa huu ni wa admin pekee</h2><p>Ingia kwa akaunti yenye role ya admin au super_admin.</p><Link className="admin-primary" href="/">Rudi portal</Link></main>;
-  const title = panel === "agentIdPricing" ? "Panga Bei za Kitambulisho cha Wakala" : nav.find(([key]) => key === panel)?.[1] ?? "Muhtasari";
+  const title = panel === "agentIdPricing" ? "Panga Bei kwa Aina ya Wakala" : nav.find(([key]) => key === panel)?.[1] ?? "Muhtasari";
   if ((panelPermission[panel] && !hasPermission(panelPermission[panel]!)) || ((panel === "appearance" || panel === "licenses") && !isSuper)) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Huna ruhusa ya sehemu hii</h2><p>Wasiliana na Super Admin ili upewe permission husika.</p><Link className="admin-primary" href="/admin">Rudi dashboard</Link></main>;
   return <div className="admin-app">
     <aside className={`admin-sidebar ${drawer ? "open" : ""}`}><div className="admin-brand"><div className="admin-brand-mark">$</div><div><strong>$TEWARD TZ</strong><small>HUDUMA ZA MTANDAONI • CONTROL</small></div><button className="admin-close" onClick={() => setDrawer(false)}><X size={18} /></button></div><div className="admin-profile"><div className="admin-avatar">{String(user?.name ?? "AD").slice(0, 2).toUpperCase()}</div><div><strong>{user?.name ?? "Admin"}</strong><small>{String(user?.role ?? "admin").replace("_", " ").toUpperCase()}</small></div></div><nav className="admin-nav">{visibleNav.map(([key, label, Icon]) => <Link key={key} href={key === "overview" ? "/admin" : `/admin/${key}`} className={panel === key ? "active" : ""} onClick={() => setDrawer(false)}><Icon size={17} /><span>{label}</span>{key === "applications" && serviceApplications.filter((app) => !["APPROVED", "REJECTED", "COMPLETED", "DONE"].includes(String(app.status ?? "PENDING").toUpperCase())).length > 0 && <b className="lipa-admin-nav-badge">{serviceApplications.filter((app) => !["APPROVED", "REJECTED", "COMPLETED", "DONE"].includes(String(app.status ?? "PENDING").toUpperCase())).length}</b>}{key === "lipa" && lipaApplications.filter((app) => !["APPROVED", "REJECTED", "COMPLETED", "DONE"].includes(String(app.status ?? "PENDING").toUpperCase())).length > 0 && <b className="lipa-admin-nav-badge">{lipaApplications.filter((app) => !["APPROVED", "REJECTED", "COMPLETED", "DONE"].includes(String(app.status ?? "PENDING").toUpperCase())).length}</b>}<ChevronRight size={14} /></Link>)}</nav><div className="admin-sidebar-bottom"><button onClick={() => void logout()}><LogOut size={15} /> Logout</button></div></aside>
@@ -622,14 +622,44 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
 }
 
 function AgentIdPricingPanel({ services, adminId, busy, onRun }: any) {
-  const rows = mergeServiceCatalogDefaults(services as any[], false)
-    .filter((item: any) => item.category === "Bei za Kitambulisho cha Wakala")
-    .sort((a: any, b: any) => String(a.name).localeCompare(String(b.name)));
+  const master = mergeServiceCatalogDefaults(services as any[], false)
+    .find((item: any) => String(item.slug) === "kitambulisho-wakala");
+  const [prices, setPrices] = useState<Record<string, number>>({
+    Freelancer: 5,
+    "Team Leader": 10,
+    "Team Reader": 10,
+    Supervisor: 10,
+  });
+  useEffect(() => {
+    const configured = master?.agentTypeTokenCosts ?? {};
+    setPrices({
+      Freelancer: Number(configured.Freelancer ?? 5),
+      "Team Leader": Number(configured["Team Leader"] ?? 10),
+      "Team Reader": Number(configured["Team Reader"] ?? 10),
+      Supervisor: Number(configured.Supervisor ?? 10),
+    });
+  }, [master?.slug, master?.updatedAt]);
+  const roles = ["Freelancer", "Team Leader", "Team Reader", "Supervisor"];
+  const save = () => {
+    if (!master) { toast.error("Huduma kuu ya Kitambulisho cha Wakala haijapatikana."); return; }
+    for (const role of roles) {
+      if (!Number.isSafeInteger(prices[role]) || prices[role] < 1 || prices[role] > 100000) {
+        toast.error(`Weka tokeni sahihi kwa ${role}.`);
+        return;
+      }
+    }
+    onRun(
+      () => adminSaveService(adminId, { ...master, agentTypeTokenCosts: prices }, "kitambulisho-wakala"),
+      "Bei za aina za mawakala zimehifadhiwa."
+    );
+  };
   return <section className="admin-card">
-    <div className="admin-card-heading"><div><span className="admin-kicker">KITAMBULISHO CHA WAKALA · BEI</span><h2>Panga bei kwa kila mtandao</h2><p>Badilisha bei ya tokeni ya kila mtandao kivyake. Mabadiliko yanatumika kwa kitambulisho cha mtandao husika.</p></div><span className="admin-count">{rows.length}/5</span></div>
+    <div className="admin-card-heading"><div><span className="admin-kicker">KITAMBULISHO CHA WAKALA · BEI</span><h2>Panga bei kwa aina ya wakala</h2><p>Bei moja inatumika kwa mitandao yote. Mtandao hauathiri idadi ya tokeni.</p></div></div>
     <Link href="/admin/services" className="admin-secondary" style={{display:"inline-flex",marginBottom:16}}>← Rudi kwenye Huduma</Link>
-    <div className="service-control-list">{rows.map((item: any) => <div className="service-control-row" key={item.slug}><div className="service-control-info"><strong>{item.name}</strong><small>{item.slug} · Bei ya sasa: {item.tokenCost ?? 5} tokeni</small></div><TokenCostControl item={item} adminId={adminId} busy={busy} onRun={onRun}/></div>)}</div>
-    {rows.length !== 5 && <p style={{color:"#b45309",fontSize:13}}>Baadhi ya mitandao haijaonekana kwenye katalogi.</p>}
+    <div className="form-grid">
+      {roles.map((role) => <Field key={role} label={role + " (tokeni)"} type="number" value={prices[role]} onChange={(value) => setPrices((current) => ({ ...current, [role]: Number(value) }))} />)}
+    </div>
+    <button type="button" className="admin-primary" disabled={busy || !master} onClick={save}>HIFADHI BEI ZA AINA ZA WAKALA</button>
   </section>;
 }
 
