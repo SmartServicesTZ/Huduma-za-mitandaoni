@@ -407,7 +407,7 @@ export const consumeTokens = callable(async (request) => {
     // Kitambulisho cha wakala ni huduma ya kulipia hata kama rekodi ya zamani ina isFree=true/tokenCost=0.
     // Tumia bei ya admin ikiwa ni chanya; vinginevyo tokeni 2 ndizo gharama ya msingi.
     const isAgentId = serviceId === "kitambulisho-wakala" || serviceId.startsWith("kitambulisho-wakala-");
-    if (service.isFree === true && !isAgentId && serviceId !== "yanga-africans") throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
+    if (service.isFree === true && !isAgentId && serviceId !== "yanga-africans" && serviceId !== "verify-tin") throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     const configuredCost = Number(service.tokenCost);
     // Bei ya kitambulisho cha wakala huamuliwa upande wa server kwa aina iliyochaguliwa.
     const agentType = typeof data.agentType === "string" ? data.agentType.trim().slice(0, 40) : "";
@@ -427,7 +427,7 @@ export const consumeTokens = callable(async (request) => {
       }
     }
     // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
-    const cost = isAgentId ? roleCost : serviceId === "yanga-africans" ? 6 : configuredCost;
+    const cost = isAgentId ? roleCost : serviceId === "verify-tin" ? 2 : serviceId === "yanga-africans" ? 6 : configuredCost;
     if (!Number.isSafeInteger(cost) || cost <= 0 || cost > 100000) throw new ApiError("failed-precondition", "Gharama ya huduma haijawekwa sawa. Wasiliana na admin.");
     // The user must confirm the exact price shown from the Admin dashboard.
     // If Admin changes the price while the page is open, reject instead of charging a different amount.
