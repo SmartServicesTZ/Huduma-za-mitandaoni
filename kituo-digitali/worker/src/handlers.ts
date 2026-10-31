@@ -410,7 +410,7 @@ export const consumeTokens = callable(async (request) => {
     if (service.isFree === true && !isAgentId && serviceId !== "yanga-africans") throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     const configuredCost = Number(service.tokenCost);
     // Bei ya kitambulisho cha wakala huamuliwa upande wa server kwa aina iliyochaguliwa.
-    const agentType = text(data.agentType, 40);
+    const agentType = typeof data.agentType === "string" ? data.agentType.trim().slice(0, 40) : "";
     const roleCost = agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Team Reader" || agentType === "Supervisor" ? 10 : 0;
     if (isAgentId && roleCost === 0) throw new ApiError("invalid-argument", "Aina ya wakala haijatambuliwa.");
     // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
