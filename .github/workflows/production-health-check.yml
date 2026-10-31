@@ -1,0 +1,49 @@
+name: Production Health Check
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-health-check
+  cancel-in-progress: true
+
+jobs:
+  public-endpoints:
+    name: Check public website and Worker API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check website homepage
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 5 --retry-all-errors \
+            --max-time 30 https://smartservicestz.github.io/ -o /tmp/website.html
+          grep -Eqi '<html|<!doctype html' /tmp/website.html
+          echo "Website returned valid HTML."
+
+      - name: Check Cloudflare Worker liveness
+        run: |
+          set -euo pipefail
+          response=$(curl --fail --silent --show-error --location --retry 3 --retry-delay 5 --retry-all-errors \
+            --max-time 20 https://huduma-za-mtandao-api.stewardjackson999.workers.dev/health)
+          echo "$response" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'
+          echo "Worker health endpoint is responding."
+
+      - name: Check Cloudflare Worker readiness
+        run: |
+          set -euo pipefail
+          response=$(curl --silent --show-error --location --retry 2 --retry-delay 5 --max-time 20 \
+            -w '\n%{http_code}' https://huduma-za-mtandao-api.stewardjackson999.workers.dev/ready)
+          status=$(printf '%s\n' "$response" | tail -n 1)
+          body=$(printf '%s\n' "$response" | sed '$d')
+          if [ "$status" != "200" ]; then
+            echo "::error::Worker readiness check failed (HTTP $status). Check FIREBASE_SERVICE_ACCOUNT_JSON binding in Cloudflare."
+            echo "$body"
+            exit 1
+          fi
+          echo "$body" | grep -Eq '"ready"[[:space:]]*:[[:space:]]*true'
+          echo "Worker readiness check passed."
