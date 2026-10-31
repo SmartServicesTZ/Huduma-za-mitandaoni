@@ -128,7 +128,20 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
   }
   const yangaService = merged.get("yanga-africans");
   if (yangaService) merged.set("yanga-africans", { ...yangaService, name: "YANGA SC WHATSAPP GROUP", tokenCost: 6, kind: "paid" });
-  return Array.from(merged.values());
+  // Network-specific agent ID price entries are configuration-only.
+  // Keep them out of the public service catalogue even if older Firestore
+  // records still contain isVisible: true; the pricing admin page reads them
+  // from the admin service configuration separately.
+  const agentIdNetworkSlugs = new Set([
+    "kitambulisho-wakala-airtel",
+    "kitambulisho-wakala-halotel",
+    "kitambulisho-wakala-yas",
+    "kitambulisho-wakala-vodacom",
+    "kitambulisho-wakala-mbeya",
+  ]);
+  return Array.from(merged.values()).map((service) =>
+    agentIdNetworkSlugs.has(service.slug) ? { ...service, isVisible: false } : service
+  );
 }
 
 export function findService(slug: string) {
