@@ -106,7 +106,7 @@ export default function PataTillNetworksPage() {
       const result = editingApplicationId
         ? await updateServiceApplication(editingApplicationId, payload)
         : await createServiceApplication(applicationId, "pata-till-mitandao-yote", payload);
-      setReference(String(result.reference ?? result.applicationId ?? applicationId));
+      setReference(String(("reference" in result ? result.reference : result.applicationId) ?? applicationId));
       toast.success("TAARIFA ZIMEWASILISHWA", { description: editingApplicationId ? "Marekebisho yamehifadhiwa na ombi lilelile limerudishwa PENDING." : "Ombi lako limepokelewa na limeongezwa kwenye historia." });
       setEditingApplicationId(null);
     } catch (error) { toast.error(error instanceof Error ? error.message : "Imeshindikana kutuma ombi. Jaribu tena."); }
