@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, Download, ShieldAlert } from "lucide-react";
 import { useLocation } from "wouter";
 
+const ASSET_BASE_URL = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+
 const CARD_DESIGN = {
   lines: [
     "JAMHURI YA MUUNGANO WA TANZANIA",
@@ -16,10 +18,28 @@ const CARD_DESIGN = {
     border: "#477e77",
   },
   assets: {
-    ngao: "/images/ngao.png",
-    bendera: "/images/bendera.png",
+    ngao: `${ASSET_BASE_URL}images/ngao.png`,
+    bendera: `${ASSET_BASE_URL}images/bendera.png`,
   }
 };
+
+function loadCardImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Imeshindikana kupakia picha ya kitambulisho: ${src}`));
+    image.src = src;
+  });
+}
+
+function containImageRect(image: HTMLImageElement, x: number, y: number, maxWidth: number, maxHeight: number) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const scale = Math.min(maxWidth / sourceWidth, maxHeight / sourceHeight);
+  const width = sourceWidth * scale;
+  const height = sourceHeight * scale;
+  return { x: x + (maxWidth - width) / 2, y: y + (maxHeight - height) / 2, width, height };
+}
 
 export default function SoftCopyNidaDemoPage() {
   const [, navigate] = useLocation();
@@ -70,7 +90,7 @@ export default function SoftCopyNidaDemoPage() {
     reader.readAsDataURL(file);
   }
 
-  function downloadCard() {
+  async function downloadCard() {
     if (!firstName.trim() || !lastName.trim() || !idNumber.trim() || !dobInput) {
       window.alert("Tafadhali jaza taarifa zote muhimu kabla ya kupakua.");
       return;
@@ -190,34 +210,23 @@ export default function SoftCopyNidaDemoPage() {
       }
     };
 
-    // Kupakia Ngao na Bendera kabla ya kuchora Canvas
-    let loadedCount = 0;
-    const totalAssets = 2;
+    try {
+      const [ngaoImg, benderaImg] = await Promise.all([
+        loadCardImage(CARD_DESIGN.assets.ngao),
+        loadCardImage(CARD_DESIGN.assets.bendera),
+      ]);
 
-    const checkLoaded = () => {
-      loadedCount++;
-      if (loadedCount === totalAssets) {
-        finalizeCanvas();
-      }
-    };
+      // Draw into bounded boxes while preserving each source image's aspect ratio.
+      // The boxes stay clear of the four centered header lines.
+      const ngaoRect = containImageRect(ngaoImg, 55, 22, 170, 125);
+      ctx.drawImage(ngaoImg, ngaoRect.x, ngaoRect.y, ngaoRect.width, ngaoRect.height);
+      const benderaRect = containImageRect(benderaImg, 1375, 30, 170, 105);
+      ctx.drawImage(benderaImg, benderaRect.x, benderaRect.y, benderaRect.width, benderaRect.height);
 
-    // Ngao (Kushoto)
-    const ngaoImg = new Image();
-    ngaoImg.onload = () => {
-      ctx.drawImage(ngaoImg, 70, 35, 90, 90);
-      checkLoaded();
-    };
-    ngaoImg.onerror = checkLoaded;
-    ngaoImg.src = CARD_DESIGN.assets.ngao;
-
-    // Bendera (Kulia)
-    const benderaImg = new Image();
-    benderaImg.onload = () => {
-      ctx.drawImage(benderaImg, 1400, 45, 110, 75);
-      checkLoaded();
-    };
-    benderaImg.onerror = checkLoaded;
-    benderaImg.src = CARD_DESIGN.assets.bendera;
+      finalizeCanvas();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Imeshindikana kupakia nembo ya kitambulisho.");
+    }
   }
 
   return (
@@ -263,10 +272,10 @@ export default function SoftCopyNidaDemoPage() {
             </div>
 
             {/* Ngao halisi (Kushoto) kwenye Preview */}
-            <img src={CARD_DESIGN.assets.ngao} alt="Ngao" style={{ position: "absolute", left: 20, top: 14, width: "50px", height: "50px", objectFit: "contain" }} />
+            <img src={CARD_DESIGN.assets.ngao} alt="Ngao" style={{ position: "absolute", left: "3%", top: "2%", width: "12%", height: "18%", objectFit: "contain", objectPosition: "center", display: "block" }} />
             
             {/* Bendera halisi (Kulia) kwenye Preview */}
-            <img src={CARD_DESIGN.assets.bendera} alt="Bendera" style={{ position: "absolute", right: 20, top: 14, width: "65px", height: "45px", objectFit: "contain" }} />
+            <img src={CARD_DESIGN.assets.bendera} alt="Bendera" style={{ position: "absolute", right: "3%", top: "3%", width: "14%", height: "13%", objectFit: "contain", objectPosition: "center", display: "block" }} />
 
             {/* Mistari 4 ya Juu */}
             <div style={{ position: "relative", textAlign: "center", lineHeight: 1.15 }}>
