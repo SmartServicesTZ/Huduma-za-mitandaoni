@@ -88,8 +88,8 @@ export default function PataTillNetworksPage() {
       if (!floatConfirmed) { toast.error("Thibitisha kwanza kuwa float ya TSh 100,000 ipo kwenye laini."); return; }
       if (!noExistingLipa) { toast.error("Thibitisha kuwa mteja hana Lipa Namba tayari."); return; }
     }
-    if (network === "AIRTEL" && (!/^0[67]\d{8}$/.test(values.airtelPhone ?? "") || !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, "")))) { toast.error("Weka namba ya Airtel na NIDA yenye tarakimu 20."); return; }
-    if (network === "VODACOM" && !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, ""))) { toast.error("Namba ya NIDA lazima iwe na tarakimu 20."); return; }
+    if (network === "AIRTEL" && (!values.fullName?.trim() || !/^0[67]\d{8}$/.test(values.airtelPhone ?? "") || !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, "")))) { toast.error("Weka namba ya Airtel na NIDA yenye tarakimu 20."); return; }
+    if (network === "VODACOM" && (!values.fullName?.trim() || !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, "")))) { toast.error("Namba ya NIDA lazima iwe na tarakimu 20."); return; }
     if (network !== "HALOTEL" && !paidConfirmed) { toast.error("Thibitisha kuwa uko tayari kufanya malipo kabla ya huduma kukamilishwa."); return; }
     setBusy(true);
     try {
@@ -165,11 +165,13 @@ export default function PataTillNetworksPage() {
           <label style={{display:"flex",gap:11,alignItems:"flex-start",gridColumn:"1 / -1",padding:14,border:"1px solid #e2e8f0",borderRadius:11,color:"#334155",lineHeight:1.6,fontSize:14}}><input type="checkbox" checked={floatConfirmed} onChange={e=>setFloatConfirmed(e.target.checked)} required style={{marginTop:4,accentColor:activeTheme.accent,width:17,height:17,flexShrink:0}}/><span>Thibitisha kuwa umehakiki float ya angalau TSh 100,000 kwenye laini ya mteja.</span></label>
         </>}
         {network==="AIRTEL" && <>
+          <label style={labelStyle}>Majina kamili ya mteja *<input style={fieldStyle} value={values.fullName??""} onChange={e=>set("fullName",e.target.value)} required placeholder="Majina kama yalivyo kwenye NIDA"/></label>
           <label style={labelStyle}>Namba ya simu ya Airtel *<input style={fieldStyle} value={values.airtelPhone??""} onChange={e=>set("airtelPhone",e.target.value)} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
           <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value.replace(/\D/g,"").slice(0,20))} required inputMode="numeric" maxLength={20} placeholder="Tarakimu 20 za NIDA"/><small style={{color:"#64748b",fontWeight:500}}>Weka tarakimu 20 bila alama au nafasi.</small></label>
           <div style={{gridColumn:"1 / -1",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:11,padding:15,color:"#1e40af",fontSize:14,lineHeight:1.7}}>Malipo ya huduma ni <b>TSh 5,000</b>. Baada ya kutuma ombi, wasiliana na Admin kupitia WhatsApp ili kupata maelekezo ya OTP.</div>
         </>}
         {network==="VODACOM" && <>
+          <label style={labelStyle}>Majina kamili ya mteja *<input style={fieldStyle} value={values.fullName??""} onChange={e=>set("fullName",e.target.value)} required placeholder="Majina kama yalivyo kwenye NIDA"/></label>
           <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value.replace(/\D/g,"").slice(0,20))} required inputMode="numeric" maxLength={20} placeholder="Tarakimu 20 za NIDA"/><small style={{color:"#64748b",fontWeight:500}}>Weka tarakimu 20 bila alama au nafasi.</small></label>
           <label style={labelStyle}>Namba ya mawasiliano *<input style={fieldStyle} value={values.contactPhone??""} onChange={e=>set("contactPhone",e.target.value)} required inputMode="tel" placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
           <div style={{gridColumn:"1 / -1",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:11,padding:15,color:"#5b21b6",fontSize:14,lineHeight:1.7}}>Usisajili laini kabla ya kupata maelekezo. Hakikisha una scanner au Famoco yenye scanner. Gharama ya huduma ni <b>TSh 40,000</b>.</div>
@@ -190,9 +192,9 @@ export default function PataTillNetworksPage() {
     {paymentApplication && (() => {
       const data = paymentApplication.applicantData ?? {};
       const networkName = String(data.network ?? "").toUpperCase();
-      const accountName = String(accountUser?.name ?? [accountUser?.firstName, accountUser?.lastName].filter(Boolean).join(" ") ?? firebaseUser?.displayName ?? "Mwanachama");
+      const accountName = String(accountUser?.name || [accountUser?.firstName, accountUser?.lastName].filter(Boolean).join(" ") || firebaseUser?.displayName || "Mwanachama");
       const accountPhone = String(accountUser?.phone ?? "");
-      const requestNames = String(data.fullName ?? data.businessName ?? data.airtelPhone ?? data.nidaNumber ?? "—");
+      const requestNames = String(data.fullName || [data.name1, data.name2, data.name3].filter(Boolean).join(" ") || data.businessName || "—");
       const amount = String(data.price ?? (networkName === "AIRTEL" ? "TSh 5,000" : "TSh 40,000"));
       const message = [
         "HABARI STEWARD TZ, NIMELIPIA OMBI LA HUDUMA.",
