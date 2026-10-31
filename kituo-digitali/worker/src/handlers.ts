@@ -520,13 +520,26 @@ export const setServiceLock = callable(async (request) => {
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/.test(slug)) throw new ApiError("invalid-argument", "Kitambulisho cha huduma si sahihi.");
   if (typeof data.isLocked !== "boolean") throw new ApiError("invalid-argument", "Hali ya huduma si sahihi.");
   const ref = db.collection("serviceLocks").doc(slug);
+  const serviceRef = db.collection("services").doc(slug);
   return db.runTransaction(async (transaction) => {
     const existing = await transaction.get(ref);
-    const before = existing.exists ? existing.data()?.isLocked === true : defaultLockedServiceSlugs.has(slug);
+    const directService = await transaction.get(serviceRef);
+    const matchingServices = directService.exists
+      ? null
+      : await transaction.get(db.collection("services").where("slug", "==", slug).limit(5));
+    const before = existing.exists ? existing.data()?.isLocked === true : (directService.exists ? directService.data()?.isLocked === true : defaultLockedServiceSlugs.has(slug));
     const after = data.isLocked as boolean;
-    transaction.set(ref, { slug, isLocked: after, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    const now = FieldValue.serverTimestamp();
+    transaction.set(ref, { slug, isLocked: after, updatedAt: now }, { merge: true });
+    // The public portal reads the services collection. Mirror the lock there
+    // so the lock button changes what users actually see, not only admin data.
+    if (directService.exists) {
+      transaction.set(serviceRef, { isLocked: after, updatedAt: now }, { merge: true });
+    } else if (matchingServices?.docs.length) {
+      matchingServices.docs.forEach((serviceDoc) => transaction.set(serviceDoc.ref, { isLocked: after, updatedAt: now }, { merge: true }));
+    }
     recordAudit(transaction, uid, String(actor.role), after ? "LOCK_SERVICE" : "UNLOCK_SERVICE", "service", slug, { isLocked: before }, { isLocked: after });
-    return { slug, isLocked: after };
+    return { slug, isLocked: after, syncedToPublicCatalog: directService.exists || Boolean(matchingServices?.docs.length) };
   });
 });
 
