@@ -325,7 +325,9 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
       if (field.type === "IMAGE_UPLOAD" && fileBlob.type.startsWith("image/")) {
         try {
           const imageBitmap = await createImageBitmap(fileBlob);
-          const maxSide = 1600;
+          // Always convert uploaded photos to PNG; never fall back to the original JPG.
+          // Resize to 900px on the longest side to substantially reduce download size.
+          const maxSide = 900;
           const scale = Math.min(1, maxSide / Math.max(imageBitmap.width, imageBitmap.height));
           const canvas = document.createElement("canvas");
           canvas.width = Math.max(1, Math.round(imageBitmap.width * scale));
@@ -333,8 +335,8 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
           const context = canvas.getContext("2d");
           if (context) {
             context.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
-            const compressed = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-            if (compressed && compressed.size < fileBlob.size) fileBlob = compressed;
+            const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+            if (pngBlob) fileBlob = new Blob([pngBlob], { type: "image/png" });
           }
           imageBitmap.close();
         } catch {
