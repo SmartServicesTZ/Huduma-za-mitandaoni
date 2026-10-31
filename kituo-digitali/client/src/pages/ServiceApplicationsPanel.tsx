@@ -307,9 +307,6 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     try {
       const result = await getServiceApplicationDocument(selected.applicationId || selected.id, field.fieldName);
       if (!result?.url) throw new Error("Hati haikupatikana.");
-      // The Worker download endpoint is intentionally protected by Firebase Auth.
-      // Fetch the bytes with the current user's ID token; a plain <img>/window.open
-      // navigation cannot attach the Authorization header and returns unauthenticated.
       await authPersistenceReady;
       const user = firebaseAuth.currentUser;
       if (!user) throw new Error("Akaunti ya Admin haijaingia. Toka kisha ingia tena.");
@@ -323,20 +320,39 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
         const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null;
         throw new Error(payload?.error?.message || `Imeshindikana kufungua hati (HTTP ${response.status}).`);
       }
-      const fileBlob = await response.blob();
+      let fileBlob = await response.blob();
+      // Compress uploaded photos for faster preview/download while preserving readable detail.
+      if (field.type === "IMAGE_UPLOAD" && fileBlob.type.startsWith("image/")) {
+        try {
+          const imageBitmap = await createImageBitmap(fileBlob);
+          const maxSide = 1600;
+          const scale = Math.min(1, maxSide / Math.max(imageBitmap.width, imageBitmap.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(imageBitmap.width * scale));
+          canvas.height = Math.max(1, Math.round(imageBitmap.height * scale));
+          const context = canvas.getContext("2d");
+          if (context) {
+            context.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+            const compressed = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+            if (compressed && compressed.size < fileBlob.size) fileBlob = compressed;
+          }
+          imageBitmap.close();
+        } catch {
+          // Keep the original if this browser cannot decode/encode the image.
+        }
+      }
       const fileUrl = URL.createObjectURL(fileBlob);
-      if (action === "preview") {
-        setDocumentPreview({ url: fileUrl, label: field.label, image: field.type === "IMAGE_UPLOAD" });
-      } else {
+      if (action === "download") {
         const anchor = document.createElement("a");
         anchor.href = fileUrl;
-        anchor.download = field.label || "document";
-        anchor.target = action === "open" ? "_blank" : "_self";
-        anchor.rel = "noopener noreferrer";
+        anchor.download = `${field.fieldName || "document"}${fileBlob.type === "image/jpeg" ? ".jpg" : ""}`;
         document.body.appendChild(anchor);
         anchor.click();
         anchor.remove();
         window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60_000);
+      } else {
+        // Both Preview and Open display the document in the in-app viewer.
+        setDocumentPreview({ url: fileUrl, label: field.label, image: field.type === "IMAGE_UPLOAD" });
       }
     } catch (documentError) {
       setError(`${field.label}: ${errorText(documentError)}`);
