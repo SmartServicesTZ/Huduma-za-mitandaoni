@@ -89,8 +89,8 @@ function LipaGlobalReport({ applications }: { applications: LipaApplication[] })
   const download = () => {
     const header = ["ID", "Tarehe ya kutengeneza", "Mtandao", "Hali ya ombi", "Sababu ya kukataliwa", "Hali ya vigezo", "Miamala iliyothibitishwa", "Zawadi TSh", "Hali ya malipo", "Tarehe ya malipo", "Reference ya malipo", "Muda uliobaki"];
     const data = rows.map((a: any) => [a.id, stamp(a.submittedAt ?? a.createdAt), a.networkName ?? a.networkId ?? "", a.status ?? "", a.rejectionReason ?? "", a.qualificationStatus ?? "", Number(a.verifiedTransactions ?? 0), Number(a.reward ?? 0), a.rewardStatus ?? "", stamp(a.rewardPaidAt), a.rewardPaymentReference ?? "", a.qualificationStatus === "PENDING_CHECK" ? remaining(a) : ""]);
-    const csv = [header, ...data].map(row => row.map(v => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\r
-");
+    const csv = [header, ...data].map(row => row.map(v => '"' + String(v ?? "").replace(/"/g, '""') + '"' ).join(",")).join("\r\n");
+
     const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8;" }));
     const link = document.createElement("a"); link.href = url; link.download = "ripoti-za-lipa.csv"; link.click(); URL.revokeObjectURL(url);
   };
@@ -670,8 +670,8 @@ function exportTransactionsCsv(rows: any[]) {
     ["Tarehe", (item) => dateText(item.createdAt)],
   ];
   const escapeCell = (value: unknown) => '"' + String(value ?? "").replaceAll('"', '""') + '"' ;
-  const csv = "\uFEFF" + [columns.map(([label]) => escapeCell(label)).join(","), ...rows.map((item) => columns.map(([, read]) => escapeCell(read(item))).join(","))].join("\r
-");
+  const csv = "\uFEFF" + [columns.map(([label]) => escapeCell(label)).join(","), ...rows.map((item) => columns.map(([, read]) => escapeCell(read(item))).join(","))].join("\r\n");
+
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
   const link = document.createElement("a");
   link.href = url;
