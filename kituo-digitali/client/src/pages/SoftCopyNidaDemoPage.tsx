@@ -32,28 +32,29 @@ export default function SoftCopyNidaDemoPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Rangi ya msingi wakati picha inasubiriwa
-    ctx.fillStyle = "#bfe7e7"; ctx.fillRect(0, 0, 1600, 1000);
-
-    const bgImg = new Image();
-    // Tumeweka mfumo wa kuchora mandhari ya nyuma na nembo halisi
-    bgImg.onload = () => {
-      ctx.drawImage(bgImg, 0, 0, 1600, 1000);
-      drawCardElements(ctx);
-    };
-    bgImg.onerror = () => {
-      drawCardElements(ctx);
-    };
-    // SVG background yenye mandhari ya mlima na rangi za kitambulisho
-    bgImg.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxNjAwIDEwMDAiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjE2MDAiIHkyPSIxMDAwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3B
+    // Mandhari ya DEMO: rangi za kijani/bluu na michoro ya usuli.
+    const gradient = ctx.createLinearGradient(0, 0, 1600, 1000);
+    gradient.addColorStop(0, "#e4f3d9");
+    gradient.addColorStop(0.5, "#bfe7e7");
+    gradient.addColorStop(1, "#72c8d9");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1600, 1000);
+    for (let i = 0; i < 9; i++) {
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(38,132,112,0.12)";
+      ctx.lineWidth = 5;
+      ctx.ellipse(780, 520, 180 + i * 75, 100 + i * 40, -0.25, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    drawCardElements(ctx);
 
   function drawCardElements(ctx: CanvasRenderingContext2D) {
     // Kichwa cha juu (Header text)
     ctx.textAlign = "center"; ctx.fillStyle = "#24104f";
-    ctx.font = "bold 26px Arial"; ctx.fillText("JAMHURI YA MUUNGANO WA TANZANIA", 800, 55);
-    ctx.font = "bold 44px Arial"; ctx.fillText("KITAMBULISHO CHA TAIFA", 800, 105);
+    ctx.font = "bold 26px Arial"; ctx.fillText("KITAMBULISHO CHA MFANO • DEMO", 800, 55);
+    ctx.font = "bold 44px Arial"; ctx.fillText("PERSONAL IDENTITY CARD", 800, 105);
     ctx.font = "bold 22px Arial"; ctx.fillStyle = "#333"; 
-    ctx.fillText("THE UNITED REPUBLIC OF TANZANIA   —   CITIZEN IDENTITY CARD", 800, 145);
+    ctx.fillText("SAMPLE • NOT A GOVERNMENT DOCUMENT", 800, 145);
 
     // Namba ya Kitambulisho / Demo Number
     ctx.textAlign = "left"; ctx.fillStyle = "#101d24"; ctx.font = "bold 55px Arial";
@@ -94,7 +95,7 @@ export default function SoftCopyNidaDemoPage() {
 
     // Hifadhi picha au onyo la Demo
     const saveImage = () => {
-      const link = document.createElement("a"); link.download = "nida-identity-card.png";
+      const link = document.createElement("a"); link.download = "personal-identity-demo.png";
       link.href = canvas.toDataURL("image/png"); link.click();
     };
 
@@ -122,9 +123,9 @@ export default function SoftCopyNidaDemoPage() {
   return <main className="portal-main" style={{maxWidth:1050,margin:"0 auto",padding:"24px 16px"}}>
     <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{marginBottom:18}}><ArrowLeft size={16}/> Rudi kwenye huduma</button>
     <section className="license-form-card">
-      <div style={{display:"flex",gap:12,alignItems:"center"}}><ShieldAlert size={28}/><div><h1 style={{margin:0}}>SOFT COPY NIDA</h1><p style={{margin:"4px 0 0"}}>Tengeneza kitambulisho chenye muonekano halisi wa NIDA.</p></div></div>
+      <div style={{display:"flex",gap:12,alignItems:"center"}}><ShieldAlert size={28}/><div><h1 style={{margin:0}}>SOFT COPY NIDA</h1><p style={{margin:"4px 0 0"}}>Tengeneza kadi ya mfano yenye mpangilio wa taarifa na rangi ulizochagua.</p></div></div>
       
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:14, marginTop: 15}}>
+      <div role="alert" style={{margin:"16px 0",padding:12,border:"2px solid #b45309",borderRadius:10,background:"#fff7ed",color:"#9a3412",fontWeight:800}}>DEMO – NOT OFFICIAL. HII NI KADI YA MFANO TU, SI KITAMBULISHO CHA NIDA AU HATI YA SERIKALI.</div>\n      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:14, marginTop: 15}}>
         <label>Jina la kwanza<input className="input" value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="AWADHI"/></label>
         <label>Jina la kati<input className="input" value={middleName} onChange={e=>setMiddleName(e.target.value)} placeholder="BAKARI"/></label>
         <label>Jina la mwisho<input className="input" value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="KIBANJE"/></label>
