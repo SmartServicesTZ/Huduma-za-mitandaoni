@@ -38,8 +38,8 @@ type AgentData = { name: string; agentId: string; phone: string; type: string; r
 
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
-const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", Supervisor: "SV", "Authorized Agent": "AA" };
-const agentIdTokenCost = (agentType: string) => agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Supervisor" || agentType === "Authorized Agent" ? 10 : 0;
+const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", "Team Reader": "TR", Supervisor: "SV" };
+const agentIdTokenCost = (agentType: string) => agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Team Reader" || agentType === "Supervisor" ? 10 : 0;
 const locationData = tanzaniaLocations as unknown as { regions: Record<string, { districts: Record<string, string[]> }> };
 const tanzaniaRegions = Object.keys(locationData.regions).sort((a, b) => a.localeCompare(b));
 const districtsForRegion = (selectedRegion: string) => Object.keys(locationData.regions[selectedRegion]?.districts ?? {}).sort((a, b) => a.localeCompare(b));
@@ -198,7 +198,8 @@ export default function AgentIdPage() {
   const cfg = NETWORKS[network];
   const data: AgentData = { name, agentId, phone, type, region, district, area, issueDate };
 
-  const qrText = useMemo(() => JSON.stringify({ v: 1, id: agentId, n: name.trim(), p: phone.trim(), net: network, role: type, r: region, d: district, a: area, exp: expiry(issueDate) }), [network, name, agentId, phone, type, region, district, area, issueDate]);
+  // QR iwe na Agent ID fupi na ya moja kwa moja; JSON ndefu ilifanya alama iwe na msongamano na kushindwa kuskan kwenye picha ndogo.
+  const qrText = useMemo(() => agentId.trim(), [agentId]);
 
   useEffect(() => {
     setPaid(false);
@@ -225,7 +226,7 @@ export default function AgentIdPage() {
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(qrText, { width: 512, margin: 4, errorCorrectionLevel: "M", color: { dark: "#000000", light: "#ffffff" } })
+    QRCode.toDataURL(qrText, { width: 512, margin: 4, errorCorrectionLevel: "L", color: { dark: "#000000", light: "#ffffff" } })
       .then((url) => { if (!cancelled) setQr(url); })
       .catch(() => { if (!cancelled) setQr(""); });
     return () => { cancelled = true; };
@@ -318,7 +319,7 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
         <label className="aid-field"><span>Agent ID</span><input value={agentId} readOnly aria-readonly="true" /></label>
         <label className="aid-field"><span>Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
-        <label className="aid-field"><span>Agent Type</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Supervisor</option><option>Authorized Agent</option></select></label>
+        <label className="aid-field"><span>Agent Type</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Team Reader</option><option>Supervisor</option></select></label>
         <label className="aid-field"><span>Mkoa</span><select value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} required><option value="">Chagua mkoa</option>{tanzaniaRegions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Wilaya</span><select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!region} required><option value="">Chagua wilaya</option>{districtsForRegion(region).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Kata / Eneo</span><input value={area} maxLength={30} onChange={(e) => setArea(e.target.value)} /></label>
@@ -364,7 +365,7 @@ function LogoChip({ cfg, network, className = "" }: { cfg: NetworkCfg; network: 
 function CardWatermark({ paid }: { paid: boolean }) {
   if (paid) return null;
   return <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, zIndex: 10, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none" }}>
-    <span style={{ transform: "rotate(-28deg)", border: "1px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.25)", padding: "4px 7px", fontSize: "clamp(8px, 2.1vw, 13px)", fontWeight: 900, letterSpacing: ".4px", lineHeight: 1.3, textAlign: "center", maxWidth: "92%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</span>
+    <span style={{ transform: "rotate(-28deg)", border: "1px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.25)", padding: "4px 7px", fontSize: "clamp(8px, 2.1vw, 13px)", fontWeight: 900, letterSpacing: ".4px", lineHeight: 1.3, textAlign: "center", maxWidth: "92%" }}>HAIJALIPIWA · PREVIEW TU · TOKENI ZIKIKATWA WATERMARK ITAONDOLEWA</span>
   </div>;
 }
 
