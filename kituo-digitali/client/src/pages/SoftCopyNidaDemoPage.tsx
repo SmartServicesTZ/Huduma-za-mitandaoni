@@ -32,67 +32,55 @@ export default function SoftCopyNidaDemoPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Rangi ya msingi wakati picha inasubiriwa
-    ctx.fillStyle = "#bfe7e7"; ctx.fillRect(0, 0, 1600, 1000);
+    // Rangi ya nyuma ya kitambulisho (Gradient background halisi)
+    const bg = ctx.createLinearGradient(0, 0, 1600, 1000);
+    bg.addColorStop(0, "#d8f3dc"); bg.addColorStop(0.5, "#b5e2fa"); bg.addColorStop(1, "#90e0ef");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, 1600, 1000);
 
-    const bgImg = new Image();
-    // Tumeweka mfumo wa kuchora mandhari ya nyuma na nembo halisi
-    bgImg.onload = () => {
-      ctx.drawImage(bgImg, 0, 0, 1600, 1000);
-      drawCardElements(ctx);
-    };
-    bgImg.onerror = () => {
-      drawCardElements(ctx);
-    };
-    // SVG background yenye mandhari ya mlima na rangi za kitambulisho
-    bgImg.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjEwMDAiIHZpZXdCb3g9IjAgMCAxNjAwIDEwMDAiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjE2MDAiIHkyPSIxMDAwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3B
+    // Michoro ya kiusalama ya nyuma (Guilloche lines / motifs)
+    for (let i = 0; i < 12; i++) {
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(40, 120, 100, 0.08)";
+      ctx.lineWidth = 6;
+      ctx.ellipse(800, 500, 200 + i * 60, 100 + i * 35, -0.2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
-  function drawCardElements(ctx: CanvasRenderingContext2D) {
-    // Kichwa cha juu (Header text)
-    ctx.textAlign = "center"; ctx.fillStyle = "#24104f";
-    ctx.font = "bold 26px Arial"; ctx.fillText("JAMHURI YA MUUNGANO WA TANZANIA", 800, 55);
-    ctx.font = "bold 44px Arial"; ctx.fillText("KITAMBULISHO CHA TAIFA", 800, 105);
-    ctx.font = "bold 22px Arial"; ctx.fillStyle = "#333"; 
-    ctx.fillText("THE UNITED REPUBLIC OF TANZANIA   —   CITIZEN IDENTITY CARD", 800, 145);
+    // Ukingo wa nje wa kitambulisho
+    ctx.strokeStyle = "#4a7c59"; ctx.lineWidth = 10; ctx.strokeRect(12, 12, 1576, 976);
 
-    // Namba ya Kitambulisho / Demo Number
-    ctx.textAlign = "left"; ctx.fillStyle = "#101d24"; ctx.font = "bold 55px Arial";
-    ctx.fillText(demoNumber.toUpperCase(), 75, 230);
+    // Eneo la Kichwa cha Juu (Header)
+    ctx.textAlign = "center"; ctx.fillStyle = "#1b263b";
+    ctx.font = "bold 28px Arial"; ctx.fillText("JAMHURI YA MUUNGANO WA TANZANIA", 800, 65);
+    ctx.font = "bold 46px Arial"; ctx.fillStyle = "#1d3557"; ctx.fillText("KITAMBULISHO CHA TAIFA", 800, 120);
+    ctx.font = "bold 22px Arial"; ctx.fillStyle = "#457b9d"; ctx.fillText("THE UNITED REPUBLIC OF TANZANIA   —   CITIZEN IDENTITY CARD", 800, 160);
+
+    // Namba ya Kitambulisho (DEMO Number)
+    ctx.textAlign = "left"; ctx.fillStyle = "#0b090a"; ctx.font = "bold 55px Arial";
+    ctx.fillText(demoNumber.toUpperCase(), 75, 250);
 
     // Taarifa za Mtumiaji (Labels & Values)
-    const rows = [
-      ["JINA :", firstName.toUpperCase() + (middleName ? " " + middleName.toUpperCase() : "")],
-      ["Given Name", ""],
-      ["JINA LA MWISHO :", lastName.toUpperCase()],
-      ["Last Name", ""],
-      ["TAREHE YA KUZALIWA :", dob],
-      ["Date of Birth", ""],
-      ["JINSIA :", gender.toUpperCase()],
-      ["Sex", ""]
-    ];
-
-    // Kupanga maandishi kwa mpangilio sahihi kama kwenye NIDA
     ctx.fillStyle = "#111"; 
-    ctx.font = "bold 32px Arial"; ctx.fillText("JINA :   " + (firstName + " " + middleName).trim().toUpperCase(), 75, 330);
-    ctx.font = "20px Arial"; ctx.fillStyle = "#444"; ctx.fillText("Given Name", 160, 365);
+    ctx.font = "bold 32px Arial"; ctx.fillText("JINA :   " + (firstName + " " + middleName).trim().toUpperCase(), 75, 350);
+    ctx.font = "20px Arial"; ctx.fillStyle = "#555"; ctx.fillText("Given Name", 160, 385);
 
-    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("JINA LA MWISHO :   " + lastName.toUpperCase(), 75, 450);
-    ctx.font = "20px Arial"; ctx.fillStyle = "#444"; ctx.fillText("Last Name", 270, 485);
+    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("JINA LA MWISHO :   " + lastName.toUpperCase(), 75, 470);
+    ctx.font = "20px Arial"; ctx.fillStyle = "#555"; ctx.fillText("Last Name", 270, 505);
 
-    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("TAREHE YA KUZALIWA :   " + dob, 75, 570);
-    ctx.font = "20px Arial"; ctx.fillStyle = "#444"; ctx.fillText("Date of Birth", 305, 605);
+    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("TAREHE YA KUZALIWA :   " + dob, 75, 590);
+    ctx.font = "20px Arial"; ctx.fillStyle = "#555"; ctx.fillText("Date of Birth", 305, 625);
 
-    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("JINSIA :   " + gender.toUpperCase(), 75, 690);
-    ctx.font = "20px Arial"; ctx.fillStyle = "#444"; ctx.fillText("Sex", 160, 725);
+    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("JINSIA :   " + gender.toUpperCase(), 75, 710);
+    ctx.font = "20px Arial"; ctx.fillStyle = "#555"; ctx.fillText("Sex", 160, 745);
 
-    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("SAINI :", 75, 810);
-    ctx.font = "20px Arial"; ctx.fillStyle = "#444"; ctx.fillText("Signature", 160, 845);
+    ctx.fillStyle = "#111"; ctx.font = "bold 32px Arial"; ctx.fillText("SAINI :", 75, 830);
+    ctx.font = "20px Arial"; ctx.fillStyle = "#555"; ctx.fillText("Signature", 160, 865);
 
     // Sahihi (Signature)
-    ctx.fillStyle = "#0a192f"; ctx.font = "italic 52px cursive"; 
-    ctx.fillText(signature || fullName, 190, 825);
+    ctx.fillStyle = "#1d3557"; ctx.font = "italic 52px cursive"; 
+    ctx.fillText(signature || fullName, 190, 845);
 
-    // Hifadhi picha au onyo la Demo
+    // Kitendo cha kuhifadhi faili baada ya picha kukamilika
     const saveImage = () => {
       const link = document.createElement("a"); link.download = "nida-identity-card.png";
       link.href = canvas.toDataURL("image/png"); link.click();
@@ -100,11 +88,11 @@ export default function SoftCopyNidaDemoPage() {
 
     // Kuchora Picha ya Mtu Upande wa Kulia
     const pX = 1070, pY = 380, pW = 440, pH = 520;
-    ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.fillRect(pX, pY, pW, pH);
-    ctx.strokeStyle = "#444"; ctx.lineWidth = 6; ctx.strokeRect(pX, pY, pW, pH);
+    ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.fillRect(pX, pY, pW, pH);
+    ctx.strokeStyle = "#457b9d"; ctx.lineWidth = 6; ctx.strokeRect(pX, pY, pW, pH);
 
     if (!photo) {
-      ctx.fillStyle = "#333"; ctx.font = "bold 30px Arial"; ctx.textAlign = "center";
+      ctx.fillStyle = "#457b9d"; ctx.font = "bold 30px Arial"; ctx.textAlign = "center";
       ctx.fillText("WEKA PICHA", pX + pW / 2, pY + pH / 2);
       saveImage();
       return;
@@ -122,7 +110,7 @@ export default function SoftCopyNidaDemoPage() {
   return <main className="portal-main" style={{maxWidth:1050,margin:"0 auto",padding:"24px 16px"}}>
     <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{marginBottom:18}}><ArrowLeft size={16}/> Rudi kwenye huduma</button>
     <section className="license-form-card">
-      <div style={{display:"flex",gap:12,alignItems:"center"}}><ShieldAlert size={28}/><div><h1 style={{margin:0}}>SOFT COPY NIDA</h1><p style={{margin:"4px 0 0"}}>Tengeneza kitambulisho chenye muonekano halisi wa NIDA.</p></div></div>
+      <div style={{display:"flex",gap:12,alignItems:"center"}}><ShieldAlert size={28}/><div><h1 style={{margin:0}}>SOFT COPY NIDA</h1><p style={{margin:"4px 0 0"}}>Tengeneza kitambulisho chenye muonekano sahihi na safi.</p></div></div>
       
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:14, marginTop: 15}}>
         <label>Jina la kwanza<input className="input" value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="AWADHI"/></label>
