@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Download, ImagePlus, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Download, ShieldAlert } from "lucide-react";
 import { useLocation } from "wouter";
 
 const CARD_DESIGN = {
@@ -32,12 +32,12 @@ const CARD_DESIGN = {
 
 export default function SoftCopyNidaDemoPage() {
   const [, navigate] = useLocation();
-  const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [idNumber, setIdNumber] = useState("");
-  const [dob, setDob] = useState("");
-  const [gender, setGender] = useState("M");
+  const [firstName, setFirstName] = useState("Sophia");
+  const [middleName, setMiddleName] = useState("Mjeshi");
+  const [lastName, setLastName] = useState("Bakari");
+  const [idNumber, setIdNumber] = useState("19950505611050000111");
+  const [dob, setDob] = useState("05-05-1995");
+  const [gender, setGender] = useState("F");
   const [photo, setPhoto] = useState("");
   const [signature, setSignature] = useState("");
   const fullName = useMemo(
@@ -151,10 +151,7 @@ export default function SoftCopyNidaDemoPage() {
         return;
       }
 
-      ctx.fillStyle = CARD_DESIGN.colors.muted;
-      ctx.font = "bold 30px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("PICHA", pX + pW / 2, pY + pH / 2);
+      // Eneo la picha linaachwa tupu kwa mfano huu.
       triggerDownload(canvas);
     };
 
@@ -165,6 +162,15 @@ export default function SoftCopyNidaDemoPage() {
       link.click();
     };
 
+    // Alama ya DEMO inaweka wazi kuwa huu si kitambulisho rasmi.
+    ctx.save();
+    ctx.translate(800, 520);
+    ctx.rotate(-Math.PI / 7);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(180, 0, 0, 0.20)";
+    ctx.font = "bold 104px Arial";
+    ctx.fillText("MFANO / DEMO", 0, 0);
+    ctx.restore();
     drawPhotoAndSave();
   }
 
@@ -184,14 +190,14 @@ export default function SoftCopyNidaDemoPage() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14, marginTop: 15 }}>
-          <label>Jina la kwanza<input className="input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="STEWARD" /></label>
-          <label>Jina la kati<input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="JACKSON" /></label>
-          <label>Jina la mwisho<input className="input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="NJIWA" /></label>
-          <label>Namba ya Kitambulisho<input className="input" value={idNumber} onChange={e => setIdNumber(e.target.value)} placeholder="19950505275000000123" /></label>
+          <label>Jina la kwanza<input className="input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Sophia" /></label>
+          <label>Jina la kati<input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="Mjeshi" /></label>
+          <label>Jina la mwisho<input className="input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Bakari" /></label>
+          <label>Namba ya Kitambulisho<input className="input" value={idNumber} onChange={e => setIdNumber(e.target.value)} placeholder="19950505611050000111" /></label>
           <label>Tarehe ya kuzaliwa<input className="input" value={dob} onChange={e => setDob(e.target.value)} placeholder="05-05-1995" /></label>
           <label>Jinsia<select className="input" value={gender} onChange={e => setGender(e.target.value)}><option value="M">M</option><option value="F">F</option></select></label>
           <label>Sahihi (andika jina)<input className="input" value={signature} onChange={e => setSignature(e.target.value)} placeholder="S.tj" /></label>
-          <label style={{ gridColumn: "1 / -1" }}>Picha<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => readImage(e.target.files?.[0])} /></label>
+          <label style={{ gridColumn: "1 / -1" }}>Picha (hiari — imeachwa wazi)<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => readImage(e.target.files?.[0])} /></label>
         </div>
 
         <div style={{ marginTop: 26 }}>
@@ -208,6 +214,7 @@ export default function SoftCopyNidaDemoPage() {
               backgroundImage: `repeating-radial-gradient(circle at 52% 50%, transparent 0 25px, rgba(20,100,90,0.18) 27px 29px, transparent 31px 55px)`
             }} />
             
+            <div style={{ position: "absolute", zIndex: 2, left: "50%", top: "52%", transform: "translate(-50%,-50%) rotate(-18deg)", color: "rgba(180,0,0,.22)", fontWeight: 950, fontSize: "clamp(24px,7vw,72px)", whiteSpace: "nowrap", pointerEvents: "none" }}>MFANO / DEMO</div>
             <div style={{ position: "relative", textAlign: "center", lineHeight: 1.2 }}>
               <div style={{ fontWeight: 900, fontSize: "clamp(9px,1.8vw,17px)", color: "#1b2a4a" }}>{CARD_DESIGN.title}</div>
               <div style={{ fontWeight: 900, fontSize: "clamp(12px,2.8vw,28px)", color: "#1b2a4a" }}>{CARD_DESIGN.subtitle}</div>
@@ -216,18 +223,18 @@ export default function SoftCopyNidaDemoPage() {
 
             <div style={{ position: "relative", display: "flex", gap: 12, height: "72%", marginTop: 8 }}>
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
-                <div style={{ fontWeight: 900, fontSize: "clamp(11px,2.2vw,23px)", overflowWrap: "anywhere", color: "#101d24" }}>{idNumber || "19950505275000000123"}</div>
+                <div style={{ fontWeight: 900, fontSize: "clamp(11px,2.2vw,23px)", overflowWrap: "anywhere", color: "#101d24" }}>{idNumber || "19950505611050000111"}</div>
                 
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA KWANZA : {firstName.toUpperCase() || "STEWARD"}</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA KWANZA : {firstName.toUpperCase() || "SOPHIA"}</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Given Name</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA KATI : {middleName.toUpperCase() || "JACKSON"}</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA KATI : {middleName.toUpperCase() || "MJESHI"}</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Middle Name</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA MWISHO : {lastName.toUpperCase() || "NJIWA"}</div>
+                  <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>JINA LA MWISHO : {lastName.toUpperCase() || "BAKARI"}</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Last Name</div>
                 </div>
                 <div>
@@ -241,7 +248,7 @@ export default function SoftCopyNidaDemoPage() {
                 <div>
                   <div style={{ fontSize: "clamp(7px,1.2vw,12px)", fontWeight: 800, color: "#112222" }}>SAHIHI :</div>
                   <div style={{ fontSize: "clamp(5px,0.9vw,9px)", color: "#555" }}>Signature</div>
-                  <div style={{ fontFamily: "cursive", fontStyle: "italic", fontSize: "clamp(9px,1.8vw,17px)", marginTop: -10, marginLeft: 50 }}>{signature || fullName || "S.tj"}</div>
+                  <div style={{ fontFamily: "cursive", fontStyle: "italic", fontSize: "clamp(9px,1.8vw,17px)", marginTop: -10, marginLeft: 50 }}>{signature || fullName}</div>
                 </div>
               </div>
 
@@ -251,7 +258,7 @@ export default function SoftCopyNidaDemoPage() {
                 background: "rgba(255,255,255,0.9)", display: "flex",
                 alignItems: "center", justifyContent: "center", overflow: "hidden"
               }}>
-                {photo ? <img src={photo} alt="Picha" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ textAlign: "center", fontSize: "clamp(8px,1.4vw,14px)", fontWeight: 800 }}><ImagePlus size={22} /><br />PICHA</div>}
+                {photo ? <img src={photo} alt="Picha" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
               </div>
             </div>
           </div>
