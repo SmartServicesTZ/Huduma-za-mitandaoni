@@ -24,7 +24,10 @@ export function useAuth(options?: UseAuthOptions) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(() => firebaseAuth.currentUser);
   const [profile, setProfile] = useState<FirebaseProfile | null>(null);
   const [authClaims, setAuthClaims] = useState<FirebaseRoleClaims | null>(null);
-  const [loading, setLoading] = useState(() => !authPersistenceHasResolved);
+  // Always wait for this hook's first onAuthStateChanged callback.
+  // authStateReady may already be resolved while this component is mounting;
+  // rendering guest UI before the listener callback causes an 'Ingia kwanza' flash.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
