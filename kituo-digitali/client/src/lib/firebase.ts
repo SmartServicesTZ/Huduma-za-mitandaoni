@@ -916,6 +916,11 @@ export async function submitLipaApplication(applicationId: string, networkId: st
   return (await callable({ applicationId, networkId, values })).data;
 }
 
+export async function updateLipaApplication(applicationId: string, values: ServiceFormValues) {
+  const callable = createWorkerCall("updateLipaApplication");
+  return (await callable({ applicationId, values })).data as { applicationId: string; status: "PENDING"; updated: boolean };
+}
+
 export async function setLipaApplicationStatus(applicationId: string, status: "PROCESSING" | "APPROVED" | "REJECTED", rejectionReason = "") {
   const callable = createWorkerCall("setLipaApplicationStatus");
   return (await callable({ applicationId, status, rejectionReason })).data;
