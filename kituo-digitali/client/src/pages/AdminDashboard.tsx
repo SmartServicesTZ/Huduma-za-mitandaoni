@@ -209,7 +209,7 @@ export default function AdminDashboard() {
         cachedRead(`security:${auditCollection}`, hasPermission("viewAuditLogs") && needs("security"), () => getRecentSecurityLogs(auditCollection), { rows: [], cursor: null, hasMore: false }, force),
         cachedRead("siteSettings", (hasPermission("manageSettings") && needs("services", "serviceControl")) || (hasPermission("manageTokens") && needs("tokens")), adminGetSiteSettings, null, force),
         cachedRead("serviceLocks", hasPermission("manageServices") && needs("services", "serviceControl"), () => adminListCollection("serviceLocks"), [], force),
-        cachedRead("lipaServices", hasPermission("manageServices") && needs("applications"), () => adminListCollection("lipaServices"), [], force),
+        cachedRead("lipaServices", canManageLipaApplications && needs("applications", "lipa"), () => adminListCollection("lipaServices"), [], force),
         cachedRead("lipaApplications", canManageLipaApplications && needs("applications", "lipaReport", "lipa"), adminListLipaApplications, [], force),
         cachedRead("serviceApplications", hasPermission("manageServices") && needs("overview", "applications", "reports"), adminListServiceApplications, [], force),
         cachedRead("agentRecords", hasPermission("manageUsers") && needs("agents"), adminListAgentRecords, [], force),
@@ -339,6 +339,15 @@ export default function AdminDashboard() {
           {selectedInboxApplication.kind === "SERVICE"
             ? <ServiceApplicationsPanel key={`service-${selectedInboxSession}`} applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} hideList initialSelectedId={selectedInboxApplication.id} />
             : <LipaApplicationsPanel key={`lipa-${selectedInboxSession}`} applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} hideList initialSelectedId={selectedInboxApplication.id} />}
+        </div>}
+        {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16,marginTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
+      </section>}
+      {panel === "lipa" && <section className="admin-card admin-unified-applications">
+        <div className="admin-card-heading"><div><span className="admin-kicker">LIPA NAMBA · INBOX</span><h2>Maombi ya Lipa Namba</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi ya Lipa, Access Lipa na huduma zinazohusiana. Chagua ombi kulifungua na kulichakata.</p></div><WalletCards size={22}/></div>
+        <UnifiedApplicationsInbox serviceApplications={[]} lipaApplications={lipaApplications} services={[]} networks={lipaServices} initialKind="LIPA" onSelect={(kind, id) => { setSelectedInboxApplication({ kind, id }); setSelectedInboxSession((value) => value + 1); }} />
+        {selectedInboxApplication?.kind === "LIPA" && <div style={{marginTop:16}}>
+          <button type="button" className="button button--secondary button--small" onClick={() => { setSelectedInboxApplication(null); setSelectedInboxSession((value) => value + 1); }} style={{marginBottom:12}}>← Rudi kwenye list ya Lipa</button>
+          <LipaApplicationsPanel key={`lipa-dedicated-${selectedInboxSession}`} applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} hideList initialSelectedId={selectedInboxApplication.id} />
         </div>}
         {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16,marginTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
       </section>}
