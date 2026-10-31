@@ -17,7 +17,8 @@
     "worker:check": "pnpm --dir worker check",
     "worker:test": "pnpm --dir worker test",
     "worker:build": "pnpm --dir worker build",
-    "worker:deploy": "cd worker && pnpm exec wrangler deploy"
+    "worker:deploy": "cd worker && pnpm exec wrangler deploy",
+    "test:firestore:rules": "pnpm dlx firebase-tools emulators:exec --only firestore --project demo-firestore-rules --config ../firebase.json 'node --test scripts/firestore-rules.test.mjs'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
