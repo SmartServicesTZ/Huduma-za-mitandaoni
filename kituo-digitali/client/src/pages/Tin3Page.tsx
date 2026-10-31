@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Download, X } from "lucide-react";
+import { ArrowLeft, Download, X, LoaderCircle, Check } from "lucide-react";
 import { Link } from "wouter";
 
 function formatTIN(value: string) {
@@ -55,32 +55,52 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
 export default function Tin3Page() {
   const [tinInput, setTinInput] = useState("");
   const [name, setName] = useState("");
+  const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "done">("idle");
   const tabCount = 16;
   const tin = formatTIN(tinInput);
   const svg = useMemo(() => makeScreenshot(tin, name.trim().toUpperCase(), tabCount), [tin, name, tabCount]);
   const previewUrl = useMemo(() => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), [svg]);
 
   const download = () => {
+    if (downloadStatus === "downloading") return;
+    setDownloadStatus("downloading");
+    const finish = (status: "idle" | "done") => {
+      setDownloadStatus(status);
+      if (status === "done") window.setTimeout(() => setDownloadStatus("idle"), 1800);
+    };
     const image = new Image();
     image.onload = () => {
       const canvas = document.createElement("canvas");
       canvas.width = 2240;
       canvas.height = 2720;
       const context = canvas.getContext("2d");
-      if (!context) return;
+      if (!context) {
+        finish("idle");
+        alert("Imeshindikana kutengeneza picha. Tafadhali jaribu tena.");
+        return;
+      }
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      const pngDataUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = pngDataUrl;
-      a.download = `${tin || "TIN"}.png`;
-      a.type = "image/png";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          finish("idle");
+          alert("Imeshindikana kutengeneza PNG. Tafadhali jaribu tena.");
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${tin || "TIN"}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+        finish("done");
+      }, "image/png");
     };
     image.onerror = () => {
+      finish("idle");
       alert("Imeshindikana kutengeneza PNG. Tafadhali jaribu tena.");
     };
     image.src = previewUrl;
@@ -112,7 +132,7 @@ export default function Tin3Page() {
               </div>
               <div className="flex flex-wrap gap-3 pt-1">
                 <button type="button" onClick={()=>{setTinInput("");setName("");}} className="inline-flex items-center gap-3 border-2 border-zinc-200 bg-white px-5 py-3.5 rounded-xl text-sm font-semibold text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 transition"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5 M4 17v-5h5 M5.64 5.64A9 9 0 0 1 20 12 M4 12a9 9 0 0 0 14.36 6.36" fill="none" stroke="#222" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/></svg><span>Reset</span></button>
-                <button type="button" onClick={download} className="inline-flex items-center gap-2 bg-zinc-950 text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-lg hover:bg-red-700 transition"><Download size={17}/>Download</button>
+                <button type="button" onClick={download} disabled={downloadStatus === "downloading"} className="inline-flex items-center gap-2 bg-zinc-950 text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-lg hover:bg-red-700 disabled:opacity-75 disabled:cursor-wait transition">{downloadStatus === "downloading" ? <><LoaderCircle size={17} className="animate-spin"/>Inapakua...</> : downloadStatus === "done" ? <><Check size={17}/>Imepakuliwa</> : <><Download size={17}/>Download</>}</button>
               </div>
             </div>
           </section>
