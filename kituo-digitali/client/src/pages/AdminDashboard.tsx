@@ -14,7 +14,7 @@ import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
 import { UnifiedApplicationsInbox } from "./UnifiedApplicationsInbox";
 import { getRecentSecurityLogs } from "@/lib/securityLogs";
 
-type Panel = "overview" | "softCopyNida" | "users" | "agents" | "tokens" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages" | "cms";
+type Panel = "overview" | "softCopyNida" | "agentIdPricing" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages" | "cms" | "templates" | "appearance" | "announcements" | "videos" | "ads" | "licenses";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
   // Orodha fupi iliyopangwa kwa kazi: mwanzo, maombi, usimamizi, fedha, kisha mfumo.
   ["overview", "Muhtasari", LayoutDashboard],
