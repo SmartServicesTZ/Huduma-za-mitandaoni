@@ -622,7 +622,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
 function AgentRolePrices({ item, adminId, busy, onRun }: any) {
   const master = item;
   const [prices, setPrices] = useState<Record<string, number>>({
-    Freelancer: 10,
+    Freelancer: 5,
     "Team Leader": 10,
     "Team Reader": 10,
     Supervisor: 10,
@@ -630,7 +630,7 @@ function AgentRolePrices({ item, adminId, busy, onRun }: any) {
   useEffect(() => {
     const configured = master?.agentTypeTokenCosts ?? {};
     setPrices({
-      Freelancer: Number(configured.Freelancer === 5 ? 10 : configured.Freelancer ?? 10),
+      Freelancer: Number(configured.Freelancer ?? 5),
       "Team Leader": Number(configured["Team Leader"] ?? 10),
       "Team Reader": Number(configured["Team Reader"] ?? 10),
       Supervisor: Number(configured.Supervisor ?? 10),
