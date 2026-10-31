@@ -95,6 +95,11 @@ export default function SoftCopyNidaDemoPage() {
 
     // Hifadhi picha au onyo la Demo
     const saveImage = () => {
+      ctx.save(); ctx.translate(790, 610); ctx.rotate(-0.28); ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(170,25,35,0.24)"; ctx.font = "bold 112px Arial";
+      ctx.fillText("DEMO • NOT OFFICIAL", 0, 0); ctx.restore();
+      ctx.textAlign = "center"; ctx.fillStyle = "#9c2525"; ctx.font = "bold 25px Arial";
+      ctx.fillText("DEMO ONLY — NOT VALID FOR IDENTIFICATION", 800, 960);
       const link = document.createElement("a"); link.download = "personal-identity-demo.png";
       link.href = canvas.toDataURL("image/png"); link.click();
     };
@@ -118,6 +123,7 @@ export default function SoftCopyNidaDemoPage() {
     };
     userImg.onerror = saveImage;
     userImg.src = photo;
+  }
   }
 
   return <main className="portal-main" style={{maxWidth:1050,margin:"0 auto",padding:"24px 16px"}}>
