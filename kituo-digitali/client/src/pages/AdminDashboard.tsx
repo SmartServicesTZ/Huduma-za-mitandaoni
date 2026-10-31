@@ -639,7 +639,7 @@ function AgentIdPricingPanel({ services, adminId, busy, onRun }: any) {
       "Team Reader": Number(configured["Team Reader"] ?? 10),
       Supervisor: Number(configured.Supervisor ?? 10),
     });
-  }, [master?.slug, master?.updatedAt]);
+  }, [master?.slug, master?.agentTypeTokenCosts?.Freelancer, master?.agentTypeTokenCosts?.["Team Leader"], master?.agentTypeTokenCosts?.["Team Reader"], master?.agentTypeTokenCosts?.Supervisor]);
   const roles = ["Freelancer", "Team Leader", "Team Reader", "Supervisor"];
   const save = () => {
     if (!master) { toast.error("Huduma kuu ya Kitambulisho cha Wakala haijapatikana."); return; }
