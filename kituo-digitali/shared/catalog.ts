@@ -8,6 +8,7 @@ export type ServiceCatalogItem = {
   tokenCost: number;
   reward?: number;
   tokenType?: "nida" | "huduma";
+  agentTypeTokenCosts?: Record<string, number>;
   kind: ServiceKind;
   category: string;
   actionUrl?: string;
