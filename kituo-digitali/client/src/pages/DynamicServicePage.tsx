@@ -24,6 +24,7 @@ type UploadPreview = {
   mimeType: string;
   previewUrl?: string;
 };
+type DocumentViewer = { url: string; label: string };
 type ResultLike = { reference?: string; applicationId?: string };
 
 function newApplicationId() {
@@ -66,6 +67,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
   const [formError, setFormError] = useState("");
   const [successReference, setSuccessReference] = useState("");
   const [documentBusy, setDocumentBusy] = useState("");
+  const [documentViewer, setDocumentViewer] = useState<DocumentViewer | null>(null);
   const [applications, setApplications] = useState<ServiceApplication[]>([]);
   const uploadsRef = useRef(uploads);
   const draftReady = useRef(false);
@@ -250,6 +252,10 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     setDocumentBusy(`${applicationId}:${fieldName}`);
     try {
       const result = await getServiceApplicationDocument(applicationId, fieldName);
+      if (isNidaSoftCopy && fieldName === "idCardImage") {
+        setDocumentViewer({ url: result.url, label: "Soft Copy NIDA" });
+        return;
+      }
       const link = document.createElement("a");
       link.href = result.url;
       link.target = "_blank";
@@ -397,6 +403,16 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
         .dynamic-service-history-row small { display: block; margin-top: 5px; color: #637b8a; }
         .dynamic-service-document-button { margin-top: 7px; border: 1px solid #19736c; border-radius: 8px; padding: 7px 10px; background: #effaf8; color: #125c57; font: inherit; font-size: .82rem; font-weight: 800; cursor: pointer; }
         .dynamic-service-document-button:disabled { cursor: wait; opacity: .65; }
+        .dynamic-service-viewer-backdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 18px; background: rgba(7, 26, 54, .78); }
+        .dynamic-service-viewer { width: min(760px, 100%); max-height: 92vh; overflow: auto; padding: 16px; border: 1px solid #b8d5d8; border-radius: 18px; background: #f5fbfa; box-shadow: 0 24px 70px rgba(0, 0, 0, .32); }
+        .dynamic-service-viewer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+        .dynamic-service-viewer-brand { display: grid; gap: 3px; color: #125c57; }
+        .dynamic-service-viewer-brand strong { font-size: .95rem; letter-spacing: .04em; }
+        .dynamic-service-viewer-brand span { color: #637b8a; font-size: .76rem; }
+        .dynamic-service-viewer-close { border: 0; border-radius: 8px; padding: 8px 11px; background: #e5f1f0; color: #125c57; font: inherit; font-weight: 800; cursor: pointer; }
+        .dynamic-service-viewer-stage { position: relative; display: grid; place-items: center; min-height: 220px; overflow: hidden; border: 1px solid #b8d5d8; border-radius: 12px; background: #dfeeed; }
+        .dynamic-service-viewer-image { display: block; width: 100%; max-height: 68vh; object-fit: contain; }
+        .dynamic-service-viewer-watermark { position: absolute; inset: auto 10px 10px; padding: 7px 9px; border-radius: 7px; background: rgba(7, 26, 54, .72); color: #fff; font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-align: center; }
         .dynamic-service-rejection { margin-top: 8px; padding: 9px 11px; border-radius: 7px; color: #953939; background: #fff1f1; font-size: .88rem; }
         @media (max-width: 600px) { .dynamic-service-page { padding: 20px 12px 44px; } .dynamic-service-header, .dynamic-service-card { border-radius: 13px; } .dynamic-service-submit-row { display: block; } .dynamic-service-submit { width: 100%; } }
       `}</style>
@@ -450,6 +466,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
           ) : <p className="dynamic-service-empty">Fomu ya huduma hii bado haijawekewa sehemu za kujaza.</p>}
         </section>
         {firebaseUser && <section className="dynamic-service-card dynamic-service-history" aria-labelledby="dynamic-service-history-heading"><h2 className="dynamic-service-card-heading" id="dynamic-service-history-heading">Maombi yangu ya {service.name}</h2>{ownApplications.length ? ownApplications.map((application) => <article className="dynamic-service-history-row" key={application.id}><div className="dynamic-service-history-meta"><strong>Rejea: {application.applicationId}</strong><span className="dynamic-service-status">{application.status}</span></div><small>Imetumwa: {formatDate(application.submittedAt)}</small>{fields.filter((field) => (field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD") && typeof application.applicantData?.[field.fieldName] === "string").map((field) => { const busyKey = `${application.applicationId || application.id}:${field.fieldName}`; return <button key={field.fieldName} type="button" className="dynamic-service-document-button" disabled={documentBusy === busyKey} onClick={() => void openApplicationDocument(application.applicationId || application.id, field.fieldName)}>{documentBusy === busyKey ? "Inafungua…" : isNidaSoftCopy && field.fieldName === "idCardImage" ? "ONA PICHA YA NIDA" : `ONA ${field.label.toUpperCase()}`}</button>; })}<dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">{Object.entries(application.applicantData ?? {}).filter(([key,value]) => value !== undefined && value !== null && value !== "").map(([key,value]) => <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-2"><dt className="text-xs text-slate-500">{fields.find(field => field.fieldName === key)?.label ?? key}</dt><dd className="break-words text-sm font-semibold">{typeof value === "string" && (value.startsWith("serviceApplications/") || value.startsWith("serviceUploads/")) ? "Faili limeambatishwa" : String(value)}</dd></div>)}</dl>{application.status === "PENDING" && <button type="button" className="dynamic-service-upload-button mt-3" onClick={() => { setEditingApplicationId(application.applicationId || application.id); setValues({ ...(application.applicantData ?? {}) }); setUploads({}); setFormError("Unahariri ombi ambalo bado halijaanza kushughulikiwa. Badilisha taarifa kisha hifadhi."); setSuccessReference(""); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Hariri ombi</button>}{application.rejectionReason && <div className="dynamic-service-rejection"><strong>Sababu ya kukataliwa:</strong> {application.rejectionReason}</div>}</article>) : <p className="dynamic-service-empty">Bado hujatuma ombi la huduma hii.</p>}</section>}
+        {documentViewer && <div className="dynamic-service-viewer-backdrop" role="dialog" aria-modal="true" aria-label="Viewer ya Soft Copy NIDA" onClick={() => setDocumentViewer(null)}><div className="dynamic-service-viewer" onClick={(event) => event.stopPropagation()}><div className="dynamic-service-viewer-head"><div className="dynamic-service-viewer-brand"><strong>HUDUMA ZA MTANDAONI</strong><span>{documentViewer.label} · picha iliyopakiwa na mtumiaji</span></div><button type="button" className="dynamic-service-viewer-close" onClick={() => setDocumentViewer(null)}>Funga</button></div><div className="dynamic-service-viewer-stage"><img className="dynamic-service-viewer-image" src={documentViewer.url} alt="Picha halisi ya Soft Copy NIDA iliyopakiwa" /><div className="dynamic-service-viewer-watermark">NAKALA ILIYOPAKIWA · SI KITAMBULISHO KIPYA</div></div></div></div>}
       </div>
     </main>
   );
