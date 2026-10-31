@@ -234,7 +234,7 @@ export default function AdminDashboard() {
       if (announcementsRows.status === "fulfilled") setAnnouncements(announcementsRows.value);
       if (videoRows.status === "fulfilled") setTutorialVideos(videoRows.value);
       if (adRows.status === "fulfilled") setAdvertisements(adRows.value);
-      if (licenseRows.status === "fulfilled") setLicenseTemplates(licenseRows.value); else setDataError((current) => current || "Ujumbe: " + safeError(m.reason));
+      if (licenseRows.status === "fulfilled") setLicenseTemplates(licenseRows.value); else setDataError((current) => current || "Templates za leseni: " + safeError(licenseRows.reason));
       if (logs.status === "fulfilled") {
         setAudit(logs.value.rows);
         setAuditCursor(logs.value.cursor);
