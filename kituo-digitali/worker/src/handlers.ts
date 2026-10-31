@@ -516,34 +516,44 @@ export const setServiceLock = callable(async (request) => {
   const actor = await profileFor(uid, request.profile as Profile | undefined);
   requirePermission(actor, "manageServices");
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const slug = text(data.slug, 120);
-  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/.test(slug)) throw new ApiError("invalid-argument", "Kitambulisho cha huduma si sahihi.");
+  const requestedSlug = text(data.slug, 120);
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/.test(requestedSlug)) throw new ApiError("invalid-argument", "Kitambulisho cha huduma si sahihi.");
   if (typeof data.isLocked !== "boolean") throw new ApiError("invalid-argument", "Hali ya huduma si sahihi.");
+  // TIN has appeared under several legacy slugs. Keep one canonical lock
+  // record, while mirroring the state to every legacy service document.
+  const tinAliases = ["cheti-tin", "cheti-cha-tin", "cheti-tin-certificate", "cheti-cha-tin-certificate", "tin-certificate"];
+  const slug = tinAliases.includes(requestedSlug.toLowerCase()) ? "cheti-tin" : requestedSlug;
+  const aliases = slug === "cheti-tin" ? tinAliases : [slug];
   const ref = db.collection("serviceLocks").doc(slug);
   const serviceRef = db.collection("services").doc(slug);
   return db.runTransaction(async (transaction) => {
     const existing = await transaction.get(ref);
     const directService = await transaction.get(serviceRef);
-    const matchingServices = directService.exists
-      ? null
-      : await transaction.get(db.collection("services").where("slug", "==", slug).limit(5));
-    const before = existing.exists ? existing.data()?.isLocked === true : (directService.exists ? directService.data()?.isLocked === true : defaultLockedServiceSlugs.has(slug));
+    const aliasSnapshots = await Promise.all(aliases.map((alias) => transaction.get(db.collection("services").doc(alias))));
+    const matchingServices = await transaction.get(db.collection("services").where("slug", "in", aliases).limit(10));
+    const before = existing.exists
+      ? existing.data()?.isLocked === true
+      : (directService.exists ? directService.data()?.isLocked === true : aliasSnapshots.some((snapshot) => snapshot.exists && snapshot.data()?.isLocked === true) || defaultLockedServiceSlugs.has(slug));
     const after = data.isLocked as boolean;
     const now = FieldValue.serverTimestamp();
     transaction.set(ref, { slug, isLocked: after, updatedAt: now }, { merge: true });
-    // The public portal reads the services collection. Mirror the lock there
-    // so the lock button changes what users actually see, not only admin data.
-    if (directService.exists) {
-      transaction.set(serviceRef, { isLocked: after, updatedAt: now }, { merge: true });
-    } else if (matchingServices?.docs.length) {
-      matchingServices.docs.forEach((serviceDoc) => transaction.set(serviceDoc.ref, { isLocked: after, updatedAt: now }, { merge: true }));
-    } else {
-      // Create a minimal catalog record when a legacy/default service has not
-      // been seeded yet; the portal merges its known display details by slug.
-      transaction.set(serviceRef, { slug, isLocked: after, createdAt: now, updatedAt: now }, { merge: true });
-    }
+    const touched = new Set<string>();
+    if (directService.exists) { transaction.set(serviceRef, { isLocked: after, updatedAt: now }, { merge: true }); touched.add(serviceRef.path); }
+    aliasSnapshots.forEach((snapshot, index) => {
+      if (snapshot.exists && !touched.has(snapshot.ref.path)) {
+        transaction.set(snapshot.ref, { isLocked: after, updatedAt: now }, { merge: true });
+        touched.add(snapshot.ref.path);
+      }
+    });
+    matchingServices.docs.forEach((snapshot) => {
+      if (!touched.has(snapshot.ref.path)) {
+        transaction.set(snapshot.ref, { isLocked: after, updatedAt: now }, { merge: true });
+        touched.add(snapshot.ref.path);
+      }
+    });
+    if (!touched.size) transaction.set(serviceRef, { slug, isLocked: after, createdAt: now, updatedAt: now }, { merge: true });
     recordAudit(transaction, uid, String(actor.role), after ? "LOCK_SERVICE" : "UNLOCK_SERVICE", "service", slug, { isLocked: before }, { isLocked: after });
-    return { slug, isLocked: after, syncedToPublicCatalog: true };
+    return { slug, isLocked: after, syncedToPublicCatalog: true, mirroredRecords: touched.size };
   });
 });
 
