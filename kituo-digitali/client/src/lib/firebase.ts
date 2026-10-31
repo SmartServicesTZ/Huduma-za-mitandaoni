@@ -391,8 +391,8 @@ export async function claimDailyTokenBonus() {
   return (await callable({})).data;
 }
 
-export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string; tokenType?: "nida" | "huduma" }, requestId?: string) {
-  if (service.kind === "free" || service.tokenCost <= 0) return { balanceAfter: null, reference: requestId ?? `free-${Date.now()}`, duplicate: false };
+export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string; tokenType?: "nida" | "huduma"; agentType?: string }, requestId?: string) {
+  if (!service.agentType && (service.kind === "free" || service.tokenCost <= 0)) return { balanceAfter: null, reference: requestId ?? `free-${Date.now()}`, duplicate: false };
   // Read the current Admin-configured price directly from Firestore before
   // asking the Worker to debit tokens. Static page defaults can be stale after
   // an Admin changes a service price; the Worker remains the final authority.
@@ -408,8 +408,8 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
       if (!Number.isSafeInteger(configuredCost) || configuredCost < 0 || configuredCost > 100000) {
         throw new Error("Gharama ya huduma haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
       }
-      currentCost = service.slug === "yanga-africans" ? 6 : configuredCost;
-      currentIsFree = row.isFree === true || configuredCost === 0;
+      currentCost = service.agentType ? service.tokenCost : service.slug === "yanga-africans" ? 6 : configuredCost;
+      currentIsFree = !service.agentType && (row.isFree === true || configuredCost === 0);
     }
   } catch (error) {
     // Do not silently fall back to an old price when the live catalog could
@@ -418,8 +418,8 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
   }
   if (currentIsFree) return { balanceAfter: null, reference: requestId ?? `free-${Date.now()}`, duplicate: false };
   const transactionId = requestId?.trim() || crypto.randomUUID();
-  const callable = createWorkerCall<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string; tokenType: "nida" | "huduma" }, { balanceAfter: number; reference: string; duplicate: boolean }>("consumeTokens");
-  return (await callable({ serviceId: service.slug, serviceName: currentName, tokenCost: currentCost, requestId: transactionId, tokenType: service.tokenType ?? "huduma" })).data;
+  const callable = createWorkerCall<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string; tokenType: "nida" | "huduma"; agentType?: string }, { balanceAfter: number; reference: string; duplicate: boolean }>("consumeTokens");
+  return (await callable({ serviceId: service.slug, serviceName: currentName, tokenCost: currentCost, requestId: transactionId, tokenType: service.tokenType ?? "huduma", ...(service.agentType ? { agentType: service.agentType } : {}) })).data;
 }
 
 export type TokenPurchaseOrder = { id: string; orderId: string; amount: number; currency: string; tokenAmount: number; status: string; createdAt?: unknown; transid?: string };
