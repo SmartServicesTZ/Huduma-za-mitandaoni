@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, Check, Download, Edit3, ExternalLink, Eye, FileText
 import { toast } from "sonner";
 import { adminDeleteCollectionItem, adminSaveCollectionItem, getLipaApplicationDocument, markLipaApplicationViewed, replyToLipaApplication, seedServiceCatalog, setLipaApplicationStatus, updateLipaRewardTracking, type LipaApplication, type LipaNetworkConfig } from "@/lib/firebase";
 import { serviceFieldTypes, type ServiceFormField } from "../../../shared/serviceForms";
+import { preserveServerOrder } from "../../../shared/chronologicalPage";
 
 type RunAction = (action: () => Promise<unknown>, successMessage: string) => void | boolean | Promise<void | boolean>;
 type NetworkCollection = LipaNetworkConfig[] | Record<string, LipaNetworkConfig>;
@@ -311,16 +312,10 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   const visibleApplications = useMemo(() => {
     const statusFiltered = tab === "ALL" ? [...applications] : applications.filter((application) => application.status === tab);
     const filtered = statusFiltered.filter((application) => rewardFilter === "ALL" || (rewardFilter === "PENDING_CHECK" && application.qualificationStatus === "PENDING_CHECK") || (rewardFilter === "WAITING_PAYMENT" && application.qualificationStatus === "QUALIFIED" && application.rewardStatus === "UNPAID") || (rewardFilter === "PAID" && application.rewardStatus === "PAID") || (rewardFilter === "NOT_ELIGIBLE" && application.rewardStatus === "NOT_ELIGIBLE"));
+    if (sortKey === "submittedAt") return preserveServerOrder(filtered, descending);
     return filtered.sort((a, b) => {
-      const attentionRank = (item: LipaApplication) => item.status === "PENDING" ? 0 : item.status === "PROCESSING" ? 1 : item.status === "APPROVED" ? 2 : 3;
-      const rankDifference = attentionRank(a) - attentionRank(b);
-      if (rankDifference !== 0) return rankDifference;
-      if (sortKey === "submittedAt" && (a.status === "PENDING" || a.status === "PROCESSING") && (b.status === "PENDING" || b.status === "PROCESSING")) {
-        const time = (value: unknown) => { if (!value) return 0; if (typeof value === "object" && value !== null && "toDate" in value && typeof (value as {toDate?: unknown}).toDate === "function") return (value as {toDate:()=>Date}).toDate().getTime(); const n = new Date(String(value)).getTime(); return Number.isFinite(n) ? n : 0; };
-        return time(a.submittedAt) - time(b.submittedAt);
-      }
-      const left = sortKey === "network" ? (byNetwork[a.networkId]?.name ?? a.network) : sortKey === "submittedAt" ? dateText(a.submittedAt) : String((a as unknown as Record<string, unknown>)[sortKey] ?? "");
-      const right = sortKey === "network" ? (byNetwork[b.networkId]?.name ?? b.network) : sortKey === "submittedAt" ? dateText(b.submittedAt) : String((b as unknown as Record<string, unknown>)[sortKey] ?? "");
+      const left = sortKey === "network" ? (byNetwork[a.networkId]?.name ?? a.network) : String((a as unknown as Record<string, unknown>)[sortKey] ?? "");
+      const right = sortKey === "network" ? (byNetwork[b.networkId]?.name ?? b.network) : String((b as unknown as Record<string, unknown>)[sortKey] ?? "");
       const comparison = left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" });
       return descending ? -comparison : comparison;
     });
@@ -403,6 +398,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   };
 
   const changeSort = (key: SortKey) => {
+    if (key === "submittedAt") { setSortKey(key); setDescending(true); return; }
     if (key === sortKey) setDescending((value) => !value);
     else { setSortKey(key); setDescending(true); }
   };
@@ -442,7 +438,8 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
   return <section className="lipa-admin-panel" aria-labelledby="lipa-applications-heading">
     <PanelStyles />
     <div className="lipa-admin-heading"><div><h2 id="lipa-applications-heading">Maombi ya Pata Lipa Namba</h2><p>Fungua ombi, kagua huduma iliyochaguliwa, taarifa na picha za mwombaji, kisha mjibu hapa.</p></div><span className="lipa-admin-status lipa-admin-status-pending" aria-label={`${pendingCount} maombi yanasubiri`}>{pendingCount} YANASUBIRI</span></div>
-    <div className="lipa-admin-stats">{(["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-stat" key={status}><span>{status === "ALL" ? "All applications" : status}</span><strong>{counts[status]}</strong></div>)}</div>
+    <p className="lipa-admin-muted">Takwimu na vichujio hapa ni za ukurasa uliopakiwa. Tumia Previous/Next kuona kurasa nyingine.</p>
+    <div className="lipa-admin-stats">{(["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <div className="lipa-admin-stat" key={status}><span>{status === "ALL" ? "Ukurasa huu" : status}</span><strong>{counts[status]}</strong></div>)}</div>
     <div className="lipa-admin-tabs" role="tablist" aria-label="Application status filter">{(["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"] as const).map((status) => <button key={status} type="button" role="tab" aria-selected={tab === status} className={`lipa-admin-tab ${tab === status ? "lipa-admin-tab-active" : ""}`} onClick={() => setTab(status)}>{status}<span className="lipa-admin-count">{counts[status]}</span></button>)}</div>
     <div className="lipa-admin-tabs" role="tablist" aria-label="Reward tracking filter">
       {([
@@ -456,7 +453,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
         return <button key={filter} type="button" role="tab" aria-selected={rewardFilter === filter} className={`lipa-admin-tab ${rewardFilter === filter ? "lipa-admin-tab-active" : ""}`} onClick={() => setRewardFilter(filter)}>{label}<span className="lipa-admin-count">{count}</span></button>;
       })}
     </div>
-    <div className="lipa-admin-card lipa-admin-table-wrap"><table className="lipa-admin-table"><caption className="lipa-admin-muted">Maombi ya Pata Lipa Namba — kichujio: {tab}</caption><thead><tr>{columns.map(([key, label]) => <th key={key} scope="col"><button type="button" className="lipa-admin-sort" onClick={() => changeSort(key)}>{label}{sortKey === key ? (descending ? <ArrowDown size={13} aria-label="descending" /> : <ArrowUp size={13} aria-label="ascending" />) : null}</button></th>)}<th scope="col">Action</th></tr></thead><tbody>{visibleApplications.length === 0 ? <tr><td colSpan={columns.length + 1}><div className="lipa-admin-empty">Hakuna maombi kwenye kichupo hiki.</div></td></tr> : visibleApplications.map((application) => <tr key={application.id || application.applicationId}><td>{application.applicantName || application.userName || "Jina halijawekwa"}</td><td>{byNetwork[application.networkId]?.name ?? application.network ?? application.serviceId ?? "Huduma haijaainishwa"}</td><td>{application.phone || "—"}</td><td>{application.nidaNumber || "—"}</td><td>{application.tinNumber || "—"}</td><td>{application.businessName || "—"}</td><td>{dateText(application.submittedAt)}</td><td><StatusBadge status={application.status} /></td><td>{application.assignedAdmin || "—"}</td><td>{application.lipaNumber || "—"}</td><td>{application.rewardStatus === "PAID" ? "AMELIPWA" : application.rewardStatus === "NOT_ELIGIBLE" ? "HASTAHILI" : application.rewardStatus === "UNPAID" ? "BADO" : "INASUBIRI"}<small>{Number(application.reward ?? 0) > 0 ? ` · TZS ${Number(application.reward).toLocaleString()}` : ""}</small></td><td><button type="button" className="lipa-admin-row-action" onClick={() => openApplication(application)}><Eye size={15} /> Open</button></td></tr>)}</tbody></table></div>
+    <div className="lipa-admin-card lipa-admin-table-wrap"><table className="lipa-admin-table"><caption className="lipa-admin-muted">Maombi ya Pata Lipa Namba — kichujio: {tab}</caption><thead><tr>{columns.map(([key, label]) => <th key={key} scope="col"><button type="button" className="lipa-admin-sort" aria-label={key === "submittedAt" ? `${label} (mapya kwanza)` : `${label} kupanga`} onClick={() => changeSort(key)}>{label}{sortKey === key ? (descending ? <ArrowDown size={13} aria-label="descending" /> : <ArrowUp size={13} aria-label="ascending" />) : null}</button></th>)}<th scope="col">Action</th></tr></thead><tbody>{visibleApplications.length === 0 ? <tr><td colSpan={columns.length + 1}><div className="lipa-admin-empty">Hakuna maombi kwenye kichupo hiki.</div></td></tr> : visibleApplications.map((application) => <tr key={application.id || application.applicationId}><td>{application.applicantName || application.userName || "Jina halijawekwa"}</td><td>{byNetwork[application.networkId]?.name ?? application.network ?? application.serviceId ?? "Huduma haijaainishwa"}</td><td>{application.phone || "—"}</td><td>{application.nidaNumber || "—"}</td><td>{application.tinNumber || "—"}</td><td>{application.businessName || "—"}</td><td>{dateText(application.submittedAt)}</td><td><StatusBadge status={application.status} /></td><td>{application.assignedAdmin || "—"}</td><td>{application.lipaNumber || "—"}</td><td>{application.rewardStatus === "PAID" ? "AMELIPWA" : application.rewardStatus === "NOT_ELIGIBLE" ? "HASTAHILI" : application.rewardStatus === "UNPAID" ? "BADO" : "INASUBIRI"}<small>{Number(application.reward ?? 0) > 0 ? ` · TZS ${Number(application.reward).toLocaleString()}` : ""}</small></td><td><button type="button" className="lipa-admin-row-action" onClick={() => openApplication(application)}><Eye size={15} /> Open</button></td></tr>)}</tbody></table></div>
     <div className="lipa-admin-mobile-list" aria-label="Maombi ya Lipa Namba">
       {visibleApplications.length === 0 ? <div className="lipa-admin-empty">Hakuna maombi kwenye kichupo hiki.</div> : visibleApplications.map((application) => <article className="lipa-admin-mobile-card" key={application.id || application.applicationId}>
         <div className="lipa-admin-mobile-card-head"><div><h3>{application.applicantName || application.userName || "Mwombaji"}</h3><p>{byNetwork[application.networkId]?.name ?? application.network ?? "Mtandao haujaainishwa"} · {application.phone || "Simu haipo"}</p></div><StatusBadge status={application.status} /></div>
@@ -471,7 +468,7 @@ export function LipaApplicationsPanel({ applications, networks, onRun, adminId, 
         <button type="button" className="lipa-admin-mobile-open" disabled={busy} onClick={() => openApplication(application)}>Open</button>
       </article>)}
     </div>
-    {(hasPrevious || hasNext) && <nav aria-label="Pagination ya maombi ya Lipa" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:14}}><button type="button" className="lipa-admin-button lipa-admin-button-secondary" disabled={!hasPrevious} onClick={onPrevious}>← Previous</button><button type="button" className="lipa-admin-button" disabled={!hasNext} onClick={onNext}>Next →</button></nav>}
+    {(hasPrevious || hasNext) && <nav aria-label="Pagination ya maombi ya Lipa" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:14}}><button type="button" className="lipa-admin-button lipa-admin-button-secondary" disabled={!hasPrevious || busy} onClick={onPrevious}>← Previous</button><button type="button" className="lipa-admin-button" disabled={!hasNext || busy} onClick={onNext}>Next →</button></nav>}
     {selected && <div className="lipa-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><div className="lipa-admin-modal" role="dialog" aria-modal="true" aria-labelledby="lipa-application-detail-heading"><div className="lipa-admin-modal-header"><div><h3 id="lipa-application-detail-heading">{selected.applicantName || selected.userName || "Ombi la mtumiaji"}</h3><p>{byNetwork[selected.networkId]?.name ?? selected.network ?? selected.serviceId ?? "Huduma haijaainishwa"} · <StatusBadge status={selected.status} /></p></div><button type="button" className="lipa-admin-close" aria-label="Close application details" onClick={() => setSelected(null)}><X size={19} /></button></div>
       <div className="lipa-admin-detail-banner">
         <strong style={{fontSize:"1rem"}}>TAARIFA KAMILI YA OMBI</strong>

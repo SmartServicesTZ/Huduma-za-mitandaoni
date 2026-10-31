@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
-import { changeOwnPassword, claimRegistrationPhone, enforceAccountRestriction, setAccountStatus } from "../src/handlers.js";
+import { changeOwnPassword, claimRegistrationPhone, enforceAccountRestriction, listAdminUsers, listLipaApplications, listNidaRequests, listServiceApplications, setAccountStatus } from "../src/handlers.js";
 import { withWorkerEnv, type WorkerEnv } from "../src/runtime.js";
 
 const phone = "255712345678";
@@ -189,4 +189,87 @@ test("limited accounts can call only the selected action categories", async () =
     await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "submitLipaApplication")), { code: "permission-denied" });
     await assert.rejects(withWorkerEnv(env, () => enforceAccountRestriction(uid, "createTokenPurchaseOrder")), { code: "permission-denied" });
   });
+});
+
+test("Lipa, NIDA and service admin lists use bounded newest-first timestamp-plus-document-ID pages", async () => {
+  const env = environment();
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ body: Record<string, any>; collection: string }> = [];
+  const timestamp = "2026-10-28T10:00:00.123456789Z";
+  const endpoints = [
+    { name: "Lipa", handler: listLipaApplications, collection: "lipaApplications", responseKey: "applications", scope: "admin:lipaApplications", timeField: "submittedAt", filterField: "status", id: "application_z" },
+    { name: "NIDA", handler: listNidaRequests, collection: "nidaRequests", responseKey: "requests", scope: "admin:nidaRequests", timeField: "submittedAt", filterField: "status", id: "application_z" },
+    { name: "service", handler: listServiceApplications, collection: "serviceApplications", responseKey: "applications", scope: "admin:serviceApplications", timeField: "submittedAt", filterField: "status", id: "application_z" },
+    { name: "users", handler: listAdminUsers, collection: "users", responseKey: "users", scope: "admin:users", timeField: "createdAt", filterField: "accountStatus", id: "user_z" },
+  ] as const;
+
+  globalThis.fetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    const url = input instanceof URL ? input.href : typeof input === "string" ? input : input.url;
+    const method = init.method ?? "GET";
+    if (url.includes("oauth2.googleapis.com/token")) return jsonResponse({ access_token: "test-access-token", expires_in: 3600 });
+    const profileMatch = /\/documents\/users\/([^/?]+)/.exec(url);
+    if (profileMatch) return jsonResponse(firestoreDocument(`users/${profileMatch[1]}`, { role: "super_admin", phone: "255698232313" }));
+    if (url.includes(":runQuery")) {
+      const body = typeof init.body === "string" ? JSON.parse(init.body) as Record<string, any> : {};
+      const collection = String(body.structuredQuery?.from?.[0]?.collectionId ?? "");
+      calls.push({ body, collection });
+      if (body.structuredQuery?.startAt) return jsonResponse([]);
+      const root = `projects/worker-handler-test/databases/(default)/documents/${collection}`;
+      const timeField = collection === "users" ? "createdAt" : "submittedAt";
+      const filterField = collection === "users" ? "accountStatus" : "status";
+      const firstId = collection === "users" ? "user_z" : "application_z";
+      const secondId = collection === "users" ? "user_a" : "application_a";
+      return jsonResponse([
+        { document: { name: `${root}/${firstId}`, fields: { [timeField]: { timestampValue: timestamp }, [filterField]: { stringValue: "PENDING" }, password: { stringValue: "must-not-leak" } } } },
+        { document: { name: `${root}/${secondId}`, fields: { [timeField]: { timestampValue: timestamp }, [filterField]: { stringValue: "PENDING" }, password: { stringValue: "must-not-leak" } } } },
+      ]);
+    }
+    throw new Error(`Unexpected mocked request: ${method} ${url}`);
+  };
+
+  try {
+    await withWorkerEnv(env, async () => {
+      for (const endpoint of endpoints) {
+        calls.length = 0;
+        const first = await endpoint.handler.handler({ auth: { uid: "admin-pagination-test" }, data: { pageSize: 1, status: "PENDING" } } as any) as Record<string, any>;
+        const rows = first[endpoint.responseKey] as Array<Record<string, any>>;
+        assert.equal(rows.length, 1, `${endpoint.name} returns a single bounded page`);
+        assert.equal(rows[0]?.id, endpoint.id, `${endpoint.name} retains descending document-ID tie-break order`);
+        if (endpoint.collection === "users") assert.equal(rows[0]?.password, undefined, "user pagination does not expose password fields");
+        assert.equal(first.hasMore, true);
+        assert.ok(first.nextCursor);
+        const cursorData = JSON.parse(Buffer.from(first.nextCursor, "base64url").toString("utf8"));
+        const { issuedAt, ...cursorPayload } = cursorData;
+        assert.ok(Number.isSafeInteger(issuedAt) && issuedAt <= Date.now() && issuedAt > Date.now() - 1000);
+        assert.deepEqual(cursorPayload, { version: 2, scope: `${endpoint.scope}|status=PENDING`, id: endpoint.id, timestamp });
+
+        await endpoint.handler.handler({ auth: { uid: "admin-pagination-test" }, data: { pageSize: 1, status: "PENDING", cursor: first.nextCursor } } as any);
+        assert.equal(calls.length, 2);
+        for (const { body, collection } of calls) {
+          assert.equal(collection, endpoint.collection);
+          const query = body.structuredQuery;
+          assert.equal(query.limit, 2, `${endpoint.name} fetches one lookahead row, not the full collection`);
+          assert.deepEqual(query.orderBy, [
+            { field: { fieldPath: endpoint.timeField }, direction: "DESCENDING" },
+            { field: { fieldPath: "__name__" }, direction: "DESCENDING" },
+          ]);
+          assert.deepEqual(query.where?.fieldFilter, { field: { fieldPath: endpoint.filterField }, op: "EQUAL", value: { stringValue: "PENDING" } });
+        }
+        assert.deepEqual(calls[1]?.body.structuredQuery.startAt, { before: false, values: [
+          { timestampValue: timestamp },
+          { referenceValue: `projects/worker-handler-test/databases/(default)/documents/${endpoint.collection}/${endpoint.id}` },
+        ] });
+        const queryCount = calls.length;
+        const oldCursor = Buffer.from(JSON.stringify({ version: 1, scope: `${endpoint.scope}|status=PENDING`, id: endpoint.id, timestamp }), "utf8").toString("base64url");
+        await assert.rejects(
+          async () => await endpoint.handler.handler({ auth: { uid: "admin-pagination-test" }, data: { pageSize: 1, status: "PENDING", cursor: oldCursor } } as any),
+          (error: any) => error?.code === "invalid-argument",
+          `${endpoint.name} rejects old cursor format safely`,
+        );
+        assert.equal(calls.length, queryCount, `${endpoint.name} rejects old cursor before runQuery`);
+      }
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

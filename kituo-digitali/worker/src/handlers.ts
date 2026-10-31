@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot, type Query, type Transaction } from "./firestore-rest.js";
+import { encodePageCursor, parsePageInput } from "./pagination.js";
 import { getStorage } from "./storage-rest.js";
 import { ApiError, defineWorkerSecret, callable, httpEndpoint, type ApiRequest } from "./api-adapter.js";
 import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
@@ -84,47 +85,19 @@ function text(value: unknown, max: number) {
   return value.trim();
 }
 
-const DEFAULT_PAGE_SIZE = 25;
-const MAX_PAGE_SIZE = 50;
-
-function pageInput(value: unknown) {
-  const data = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-  const rawSize = Number(data.pageSize ?? DEFAULT_PAGE_SIZE);
-  const pageSize = Number.isInteger(rawSize) ? Math.min(MAX_PAGE_SIZE, Math.max(1, rawSize)) : DEFAULT_PAGE_SIZE;
-  const cursor = data.cursor === undefined || data.cursor === null || data.cursor === "" ? undefined : text(data.cursor, 240);
-  let startAfter: string | undefined;
-  let startAfterTimestamp: Date | undefined;
-  if (cursor) {
-    try {
-      const decoded = Buffer.from(cursor, "base64url").toString("utf8");
-      const parsed = JSON.parse(decoded) as { id?: unknown; timestamp?: unknown };
-      if (typeof parsed.id !== "string" || !/^[A-Za-z0-9_-]{1,160}$/.test(parsed.id)) throw new Error("invalid");
-      startAfter = parsed.id;
-      if (parsed.timestamp !== undefined) {
-        if (typeof parsed.timestamp !== "string") throw new Error("invalid");
-        const timestamp = new Date(parsed.timestamp);
-        if (Number.isNaN(timestamp.getTime())) throw new Error("invalid");
-        startAfterTimestamp = timestamp;
-      }
-    } catch {
-      throw new ApiError("invalid-argument", "Cursor ya ukurasa si sahihi.");
-    }
+function pageInput(value: unknown, scope: string) {
+  try {
+    return parsePageInput(value, scope);
+  } catch {
+    throw new ApiError("invalid-argument", "Cursor ya ukurasa si sahihi au imepitwa na wakati. Fungua ukurasa tena.");
   }
-  const status = typeof data.status === "string" && data.status.trim() ? data.status.trim().slice(0, 80) : undefined;
-  return { pageSize, startAfter, startAfterTimestamp, status };
 }
 
-function nextPageCursor(id: string, timestamp?: unknown) {
-  const value = timestamp instanceof Date ? timestamp : new Date(String(timestamp ?? ""));
-  const payload = Number.isNaN(value.getTime()) ? { id } : { id, timestamp: value.toISOString() };
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-}
-
-function pageResult<T extends Record<string, unknown> & { id: string }>(rows: T[], pageSize: number, timestampField?: keyof T) {
+function pageResult<T extends Record<string, unknown> & { id: string }>(rows: T[], pageSize: number, timestampField: keyof T, cursorScope: string) {
   const hasMore = rows.length > pageSize;
   const items = hasMore ? rows.slice(0, pageSize) : rows;
   const last = items.at(-1);
-  return { items, nextCursor: hasMore && last ? nextPageCursor(last.id, timestampField ? last[timestampField] : undefined) : null, hasMore };
+  return { items, nextCursor: hasMore && last ? encodePageCursor(last.id, last[timestampField], cursorScope) : null, hasMore };
 }
 
 function recordAudit(transaction: Transaction, actorId: string, actorRole: string, action: string, targetType: string, targetId: string, before: unknown, after: unknown, details: Record<string, unknown> = {}) {
@@ -782,7 +755,7 @@ export const listLipaApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageLipaApplications");
-  const paging = pageInput(request.data);
+  const paging = pageInput(request.data, "admin:lipaApplications");
   let query: Query = db.collection("lipaApplications");
   if (paging.status) query = query.where("status", "==", paging.status);
   query = query.orderBy("submittedAt", "desc");
@@ -792,7 +765,7 @@ export const listLipaApplications = callable(async (request) => {
   }
   const snapshot = await query.limit(paging.pageSize + 1).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(rows, paging.pageSize, "submittedAt");
+  const page = pageResult(rows, paging.pageSize, "submittedAt", paging.cursorScope);
   return { applications: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -934,7 +907,7 @@ export const updateNidaRequestPhone = callable(async (request) => {
 
 export const listMyNidaRequests = callable(async (request) => {
   const uid = authUid(request);
-  const paging = pageInput(request.data);
+  const paging = pageInput(request.data, `user:nidaRequests:${uid}`);
   let query: Query = db.collection("nidaRequests").where("userId", "==", uid);
   if (paging.status) query = query.where("status", "==", paging.status);
   query = query.orderBy("submittedAt", "desc");
@@ -944,7 +917,7 @@ export const listMyNidaRequests = callable(async (request) => {
   }
   const snapshot = await query.limit(paging.pageSize + 1).get();
   const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(requests, paging.pageSize, "submittedAt");
+  const page = pageResult(requests, paging.pageSize, "submittedAt", paging.cursorScope);
   return { requests: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -952,7 +925,7 @@ export const listNidaRequests = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  const paging = pageInput(request.data);
+  const paging = pageInput(request.data, "admin:nidaRequests");
   let query: Query = db.collection("nidaRequests");
   if (paging.status) query = query.where("status", "==", paging.status);
   query = query.orderBy("submittedAt", "desc");
@@ -962,7 +935,7 @@ export const listNidaRequests = callable(async (request) => {
   }
   const snapshot = await query.limit(paging.pageSize + 1).get();
   const requests: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(requests, paging.pageSize, "submittedAt");
+  const page = pageResult(requests, paging.pageSize, "submittedAt", paging.cursorScope);
   return { requests: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -1236,7 +1209,7 @@ export const listServiceApplications = callable(async (request) => {
   const uid = authUid(request);
   const actor = await profileFor(uid);
   requirePermission(actor, "manageServices");
-  const paging = pageInput(request.data);
+  const paging = pageInput(request.data, "admin:serviceApplications");
   let query: Query = db.collection("serviceApplications");
   if (paging.status) query = query.where("status", "==", paging.status);
   query = query.orderBy("submittedAt", "desc");
@@ -1246,7 +1219,7 @@ export const listServiceApplications = callable(async (request) => {
   }
   const snapshot = await query.limit(paging.pageSize + 1).get();
   const rows: Array<Record<string, unknown> & { id: string }> = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-  const page = pageResult(rows, paging.pageSize, "submittedAt");
+  const page = pageResult(rows, paging.pageSize, "submittedAt", paging.cursorScope);
   return { applications: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 
@@ -1322,7 +1295,7 @@ export const listAdminUsers = callable(async (request) => {
   const actor = await profileFor(uid);
   requirePermission(actor, "viewUsers");
 
-  const paging = pageInput(request.data);
+  const paging = pageInput(request.data, "admin:users");
   let query: Query = db.collection("users");
   if (paging.status) query = query.where("accountStatus", "==", paging.status);
   query = query.orderBy("createdAt", "desc");
@@ -1343,7 +1316,7 @@ export const listAdminUsers = callable(async (request) => {
     } = data;
     return { id: document.id, ...safeData };
   });
-  const page = pageResult(rows, paging.pageSize, "createdAt");
+  const page = pageResult(rows, paging.pageSize, "createdAt", paging.cursorScope);
   return { users: page.items, nextCursor: page.nextCursor, hasMore: page.hasMore };
 });
 

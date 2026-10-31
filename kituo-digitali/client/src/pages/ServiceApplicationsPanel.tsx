@@ -308,12 +308,12 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
         <div>
           <h2 id="service-app-admin-title">Maombi ya huduma</h2>
         </div>
-        <span className="service-app-admin-pending" aria-label={`${counts.PENDING} pending applications`}>
+        <span className="service-app-admin-pending" aria-label={`${counts.PENDING} pending applications on this page`}>
           Pending <strong>{counts.PENDING}</strong>
         </span>
       </div>
 
-      <div className="service-app-admin-stats" aria-label="Application totals">
+      <div className="service-app-admin-stats" aria-label="Applications on this page">
         {["ALL", "PENDING", "PROCESSING", "APPROVED", "REJECTED"].map((status) => <div className="service-app-admin-stat" key={status}><span>{status === "ALL" ? "JUMLA" : statusLabel(status)}</span><strong>{counts[status] ?? 0}</strong></div>)}
       </div>
 
@@ -389,7 +389,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
           </>
         )}
       </div>
-      {(hasPrevious || hasNext) && <nav aria-label="Pagination ya maombi ya huduma" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:14}}><button type="button" className="service-app-admin-button service-app-admin-button-secondary" disabled={!hasPrevious} onClick={onPrevious}>← Previous</button><button type="button" className="service-app-admin-button" disabled={!hasNext} onClick={onNext}>Next →</button></nav>}
+      {(hasPrevious || hasNext) && <nav aria-label="Pagination ya maombi ya huduma" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:14}}><button type="button" className="service-app-admin-button service-app-admin-button-secondary" disabled={!hasPrevious || busy} onClick={onPrevious}>← Previous</button><button type="button" className="service-app-admin-button" disabled={!hasNext || busy} onClick={onNext}>Next →</button></nav>}
 
       {selected && !documentPreview && !rejecting && (
         <div className="service-app-admin-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeApplication(); }}>

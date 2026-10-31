@@ -6,6 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { adminAdjustTokens, adminSendPushNotification, adminDeleteCollectionItem, adminGetSiteSettings, adminListCollection, adminListServices, adminListTransactions, adminListUsers, adminListAgentRecords, adminListLipaApplications, adminListServiceApplications, adminSaveCollectionItem, adminSaveService, adminSetServiceLock, adminSaveSiteSettings, adminUpdateUser, adminResetUserPassword, seedServiceCatalog, setHomepageServiceOrder, subscribeToAdminLipaApplications, subscribeToAdminServiceApplications, subscribeAdminWebsiteHealthReports, resolveWebsiteHealthReport, type AdminUserRecord, type LipaApplication, type ServiceApplication, type WebsiteHealthReport } from "@/lib/firebase";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, moveId } from "../../../shared/serviceOrdering";
 import { mergeServiceCatalogDefaults } from "../../../shared/catalog";
+import { popCursor, previousCursor, pushCurrentCursor } from "../../../shared/cursorPageHistory";
 import { accountRestrictionActionLabels, accountRestrictionActions, resolveAccountAccessMode, type AccountAccessMode, type AccountRestrictionAction } from "../../../shared/accountAccess";
 import { serviceFieldTypes, type ServiceFormField } from "../../../shared/serviceForms";
 import { AIRTEL_SME_LAYOUT_DEFAULTS, normalizeAirtelSmeLayout } from "../../../shared/airtelSmeLayout";
@@ -35,7 +36,7 @@ function Field({ label, value, onChange, type = "text", placeholder = "" }: { la
 function Empty({ text = "Hakuna data bado" }: { text?: string }) { return <div className="admin-empty">{text}</div>; }
 
 
-function LipaGlobalReport({ applications }: { applications: LipaApplication[] }) {
+function LipaGlobalReport({ applications, busy, hasPrevious, hasNext, onPrevious, onNext }: { applications: LipaApplication[]; busy: boolean; hasPrevious: boolean; hasNext: boolean; onPrevious: () => void; onNext: () => void }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const dateOf = (value: any): Date | null => {
@@ -79,7 +80,7 @@ function LipaGlobalReport({ applications }: { applications: LipaApplication[] })
     return days ? days + " siku, " + hours + " saa" : hours + " saa";
   };
   const cards = [
-    ["Lipa zilizotengenezwa", rows.length],
+    ["Lipa zilizopakiwa", rows.length],
     ["Zilizoidhinishwa", count((a: any) => a.status === "APPROVED")],
     ["Zilizokataliwa", rejected.length],
     ["Zilizokidhi vigezo", count((a: any) => a.qualificationStatus === "QUALIFIED")],
@@ -92,22 +93,23 @@ function LipaGlobalReport({ applications }: { applications: LipaApplication[] })
     const data = rows.map((a: any) => [a.id, stamp(a.submittedAt ?? a.createdAt), a.networkName ?? a.networkId ?? "", a.status ?? "", a.rejectionReason ?? "", a.qualificationStatus ?? "", Number(a.verifiedTransactions ?? 0), Number(a.reward ?? 0), a.rewardStatus ?? "", stamp(a.rewardPaidAt), a.rewardPaymentReference ?? "", a.qualificationStatus === "PENDING_CHECK" ? remaining(a) : ""]);
     const csv = [header, ...data].map(row => row.map(v => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8;" }));
-    const link = document.createElement("a"); link.href = url; link.download = "ripoti-za-lipa.csv"; link.click(); URL.revokeObjectURL(url);
+    const link = document.createElement("a"); link.href = url; link.download = "ripoti-za-lipa-ukurasa.csv"; link.click(); URL.revokeObjectURL(url);
   };
   return <section className="admin-card" style={{display:"grid",gap:18}}>
-    <div className="admin-card-heading"><div><span className="admin-kicker">LIPA · RIPOTI YA JUMLA</span><h2>Ripoti za Lipa zote</h2><p>Hesabu zinatokana na maombi ya Lipa yaliyopo kwenye mfumo na kichujio cha tarehe.</p></div><BarChart3 size={22}/></div>
+    <div className="admin-card-heading"><div><span className="admin-kicker">LIPA · RIPOTI YA UKURASA</span><h2>Ripoti za Lipa — ukurasa uliopakiwa</h2><p>Takwimu, kichujio cha tarehe na CSV vinahusu ukurasa huu pekee; tumia Previous/Next kupitia maombi yote bila kupakia mkusanyiko mzima.</p></div><BarChart3 size={22}/></div>
     <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"end"}}>
       <label className="control-field"><span>Tarehe kuanzia</span><input type="date" value={from} onChange={e=>setFrom(e.target.value)} /></label>
       <label className="control-field"><span>Tarehe hadi</span><input type="date" value={to} min={from || undefined} onChange={e=>setTo(e.target.value)} /></label>
       <button type="button" className="admin-secondary" onClick={()=>{setFrom("");setTo("");}}>Ondoa kichujio</button>
       <button type="button" className="admin-primary" onClick={download}><Download size={16} style={{verticalAlign:"middle"}}/> Pakua CSV</button>
     </div>
+    {(hasPrevious || hasNext) && <nav aria-label="Pagination ya ripoti za Lipa" style={{display:"flex",justifyContent:"space-between",gap:10}}><button type="button" className="admin-secondary" disabled={!hasPrevious || busy} onClick={onPrevious}>← Previous</button><button type="button" className="admin-primary" disabled={!hasNext || busy} onClick={onNext}>Next →</button></nav>}
     <div className="admin-stat-grid">{cards.map(([label,value])=><div className="admin-stat-card" key={label}><div className="admin-stat-icon"><BarChart3 size={18}/></div><span>{label}</span><strong>{Number(value).toLocaleString()}</strong><small>Data halisi · {from || "mwanzo"} — {to || "leo"}</small></div>)}</div>
     <div className="admin-two-col">
       <section className="admin-card"><h3>Zawadi na malipo</h3><p>Jumla ya zawadi zilizolipwa: <strong>{money(paid.reduce((sum:number,a:any)=>sum+Number(a.reward??0),0))}</strong></p><p>Jumla ya zawadi zinazodaiwa kwa waliofuzu: <strong>{money(unpaid.reduce((sum:number,a:any)=>sum+Number(a.reward??0),0))}</strong></p><p>Tarehe ya malipo inaonekana kwa rekodi zilizohifadhiwa baada ya malipo.</p></section>
       <section className="admin-card"><h3>Sababu za kukataliwa</h3>{rejected.length ? Object.entries(rejected.reduce((acc:Record<string,number>,a:any)=>{const reason=String(a.rejectionReason||"Sababu haijawekwa");acc[reason]=(acc[reason]||0)+1;return acc;},{})).map(([reason,n])=><p key={reason} style={{display:"flex",justifyContent:"space-between",gap:12}}><span>{reason}</span><strong>{n}</strong></p>) : <p>Hakuna Lipa zilizokataliwa kwenye kipindi hiki.</p>}</section>
     </div>
-    <section><h3>Maelezo ya kila Lipa ({rows.length})</h3><div style={{overflowX:"auto"}}><table className="admin-table" style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>{["Tarehe","Mtandao","Hali","Sababu ya kukataliwa","Vigezo","Miamala","Zawadi","Malipo","Tarehe ya malipo / muda"].map(x=><th key={x} style={{textAlign:"left",padding:10}}>{x}</th>)}</tr></thead><tbody>{rows.slice().sort((a:any,b:any)=>(createdAt(b)?.getTime()??0)-(createdAt(a)?.getTime()??0)).map((a:any)=><tr key={a.id} style={{borderTop:"1px solid var(--border,#e2e8f0)"}}><td style={{padding:10}}>{stamp(a.submittedAt??a.createdAt)}</td><td style={{padding:10}}>{a.networkName??a.networkId??"—"}</td><td style={{padding:10}}>{a.status??"—"}</td><td style={{padding:10}}>{a.rejectionReason||"—"}</td><td style={{padding:10}}>{a.qualificationStatus??"—"}</td><td style={{padding:10}}>{Number(a.verifiedTransactions??0).toLocaleString()}</td><td style={{padding:10}}>{money(Number(a.reward??0))}</td><td style={{padding:10}}>{a.rewardStatus??"—"}</td><td style={{padding:10}}>{a.rewardStatus==="PAID"?stamp(a.rewardPaidAt):a.qualificationStatus==="PENDING_CHECK"?remaining(a):"—"}</td></tr>)}</tbody></table></div>{rows.length===0&&<Empty text="Hakuna maombi ya Lipa katika kipindi hiki."/>}</section>
+    <section><h3>Maelezo ya kila Lipa ({rows.length})</h3><div style={{overflowX:"auto"}}><table className="admin-table" style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>{["Tarehe","Mtandao","Hali","Sababu ya kukataliwa","Vigezo","Miamala","Zawadi","Malipo","Tarehe ya malipo / muda"].map(x=><th key={x} style={{textAlign:"left",padding:10}}>{x}</th>)}</tr></thead><tbody>{rows.map((a:any)=><tr key={a.id} style={{borderTop:"1px solid var(--border,#e2e8f0)"}}><td style={{padding:10}}>{stamp(a.submittedAt??a.createdAt)}</td><td style={{padding:10}}>{a.networkName??a.networkId??"—"}</td><td style={{padding:10}}>{a.status??"—"}</td><td style={{padding:10}}>{a.rejectionReason||"—"}</td><td style={{padding:10}}>{a.qualificationStatus??"—"}</td><td style={{padding:10}}>{Number(a.verifiedTransactions??0).toLocaleString()}</td><td style={{padding:10}}>{money(Number(a.reward??0))}</td><td style={{padding:10}}>{a.rewardStatus??"—"}</td><td style={{padding:10}}>{a.rewardStatus==="PAID"?stamp(a.rewardPaidAt):a.qualificationStatus==="PENDING_CHECK"?remaining(a):"—"}</td></tr>)}</tbody></table></div>{rows.length===0&&<Empty text="Hakuna maombi ya Lipa katika kipindi hiki."/>}</section>
     <p style={{fontSize:12,color:"var(--muted,#64748b)"}}>Kumbuka: muda uliobaki unakokotolewa kwa wiki ya Ijumaa–Alhamisi na siku za nyongeza Ijumaa–Jumapili. Rekodi zisizo na tarehe zinaonyeshwa kama tarehe haipo. Ripoti haisababishi malipo ya moja kwa moja.</p>
   </section>;
 }
@@ -133,10 +135,18 @@ export default function AdminDashboard() {
   const [lipaNextCursor, setLipaNextCursor] = useState<string | null>(null);
   const [lipaPreviousCursors, setLipaPreviousCursors] = useState<Array<string | undefined>>([]);
   const [lipaCurrentCursor, setLipaCurrentCursor] = useState<string | undefined>(undefined);
+  const [loadingLipaPage, setLoadingLipaPage] = useState(false);
+  const [lipaReportApplications, setLipaReportApplications] = useState<LipaApplication[]>([]);
+  const [lipaReportNextCursor, setLipaReportNextCursor] = useState<string | null>(null);
+  const [lipaReportPreviousCursors, setLipaReportPreviousCursors] = useState<Array<string | undefined>>([]);
+  const [lipaReportCurrentCursor, setLipaReportCurrentCursor] = useState<string | undefined>(undefined);
+  const [loadingLipaReportPage, setLoadingLipaReportPage] = useState(false);
+  const lipaReportRequestId = useRef(0);
   const [serviceApplications, setServiceApplications] = useState<ServiceApplication[]>([]);
   const [serviceNextCursor, setServiceNextCursor] = useState<string | null>(null);
   const [servicePreviousCursors, setServicePreviousCursors] = useState<Array<string | undefined>>([]);
   const [serviceCurrentCursor, setServiceCurrentCursor] = useState<string | undefined>(undefined);
+  const [loadingServicePage, setLoadingServicePage] = useState(false);
   const [applicationInboxTab, setApplicationInboxTab] = useState<"ALL" | "SERVICES" | "LIPA">("ALL");
   const [lipaServices, setLipaServices] = useState<any[]>([]);
   const [audit, setAudit] = useState<any[]>([]);
@@ -154,12 +164,14 @@ export default function AdminDashboard() {
   const permissions = user?.permissions ?? {};
   const isSuper = user?.role === "super_admin";
   const isAdmin = user?.role === "admin";
+  const permissionKey = Object.keys(permissions).filter((key) => permissions[key as keyof typeof permissions] === true).sort().join("|");
   const hasPermission = (permission: string) => isSuper || isAdmin || permissions[permission as keyof typeof permissions] === true;
+  const canManageServices = hasPermission("manageServices");
   const canManageLipaApplications = hasPermission("manageLipaApplications");
   const canManage = isAuthenticated && (isSuper || isAdmin || Object.values(permissions).some(Boolean));
   const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
   const panel = (nav.some(([key]) => key === rawPanel) ? rawPanel : "overview") as Panel;
-  const visibleNav = nav.filter(([key]) => key === "overview" || (key === "health" ? (isSuper || isAdmin) : (key === "ordering" ? isSuper : !panelPermission[key] || hasPermission(panelPermission[key]!))));
+  const visibleNav = nav.filter(([key]) => key === "overview" || (key === "health" ? (isSuper || isAdmin) : (key === "ordering" ? isSuper : key === "applications" ? (canManageServices || canManageLipaApplications) : !panelPermission[key] || hasPermission(panelPermission[key]!))));
 
   // Keep the admin drawer transient on mobile and never let its open state
   // survive navigation, Escape, or switching to the desktop layout.
@@ -228,38 +240,88 @@ export default function AdminDashboard() {
       }
     } finally { setLoadingData(false); }
   };
-  useEffect(() => { void refresh(); }, [canManage, panel]);
+  useEffect(() => { void refresh(); }, [canManage, panel, permissionKey, user?.role, firebaseUser?.uid]);
   useEffect(() => {
     // Usipoll makusanyo ya maombi wakati admin yuko kwenye paneli nyingine.
     // Paneli ya Lipa ndiyo pekee inayohitaji inbox ya Lipa iwe hai.
     if (!canManageLipaApplications) { setLipaApplications([]); return; }
-    if (panel !== "lipa") return;
+    if (panel !== "lipa" && panel !== "applications") return;
+    // The list endpoint polls its first page; suspend that poll while browsing a later page.
+    if (loadingLipaPage || lipaCurrentCursor !== undefined) return;
     return subscribeToAdminLipaApplications((page) => { setLipaApplications(page.rows); setLipaNextCursor(page.nextCursor); setLipaPreviousCursors([]); setLipaCurrentCursor(undefined); }, () => setDataError("Imeshindikana kusasisha inbox ya Lipa Namba."));
-  }, [canManageLipaApplications, panel, firebaseUser?.uid]);
+  }, [canManageLipaApplications, panel, firebaseUser?.uid, lipaCurrentCursor, loadingLipaPage]);
   useEffect(() => {
     // Maombi ya huduma hupakiwa tu admin anapofungua paneli ya Applications.
-    if (!hasPermission("manageServices")) { setServiceApplications([]); return; }
+    if (!canManageServices) { setServiceApplications([]); return; }
     if (panel !== "applications") return;
+    if (loadingServicePage || serviceCurrentCursor !== undefined) return;
     return subscribeToAdminServiceApplications((page) => { setServiceApplications(page.rows); setServiceNextCursor(page.nextCursor); setServicePreviousCursors([]); setServiceCurrentCursor(undefined); }, () => setDataError("Imeshindikana kusasisha inbox ya maombi ya huduma."));
-  }, [canManage, isAdmin, isSuper, panel, firebaseUser?.uid]);
+  }, [canManageServices, panel, firebaseUser?.uid, serviceCurrentCursor, loadingServicePage]);
   const loadLipaPage = async (cursor: string | undefined, previous: boolean) => {
-    const page = await adminListLipaApplications(cursor);
-    setLipaApplications(page.rows);
-    setLipaNextCursor(page.nextCursor);
-    setLipaPreviousCursors((current) => previous ? current.slice(0, -1) : [...current, lipaCurrentCursor]);
-    setLipaCurrentCursor(cursor);
+    setLoadingLipaPage(true);
+    try {
+      const page = await adminListLipaApplications(cursor);
+      setLipaApplications(page.rows);
+      setLipaNextCursor(page.nextCursor);
+      setLipaPreviousCursors((current) => previous ? popCursor(current) : pushCurrentCursor(current, lipaCurrentCursor));
+      setLipaCurrentCursor(cursor);
+      setDataError("");
+    } catch (error) { setDataError("Maombi ya Lipa: " + safeError(error)); }
+    finally { setLoadingLipaPage(false); }
   };
   const loadServicePage = async (cursor: string | undefined, previous: boolean) => {
-    const page = await adminListServiceApplications(cursor);
-    setServiceApplications(page.rows);
-    setServiceNextCursor(page.nextCursor);
-    setServicePreviousCursors((current) => previous ? current.slice(0, -1) : [...current, serviceCurrentCursor]);
-    setServiceCurrentCursor(cursor);
+    setLoadingServicePage(true);
+    try {
+      const page = await adminListServiceApplications(cursor);
+      setServiceApplications(page.rows);
+      setServiceNextCursor(page.nextCursor);
+      setServicePreviousCursors((current) => previous ? popCursor(current) : pushCurrentCursor(current, serviceCurrentCursor));
+      setServiceCurrentCursor(cursor);
+      setDataError("");
+    } catch (error) { setDataError("Maombi ya huduma: " + safeError(error)); }
+    finally { setLoadingServicePage(false); }
   };
+  const loadLipaReportPage = async (cursor: string | undefined, previous: boolean, reset = false) => {
+    const requestId = ++lipaReportRequestId.current;
+    setLoadingLipaReportPage(true);
+    try {
+      const page = await adminListLipaApplications(cursor);
+      if (requestId !== lipaReportRequestId.current) return;
+      setLipaReportApplications(page.rows);
+      setLipaReportNextCursor(page.nextCursor);
+      setLipaReportPreviousCursors((current) => reset ? [] : previous ? popCursor(current) : pushCurrentCursor(current, lipaReportCurrentCursor));
+      setLipaReportCurrentCursor(cursor);
+      setDataError("");
+    } catch (error) {
+      if (requestId === lipaReportRequestId.current) setDataError("Ripoti ya Lipa: " + safeError(error));
+    } finally {
+      if (requestId === lipaReportRequestId.current) setLoadingLipaReportPage(false);
+    }
+  };
+  useEffect(() => {
+    if (!canManageLipaApplications) {
+      lipaReportRequestId.current += 1;
+      setLipaReportApplications([]);
+      setLipaReportNextCursor(null);
+      setLipaReportPreviousCursors([]);
+      setLipaReportCurrentCursor(undefined);
+      setLoadingLipaReportPage(false);
+      return;
+    }
+    if (panel !== "lipaReport") return;
+    setLipaReportApplications([]);
+    setLipaReportNextCursor(null);
+    setLipaReportPreviousCursors([]);
+    setLipaReportCurrentCursor(undefined);
+    void loadLipaReportPage(undefined, false, true);
+    return () => { lipaReportRequestId.current += 1; };
+  }, [canManageLipaApplications, panel, firebaseUser?.uid]);
   const goLipaNext = () => lipaNextCursor ? void loadLipaPage(lipaNextCursor, false) : undefined;
-  const goLipaPrevious = () => { const cursor = lipaPreviousCursors.at(-1); return cursor !== undefined || lipaPreviousCursors.length ? void loadLipaPage(cursor, true) : undefined; };
+  const goLipaPrevious = () => { const previous = previousCursor(lipaPreviousCursors); return previous.available ? void loadLipaPage(previous.cursor, true) : undefined; };
   const goServiceNext = () => serviceNextCursor ? void loadServicePage(serviceNextCursor, false) : undefined;
-  const goServicePrevious = () => { const cursor = servicePreviousCursors.at(-1); return cursor !== undefined || servicePreviousCursors.length ? void loadServicePage(cursor, true) : undefined; };
+  const goServicePrevious = () => { const previous = previousCursor(servicePreviousCursors); return previous.available ? void loadServicePage(previous.cursor, true) : undefined; };
+  const goLipaReportNext = () => lipaReportNextCursor ? void loadLipaReportPage(lipaReportNextCursor, false) : undefined;
+  const goLipaReportPrevious = () => { const previous = previousCursor(lipaReportPreviousCursors); return previous.available ? void loadLipaReportPage(previous.cursor, true) : undefined; };
   const run = async (action: () => Promise<unknown>, success: string) => { setBusy(true); try { await action(); await refresh(); toast.success(success); return true; } catch (error) { toast.error(safeError(error)); return false; } finally { setBusy(false); } };
   const visibleUsers = useMemo(() => users.filter((item) => `${item.name} ${item.phone} ${item.username}`.toLowerCase().includes(search.toLowerCase())), [users, search]);
   const totalIssued = transactions.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);
@@ -272,7 +334,8 @@ export default function AdminDashboard() {
   if (!canManage) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Ukurasa huu ni wa admin pekee</h2><p>Ingia kwa akaunti yenye role ya admin au super_admin.</p><Link className="admin-primary" href="/">Rudi portal</Link></main>;
   const title = nav.find(([key]) => key === panel)?.[1] ?? "Muhtasari";
   if (panel === "ordering" && !isSuper) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Sehemu hii ni ya Super Admin pekee</h2><p>Mpangilio wa umma unaweza kubadilishwa na akaunti ya Super Admin tu.</p><Link className="admin-primary" href="/admin">Rudi dashboard</Link></main>;
-  if (panelPermission[panel] && !hasPermission(panelPermission[panel]!)) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Huna ruhusa ya sehemu hii</h2><p>Wasiliana na Super Admin ili upewe permission husika.</p><Link className="admin-primary" href="/admin">Rudi dashboard</Link></main>;
+  if (panel === "applications" && !canManageServices && !canManageLipaApplications) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Huna ruhusa ya sehemu hii</h2><p>Wasiliana na Super Admin ili upewe permission ya maombi ya huduma au Lipa Namba.</p><Link className="admin-primary" href="/admin">Rudi dashboard</Link></main>;
+  if (panel !== "applications" && panelPermission[panel] && !hasPermission(panelPermission[panel]!)) return <main className="admin-guard"><ShieldCheck size={38} /><h2>Huna ruhusa ya sehemu hii</h2><p>Wasiliana na Super Admin ili upewe permission husika.</p><Link className="admin-primary" href="/admin">Rudi dashboard</Link></main>;
   return <div className="admin-app">
     <aside className={`admin-sidebar ${drawer ? "open" : ""}`}><div className="admin-brand"><div className="admin-brand-mark">$</div><div><strong>$TEWARD TZ</strong><small>HUDUMA ZA MTANDAONI • CONTROL</small></div><button className="admin-close" onClick={() => setDrawer(false)}><X size={18} /></button></div><div className="admin-profile"><div className="admin-avatar">{String(user?.name ?? "AD").slice(0, 2).toUpperCase()}</div><div><strong>{user?.name ?? "Admin"}</strong><small>{String(user?.role ?? "admin").replace("_", " ").toUpperCase()}</small></div></div><nav className="admin-nav">{visibleNav.map(([key, label, Icon]) => <Link key={key} href={key === "overview" ? "/admin" : `/admin/${key}`} className={panel === key ? "active" : ""} onClick={() => setDrawer(false)}><Icon size={17} /><span>{label}</span>{key === "applications" && serviceApplications.filter((app) => app.status === "PENDING").length > 0 && <b className="lipa-admin-nav-badge">{serviceApplications.filter((app) => app.status === "PENDING").length}</b>}{key === "lipa" && lipaApplications.filter((app) => app.status === "PENDING").length > 0 && <b className="lipa-admin-nav-badge">{lipaApplications.filter((app) => app.status === "PENDING").length}</b>}<ChevronRight size={14} /></Link>)}</nav><div className="admin-sidebar-bottom"><Link href="/"><ChevronRight size={15} /> Portal</Link><button onClick={() => void logout()}><LogOut size={15} /> Logout</button></div></aside>
     {drawer && <div className="admin-drawer-backdrop" onClick={() => setDrawer(false)} />}
@@ -288,19 +351,19 @@ export default function AdminDashboard() {
       {panel === "applications" && <section className="admin-card admin-unified-applications">
         <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU</span><h2>MAOMBI YA HUDUMA</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi yote yanaonekana hapa kwa mwonekano mmoja. Aina ya kila ombi inaonyeshwa kwenye taarifa zake.</p></div><ClipboardList size={22}/></div>
         <div style={{display:"grid",gap:18}}>
-          <section aria-label="Maombi ya huduma na SME">
+          {canManageServices && <section aria-label="Maombi ya huduma na SME">
             <div className="admin-kicker" style={{marginBottom:8}}>AINA: HUDUMA ZA MFUMO NA SME</div>
-            <ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy} hasPrevious={servicePreviousCursors.length > 0} hasNext={Boolean(serviceNextCursor)} onPrevious={goServicePrevious} onNext={goServiceNext} />
-          </section>
-          <section aria-label="Maombi ya Pata Lipa namba na Access Lipa">
+            <ServiceApplicationsPanel applications={serviceApplications} services={services} onRun={run} adminId={firebaseUser!.uid} busy={busy || loadingServicePage} hasPrevious={servicePreviousCursors.length > 0} hasNext={Boolean(serviceNextCursor)} onPrevious={goServicePrevious} onNext={goServiceNext} />
+          </section>}
+          {canManageLipaApplications && <section aria-label="Maombi ya Pata Lipa namba na Access Lipa">
             <div className="admin-kicker" style={{marginBottom:8}}>AINA: PATA LIPA NAMBA / ACCESS LIPA</div>
-            <LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} hasPrevious={lipaPreviousCursors.length > 0} hasNext={Boolean(lipaNextCursor)} onPrevious={goLipaPrevious} onNext={goLipaNext} />
-          </section>
+            <LipaApplicationsPanel applications={lipaApplications} networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy || loadingLipaPage} hasPrevious={lipaPreviousCursors.length > 0} hasNext={Boolean(lipaNextCursor)} onPrevious={goLipaPrevious} onNext={goLipaNext} />
+          </section>}
           {hasPermission("manageServices") && <section style={{borderTop:"1px solid #e2e8f0",paddingTop:16}}><LipaNetworkConfigPanel networks={lipaServices} onRun={run} adminId={firebaseUser!.uid} busy={busy} /></section>}
         </div>
       </section>}
       {panel === "nida" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">INBOX MAALUM</span><h2>MAOMBI YA NIDA</h2></div><Search size={22}/></div><NidaRequestsPanel /></section>}
-      {panel === "lipaReport" && <LipaGlobalReport applications={lipaApplications} />}
+      {panel === "lipaReport" && <LipaGlobalReport applications={lipaReportApplications} busy={loadingLipaReportPage} hasPrevious={lipaReportPreviousCursors.length > 0} hasNext={Boolean(lipaReportNextCursor)} onPrevious={goLipaReportPrevious} onNext={goLipaReportNext} />}
       {panel === "ordering" && isSuper && <ServiceOrderingPanel services={services} serviceOrder={serviceOrder} setServiceOrder={setServiceOrder} sectionOrder={homepageSectionOrder} setSectionOrder={setHomepageSectionOrder} onSave={() => run(() => setHomepageServiceOrder(serviceOrder, homepageSectionOrder), "Mpangilio wa huduma umehifadhiwa.")} busy={busy} />}
       {panel === "videos" && <CollectionPanel title="Video za Mafunzo" collectionName="tutorialVideos" rows={videos} form={video} setForm={setVideo} fields={[["title", "Title"], ["videoUrl", "Video URL"], ["category", "Category"], ["order", "Order"]]} onRun={run} adminId={firebaseUser!.uid} />}
       {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2></div><button type="button" className="button button--green button--small" onClick={() => exportTransactionsCsv(transactions)} disabled={!transactions.length}>Pakua ripoti CSV</button></div><TransactionTable rows={transactions} /></section>}

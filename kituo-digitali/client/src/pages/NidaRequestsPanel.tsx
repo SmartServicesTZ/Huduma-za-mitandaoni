@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Clipboard, Copy, LoaderCircle, RefreshCw, Search, Send, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { adminGetSiteSettings, adminSaveSiteSettings, completeNidaRequest, listNidaRequests, setNidaRequestStatus, type NidaRequest } from "@/lib/firebase";
+import { popCursor, previousCursor, pushCurrentCursor } from "../../../shared/cursorPageHistory";
 
 function when(value: unknown) {
   if (!value) return "—";
@@ -31,28 +32,32 @@ export default function NidaRequestsPanel() {
   const [filter, setFilter] = useState<"OPEN" | "PENDING" | "PROCESSING" | "ALL" | "DONE">("ALL");
   const [showRecentNida, setShowRecentNida] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
   const [previousCursors, setPreviousCursors] = useState<Array<string | undefined>>([]);
+  const pageRequestInFlight = useRef(false);
+  const currentCursorRef = useRef<string | undefined>(undefined);
 
-  const refresh = async (silent = false, cursor = currentCursor, previous = false) => {
-    if (!silent) setLoading(true);
+  const refresh = async (silent = false, cursor = currentCursorRef.current, previous = false) => {
+    if (pageRequestInFlight.current) return;
+    pageRequestInFlight.current = true;
+    const cursorBeforeRequest = currentCursorRef.current;
+    setLoading(true);
     try {
       const page = await listNidaRequests(cursor);
       setRequests(page.rows);
       setNextCursor(page.nextCursor);
-      setPreviousCursors((old) => previous ? old.slice(0, -1) : cursor === currentCursor ? old : [...old, currentCursor]);
-      setCurrentCursor(cursor);
+      setPreviousCursors((old) => previous ? popCursor(old) : cursor === cursorBeforeRequest ? old : pushCurrentCursor(old, cursorBeforeRequest));
+      currentCursorRef.current = cursor;
       setError("");
     } catch (e) {
       const message = e instanceof Error ? e.message : "Imeshindikana kupakia maombi ya NIDA.";
       setError(message);
       if (!silent) toast.error(message);
-    } finally { if (!silent) setLoading(false); }
+    } finally { pageRequestInFlight.current = false; setLoading(false); }
   };
   useEffect(() => {
     void adminGetSiteSettings().then((settings) => { const hours = settings?.nidaWorkingHours as { start?: unknown; end?: unknown } | undefined; if (hours && typeof hours.start === "string" && typeof hours.end === "string") setWorkingHours({ start: hours.start, end: hours.end }); }).catch(() => undefined);
     void refresh();
-    const timer = window.setInterval(() => { if (document.visibilityState !== "hidden") void refresh(true); }, 60000);
+    const timer = window.setInterval(() => { if (document.visibilityState !== "hidden" && !pageRequestInFlight.current) void refresh(true); }, 60000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -120,9 +125,6 @@ export default function NidaRequestsPanel() {
     const raw = item.submittedAt as unknown;
     const submitted = raw && typeof raw === "object" && "seconds" in raw ? Number((raw as { seconds?: unknown }).seconds) * 1000 : new Date(String(raw ?? "")).getTime();
     return Number.isFinite(submitted) && submitted >= last24Hours && submitted <= Date.now();
-  }).sort((a, b) => {
-    const toMs = (value: unknown) => value && typeof value === "object" && "seconds" in value ? Number((value as { seconds?: unknown }).seconds) * 1000 : new Date(String(value ?? "")).getTime();
-    return toMs(b.submittedAt) - toMs(a.submittedAt);
   });
   const pending = requests.filter((item) => item.status === "PENDING").length;
   const processing = requests.filter((item) => item.status === "PROCESSING").length;
@@ -138,16 +140,16 @@ export default function NidaRequestsPanel() {
     <section className="admin-card"><h3>Muda wa kazi wa CHEKI NIDA</h3><label>Inafunguliwa <input type="time" value={workingHours.start} onChange={e=>setWorkingHours({...workingHours,start:e.target.value})}/></label><label>Inafungwa <input type="time" value={workingHours.end} onChange={e=>setWorkingHours({...workingHours,end:e.target.value})}/></label><button type="button" disabled={savingHours} onClick={()=>void saveWorkingHours()}>Hifadhi ratiba ya NIDA</button></section>
     <section className="admin-card nida-admin-overview">
       <div className="admin-card-heading"><div><span className="admin-kicker">NIDA • FAST DESK</span><h2>Kituo cha maombi ya NIDA</h2><p>Chagua ombi, nakili simu, weka NIDA au tumia jibu la haraka.</p></div><button className="button button--small" type="button" onClick={() => void refresh()} disabled={loading}><RefreshCw size={15}/> Sasisha</button></div>
-      <div className="admin-stat-grid"><div className="admin-stat-card"><span>Maombi yote</span><strong>{requests.length}</strong></div><div className="admin-stat-card"><span>Mapya</span><strong>{pending}</strong></div><div className="admin-stat-card"><span>Yanafanyiwa kazi</span><strong>{processing}</strong></div><div className="admin-stat-card"><span>Yamefungwa</span><strong>{done}</strong></div></div>
+      <div className="admin-stat-grid"><div className="admin-stat-card"><span>Maombi kwenye ukurasa huu</span><strong>{requests.length}</strong></div><div className="admin-stat-card"><span>Mapya kwenye ukurasa</span><strong>{pending}</strong></div><div className="admin-stat-card"><span>Yanafanyiwa kazi hapa</span><strong>{processing}</strong></div><div className="admin-stat-card"><span>Yamefungwa hapa</span><strong>{done}</strong></div></div>
       <label className="nida-admin-search"><Search size={17}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tafuta kwa jina, namba ya simu au ID ya ombi..." /></label>
       <div className="nida-admin-filters" aria-label="Chuja maombi">
         {([{value:"OPEN",label:"Yanayosubiri / kazi"},{value:"PENDING",label:"Mapya"},{value:"PROCESSING",label:"Inafanyiwa kazi"},{value:"DONE",label:"Yaliyofungwa"},{value:"ALL",label:"Yote"}] as const).map((option) => <button type="button" key={option.value} className={filter === option.value ? "is-active" : ""} onClick={() => setFilter(option.value)}>{option.label}</button>)}
       </div>
-      {(previousCursors.length > 0 || nextCursor) && <nav aria-label="Pagination ya maombi ya NIDA" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:12}}><button type="button" className="button button--small" disabled={!previousCursors.length || loading} onClick={() => { const cursor = previousCursors.at(-1); void refresh(false, cursor, true); }}>← Previous</button><button type="button" className="button button--small" disabled={!nextCursor || loading} onClick={() => void refresh(false, nextCursor ?? undefined, false)}>Next →</button></nav>}
+      {(previousCursors.length > 0 || nextCursor) && <nav aria-label="Pagination ya maombi ya NIDA" style={{display:"flex",justifyContent:"space-between",gap:10,marginTop:12}}><button type="button" className="button button--small" disabled={!previousCursors.length || loading} onClick={() => { const previous = previousCursor(previousCursors); if (previous.available) void refresh(false, previous.cursor, true); }}>← Previous</button><button type="button" className="button button--small" disabled={!nextCursor || loading} onClick={() => void refresh(false, nextCursor ?? undefined, false)}>Next →</button></nav>}
     </section>
     <section className="admin-card nida-recent-toggle">
       <button type="button" className="nida-recent-toggle-button" aria-expanded={showRecentNida} onClick={() => setShowRecentNida((shown) => !shown)}>
-        <span><strong>NIDA zilizotafutwa ndani ya saa 24</strong><small>{showRecentNida ? "Gusa kuficha orodha" : "Gusa hapa kuona orodha"}</small></span>
+        <span><strong>NIDA zilizotafutwa ndani ya saa 24 (ukurasa huu)</strong><small>{showRecentNida ? "Gusa kuficha orodha" : "Gusa hapa kuona orodha"}</small></span>
         <span className="nida-recent-toggle-count">{showRecentNida ? "Ficha ▲" : "Ona orodha (" + recentNida.length + ") ▾"}</span>
       </button>
       {showRecentNida && <div className="nida-recent-list">

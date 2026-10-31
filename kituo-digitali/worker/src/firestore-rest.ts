@@ -1,8 +1,42 @@
 import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
 
 export type DocumentData = Record<string, unknown>;
+export function isValidFirestoreDocumentId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 180 && !/[\/\u0000-\u001f\u007f]/u.test(value);
+}
 type ServerTimestampSentinel = { readonly __serverTimestamp: true };
 const SERVER_TIMESTAMP: ServerTimestampSentinel = Object.freeze({ __serverTimestamp: true });
+
+const RFC3339_TIMESTAMP = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/;
+
+export class FirestoreTimestamp extends Date {
+  constructor(readonly rawValue: string) {
+    const parts = RFC3339_TIMESTAMP.exec(rawValue);
+    const milliseconds = Date.parse(rawValue);
+    if (!parts || !Number.isFinite(milliseconds)) throw new Error("Invalid Firestore timestamp.");
+    const [, yearText, monthText, dayText, hourText, minuteText, secondText] = parts;
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+    const hour = Number(hourText);
+    const minute = Number(minuteText);
+    const second = Number(secondText);
+    const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] ?? 0;
+    if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth || hour > 23 || minute > 59 || second > 59) {
+      throw new Error("Invalid Firestore timestamp.");
+    }
+    super(milliseconds);
+  }
+
+  toFirestoreValue() {
+    return this.rawValue;
+  }
+
+  toJSON() {
+    return this.rawValue;
+  }
+}
 
 export const FieldValue = {
   serverTimestamp(): ServerTimestampSentinel {
@@ -50,7 +84,11 @@ function encodeValue(value: unknown): Record<string, unknown> {
     if (!Number.isFinite(value)) throw new Error("Firestore does not accept non-finite numbers.");
     return Number.isSafeInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
   }
-  if (value instanceof Date) return { timestampValue: value.toISOString() };
+  if (value instanceof FirestoreTimestamp) return { timestampValue: value.toFirestoreValue() };
+  if (value instanceof Date) {
+    if (!Number.isFinite(value.getTime())) throw new Error("Invalid Firestore timestamp.");
+    return { timestampValue: value.toISOString() };
+  }
   if (value instanceof Uint8Array) return { bytesValue: Buffer.from(value).toString("base64") };
   if (Array.isArray(value)) return { arrayValue: { values: value.map(encodeValue) } };
   if (typeof value === "object" && value !== null) return { mapValue: { fields: encodeFields(value as DocumentData).fields } };
@@ -77,7 +115,7 @@ function decodeValue(value: Record<string, any>): unknown {
   if ("booleanValue" in value) return value.booleanValue;
   if ("integerValue" in value) return Number(value.integerValue);
   if ("doubleValue" in value) return Number(value.doubleValue);
-  if ("timestampValue" in value) return new Date(value.timestampValue);
+  if ("timestampValue" in value) return new FirestoreTimestamp(String(value.timestampValue));
   if ("bytesValue" in value) return Buffer.from(value.bytesValue, "base64");
   if ("arrayValue" in value) return (value.arrayValue.values ?? []).map(decodeValue);
   if ("mapValue" in value) return decodeFields(value.mapValue.fields ?? {});
@@ -166,7 +204,7 @@ export class Query {
   }
 
   startAfter(documentId: string) {
-    if (!/^[A-Za-z0-9_-]{1,160}$/.test(documentId)) throw new Error("Invalid Firestore cursor document ID.");
+    if (!isValidFirestoreDocumentId(documentId)) throw new Error("Invalid Firestore cursor document ID.");
     return new Query(this.client, this.collectionPath, this.filter, this.maxResults, documentId, this.ordering, undefined);
   }
 
@@ -180,6 +218,15 @@ export class Query {
 
   startAfterValues(values: unknown[]) {
     if (!Array.isArray(values) || values.length !== this.ordering.length) throw new Error("Invalid Firestore cursor values.");
+    for (const [index, item] of this.ordering.entries()) {
+      const value = values[index];
+      if (item.field === "__name__") {
+        if (!isValidFirestoreDocumentId(value)) throw new Error("Invalid Firestore cursor document ID.");
+      } else {
+        if (value === null || value === undefined) throw new Error("Invalid Firestore cursor values.");
+        encodeValue(value);
+      }
+    }
     return new Query(this.client, this.collectionPath, this.filter, this.maxResults, undefined, this.ordering, values);
   }
 
