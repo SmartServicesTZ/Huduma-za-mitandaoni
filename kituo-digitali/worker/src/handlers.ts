@@ -997,6 +997,11 @@ export const createServiceApplication = callable(async (request) => {
   if (serviceSlug === "pata-lipa-namba" || serviceSlug === "leseni-biashara") throw new ApiError("failed-precondition", "Tumia fomu maalum ya huduma hii.");
   const fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
   const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId, "serviceUploads");
+  if (serviceSlug === "pata-till-mitandao-yote") {
+    const network = String(applicantData.network ?? "").toUpperCase();
+    if (!["HALOTEL", "AIRTEL", "VODACOM"].includes(network)) throw new ApiError("invalid-argument", "Mtandao wa Till si sahihi.");
+    applicantData.paymentStatus = network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID";
+  }
   const finalPaths: string[] = [];
   const sourcePaths: string[] = [];
   for (const field of fields) {
@@ -1139,6 +1144,20 @@ export const setServiceApplicationStatus = callable(async (request) => {
     if (!snapshot.exists) throw new ApiError("not-found", "Ombi halikupatikana.");
     const application = snapshot.data()!;
     const from = String(application.status ?? "PENDING");
+    const isTillApplication = String(application.serviceSlug ?? "") === "pata-till-mitandao-yote";
+    const applicantData = (application.applicantData ?? {}) as Record<string, unknown>;
+    const tillNetwork = String(applicantData.network ?? "").toUpperCase();
+    const requiresTillPayment = isTillApplication && ["AIRTEL", "VODACOM"].includes(tillNetwork);
+    if (status === "PAYMENT_CONFIRMED") {
+      if (!requiresTillPayment) throw new ApiError("failed-precondition", "Uthibitishaji huu wa malipo unatumika kwa Till za Airtel na Vodacom pekee.");
+      if (from !== "PENDING" || String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() === "PAID") throw new ApiError("failed-precondition", "Ombi hili halisubiri uthibitisho wa malipo.");
+      const now = FieldValue.serverTimestamp();
+      transaction.update(ref, { applicantData: { ...applicantData, paymentStatus: "PAID", paymentConfirmedAt: now, paymentConfirmedBy: uid }, paymentConfirmedAt: now, paymentConfirmedBy: uid, updatedAt: now });
+      transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: "Malipo ya ombi la Till yamethibitishwa", body: "Malipo yako yamethibitishwa na Admin. Ombi lako sasa linasubiri kuanza kushughulikiwa. Utaona hali ya PENDING, PROCESSING, REJECTED au APPROVED kadri linavyoendelea.", type: "serviceApplicationPaymentConfirmed", applicationId, createdAt: now });
+      recordAudit(transaction, uid, String(actor.role), "TILL_PAYMENT_CONFIRMED", "serviceApplication", applicationId, { paymentStatus: applicantData.paymentStatus ?? "UNPAID" }, { paymentStatus: "PAID" }, { network: tillNetwork });
+      return { applicationId, status: from, paymentStatus: "PAID", paymentConfirmed: true };
+    }
+    if (requiresTillPayment && String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID") throw new ApiError("failed-precondition", "Thibitisha kwanza malipo ya Till kabla ya kubadilisha hali ya ombi.");
     if (status === from) throw new ApiError("failed-precondition", `Ombi tayari lina hali ya ${status}.`);
     const now = FieldValue.serverTimestamp();
     const patch: Record<string, unknown> = { status, updatedAt: now, assignedAdmin: application.assignedAdmin ?? uid };
