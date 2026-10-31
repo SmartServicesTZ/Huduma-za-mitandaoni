@@ -76,6 +76,8 @@ export default function AirtelSmeContractPage() {
   const [paid, setPaid] = useState(false);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
+  const [handwritingFont, setHandwritingFont] = useState<"cursive" | "segoe" | "comic" | "normal">("cursive");
+  const handwritingFontFamily = handwritingFont === "cursive" ? "cursive" : handwritingFont === "segoe" ? "'Segoe Print', 'Bradley Hand', cursive" : handwritingFont === "comic" ? "'Comic Sans MS', cursive" : "Arial, Helvetica, sans-serif";
 
   // Jaza Sales Executive Name kutoka kwenye profile iliyoshirikiwa na useAuth.
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function AirtelSmeContractPage() {
   useEffect(() => {
     setPaid(false);
     setRequestId(crypto.randomUUID());
-  }, [inkColor]);
+  }, [inkColor, handwritingFont]);
 
   const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...AIRTEL_SME_LAYOUT_DEFAULTS }));
 
@@ -187,12 +189,12 @@ export default function AirtelSmeContractPage() {
       const maxWidth = 1024 * width / 100;
       let fitText = "";
       if (measureContext) {
-        measureContext.font = `500 ${fontSize}px Arial, Helvetica, sans-serif`;
+        measureContext.font = `500 ${fontSize}px ${handwritingFontFamily}`;
         if (measureContext.measureText(value).width > maxWidth) {
           fitText = ` textLength="${maxWidth.toFixed(2)}" lengthAdjust="spacingAndGlyphs"`;
         }
       }
-      return `<text x="${x + width / 2}%" y="${y}%" text-anchor="middle" dominant-baseline="hanging" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="500" fill="${ink}"${fitText}>${esc(value)}</text>`;
+      return `<text x="${x + width / 2}%" y="${y}%" text-anchor="middle" dominant-baseline="hanging" font-family="${handwritingFontFamily}" font-size="${fontSize}" font-weight="500" fill="${ink}"${fitText}>${esc(value)}</text>`;
     };
     
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1536" viewBox="0 0 1024 1536">
@@ -334,7 +336,7 @@ export default function AirtelSmeContractPage() {
         .sme-preview{background:#444;border-radius:14px;padding:12px;overflow:auto}
         .sme-template{position:relative;width:min(100%,900px);margin:auto;line-height:1;container-type:inline-size}
         .sme-template img{width:100%;height:auto;display:block;user-select:none}
-        .sme-overlay{position:absolute;font-family:Arial,Helvetica,sans-serif;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;min-width:0;display:block;color:var(--ink-color)}
+        .sme-overlay{position:absolute;font-family:${handwritingFontFamily};font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;min-width:0;display:block;color:var(--ink-color)}
         @media(max-width:900px){.sme-grid{grid-template-columns:1fr}.sme-top{border-radius:12px}.sme-preview{padding:6px}}
         @media print{.sme-page{padding:0;background:#fff}.sme-top,.sme-form,.sme-preview-head,.sme-status{display:none!important}.sme-grid{display:block;margin:0}.sme-card{border:0;box-shadow:none;padding:0}.sme-preview{background:#fff;padding:0}.sme-template{width:100%;max-width:none}}
       `}</style>
@@ -363,7 +365,7 @@ export default function AirtelSmeContractPage() {
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName", "Hujazwa kutoka jina la akaunti yako", "text", undefined, true)}
             <div className="sme-row">{field("Date", "date1")}{field("Date", "date2")}</div>
-            <div className="sme-ink"><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("jpg")}>⬇ {paid ? "Download JPG" : "LIPIA NA PAKUA JPG"}</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ {paid ? "Download PDF" : "LIPIA NA PAKUA PDF"}</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
+            <div className="sme-ink"><div className="sme-ink-title">Chagua aina ya fonti ya maandishi</div><label className="sme-field"><span>Fonti ya kuandika</span><select value={handwritingFont} onChange={(event) => setHandwritingFont(event.target.value as typeof handwritingFont)} style={{width:"100%",height:42,border:"1px solid #c9c9c9",borderRadius:9,padding:"0 10px"}}><option value="cursive">Mwandiko wa mkono — Cursive</option><option value="segoe">Kalamu laini — Segoe Print</option><option value="comic">Mwandiko wa kawaida — Comic Sans</option><option value="normal">Fonti ya kawaida — Arial</option></select></label><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("jpg")}>⬇ {paid ? "Download JPG" : "LIPIA NA PAKUA JPG"}</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ {paid ? "Download PDF" : "LIPIA NA PAKUA PDF"}</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
           </section>
 
@@ -373,8 +375,8 @@ export default function AirtelSmeContractPage() {
               <div className="sme-template" style={{"--ink-color": inkHex, position: "relative"} as React.CSSProperties}>
                 {!paid && <div aria-label="Watermark ya mkataba ambao haujalipiwa" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none", zIndex: 20 }}><div style={{ transform: "rotate(-28deg)", border: "1px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.16)", padding: "4px 8px", fontSize: "clamp(10px, 1.8vw, 18px)", fontWeight: 900, letterSpacing: "1px", textAlign: "center" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</div></div>}
                 <img src={imageSrc} alt="Airtel SME Contract Template" onError={() => setStatus("⚠️ contact.png haijapatikana. Iweke ndani ya client/public/contact.png.")} />
-                <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),color:inkHex}}>{form.customerName}</div>
-                <div className="sme-overlay" style={{...ov("phoneX","phoneY","phoneSize","39%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div>
+                <div className="sme-overlay" style={{...ov("nameX","nameY","nameSize","73%"),fontFamily:handwritingFontFamily,color:inkHex}}>{form.customerName}</div>
+                <div className="sme-overlay" style={{...ov("phoneX","phoneY","phoneSize","39%"),fontFamily:handwritingFontFamily,color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.phone}</div>
                 <div className="sme-overlay" style={{...ov("tinX","tinY","tinSize","20%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{formatTin(form.tin)}</div>
                 <div className="sme-overlay" style={{...ov("idTypeX","idTypeY","idTypeSize","28%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idType.toUpperCase()}</div>
                 <div className="sme-overlay" style={{...ov("idX","idY","idSize","27%"),color:inkColor==="black"?"#111":inkColor==="blue"?"#003cff":"#d00000"}}>{form.idNumber}</div>
