@@ -39,6 +39,7 @@ type AgentData = { name: string; agentId: string; phone: string; type: string; r
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
 const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", Supervisor: "SV", "Authorized Agent": "AA" };
+const agentIdTokenCost = (agentType: string) => agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Supervisor" || agentType === "Authorized Agent" ? 10 : 0;
 const locationData = tanzaniaLocations as unknown as { regions: Record<string, { districts: Record<string, string[]> }> };
 const tanzaniaRegions = Object.keys(locationData.regions).sort((a, b) => a.localeCompare(b));
 const districtsForRegion = (selectedRegion: string) => Object.keys(locationData.regions[selectedRegion]?.districts ?? {}).sort((a, b) => a.localeCompare(b));
@@ -197,7 +198,7 @@ export default function AgentIdPage() {
   const cfg = NETWORKS[network];
   const data: AgentData = { name, agentId, phone, type, region, district, area, issueDate };
 
-  const qrText = useMemo(() => JSON.stringify({ network, name, agentId, phone, type, region, district, area, issueDate, expiryDate: expiry(issueDate) }), [network, name, agentId, phone, type, region, district, area, issueDate]);
+  const qrText = useMemo(() => JSON.stringify({ v: 1, id: agentId, n: name.trim(), p: phone.trim(), net: network, role: type, r: region, d: district, a: area, exp: expiry(issueDate) }), [network, name, agentId, phone, type, region, district, area, issueDate]);
 
   useEffect(() => {
     setPaid(false);
@@ -208,13 +209,13 @@ export default function AgentIdPage() {
   useEffect(() => {
     let active = true;
     setTokenCost(null);
-    void getServiceTokenConfig(NETWORK_SERVICE_SLUG[network]).then((config) => {
-      if (active) setTokenCost(config.tokenCost);
+    void getServiceTokenConfig(NETWORK_SERVICE_SLUG[network]).then(() => {
+      if (active) setTokenCost(agentIdTokenCost(type));
     }).catch((error) => {
       if (active) { setTokenCost(null); toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya mtandao."); }
     });
     return () => { active = false; };
-  }, [network]);
+  }, [network, type]);
 
   useEffect(() => { setSavedRecordId(""); }, [network, name, phone, type, region, district, area, issueDate]);
 
@@ -224,7 +225,7 @@ export default function AgentIdPage() {
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(qrText, { width: 420, margin: 2, errorCorrectionLevel: "H", color: { dark: "#0f172a", light: "#ffffff" } })
+    QRCode.toDataURL(qrText, { width: 512, margin: 4, errorCorrectionLevel: "M", color: { dark: "#000000", light: "#ffffff" } })
       .then((url) => { if (!cancelled) setQr(url); })
       .catch(() => { if (!cancelled) setQr(""); });
     return () => { cancelled = true; };
@@ -275,15 +276,14 @@ export default function AgentIdPage() {
       if (!paid) {
         const slug = NETWORK_SERVICE_SLUG[network];
         const config = await getServiceTokenConfig(slug);
-        if (!Number.isSafeInteger(config.tokenCost) || config.tokenCost < 0) throw new Error("Bei ya mtandao haijawekwa sawa. Wasiliana na Admin.");
-        const accepted = window.confirm(config.tokenCost === 0
-          ? `${config.name} imewekwa BURE. Unataka kuendelea kupakua?`
-          : `Unakaribia kupakua ${config.name}. Gharama ni tokeni ${config.tokenCost}. Tokeni zitakatwa mara moja kwa kitambulisho hiki (mbele na nyuma). Endelea?`);
+        const roleCost = agentIdTokenCost(type);
+        if (!Number.isSafeInteger(roleCost) || roleCost <= 0) throw new Error("Aina ya wakala haijatambuliwa. Chagua aina sahihi.");
+        const accepted = window.confirm(`Unakaribia kupakua ${config.name} (${type}). Gharama ni tokeni ${roleCost}. Tokeni zitakatwa mara moja kwa kitambulisho hiki (mbele na nyuma). Endelea?`);
         if (!accepted) return;
-        await consumeFirebaseTokens(firebaseUser.uid, { slug, name: config.name, tokenCost: config.tokenCost, kind: config.tokenCost === 0 ? "free" : "paid", tokenType: "huduma" }, requestId);
-        setTokenCost(config.tokenCost);
+        await consumeFirebaseTokens(firebaseUser.uid, { slug, name: config.name, tokenCost: roleCost, kind: "paid", tokenType: "huduma", agentType: type }, requestId);
+        setTokenCost(roleCost);
         setPaid(true);
-        toast.success(config.tokenCost === 0 ? "Kitambulisho hiki ni bure. Unaweza kupakua pande zote." : `Tokeni ${config.tokenCost} zimekatwa kwa ${network}. Unaweza kupakua mbele na nyuma bila kukatwa tena.`);
+        toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}. Unaweza kupakua mbele na nyuma bila kukatwa tena.`);
       }
       // Tengeneza faili tofauti kwa kila upande, kisha pakua mbele na nyuma kila moja kivyake.
       const blobs = await Promise.all(jobs.map((job) => exportCard(job.el, job.size, job.filename)));
@@ -363,7 +363,7 @@ function LogoChip({ cfg, network, className = "" }: { cfg: NetworkCfg; network: 
 
 function CardWatermark({ paid }: { paid: boolean }) {
   if (paid) return null;
-  return <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, zIndex: 1, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none" }}>
+  return <div aria-label="Watermark ya kitambulisho ambacho hakijalipiwa" style={{ position: "absolute", inset: 0, zIndex: 10, display: "grid", placeItems: "center", overflow: "hidden", pointerEvents: "none" }}>
     <span style={{ transform: "rotate(-28deg)", border: "1px solid rgba(185,28,28,.7)", color: "rgba(185,28,28,.78)", background: "rgba(255,255,255,.25)", padding: "4px 7px", fontSize: "clamp(8px, 2.1vw, 13px)", fontWeight: 900, letterSpacing: ".4px", lineHeight: 1.3, textAlign: "center", maxWidth: "92%" }}>BAADA YA DOWNLOAD NA KUKATWA TOKENI, MAELEZO HAYA YATAPOTEA</span>
   </div>;
 }
@@ -373,7 +373,6 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
   const displayName = name.trim().toUpperCase();
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
   return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
-    <CardWatermark paid={paid} />
     {network === "Mbeya One Company Limited" && cfg.logo && <img className="idl-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idl-side">
       <LogoChip cfg={cfg} network={network} />
@@ -444,7 +443,6 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
 function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
-    <CardWatermark paid={paid} />
     {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idp-hero">
       <div className="idp-ring" />
