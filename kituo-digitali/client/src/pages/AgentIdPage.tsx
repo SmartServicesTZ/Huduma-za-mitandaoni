@@ -39,7 +39,7 @@ type AgentData = { name: string; agentId: string; phone: string; type: string; r
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
 const roleCode: Record<string, string> = { Freelancer: "FR", "Team Leader": "TL", "Team Reader": "TR", Supervisor: "SV" };
-const agentIdTokenCost = (agentType: string) => ["Freelancer", "Team Leader", "Team Reader", "Supervisor"].includes(agentType) ? 10 : 0;
+const agentIdTokenCost = (agentType: string) => agentType === "Freelancer" ? 5 : ["Team Leader", "Team Reader", "Supervisor"].includes(agentType) ? 10 : 0;
 const locationData = tanzaniaLocations as unknown as { regions: Record<string, { districts: Record<string, string[]> }> };
 const tanzaniaRegions = Object.keys(locationData.regions).sort((a, b) => a.localeCompare(b));
 const districtsForRegion = (selectedRegion: string) => Object.keys(locationData.regions[selectedRegion]?.districts ?? {}).sort((a, b) => a.localeCompare(b));
@@ -134,7 +134,8 @@ async function exportCard(source: HTMLElement, size: { w: number; h: number }, f
   host.setAttribute("aria-hidden", "true");
   host.style.cssText = `position:fixed;left:-10000px;top:0;width:${size.w}px;height:${size.h}px;pointer-events:none;z-index:-1;overflow:visible;`;
   const clone = source.cloneNode(true) as HTMLElement;
-  // Watermark inadhibitiwa na hali ya malipo (paid); usiiondoe kwa lazima wakati wa export.
+  // Export hufanyika baada ya malipo kuthibitishwa; watermark ya preview haitakiwi kwenye PNG.
+  clone.querySelectorAll('[aria-label="Watermark ya kitambulisho ambacho hakijalipiwa"]').forEach((node) => node.remove());
   clone.style.transform = "none";
   clone.style.margin = "0";
   clone.style.width = `${size.w}px`;
@@ -213,7 +214,7 @@ export default function AgentIdPage() {
     void getServiceTokenConfig("kitambulisho-wakala").then((config) => {
       if (active) {
         const configured = Number(config.agentTypeTokenCosts?.[type]);
-        setTokenCost(Number.isSafeInteger(configured) && configured > 0 && !(type === "Freelancer" && configured === 5) ? configured : agentIdTokenCost(type));
+        setTokenCost(Number.isSafeInteger(configured) && configured > 0 ? configured : agentIdTokenCost(type));
       }
     }).catch((error) => {
       if (active) { setTokenCost(null); toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala."); }
@@ -229,7 +230,7 @@ export default function AgentIdPage() {
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(qrText, { width: 512, margin: 4, errorCorrectionLevel: "L", color: { dark: "#000000", light: "#ffffff" } })
+    QRCode.toDataURL(qrText, { width: 768, margin: 2, errorCorrectionLevel: "M", color: { dark: "#071426", light: "#ffffff" } })
       .then((url) => { if (!cancelled) setQr(url); })
       .catch(() => { if (!cancelled) setQr(""); });
     return () => { cancelled = true; };
@@ -246,15 +247,14 @@ export default function AgentIdPage() {
     event.target.value = "";
   };
 
-  const downloadCards = async (side: "front" | "back") => {
-    if (downloadedSides.includes(side)) { toast.info("Upande huu wa kitambulisho tayari umepakuliwa. Badilisha taarifa au anza upya kwa kitambulisho kipya."); return; }
-    const set = orientation === "landscape"
+  const downloadCards = async () => {
+    const selected = orientation === "landscape"
       ? { size: LAND, label: "mlalo", front: landFrontRef.current, back: landBackRef.current }
       : { size: PORT, label: "wima", front: portFrontRef.current, back: portBackRef.current };
     const jobs: { el: HTMLElement; size: { w: number; h: number }; filename: string }[] = [];
-    if (side === "front" && set.front) jobs.push({ el: set.front, size: set.size, filename: `kitambulisho-${set.label}-mbele.png` });
-    if (side === "back" && set.back) jobs.push({ el: set.back, size: set.size, filename: `kitambulisho-${set.label}-nyuma.png` });
-    if (!jobs.length) { window.alert("Vitambulisho bado havijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+    if (selected.front) jobs.push({ el: selected.front, size: selected.size, filename: `kitambulisho-${selected.label}-mbele.png` });
+    if (selected.back) jobs.push({ el: selected.back, size: selected.size, filename: `kitambulisho-${selected.label}-nyuma.png` });
+    if (jobs.length !== 2) { window.alert("Picha za mbele na nyuma bado hazijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
     if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
     if (!photo.trim() || !name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim() || !issueDate.trim() || !type.trim()) {
       window.alert("Jaza taarifa zote na pakia picha ya wakala kabla ya kupakua kitambulisho.");
@@ -280,23 +280,22 @@ export default function AgentIdPage() {
       if (!paid) {
         const slug = "kitambulisho-wakala";
         const config = await getServiceTokenConfig(slug);
-        const roleCost = Number(tokenCost ?? agentIdTokenCost(type));
+        const liveRoleCost = Number(config.agentTypeTokenCosts?.[type]);
+        const roleCost = Number.isSafeInteger(liveRoleCost) && liveRoleCost > 0 ? liveRoleCost : agentIdTokenCost(type);
         if (!Number.isSafeInteger(roleCost) || roleCost <= 0) throw new Error("Aina ya wakala haijatambuliwa. Chagua aina sahihi.");
-        const accepted = window.confirm(`Unakaribia kupakua ${config.name} (${type}). Gharama ni tokeni ${roleCost}. Tokeni zitakatwa mara moja kwa kitambulisho hiki (mbele na nyuma). Endelea?`);
-        if (!accepted) return;
         await consumeFirebaseTokens(firebaseUser.uid, { slug, name: config.name, tokenCost: roleCost, kind: "paid", tokenType: "huduma", agentType: type }, requestId);
         setTokenCost(roleCost);
         setPaid(true);
-        toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}. Unaweza kupakua mbele na nyuma bila kukatwa tena.`);
+        toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}.`);
       }
-      // Tengeneza faili tofauti kwa kila upande, kisha pakua mbele na nyuma kila moja kivyake.
+      // Faili mbili tofauti: mbele na nyuma, zote zikiwa kwenye mkao uliochaguliwa.
       const blobs = await Promise.all(jobs.map((job) => exportCard(job.el, job.size, job.filename)));
       for (let index = 0; index < blobs.length; index++) {
         triggerDownload(blobs[index], jobs[index].filename, "PNG");
         if (index < blobs.length - 1) await new Promise<void>((resolve) => window.setTimeout(resolve, 700));
       }
-      setDownloadedSides((current) => current.includes(side) ? current : [...current, side]);
-      toast.success(`Download ya ${network} (${side === "front" ? "mbele" : "nyuma"}) imekamilika. Taarifa ya tokeni imehifadhiwa kwenye historia.`);
+      setDownloadedSides(["front", "back"]);
+      toast.success("Kitambulisho kimepakuliwa: picha mbili tofauti (mbele na nyuma).");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
     } finally { setBusy(false); }
@@ -322,15 +321,14 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
         <label className="aid-field"><span>Agent ID</span><input value={agentId} readOnly aria-readonly="true" /></label>
         <label className="aid-field"><span>Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
-        <label className="aid-field"><span>Agent Type</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Team Reader</option><option>Supervisor</option></select></label>
+        <label className="aid-field"><span>Cheo · {tokenCost === null ? "Bei inasomwa" : `Tokeni ${tokenCost}`}</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Team Reader</option><option>Supervisor</option></select></label>
         <label className="aid-field"><span>Mkoa</span><select value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} required><option value="">Chagua mkoa</option>{tanzaniaRegions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Wilaya</span><select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!region} required><option value="">Chagua wilaya</option>{districtsForRegion(region).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Kata / Eneo</span><input value={area} maxLength={30} onChange={(e) => setArea(e.target.value)} /></label>
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
-        <div className="aid-download-sections" aria-label="Pakua kitambulisho mbele au nyuma">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null || downloadedSides.includes("front")} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : downloadedSides.includes("front") ? "Upande huu tayari umepakuliwa" : "Pakua upande wa mbele"} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
-          <button type="button" className="aid-download-back" disabled={busy || !formComplete || tokenCost === null || downloadedSides.includes("back")} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : downloadedSides.includes("back") ? "Upande huu tayari umepakuliwa" : "Pakua upande wa nyuma"} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
+        <div className="aid-download-sections" aria-label="Pakua kitambulisho">
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua picha mbili tofauti: mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "Inaandaa picha mbili..." : "PAKUA KITAMBULISHO"}</b><small>{orientLabel} · PNG mbili · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `Tokeni ${tokenCost}`}</small></span></button>
         </div>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
@@ -338,18 +336,17 @@ export default function AgentIdPage() {
       <section className="aid-stage">
         <div className="aid-intro"><span className="overline">MUONEKANO WA VITAMBULISHO VIWILI</span><p>Kushoto: kitambulisho cha kulala. Kulia: kitambulisho cha kusimama. Nembo na rangi hubadilika kulingana na mtandao uliochagua. Picha utakayopakua ina saizi kamili hata ukiwa kwenye simu.</p></div>
         <div className="aid-previews" style={{ position: "relative" }}>
-          <div className={`aid-col ${orientation === "landscape" ? "is-active" : ""}`}>
-            <p className="aid-side">01 · STYLE YA KULALA</p>
+          {orientation === "landscape" ? <div className="aid-col is-active">
+            <p className="aid-side">STYLE YA KULALA · MBELE</p>
             <ScaledCard width={LAND.w} height={LAND.h}><LandscapeFront innerRef={landFrontRef} cfg={cfg} network={network} photo={photo} paid={paid} {...data} /></ScaledCard>
-            <p className="aid-side aid-side--back">UPANDE WA NYUMA</p>
+            <p className="aid-side aid-side--back">STYLE YA KULALA · NYUMA</p>
             <ScaledCard width={LAND.w} height={LAND.h}><LandscapeBack innerRef={landBackRef} cfg={cfg} network={network} qr={qr} paid={paid} {...data} /></ScaledCard>
-          </div>
-          <div className={`aid-col ${orientation === "portrait" ? "is-active" : ""}`}>
-            <p className="aid-side">02 · STYLE YA KUSIMAMA</p>
+          </div> : <div className="aid-col is-active">
+            <p className="aid-side">STYLE YA KUSIMAMA · MBELE</p>
             <ScaledCard width={PORT.w} height={PORT.h}><PortraitFront innerRef={portFrontRef} cfg={cfg} network={network} photo={photo} paid={paid} {...data} /></ScaledCard>
-            <p className="aid-side aid-side--back">UPANDE WA NYUMA</p>
+            <p className="aid-side aid-side--back">STYLE YA KUSIMAMA · NYUMA</p>
             <ScaledCard width={PORT.w} height={PORT.h}><PortraitBack innerRef={portBackRef} cfg={cfg} network={network} qr={qr} paid={paid} {...data} /></ScaledCard>
-          </div>
+          </div>}
         </div>
       </section>
     </div>
@@ -627,8 +624,8 @@ const AGENT_ID_CSS = `
 .idl-rules h4{margin:2px 0 10px;font-size:10px;font-weight:900;letter-spacing:.04em;color:var(--d)}
 .idl-rl{display:flex;align-items:flex-start;gap:8px;margin:0 0 9px;font-size:9.4px;line-height:1.38;color:#475569}
 .idl-rl i{flex:0 0 17px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-size:8px;font-weight:900}
-.idl-qr-wrap{position:relative;flex:0 0 132px;text-align:center}
-.idl-qr-tile{width:126px;height:126px;box-sizing:border-box;margin:0 auto;padding:7px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.18);border:1px solid #e5eaf2}
+.idl-qr-wrap{position:relative;flex:0 0 154px;text-align:center}
+.idl-qr-tile{width:148px;height:148px;box-sizing:border-box;margin:0 auto;padding:7px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.18);border:1px solid #e5eaf2}
 .idl-qr-tile img,.idl-qr-empty{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .idl-qr-label{margin-top:6px;font-size:8px;font-weight:900;letter-spacing:.1em;color:var(--d)}
 .idl-info{margin:0 22px 9px;padding:8px 12px;display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:6px 12px;border-radius:12px;background:var(--accent)}
