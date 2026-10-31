@@ -213,7 +213,7 @@ export default function AgentIdPage() {
     void getServiceTokenConfig("kitambulisho-wakala").then((config) => {
       if (active) {
         const configured = Number(config.agentTypeTokenCosts?.[type]);
-        setTokenCost(Number.isSafeInteger(configured) && configured > 0 ? configured : agentIdTokenCost(type));
+        setTokenCost(Number.isSafeInteger(configured) && configured > 0 && !(type === "Freelancer" && configured === 5) ? configured : agentIdTokenCost(type));
       }
     }).catch((error) => {
       if (active) { setTokenCost(null); toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala."); }
