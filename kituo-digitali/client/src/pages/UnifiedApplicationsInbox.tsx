@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import type { LipaApplication, ServiceApplication } from "@/lib/firebase";
 type InboxKind = "ALL" | "SERVICE" | "LIPA";
-type InboxStatus = "ALL" | "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
-type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; person:string; service:string; phone:string; status:string; dateValue:unknown; dateLabel:string };
+type InboxStatus = "ALL" | "NO_PAYMENT" | "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
+type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; person:string; service:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
 function dateValue(value:unknown):number {
   if(!value)return 0;
   try {
@@ -28,18 +28,25 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     const serviceRows:InboxRow[]=serviceApplications.map((application)=>{
       const service=services.find((item)=>item.slug===application.serviceSlug||item.id===application.serviceSlug);
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
-      const requestName=service?.name??application.serviceName??application.serviceSlug??"Ombi"; return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:"",phone:String((application as any).phone??application.applicantData?.phone??""),status:application.status||"PENDING",dateValue:date,dateLabel:dateLabel(date)};
+      const requestName=service?.name??application.serviceName??application.serviceSlug??"Ombi";
+      const data=(application.applicantData??{}) as Record<string,unknown>;
+      const slug=String(application.serviceSlug??"").toLowerCase();
+      const network=String(data.network??"").toUpperCase();
+      const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
+      const paidService=["access-lipa-yas","access-lipa-airtel","access-lipa-vodacom"].includes(slug)||tillPayment;
+      const paymentGated=paidService && String(application.status??"PENDING").toUpperCase()==="PENDING" && String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
+      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:"",phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
     });
     const lipaRows:InboxRow[]=lipaApplications.map((application)=>{
       const network=networks.find((item)=>item.id===application.networkId||item.id===application.network||item.name===application.network);
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
-      const serviceId=String((application as any).serviceId??""); const requestName=/access.*lipa|lipa.*access/i.test(serviceId)?"ACCESS YA LIPA":/wifi|wi-fi/i.test(serviceId)?"WIFI":"LIPA NAMBA"; return {id:application.applicationId||application.id,kind:"LIPA",kindLabel:requestName,person:application.applicantName||application.userName||application.phone||"Jina halijawekwa",service:network?.name??application.network??"",phone:application.phone||"",status:application.status||"PENDING",dateValue:date,dateLabel:dateLabel(date)};
+      const serviceId=String((application as any).serviceId??""); const requestName=/access.*lipa|lipa.*access/i.test(serviceId)?"ACCESS YA LIPA":/wifi|wi-fi/i.test(serviceId)?"WIFI":"LIPA NAMBA"; return {id:application.applicationId||application.id,kind:"LIPA",kindLabel:requestName,person:application.applicantName||application.userName||application.phone||"Jina halijawekwa",service:network?.name??application.network??"",phone:application.phone||"",status:application.status||"PENDING",paymentGated:false,dateValue:date,dateLabel:dateLabel(date)};
     });
     const priority:Record<string,number>={PENDING:0,PROCESSING:1,APPROVED:2,REJECTED:3};
     return [...serviceRows,...lipaRows].sort((a,b)=>(priority[String(a.status).toUpperCase()]??4)-(priority[String(b.status).toUpperCase()]??4)||dateValue(b.dateValue)-dateValue(a.dateValue));
   },[serviceApplications,lipaApplications,services,networks]);
-  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(statusFilter==="ALL"||String(row.status).toUpperCase()===statusFilter));
-  const counts={ALL:rows.length,PENDING:rows.filter((r)=>String(r.status).toUpperCase()==="PENDING").length,PROCESSING:rows.filter((r)=>String(r.status).toUpperCase()==="PROCESSING").length,APPROVED:rows.filter((r)=>String(r.status).toUpperCase()==="APPROVED").length,REJECTED:rows.filter((r)=>String(r.status).toUpperCase()==="REJECTED").length};
+  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
+  const counts={ALL:rows.length,NO_PAYMENT:rows.filter((r)=>r.paymentGated).length,PENDING:rows.filter((r)=>!r.paymentGated&&String(r.status).toUpperCase()==="PENDING").length,PROCESSING:rows.filter((r)=>String(r.status).toUpperCase()==="PROCESSING").length,APPROVED:rows.filter((r)=>String(r.status).toUpperCase()==="APPROVED").length,REJECTED:rows.filter((r)=>String(r.status).toUpperCase()==="REJECTED").length};
   return <div className="unified-inbox" aria-label="Orodha moja ya maombi yote">
     <style>{`
       .unified-inbox{color:#17251f}.unified-inbox-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:16px 0}
@@ -47,7 +54,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       .unified-inbox-filters select{min-width:175px;max-width:100%;border:1px solid #cbd9d0;border-radius:9px;background:#fff;padding:10px 12px;color:#17251f;font:inherit}
       .unified-inbox-counts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
       .unified-inbox-count{border:2px solid #d5ded8;border-radius:10px;background:#f8fbf9;padding:9px 13px;font-size:.8rem;color:#25352c;font-weight:900}.unified-inbox-count:nth-child(2){background:#ffdf72;border-color:#d49a00;color:#573800}.unified-inbox-count:nth-child(3){background:#9acbff;border-color:#1671c5;color:#063d78}.unified-inbox-count:nth-child(4){background:#91e2a8;border-color:#159447;color:#064c23}.unified-inbox-count:nth-child(5){background:#ff9a91;border-color:#c92525;color:#750d0d}
-      .unified-inbox-count strong{color:#17251f;margin-left:5px}
+      .unified-inbox-count strong{color:#17251f;margin-left:5px}.unified-inbox-count-no-payment{background:#fee2e2;border-color:#dc2626;color:#991b1b}.unified-inbox-status-no-payment{background:#dc2626;color:#fff;border:1px solid #991b1b}.status-row-no-payment{background:#ffe1e1!important;border-left:7px solid #dc2626!important}
       .unified-inbox-table-wrap{border:1px solid #e2e9e4;border-radius:12px;overflow-x:auto;background:#fff}
       .unified-inbox-table{border-collapse:collapse;table-layout:fixed;min-width:0;width:100%}.unified-inbox-table th{background:#f7faf8;color:#34443b;font-size:.69rem;letter-spacing:.015em;text-align:left;text-transform:uppercase;white-space:normal;overflow-wrap:anywhere}.unified-inbox-table th:nth-child(1){width:16%}.unified-inbox-table th:nth-child(2){width:18%}.unified-inbox-table th:nth-child(3){width:12%}.unified-inbox-table th:nth-child(4){width:18%}.unified-inbox-table th:nth-child(5){width:14%}.unified-inbox-table th:nth-child(6){width:22%}
       .unified-inbox-table th,.unified-inbox-table td{border-bottom:1px solid #d9e1dc;padding:10px 7px;vertical-align:top;overflow-wrap:anywhere}.unified-inbox-table tbody tr:last-child td{border-bottom:0}.unified-inbox-table td{font-size:.84rem}
@@ -66,18 +73,18 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     <div className="unified-inbox-counts" aria-label="Muhtasari wa maombi">{(["PENDING","PROCESSING","APPROVED","REJECTED","ALL"] as const).map((status)=><div className="unified-inbox-count" key={status}>{status==="ALL"?"YOTE":status}<strong>{counts[status]}</strong></div>)}</div>
     <div className="unified-inbox-filters">
       <label>Aina ya ombi<select value={kindFilter} onChange={(event)=>setKindFilter(event.target.value as InboxKind)}><option value="ALL">Aina zote</option><option value="SERVICE">Huduma za mfumo / SME</option><option value="LIPA">LIPA NAMBA / ACCESS LIPA</option></select></label>
-      <label>Hali ya ombi<select value={statusFilter} onChange={(event)=>setStatusFilter(event.target.value as InboxStatus)}><option value="ALL">Hali zote</option><option value="PENDING">PENDING</option><option value="PROCESSING">PROCESSING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select></label>
+      <label>Hali ya ombi<select value={statusFilter} onChange={(event)=>setStatusFilter(event.target.value as InboxStatus)}><option value="ALL">Hali zote</option><option value="NO_PAYMENT">NO PAYMENT</option><option value="PENDING">PENDING</option><option value="PROCESSING">PROCESSING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select></label>
       <span style={{fontSize:".8rem",color:"#63716a"}}>Inaonekana: <strong>{visibleRows.length}</strong> / {rows.length}</span>
     </div>
     {visibleRows.length===0?<div className="unified-inbox-empty">Hakuna maombi yanayolingana na vichujio ulivyochagua.</div>:<>
-      <div className="unified-inbox-table-wrap"><table className="unified-inbox-table"><thead><tr><th>MWOMBAJI</th><th>AINA HALISI YA OMBI</th><th>SIMU</th><th>TAREHE YA OMBI</th><th>HALI</th><th>VITENDO</th></tr></thead><tbody>{visibleRows.map((row)=><tr key={row.kind+":"+row.id} className={"status-row-"+String(row.status).toLowerCase()}>
+      <div className="unified-inbox-table-wrap"><table className="unified-inbox-table"><thead><tr><th>MWOMBAJI</th><th>AINA HALISI YA OMBI</th><th>SIMU</th><th>TAREHE YA OMBI</th><th>HALI</th><th>VITENDO</th></tr></thead><tbody>{visibleRows.map((row)=><tr key={row.kind+":"+row.id} className={"status-row-"+(row.paymentGated?"no-payment":String(row.status).toLowerCase())}>
         <td><div className="unified-inbox-person"><strong>{row.person}</strong><small>{row.kind==="LIPA"?"Maombi ya Lipa":"Maombi ya huduma maalum"}</small></div></td>
         <td><span className="unified-inbox-kind">{row.kindLabel}</span>{row.service&&<small style={{display:"block",marginTop:5,color:"#68746e"}}>{row.service}</small>}</td>
-        <td>{row.phone||"—"}</td><td>{row.dateLabel}</td><td><span className={"unified-inbox-status "+statusClass(String(row.status))}>{String(row.status).toUpperCase()}</span></td>
+        <td>{row.phone||"—"}</td><td>{row.dateLabel}</td><td><span className={"unified-inbox-status "+(row.paymentGated?"unified-inbox-status-no-payment":statusClass(String(row.status)))}>{row.paymentGated?"NO PAYMENT":row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></td>
         <td><button type="button" className="unified-inbox-open" onClick={()=>onSelect(row.kind,row.id)}>Fungua ombi</button></td>
       </tr>)}</tbody></table></div>
       <div className="unified-inbox-mobile-list">{visibleRows.map((row)=><article className={"unified-inbox-mobile-item status-row-"+String(row.status).toLowerCase()} key={row.kind+":"+row.id}>
-        <div className="unified-inbox-mobile-top"><span className="unified-inbox-kind">{row.kindLabel}</span><span className={"unified-inbox-status "+statusClass(String(row.status))}>{String(row.status).toUpperCase()}</span></div>
+        <div className="unified-inbox-mobile-top"><span className="unified-inbox-kind">{row.kindLabel}</span><span className={"unified-inbox-status "+statusClass(String(row.status))}>{row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></div>
         <h3>{row.person}</h3>{row.service&&<p style={{color:"#68746e",fontSize:".8rem",margin:"4px 0"}}>{row.service}</p>}
         <div className="unified-inbox-mobile-meta"><span>{row.dateLabel}</span>{row.phone&&<span>Simu: {row.phone}</span>}</div>
         <button type="button" className="unified-inbox-open" onClick={()=>onSelect(row.kind,row.id)}>Fungua ombi</button>
