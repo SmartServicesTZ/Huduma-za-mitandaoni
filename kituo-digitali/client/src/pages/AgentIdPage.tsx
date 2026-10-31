@@ -201,6 +201,7 @@ export default function AgentIdPage() {
   const [paid, setPaid] = useState(false);
   const [downloadedSides, setDownloadedSides] = useState<("front" | "back")[]>([]);
   const [tokenCost, setTokenCost] = useState<number | null>(null);
+  const [roleCosts, setRoleCosts] = useState<Record<string, number>>({ Freelancer: 5, "Team Leader": 10, "Team Reader": 10, Supervisor: 10 });
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [network, setNetwork] = useState<Network>("Airtel");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
@@ -240,8 +241,13 @@ export default function AgentIdPage() {
       if (document.visibilityState === "hidden") return;
       void getServiceTokenConfig("kitambulisho-wakala").then((config) => {
         if (active) {
-          const configured = Number(config.agentTypeTokenCosts?.[type]);
-          setTokenCost(Number.isSafeInteger(configured) && configured > 0 ? configured : agentIdTokenCost(type));
+          const nextCosts: Record<string, number> = { Freelancer: 5, "Team Leader": 10, "Team Reader": 10, Supervisor: 10 };
+          for (const roleName of Object.keys(nextCosts)) {
+            const configured = Number(config.agentTypeTokenCosts?.[roleName]);
+            if (Number.isSafeInteger(configured) && configured > 0) nextCosts[roleName] = configured;
+          }
+          setRoleCosts(nextCosts);
+          setTokenCost(nextCosts[type] ?? agentIdTokenCost(type));
         }
       }).catch((error) => {
         if (active) toast.error(error instanceof Error ? error.message : "Imeshindikana kusoma bei ya aina ya wakala.");
@@ -350,22 +356,21 @@ export default function AgentIdPage() {
           <button type="button" className={orientation === "landscape" ? "active" : ""} aria-pressed={orientation === "landscape"} onClick={() => setOrientation("landscape")}>KULALA (MLALO)</button>
           <button type="button" className={orientation === "portrait" ? "active" : ""} aria-pressed={orientation === "portrait"} onClick={() => setOrientation("portrait")}>KUSIMAMA (WIMA)</button>
         </div>
-        <p className="aid-choice-note">Chagua mtandao na aina ya wakala, kisha pakua picha mbili tofauti za mbele na nyuma.</p>
         <div className="aid-network">{(Object.keys(NETWORKS).filter((n) => n !== "Huduma za Mtandaoni") as Network[]).map((n) => <button type="button" key={n} className={network === n ? "active" : ""} onClick={() => setNetwork(n)}><span className="aid-network-logo" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:34,height:28,background:"#fff",borderRadius:6,padding:3,flexShrink:0}}>{NETWORKS[n].logo ? <img src={NETWORKS[n].logo} alt="" style={{display:"block",width:"auto",height:"auto",maxWidth:"100%",maxHeight:"100%",objectFit:"contain",flex:"0 0 auto"}} /> : <strong>HM</strong>}</span><span>{n === "Mbeya One Company Limited" ? "MBEYA ONE" : n}</span></button>)}</div>
-        <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} /></label>
+        <label className="aid-field"><span>Picha ya Wakala</span><input ref={fileRef} type="file" accept="image/*" onChange={onPhoto} />{photo && <span className="aid-photo-ready"><span aria-hidden="true">✓</span> Picha imepakiwa tayari</span>}</label>
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
         <label className="aid-field"><span>Agent ID</span><input value={agentId} readOnly aria-readonly="true" /></label>
         <label className="aid-field"><span>Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
-        <label className="aid-field"><span>Cheo · {tokenCost === null ? "Inasoma tokeni" : `Tokeni ${tokenCost}`}</span><select value={type} onChange={(e) => setType(e.target.value)}><option>Freelancer</option><option>Team Leader</option><option>Team Reader</option><option>Supervisor</option></select></label>
+        <label className="aid-field"><span>Cheo</span><select value={type} onChange={(e) => setType(e.target.value)}>{(["Freelancer", "Team Leader", "Team Reader", "Supervisor"] as const).map((roleName) => <option key={roleName} value={roleName}>{roleName} — {roleCosts[roleName] ?? agentIdTokenCost(roleName)} TOKENI</option>)}</select></label>
         <label className="aid-field"><span>Mkoa</span><select value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} required><option value="">Chagua mkoa</option>{tanzaniaRegions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Wilaya</span><select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!region} required><option value="">Chagua wilaya</option>{districtsForRegion(region).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Kata / Eneo</span><input value={area} maxLength={30} onChange={(e) => setArea(e.target.value)} /></label>
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua picha mbili tofauti: mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "Inaandaa picha mbili..." : "PAKUA KITAMBULISHO"}</b><small>{orientLabel} · picha 2 tofauti (mbele na nyuma)</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua picha mbili tofauti: mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "DOWNLOAD"}</b><small>(Mbele &amp; Nyuma)</small></span></button>
         </div>
-        <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
+        <div className="aid-note"><b>NOTES</b><p>Baada ya kupakua kitambulisho, usiende kukichapisha mpaka kisainiwe na kiongozi wako.</p></div>
       </section>
 
       <section className="aid-stage">
@@ -424,7 +429,7 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
       <div className="idl-rule-line" />
       <div className="idl-grid">
         <div><small>PHONE</small><b><Words text={phone} fallback="—" /></b></div>
-        <div><small>TYPE / TOKENI</small><b><Words text={`${type} · ${tokenCost} TOKENI`} fallback="—" /></b></div>
+        <div><small>TYPE</small><b><Words text={type} fallback="—" /></b></div>
         <div><small>REGION</small><b><Words text={region} fallback="—" /></b></div>
         <div><small>AREA</small><b><Words text={`${district || "—"} / ${area || "—"}`} /></b></div>
         <div className="wide"><small>COMPANY</small><b><Words text={COMPANY_LABELS[network]} /></b></div>
@@ -444,6 +449,7 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
   const title = network === "Mbeya One Company Limited" ? "KITAMBULISHO CHA LIPA KWA SIMU" : cfg.pattern === "huduma" ? "KITAMBULISHO CHA HUDUMA ZA MTANDAONI" : "KITAMBULISHO CHA WAKALA";
   const footer = network === "Mbeya One Company Limited" ? "MBEYA ONE COMPANY LIMITED • LIPA KWA SIMU AIRTEL • AUTHORIZED AGENT" : cfg.footer;
   return <div ref={innerRef} className={`idl idl-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     {network === "Mbeya One Company Limited" && cfg.logo && <img className="idl-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idl-head">
       <div><div className="idl-brand"><Words text={`HUDUMA ZA MTANDAONI • ${cfg.slogan}`} /></div><div className="idl-title"><Words text={title} /></div></div>
@@ -493,7 +499,7 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
     </div>
     <div className="idp-photo">{photo ? <img src={photo} alt="Wakala" /> : <PhotoPlaceholder />}</div>
     <div className="idp-name" style={{ fontSize: portraitNameSize(displayName) }}><div><Words text={displayName} /></div></div>
-    <div className="idp-pillrow"><span className="idp-pill">✓ <Words text={`${(type || "AGENT").toUpperCase()} · ${tokenCost} TOKENI`} /></span></div>
+    <div className="idp-pillrow"><span className="idp-pill">✓ <Words text={(type || "AGENT").toUpperCase()} /></span></div>
     <div className="idp-grid">
       <div><small><Words text="AGENT ID" /></small><b><Words text={agentId} fallback="—" /></b></div>
       <div><small>SIMU</small><b><Words text={phone} fallback="—" /></b></div>
@@ -515,6 +521,7 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
 /* ============================ KUSIMAMA · NYUMA ============================ */
 function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, paid }: BackProps) {
   return <div ref={innerRef} className={`idp idp-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idp-hero idp-hero--sm">
       <div className="idp-ring" />
@@ -561,10 +568,14 @@ const AGENT_ID_CSS = `
 .aid-choice button{border:1px solid #d6e0ec;border-radius:10px;background:#f4f7fb;color:#334155;padding:10px 7px;font-size:10px;font-weight:900;cursor:pointer;transition:background .18s,color .18s,border-color .18s}
 .aid-choice button.active{background:#18b969;border-color:#18b969;color:#fff}
 .aid-choice-note{margin:0 0 12px;font-size:11px;line-height:1.5;color:#64748b}
+.aid-photo-ready{display:flex;align-items:center;gap:7px;margin-top:7px;color:#087f5b!important;font-size:12px!important;font-weight:800!important}
+.aid-photo-ready span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#dcfce7;color:#087f5b;font-size:14px;font-weight:900}
 .aid-network{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
 .aid-network button{border:1px solid #d6e0ec;border-radius:10px;background:#f4f7fb;color:#334155;padding:9px 3px;font-size:10px;font-weight:800;cursor:pointer;transition:background .18s,color .18s}
 .aid-network button.active{background:#172443;border-color:#172443;color:#fff}
-.aid-note{margin:14px 0 0;font-size:11px;line-height:1.5;color:#64748b}
+.aid-note{margin:14px 0 0;padding:11px 12px;border-left:3px solid #0e7490;border-radius:8px;background:#f0f9ff;font-size:11px;line-height:1.5;color:#475569}
+.aid-note>b{display:block;margin-bottom:4px;color:#0e7490;font-size:10px;letter-spacing:.1em}
+.aid-note p{margin:0}
 .aid-spin{animation:aid-spin 1s linear infinite}@keyframes aid-spin{to{transform:rotate(360deg)}}
 .aid-intro{margin:0 0 14px;padding:13px 15px;border:1px solid #dbe5f1;border-radius:14px;background:linear-gradient(120deg,#eef6ff,#f4f0ff)}
 .aid-intro p{margin:5px 0 0;font-size:12px;line-height:1.55;color:#52657a}
@@ -640,7 +651,7 @@ const AGENT_ID_CSS = `
 .net-mbeya .idl-bg-logo{object-fit:cover;object-position:center;opacity:.32;transform:scale(1.04);filter:contrast(1.18) saturate(1.3)}
 /* Nembo kubwa za kampuni kwenye vitambulisho vya kusimama, mbele na nyuma. */
 /* Mtindo mpya wa vitambulisho vya kusimama: nembo ya kampuni kama watermark ya kadi nzima. */
-.idp-bg-logo{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.32;filter:contrast(1.2) saturate(1.35);pointer-events:none}
+.idp-bg-logo{position:absolute;z-index:1;left:50%;top:50%;width:150px;height:150px;max-width:48%;max-height:30%;object-fit:contain;object-position:center;opacity:.13;transform:translate(-50%,-50%);pointer-events:none}
 .idp>*:not(.idp-bg-logo):not(.idp-strip){position:relative;z-index:2}
 .idp-hero{flex-basis:154px;padding-top:16px;background:linear-gradient(145deg,var(--d) 0%,var(--c) 58%,var(--h) 100%)}
 .idp-hero--sm{flex-basis:142px}
@@ -674,38 +685,39 @@ const AGENT_ID_CSS = `
 .idp{width:320px;height:520px;box-sizing:border-box;position:relative;overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(148,163,184,.35);border-radius:24px;background:linear-gradient(160deg,#fff 0%,#f4f7fb 58%,#fff 100%);color:#0f172a;font-family:Arial,Helvetica,sans-serif;box-shadow:0 20px 44px rgba(15,23,42,.24)}
 .idp small{display:block;font-size:7px;font-weight:800;letter-spacing:.09em;color:#94a3b8;text-transform:uppercase}
 .idp-strip{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,var(--d),var(--c) 55%,var(--h))}
-.idp-hero{position:relative;flex:0 0 146px;box-sizing:border-box;padding:15px 16px 0;overflow:hidden;color:#fff;background:linear-gradient(135deg,var(--d) 0%,var(--c) 62%,var(--h) 100%);border-bottom:5px solid var(--h)}
-.idp-hero--sm{flex-basis:146px}
+.idp-hero{position:relative;flex:0 0 132px;box-sizing:border-box;padding:13px 15px 0;overflow:hidden;color:#fff;background:linear-gradient(135deg,var(--d) 0%,var(--c) 62%,var(--h) 100%);border-bottom:4px solid var(--h)}
+.idp-hero--sm{flex-basis:132px}
 .idp-hero::before{content:"";position:absolute;left:-70px;top:-80px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.1)}
 .idp-ring{position:absolute;right:-46px;top:30px;width:150px;height:150px;box-sizing:border-box;border-radius:50%;border:18px solid rgba(255,255,255,.1)}
 .idp-hero>*:not(.idp-ring):not(.idp-curve){position:relative;z-index:2}
 .idp-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .idp-brand{font-size:8.5px;font-weight:900;letter-spacing:.14em;line-height:1.3;max-width:110px}
-.idp-top .idx-logochip{width:104px;height:38px}
-.idp-title{margin-top:20px;font-size:19px;font-weight:900;line-height:1.12}
+.idp-top .idx-logochip{width:92px;height:34px;padding:5px 8px;flex:0 0 92px}
+.idp-top .idx-logochip img{max-width:100%;max-height:100%;object-fit:contain}
+.idp-title{margin-top:14px;font-size:17px;font-weight:900;line-height:1.12;max-width:100%;overflow-wrap:anywhere}
 .idp-hero--sm .idp-title{margin-top:18px;font-size:17px}
 .idp-sub{margin-top:6px;font-size:8px;font-weight:700;letter-spacing:.14em;opacity:.88}
 .idp-curve{position:absolute;left:-20px;top:100%;margin-top:-22px;width:360px;height:360px;border-radius:50%;background:#fff;z-index:1}
 
 /* mbele */
-.idp-photo{position:relative;z-index:3;flex:0 0 auto;width:108px;height:120px;box-sizing:border-box;margin:-42px auto 0;overflow:hidden;border:4px solid #fff;border-radius:18px;background:#e9eef4;box-shadow:0 10px 22px rgba(15,23,42,.22)}
+.idp-photo{position:relative;z-index:3;flex:0 0 auto;width:100px;height:108px;box-sizing:border-box;margin:-34px auto 0;overflow:hidden;border:4px solid #fff;border-radius:16px;background:#e9eef4;box-shadow:0 8px 18px rgba(15,23,42,.2)}
 .idp-photo img{display:block;width:100%;height:100%;object-fit:cover}
-.idp-name{flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:36px;margin-top:6px;padding:0 12px;text-align:center;font-weight:900;line-height:1.12;color:#0f172a;letter-spacing:-.01em}
+.idp-name{flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:32px;margin-top:5px;padding:0 12px;text-align:center;font-weight:900;line-height:1.12;color:#0f172a;letter-spacing:-.01em}
 .idp-pillrow{display:flex;justify-content:center;margin-top:4px}
 .idp-pill{display:inline-block;padding:5px 14px;border-radius:999px;background:var(--accent);color:var(--d);font-size:9px;font-weight:900;letter-spacing:.1em}
-.idp-grid{margin:7px 14px 0;display:grid;grid-template-columns:1fr 1fr;gap:5px}
-.idp-grid>div{min-width:0;box-sizing:border-box;padding:6px 8px 6px;border-radius:9px;border:1px solid rgba(148,163,184,.24);border-left:3px solid var(--c);background:rgba(255,255,255,.94);box-shadow:0 3px 8px rgba(15,23,42,.04)}
+.idp-grid{margin:5px 13px 0;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.idp-grid>div{min-width:0;box-sizing:border-box;padding:5px 7px;border-radius:8px;border:1px solid rgba(148,163,184,.24);border-left:3px solid var(--c);background:rgba(255,255,255,.97);box-shadow:0 3px 8px rgba(15,23,42,.04)}
 .idp-grid .wide{grid-column:1/-1}
-.idp-grid b{display:block;margin-top:2px;font-size:11px;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
-.idp-foot{margin-top:auto;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;padding:8px 20px 14px}
+.idp-grid b{display:block;margin-top:2px;font-size:10px;font-weight:800;line-height:1.22;overflow-wrap:anywhere}
+.idp-foot{margin-top:auto;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;box-sizing:border-box;padding:6px 16px 10px}
 .idp-dates{display:flex;gap:16px}
 .idp-dates b{display:block;margin-top:2px;font-size:10.5px;font-weight:900;color:var(--d)}
 
 /* nyuma */
-.idp-qr-tile{position:relative;z-index:3;flex:0 0 auto;width:140px;height:140px;box-sizing:border-box;margin:-32px auto 0;padding:8px;border-radius:22px;background:#fff;border:1px solid #e5eaf2;box-shadow:0 12px 26px rgba(15,23,42,.22)}
+.idp-qr-tile{position:relative;z-index:3;flex:0 0 auto;width:132px;height:132px;box-sizing:border-box;margin:-24px auto 0;padding:8px;border-radius:18px;background:#fff;border:1px solid #e5eaf2;box-shadow:0 10px 22px rgba(15,23,42,.18)}
 .idp-qr-tile img,.idp-qr-empty{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .idp-qr-label{margin-top:7px;text-align:center;font-size:8.5px;font-weight:900;letter-spacing:.14em;color:var(--d)}
-.idp-back{flex:1;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;padding:10px 22px 10px}
+.idp-back{flex:1;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;padding:8px 18px 8px}
 .idp-back h3{margin:0 0 7px;font-size:9.5px;font-weight:900;letter-spacing:.08em;color:var(--c)}
 .idp-rl{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;font-size:8.8px;line-height:1.35;color:#475569}
 .idp-rl i{flex:0 0 16px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-size:8.5px;font-weight:900}
