@@ -68,7 +68,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia bila malipo.", "landmark", "HUDUMA ZA WAKALA"),
   free("access-lipa-number", "PATA ACCESS YA LIPA & USAJILI", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "HUDUMA ZA WAKALA"),
   free("pata-till-mitandao-yote", "PATA TILL MITANDAO YOTE", "Omba Till ya Halotel, Airtel au Vodacom. Halotel bure; Airtel TSh 5,000; Vodacom TSh 40,000.", "store", "HUDUMA ZA WAKALA"),
-  { ...paid("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA USAJILI & LIPA", "Tengeneza kitambulisho cha kisasa cha wakala wa usajili na Lipa.", "badge-check", "HUDUMA ZA WAKALA"), agentTypeTokenCosts: { Freelancer: 10, "Team Leader": 10, "Team Reader": 10, Supervisor: 10 } },
+  { ...paid("kitambulisho-wakala", "KITAMBULISHO CHA WAKALA USAJILI & LIPA", "Tengeneza kitambulisho cha kisasa cha wakala wa usajili na Lipa.", "badge-check", "HUDUMA ZA WAKALA"), agentTypeTokenCosts: { Freelancer: 5, "Team Leader": 10, "Team Reader": 10, Supervisor: 10 } },
   { ...paid("kitambulisho-wakala-airtel", "KITAMBULISHO CHA WAKALA — AIRTEL", "Gharama ya kutengeneza kitambulisho cha wakala wa Airtel.", "badge-check", "Bei za Kitambulisho cha Wakala"), tokenCost: 5, isVisible: false },
   { ...paid("kitambulisho-wakala-halotel", "KITAMBULISHO CHA WAKALA — HALOTEL", "Gharama ya kutengeneza kitambulisho cha wakala wa Halotel.", "badge-check", "Bei za Kitambulisho cha Wakala"), tokenCost: 5, isVisible: false },
   { ...paid("kitambulisho-wakala-yas", "KITAMBULISHO CHA WAKALA — YAS", "Gharama ya kutengeneza kitambulisho cha wakala wa Yas.", "badge-check", "Bei za Kitambulisho cha Wakala"), tokenCost: 5, isVisible: false },
