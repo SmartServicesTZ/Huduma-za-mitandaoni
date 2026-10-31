@@ -77,6 +77,8 @@ export default function GeminiFloatingChat() {
     }
   }
 
+  if (typeof window !== "undefined" && window.location.pathname.endsWith("/nida-demo")) return null;
+
   return (
     <div style={{ position: "fixed", right: 16, bottom: "calc(86px + env(safe-area-inset-bottom))", zIndex: 1200, fontFamily: "inherit" }}>
       {open && (
