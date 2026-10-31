@@ -587,6 +587,7 @@ function MyApplicationsPage() {
       title: String(item.serviceName || item.serviceSlug || "Ombi la huduma"),
       category: "Huduma",
       status: String(item.status || "PENDING").toUpperCase(),
+      paymentRequired: String(item.serviceSlug ?? "").toLowerCase() === "pata-till-mitandao-yote" && ["AIRTEL", "VODACOM"].includes(String(item.applicantData?.network ?? "").toUpperCase()) && String(item.applicantData?.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID",
       reference: String(item.applicationId || item.id),
       phone: String(item.phone ?? item.applicantData?.phone ?? ""),
       date: item.updatedAt ?? item.submittedAt ?? item.createdAt,
@@ -607,7 +608,7 @@ function MyApplicationsPage() {
       raw: item,
     })),
   ].sort((a, b) => dateMillis(b.date) - dateMillis(a.date));
-  const statusLabel = (status: string) => status === "APPROVED" ? "LIMEIDHINISHWA" : status === "REJECTED" ? "LIMEKATALIWA" : status === "PROCESSING" ? "LINAFANYIWA KAZI" : status === "PENDING" ? "LINASUBIRI" : status;
+  const statusLabel = (status: string, paymentRequired = false) => paymentRequired ? "FANYA MALIPO" : status === "APPROVED" ? "LIMEIDHINISHWA" : status === "REJECTED" ? "LIMEKATALIWA" : status === "PROCESSING" ? "LINAFANYIWA KAZI" : status === "PENDING" ? "LINASUBIRI" : status;
   const statusStyle = (status: string): React.CSSProperties => ({
     display: "inline-flex", alignItems: "center", borderRadius: 999, padding: "6px 10px", fontSize: 11, fontWeight: 900,
     background: status === "APPROVED" ? "#dcfce7" : status === "REJECTED" ? "#fee2e2" : status === "PROCESSING" ? "#dbeafe" : "#fef3c7",
@@ -633,13 +634,14 @@ function MyApplicationsPage() {
             return <article key={item.category + ":" + item.id} role="button" tabIndex={0} aria-label={`Fungua ombi ${item.title}`} onClick={() => setSelectedApplication(item)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedApplication(item); } }} style={{border:"1px solid #dbe5df",borderLeft:`5px solid ${item.status==="APPROVED"?"#16a34a":item.status==="REJECTED"?"#dc2626":item.status==="PROCESSING"?"#2563eb":"#d97706"}`,borderRadius:13,padding:15,background:item.status==="APPROVED"?"#f0fdf4":item.status==="REJECTED"?"#fff1f2":item.status==="PROCESSING"?"#eff6ff":"#fffbeb",display:"grid",gap:9,cursor:"pointer",transition:"box-shadow .18s ease,transform .18s ease"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
                 <div style={{minWidth:0,flex:"1 1 220px"}}><span style={{fontSize:10,fontWeight:900,letterSpacing:".08em",color:"#64748b"}}>{item.category.toUpperCase()}</span><h3 style={{margin:"4px 0",fontSize:16,overflowWrap:"anywhere"}}>{item.title}</h3></div>
-                <span style={statusStyle(item.status)}>{statusLabel(item.status)}</span>
+                <span style={statusStyle(item.status)}>{statusLabel(item.status, item.paymentRequired)}</span>
               </div>
               <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:12,color:"#475569"}}>
                 <span>Rejea: <strong>{item.reference}</strong></span>
                 {item.phone && <span>Simu: {item.phone}</span>}
                 <span>{date ? new Date(date).toLocaleString("sw-TZ") : "Tarehe haijatajwa"}</span>
               </div>
+              {item.paymentRequired && <div style={{padding:11,borderRadius:9,background:"#fff7ed",border:"1px solid #fdba74",color:"#9a3412",fontSize:13}}><strong>OMBI HALIJAANZA KUSHUGHULIKIWA</strong><p style={{margin:"5px 0 0"}}>Fanya malipo ili ombi lako lianze kufanyiwa kazi. Wasiliana na Admin kupitia WhatsApp 0698232313.</p></div>}
               {item.reason && <div style={{padding:10,borderRadius:9,background:"#fef2f2",color:"#991b1b",fontSize:13}}><strong>Sababu ya kukataliwa:</strong> {item.reason}</div>}
               {item.message && <div style={{padding:10,borderRadius:9,background:"#eff6ff",color:"#1e3a8a",fontSize:13}}><strong>Ujumbe wa Admin:</strong> {item.message}</div>}
               <button type="button" onClick={(event) => { event.stopPropagation(); setSelectedApplication(item); }} style={{justifySelf:"start",display:"inline-flex",alignItems:"center",gap:6,padding:"6px 9px",border:0,borderRadius:8,background:"#e0e7ff",color:"#3730a3",fontSize:11,fontWeight:800,cursor:"pointer"}}><Eye size={13}/> Fungua taarifa</button>
@@ -651,12 +653,13 @@ function MyApplicationsPage() {
     {selectedApplication && <div role="presentation" onClick={() => setSelectedApplication(null)} style={{position:"fixed",inset:0,zIndex:10000,display:"grid",placeItems:"center",padding:14,background:"rgba(2,6,23,.72)",backdropFilter:"blur(5px)"}}>
       <section role="dialog" aria-modal="true" aria-labelledby="my-application-detail-title" onClick={(event) => event.stopPropagation()} style={{width:"min(100%,680px)",maxHeight:"88dvh",overflowY:"auto",padding:20,borderRadius:18,background:"#fff",color:"#0f172a",boxShadow:"0 24px 70px rgba(0,0,0,.3)"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
-          <div><span style={{fontSize:10,fontWeight:900,letterSpacing:".08em",color:"#64748b"}}>{selectedApplication.category.toUpperCase()}</span><h2 id="my-application-detail-title" style={{margin:"4px 0 10px",fontSize:20}}>{selectedApplication.title}</h2><span style={statusStyle(selectedApplication.status)}>{statusLabel(selectedApplication.status)}</span></div>
+          <div><span style={{fontSize:10,fontWeight:900,letterSpacing:".08em",color:"#64748b"}}>{selectedApplication.category.toUpperCase()}</span><h2 id="my-application-detail-title" style={{margin:"4px 0 10px",fontSize:20}}>{selectedApplication.title}</h2><span style={statusStyle(selectedApplication.status)}>{statusLabel(selectedApplication.status, selectedApplication.paymentRequired)}</span></div>
           <button type="button" aria-label="Funga taarifa za ombi" onClick={() => setSelectedApplication(null)} style={{width:34,height:34,border:0,borderRadius:9,background:"#f1f5f9",fontSize:20,cursor:"pointer"}}>×</button>
         </div>
         <div style={{display:"grid",gap:10,marginTop:18}}>
           <div style={{padding:12,borderRadius:10,background:"#f8fafc"}}><strong>Rejea ya ombi</strong><p style={{margin:"4px 0 0",overflowWrap:"anywhere"}}>{selectedApplication.reference}</p></div>
           {selectedApplication.phone && <div style={{padding:12,borderRadius:10,background:"#f8fafc"}}><strong>Namba ya simu</strong><p style={{margin:"4px 0 0"}}>{selectedApplication.phone}</p></div>}
+          {selectedApplication.paymentRequired && <div style={{padding:12,borderRadius:10,background:"#fff7ed",border:"1px solid #fdba74",color:"#9a3412"}}><strong>OMBI LAKO HALIJAANZA KUFANYIWA KAZI</strong><p style={{margin:"5px 0 0"}}>Hujafanya malipo au malipo hayajathibitishwa. Fanya malipo ili ombi lianze kufanyiwa kazi. WhatsApp: 0698232313.</p></div>}
           {selectedApplication.reason && <div style={{padding:12,borderRadius:10,background:"#fef2f2",color:"#991b1b"}}><strong>Sababu ya kukataliwa</strong><p style={{margin:"4px 0 0"}}>{selectedApplication.reason}</p></div>}
           {selectedApplication.message && <div style={{padding:12,borderRadius:10,background:"#eff6ff",color:"#1e3a8a"}}><strong>Ujumbe / maelekezo ya Admin</strong><p style={{margin:"4px 0 0",whiteSpace:"pre-wrap"}}>{selectedApplication.message}</p></div>}
           {Object.entries((selectedApplication.raw?.applicantData ?? selectedApplication.raw?.formData ?? {}) as Record<string, unknown>).filter(([,value]) => value !== null && value !== undefined && value !== "").map(([key,value]) => <div key={key} style={{padding:12,border:"1px solid #e2e8f0",borderRadius:10}}><strong style={{display:"block",fontSize:12,color:"#475569"}}>{key.replace(/([A-Z])/g," $1").replace(/[_-]/g," ")}</strong><p style={{margin:"5px 0 0",whiteSpace:"pre-wrap",overflowWrap:"anywhere",fontSize:13}}>{typeof value === "object" ? JSON.stringify(value) : String(value)}</p></div>)}
