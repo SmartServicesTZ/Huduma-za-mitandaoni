@@ -202,7 +202,7 @@ export default function AdminDashboard() {
       const needs = (...panels: Panel[]) => panels.includes(panel);
       const results = await Promise.allSettled([
         cachedRead("users", hasPermission("viewUsers") && needs("overview", "users", "tokens", "reports", "security"), adminListUsers, [], force),
-        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl", "applications", "reports"), adminListServices, [], force),
+        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl", "agentIdPricing", "applications", "reports"), adminListServices, [], force),
         cachedRead("transactions", hasPermission("manageReports") && needs("overview", "transactions", "reports"), adminListTransactions, [], force),
         cachedRead("messages", hasPermission("manageMessages") && needs("messages"), () => adminListCollection("messages"), [], force),
         cachedRead(`security:${auditCollection}`, hasPermission("viewAuditLogs") && needs("security"), () => getRecentSecurityLogs(auditCollection), { rows: [], cursor: null, hasMore: false }, force),
@@ -328,7 +328,7 @@ const permissionOptions = [
   ["viewAuditLogs", "Audit logs: kuona historia ya actions"],
 ] as const;
 
-const panelPermission: Partial<Record<Panel, string>> = { agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", lipa: "manageLipaApplications", transactions: "manageReports", reports: "manageReports", security: "viewAuditLogs", messages: "manageMessages" };
+const panelPermission: Partial<Record<Panel, string>> = { agentIdPricing: "manageServices", agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", lipa: "manageLipaApplications", transactions: "manageReports", reports: "manageReports", security: "viewAuditLogs", messages: "manageMessages" };
 
 function BusinessReport({ transactions, users, serviceApplications, lipaApplications, services }: { transactions: any[]; users: any[]; serviceApplications: ServiceApplication[]; lipaApplications: LipaApplication[]; services: any[] }) {
   const [from, setFrom] = useState("");
