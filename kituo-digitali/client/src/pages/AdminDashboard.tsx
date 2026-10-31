@@ -23,6 +23,7 @@ const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
   ["users", "Watumiaji", Users],
   ["agents", "Mawakala", UserCog],
   ["tokens", "Tokeni", WalletCards],
+  ["agentIdPricing", "Bei za Aina za Wakala", SlidersHorizontal],
   ["serviceControl", "Funga / Fungua Huduma", ShieldCheck],
   ["lipaReport", "Ripoti za Lipa", BarChart3],
   ["transactions", "Transactions", BarChart3],
