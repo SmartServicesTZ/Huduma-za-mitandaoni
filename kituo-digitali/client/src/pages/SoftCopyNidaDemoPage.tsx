@@ -1,33 +1,31 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, ShieldAlert } from "lucide-react";
 import { useLocation } from "wouter";
+import { formatDemoBirthDate, formatDemoIdNumber, getNidaDemoAssetPaths, NIDA_DEMO_CARD_HEIGHT, NIDA_DEMO_CARD_WIDTH, NIDA_DEMO_WATERMARK } from "../../../shared/nidaDemoCard";
 
-const ASSET_BASE_URL = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const CARD_ASSETS = getNidaDemoAssetPaths(import.meta.env.BASE_URL);
+const HEADER_LINES = [
+  "JAMHURI YA MUUNGANO WA TANZANIA",
+  "KITAMBULISHO CHA TAIFA",
+  "THE UNITED REPUBLIC OF TANZANIA",
+  "CITIZEN IDENTITY CARD",
+];
 
-const CARD_DESIGN = {
-  lines: [
-    "JAMHURI YA MUUNGANO WA TANZANIA",
-    "KITAMBULISHO CHA TAIFA",
-    "THE UNITED REPUBLIC OF TANZANIA",
-    "CITIZEN IDENTITY CARD"
-  ],
-  colors: {
-    backgroundStart: "#d4edda",
-    backgroundMid: "#bee5eb",
-    backgroundEnd: "#78c6d7",
-    border: "#477e77",
-  },
-  assets: {
-    ngao: `${ASSET_BASE_URL}images/ngao.png`,
-    bendera: `${ASSET_BASE_URL}images/bendera.png`,
-  }
-};
+interface CardValues {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  idNumber: string;
+  dateOfBirth: string;
+  gender: string;
+  signature: string;
+}
 
 function loadCardImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Imeshindikana kupakia picha ya kitambulisho: ${src}`));
+    image.onerror = () => reject(new Error(`Imeshindikana kupakia picha: ${src}`));
     image.src = src;
   });
 }
@@ -60,320 +58,268 @@ function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement, 
   ctx.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, x, y, width, height);
 }
 
+function drawWrappedText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) {
+    ctx.fillText("—", x, y, maxWidth);
+    return;
+  }
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (ctx.measureText(candidate).width <= maxWidth || !line) line = candidate;
+    else { lines.push(line); line = word; }
+  }
+  if (line) lines.push(line);
+  lines.slice(0, 2).forEach((value, index) => ctx.fillText(value, x, y + index * lineHeight, maxWidth));
+}
+
+function drawPortraitPlaceholder(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
+  ctx.save();
+  ctx.fillStyle = "#e7eef0";
+  ctx.fillRect(x, y, width, height);
+  ctx.fillStyle = "#81969b";
+  ctx.beginPath();
+  ctx.ellipse(x + width * 0.5, y + height * 0.34, width * 0.18, height * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + width * 0.5, y + height * 0.91, width * 0.34, height * 0.38, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#253e43";
+  ctx.font = "bold 21px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("SAMPLE PHOTO", x + width / 2, y + height - 22);
+  ctx.restore();
+}
+
+function drawCard(ctx: CanvasRenderingContext2D, values: CardValues, crest: HTMLImageElement, flag: HTMLImageElement, portrait: HTMLImageElement | null) {
+  const width = NIDA_DEMO_CARD_WIDTH;
+  const height = NIDA_DEMO_CARD_HEIGHT;
+  ctx.clearRect(0, 0, width, height);
+
+  const background = ctx.createLinearGradient(0, 0, width, height);
+  background.addColorStop(0, "#d8eddf");
+  background.addColorStop(0.52, "#c9e5e7");
+  background.addColorStop(1, "#8bc5d1");
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, width, height);
+
+  // Subtle guilloche-like lines add texture without introducing official seals or claims.
+  ctx.save();
+  ctx.strokeStyle = "rgba(31, 90, 95, 0.08)";
+  ctx.lineWidth = 2;
+  for (let x = 40; x < width; x += 44) {
+    ctx.beginPath();
+    ctx.moveTo(x, 210);
+    ctx.bezierCurveTo(x - 25, 430, x + 36, 620, x, 875);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.strokeStyle = "#347d80";
+  ctx.lineWidth = 12;
+  ctx.strokeRect(18, 18, width - 36, height - 36);
+  ctx.strokeStyle = "rgba(255,255,255,.72)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(34, 34, width - 68, height - 68);
+
+  const crestRect = containImageRect(crest, 60, 48, 150, 132);
+  ctx.drawImage(crest, crestRect.x, crestRect.y, crestRect.width, crestRect.height);
+  const flagRect = containImageRect(flag, 1380, 62, 150, 94);
+  ctx.drawImage(flag, flagRect.x, flagRect.y, flagRect.width, flagRect.height);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#183943";
+  ctx.font = "700 29px Arial";
+  ctx.fillText(HEADER_LINES[0], width / 2, 74, 1030);
+  ctx.font = "800 43px Arial";
+  ctx.fillText(HEADER_LINES[1], width / 2, 120, 940);
+  ctx.fillStyle = "#324f54";
+  ctx.font = "600 22px Arial";
+  ctx.fillText(HEADER_LINES[2], width / 2, 158, 1020);
+  ctx.font = "700 25px Arial";
+  ctx.fillText(HEADER_LINES[3], width / 2, 194, 900);
+
+  // Draw the safety marking into the same bitmap used by both preview and download.
+  ctx.save();
+  ctx.translate(width / 2, 556);
+  ctx.rotate(-0.16);
+  ctx.textAlign = "center";
+  ctx.font = "900 108px Arial";
+  ctx.fillStyle = "rgba(160, 30, 35, .20)";
+  ctx.fillText("DEMO", 0, 0);
+  ctx.restore();
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#193b40";
+  ctx.font = "800 34px Arial";
+  ctx.fillText("ID NUMBER", 78, 256);
+  ctx.fillStyle = "#102c32";
+  ctx.font = "700 43px Arial";
+  ctx.fillText(formatDemoIdNumber(values.idNumber), 78, 309, 950);
+
+  const details = [
+    { sw: "JINA", en: "Given Name", value: [values.firstName, values.middleName].filter(Boolean).join(" ").toUpperCase() },
+    { sw: "JINA LA MWISHO", en: "Last Name", value: values.lastName.toUpperCase() },
+    { sw: "TAREHE YA KUZALIWA", en: "Date of Birth", value: formatDemoBirthDate(values.dateOfBirth) },
+    { sw: "JINSI", en: "Sex", value: values.gender.toUpperCase() },
+    { sw: "SAINI", en: "Signature", value: values.signature || "—" },
+  ];
+  const rowYs = [397, 510, 623, 736, 849];
+  details.forEach((field, index) => {
+    const y = rowYs[index];
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#244f4f";
+    ctx.font = "800 23px Arial";
+    ctx.fillText(field.sw, 80, y);
+    ctx.fillStyle = "#52666a";
+    ctx.font = "18px Arial";
+    ctx.fillText(field.en, 80, y + 26);
+    ctx.fillStyle = index === 4 ? "#173c52" : "#173238";
+    ctx.font = index === 4 ? "italic 34px cursive" : "700 32px Arial";
+    drawWrappedText(ctx, field.value, 400, y + 12, 700, 38);
+  });
+
+  const photoBox = { x: 1160, y: 310, width: 360, height: 470 };
+  ctx.fillStyle = "rgba(255,255,255,.94)";
+  ctx.fillRect(photoBox.x, photoBox.y, photoBox.width, photoBox.height);
+  if (portrait) drawCoverImage(ctx, portrait, photoBox.x + 10, photoBox.y + 10, photoBox.width - 20, photoBox.height - 20);
+  else drawPortraitPlaceholder(ctx, photoBox.x + 10, photoBox.y + 10, photoBox.width - 20, photoBox.height - 20);
+  ctx.strokeStyle = "#347d80";
+  ctx.lineWidth = 5;
+  ctx.strokeRect(photoBox.x, photoBox.y, photoBox.width, photoBox.height);
+
+  ctx.fillStyle = "rgba(255, 244, 224, .94)";
+  ctx.fillRect(55, 956, width - 110, 54);
+  ctx.strokeStyle = "#a12b31";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(55, 956, width - 110, 54);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#8c1f27";
+  ctx.font = "900 28px Arial";
+  ctx.fillText(NIDA_DEMO_WATERMARK, width / 2, 992);
+}
+
 export default function SoftCopyNidaDemoPage() {
   const [, navigate] = useLocation();
-  const [firstName, setFirstName] = useState("Awadhi");
-  const [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState("Kibanje");
-  const [idNumber, setIdNumber] = useState("19961006218020000128");
-  const [dobInput, setDobInput] = useState("1996-10-06");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [firstName, setFirstName] = useState("DEMO");
+  const [middleName, setMiddleName] = useState("SAMPLE");
+  const [lastName, setLastName] = useState("PERSON");
+  const [idNumber, setIdNumber] = useState("00000000000000000000");
+  const [dateOfBirth, setDateOfBirth] = useState("2000-01-01");
   const [gender, setGender] = useState("M");
+  const [signature, setSignature] = useState("DEMO ONLY");
   const [photo, setPhoto] = useState("");
-  const [signature, setSignature] = useState("A. Kibanje");
+  const [assets, setAssets] = useState<{ crest: HTMLImageElement; flag: HTMLImageElement } | null>(null);
+  const [assetError, setAssetError] = useState("");
+  const [photoImage, setPhotoImage] = useState<HTMLImageElement | null>(null);
+  const [photoError, setPhotoError] = useState("");
+  const [downloading, setDownloading] = useState(false);
 
-  const fullName = useMemo(
-    () => [firstName, middleName, lastName].filter(Boolean).join(" ").toUpperCase(),
-    [firstName, middleName, lastName]
-  );
+  const values = useMemo<CardValues>(() => ({ firstName, middleName, lastName, idNumber, dateOfBirth, gender, signature }), [firstName, middleName, lastName, idNumber, dateOfBirth, gender, signature]);
 
-  const formattedDob = useMemo(() => {
-    if (!dobInput) return "06 OCT 1996";
-    const parts = dobInput.split(/[-/]/);
-    if (parts.length === 3) {
-      let year, monthNum, day;
-      if (parts[0].length === 4) {
-        year = parts[0]; monthNum = parts[1]; day = parts[2];
-      } else {
-        day = parts[0]; monthNum = parts[1]; year = parts[2];
-      }
-      const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-      const mIndex = parseInt(monthNum, 10) - 1;
-      const monthStr = months[mIndex] || "OCT";
-      return `${day} ${monthStr} ${year}`.toUpperCase();
-    }
-    return dobInput.toUpperCase();
-  }, [dobInput]);
+  useEffect(() => {
+    let active = true;
+    Promise.all([loadCardImage(CARD_ASSETS.ngao), loadCardImage(CARD_ASSETS.bendera)])
+      .then(([crest, flag]) => { if (active) { setAssets({ crest, flag }); setAssetError(""); } })
+      .catch((error: unknown) => { if (active) setAssetError(error instanceof Error ? error.message : "Nembo au bendera haikupatikana. Hakikisha picha za demo zipo."); });
+    return () => { active = false; };
+  }, []);
 
-  const formattedNidaNumber = useMemo(() => {
-    const raw = idNumber.replace(/\D/g, "");
-    if (raw.length >= 20) {
-      return `${raw.slice(0,8)}-${raw.slice(8,13)}-${raw.slice(13,18)}-${raw.slice(18,20)}`;
-    }
-    return idNumber.toUpperCase() || "19961006-21802-00001-28";
-  }, [idNumber]);
+  useEffect(() => {
+    let active = true;
+    if (!photo) { setPhotoImage(null); setPhotoError(""); return () => { active = false; }; }
+    loadCardImage(photo)
+      .then((image) => { if (active) { setPhotoImage(image); setPhotoError(""); } })
+      .catch(() => { if (active) { setPhotoImage(null); setPhotoError("Picha uliyochagua haikuweza kufunguliwa. Jaribu PNG, JPG au WebP nyingine."); } });
+    return () => { active = false; };
+  }, [photo]);
 
-  function readImage(file?: File) {
-    if (!file || !file.type.startsWith("image/")) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx || !assets) return;
+    drawCard(ctx, values, assets.crest, assets.flag, photoImage);
+  }, [assets, values, photoImage]);
+
+  function onChoosePhoto(file?: File) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setPhotoError("Chagua faili la picha la PNG, JPG au WebP."); return; }
+    if (file.size > 8 * 1024 * 1024) { setPhotoError("Picha iwe chini ya 8 MB."); return; }
     const reader = new FileReader();
-    reader.onload = () => setPhoto(String(reader.result || ""));
+    reader.onerror = () => setPhotoError("Imeshindikana kusoma picha. Jaribu faili jingine.");
+    reader.onload = () => { setPhoto(String(reader.result || "")); setPhotoError(""); };
     reader.readAsDataURL(file);
   }
 
   async function downloadCard() {
-    if (!firstName.trim() || !lastName.trim() || !idNumber.trim() || !dobInput) {
-      window.alert("Tafadhali jaza taarifa zote muhimu kabla ya kupakua.");
+    if (!firstName.trim() || !lastName.trim() || !idNumber.trim() || !dateOfBirth) {
+      window.alert("Tafadhali jaza jina la kwanza, jina la mwisho, namba ya mfano na tarehe ya kuzaliwa.");
       return;
     }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = 1600;
-    canvas.height = 1045;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // 1. Mandhari ya Gradient
-    const gradient = ctx.createLinearGradient(0, 0, 1600, 1045);
-    gradient.addColorStop(0, CARD_DESIGN.colors.backgroundStart);
-    gradient.addColorStop(0.5, CARD_DESIGN.colors.backgroundMid);
-    gradient.addColorStop(1, CARD_DESIGN.colors.backgroundEnd);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1600, 1045);
-
-    // 2. Taswira ya Mlima kwa nyuma
-    ctx.fillStyle = "rgba(160, 60, 40, 0.10)";
-    ctx.beginPath();
-    ctx.moveTo(250, 800);
-    ctx.lineTo(450, 380);
-    ctx.lineTo(580, 500);
-    ctx.lineTo(750, 280);
-    ctx.lineTo(950, 800);
-    ctx.closePath();
-    ctx.fill();
-
-    const finalizeCanvas = () => {
-      // Ukingo wa nje
-      ctx.strokeStyle = CARD_DESIGN.colors.border;
-      ctx.lineWidth = 10;
-      ctx.strokeRect(16, 16, 1568, 1013);
-
-      // Mistari 4 ya Juu
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#1b2a4a";
-      ctx.font = "bold 22px Arial";
-      ctx.fillText(CARD_DESIGN.lines[0], 800, 55);
-
-      ctx.font = "bold 38px Arial";
-      ctx.fillText(CARD_DESIGN.lines[1], 800, 98);
-
-      ctx.font = "bold 16px Arial";
-      ctx.fillStyle = "#333333";
-      ctx.fillText(CARD_DESIGN.lines[2], 800, 126);
-
-      ctx.font = "bold 18px Arial";
-      ctx.fillStyle = "#1b2a4a";
-      ctx.fillText(CARD_DESIGN.lines[3], 800, 153);
-
-      // Namba ya Kitambulisho
-      ctx.textAlign = "left";
-      ctx.fillStyle = "#101d24";
-      ctx.font = "bold 44px Arial";
-      ctx.fillText(formattedNidaNumber, 75, 255);
-
-      // Taarifa za Kushoto
-      const drawFieldExact = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
-        ctx.font = "bold 18px Arial";
-        ctx.fillStyle = "#1f3a34";
-        ctx.fillText(labelKiswahili, 75, y);
-
-        ctx.font = "14px Arial";
-        ctx.fillStyle = "#555555";
-        ctx.fillText(labelEnglish, 75, y + 20);
-
-        ctx.font = "bold 32px Arial";
-        ctx.fillStyle = "#112222";
-        ctx.fillText(value || "—", 380, y + 10);
-      };
-
-      drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 350);
-      drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 465);
-      drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 580);
-      drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 695);
-
-      // Sahihi
-      ctx.font = "bold 18px Arial";
-      ctx.fillStyle = "#1f3a34";
-      ctx.fillText("SAINI", 75, 815);
-      ctx.font = "14px Arial";
-      ctx.fillStyle = "#555555";
-      ctx.fillText("Signature", 75, 837);
-
-      ctx.font = "italic 36px cursive";
-      ctx.fillStyle = "#0a192f";
-      ctx.fillText(signature || fullName, 190, 830);
-
-      // Picha ya Mtumiaji
-      const pX = 1110, pY = 320, pW = 390, pH = 500;
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.fillRect(pX, pY, pW, pH);
-      ctx.strokeStyle = CARD_DESIGN.colors.border;
-      ctx.lineWidth = 6;
-      ctx.strokeRect(pX, pY, pW, pH);
-
-      const triggerDownload = () => {
-        const link = document.createElement("a");
-        link.download = "national-identity-card.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      };
-
-      if (photo) {
-        const userImg = new Image();
-        userImg.onload = () => {
-          drawCoverImage(ctx, userImg, pX + 10, pY + 10, pW - 20, pH - 20);
-          triggerDownload();
-        };
-        userImg.onerror = triggerDownload;
-        userImg.src = photo;
-      } else {
-        triggerDownload();
-      }
-    };
-
+    if (!assets) { setAssetError("Subiri nembo na bendera za demo zipakie kabla ya kupakua."); return; }
+    if (photo && !photoImage) { setPhotoError("Subiri picha ikamilishe kupakiwa au iondoe kabla ya kupakua."); return; }
+    const canvas = canvasRef.current;
+    if (!canvas) { setAssetError("Preview ya demo haiko tayari. Onyesha upya ukurasa ujaribu tena."); return; }
+    setDownloading(true);
     try {
-      const [ngaoImg, benderaImg] = await Promise.all([
-        loadCardImage(CARD_DESIGN.assets.ngao),
-        loadCardImage(CARD_DESIGN.assets.bendera),
-      ]);
-
-      // Draw into bounded boxes while preserving each source image's aspect ratio.
-      // The boxes stay clear of the four centered header lines.
-      const ngaoRect = containImageRect(ngaoImg, 55, 22, 170, 125);
-      ctx.drawImage(ngaoImg, ngaoRect.x, ngaoRect.y, ngaoRect.width, ngaoRect.height);
-      const benderaRect = containImageRect(benderaImg, 1375, 30, 170, 105);
-      ctx.drawImage(benderaImg, benderaRect.x, benderaRect.y, benderaRect.width, benderaRect.height);
-
-      finalizeCanvas();
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Imeshindikana kutengeneza PNG ya demo.")), "image/png"));
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "nida-demo-not-official.png";
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Imeshindikana kupakia nembo ya kitambulisho.");
-    }
+      setAssetError(error instanceof Error ? error.message : "Imeshindikana kupakua picha ya demo.");
+    } finally { setDownloading(false); }
   }
 
   return (
-    <main className="portal-main" style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px" }}>
+    <main className="portal-main" style={{ maxWidth: 1100, margin: "0 auto", padding: "clamp(16px, 4vw, 32px) 16px" }}>
       <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 18 }}>
         <ArrowLeft size={16} /> Rudi kwenye huduma
       </button>
 
-      <section className="license-form-card">
+      <section className="license-form-card" style={{ display: "grid", gap: 18, minWidth: 0 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <ShieldAlert size={28} />
+          <ShieldAlert size={28} aria-hidden="true" />
           <div>
-            <h1 style={{ margin: 0 }}>KITAMBULISHO CHA TAIFA</h1>
-            <p style={{ margin: "4px 0 0" }}>Jaza taarifa na uone muonekano sahihi hapa chini.</p>
+            <h1 style={{ margin: 0 }}>DEMO YA KADI YA UTAMBULISHO</h1>
+            <p style={{ margin: "4px 0 0" }}>Tumia taarifa za kubuni. Hii ni sampuli ya muundo tu, si kitambulisho rasmi.</p>
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14, marginTop: 15 }}>
-          <label>Jina la kwanza<input className="input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Awadhi" /></label>
-          <label>Jina la kati<input className="input" value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="" /></label>
-          <label>Jina la mwisho<input className="input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Kibanje" /></label>
-          <label>Namba ya Kitambulisho<input className="input" value={idNumber} onChange={e => setIdNumber(e.target.value)} placeholder="19961006218020000128" /></label>
-          <label>Tarehe ya kuzaliwa<input className="input" type="date" value={dobInput} onChange={e => setDobInput(e.target.value)} /></label>
-          <label>Jinsia<select className="input" value={gender} onChange={e => setGender(e.target.value)}><option value="M">M</option><option value="F">F</option></select></label>
-          <label>Sahihi (andika jina)<input className="input" value={signature} onChange={e => setSignature(e.target.value)} placeholder="A. Kibanje" /></label>
-          <label style={{ gridColumn: "1 / -1" }}>Picha (hiari)<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => readImage(e.target.files?.[0])} /></label>
+        <div style={{ padding: "10px 12px", border: "2px solid #9b2730", borderRadius: 8, background: "#fff5f2", color: "#74202a", fontWeight: 800 }} role="note">
+          DEMO — NOT AN OFFICIAL ID. Usitumie taarifa halisi za mtu.
         </div>
 
-        <div style={{ marginTop: 26 }}>
-          <h2 style={{ fontSize: 20, marginBottom: 12 }}>PREVIEW YA KITAMBULISHO</h2>
-          <div style={{
-            position: "relative", overflow: "hidden", aspectRatio: "1.53 / 1",
-            width: "100%", borderRadius: 16, border: `2px solid ${CARD_DESIGN.colors.border}`,
-            padding: "clamp(12px,3vw,28px)", boxSizing: "border-box",
-            background: "linear-gradient(125deg, #d4edda 0%, #bee5eb 50%, #78c6d7 100%)",
-            color: "#112222", boxShadow: "0 8px 24px rgba(0,0,0,.16)"
-          }}>
-            {/* Mlima wa nyuma kwenye Preview */}
-            <div style={{ position: "absolute", inset: 0, opacity: 0.12, pointerEvents: "none", overflow: "hidden" }}>
-              <svg width="100%" height="100%" viewBox="0 0 1000 625" preserveAspectRatio="none">
-                <polygon points="150,500 320,240 420,380 580,180 780,500" fill="#a03c28" />
-              </svg>
-            </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))", gap: 14 }}>
+          <label>Jina la kwanza<input className="input" value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="off" /></label>
+          <label>Jina la kati<input className="input" value={middleName} onChange={(event) => setMiddleName(event.target.value)} autoComplete="off" /></label>
+          <label>Jina la mwisho<input className="input" value={lastName} onChange={(event) => setLastName(event.target.value)} autoComplete="off" /></label>
+          <label>Namba ya mfano<input className="input" value={idNumber} onChange={(event) => setIdNumber(event.target.value)} inputMode="numeric" autoComplete="off" /></label>
+          <label>Tarehe ya kuzaliwa<input className="input" type="date" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} /></label>
+          <label>Jinsia ya mfano<select className="input" value={gender} onChange={(event) => setGender(event.target.value)}><option value="M">M</option><option value="F">F</option><option value="X">X</option></select></label>
+          <label>Sahihi ya mfano<input className="input" value={signature} onChange={(event) => setSignature(event.target.value)} autoComplete="off" /></label>
+          <label style={{ gridColumn: "1 / -1" }}>Picha (hiari)<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => onChoosePhoto(event.target.files?.[0])} /></label>
+        </div>
+        {photoError && <p role="alert" style={{ margin: 0, color: "#a1222b" }}>{photoError}</p>}
 
-            {/* Ngao halisi (Kushoto) kwenye Preview */}
-            <img src={CARD_DESIGN.assets.ngao} alt="Ngao" style={{ position: "absolute", left: "3%", top: "2%", width: "12%", height: "18%", objectFit: "contain", objectPosition: "center", display: "block" }} />
-            
-            {/* Bendera halisi (Kulia) kwenye Preview */}
-            <img src={CARD_DESIGN.assets.bendera} alt="Bendera" style={{ position: "absolute", right: "3%", top: "3%", width: "14%", height: "13%", objectFit: "contain", objectPosition: "center", display: "block" }} />
-
-            {/* Mistari 4 ya Juu */}
-            <div style={{ position: "relative", textAlign: "center", lineHeight: 1.15 }}>
-              <div style={{ fontWeight: 900, fontSize: "clamp(8px,1.6vw,15px)", color: "#1b2a4a" }}>{CARD_DESIGN.lines[0]}</div>
-              <div style={{ fontWeight: 900, fontSize: "clamp(11px,2.5vw,25px)", color: "#1b2a4a" }}>{CARD_DESIGN.lines[1]}</div>
-              <div style={{ fontWeight: 700, fontSize: "clamp(6px,1.1vw,11px)", color: "#333333" }}>{CARD_DESIGN.lines[2]}</div>
-              <div style={{ fontWeight: 800, fontSize: "clamp(7px,1.3vw,13px)", color: "#1b2a4a" }}>{CARD_DESIGN.lines[3]}</div>
-            </div>
-
-            <div style={{ position: "relative", display: "flex", gap: 12, height: "70%", marginTop: 6 }}>
-              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
-                <div style={{ fontWeight: 900, fontSize: "clamp(10px,2vw,21px)", overflowWrap: "anywhere", color: "#101d24", letterSpacing: "1px" }}>{formattedNidaNumber}</div>
-                
-                <div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 15 }}>
-                    <div style={{ width: "160px" }}>
-                      <div style={{ fontSize: "clamp(6px,1vw,10px)", fontWeight: 800, color: "#1f3a34" }}>JINA</div>
-                      <div style={{ fontSize: "clamp(4px,0.7vw,7px)", color: "#555" }}>Given Name</div>
-                    </div>
-                    <div style={{ fontSize: "clamp(8px,1.5vw,15px)", fontWeight: 900, color: "#112222" }}>{ (firstName + " " + middleName).trim().toUpperCase() || "AWADHI" }</div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 15 }}>
-                    <div style={{ width: "160px" }}>
-                      <div style={{ fontSize: "clamp(6px,1vw,10px)", fontWeight: 800, color: "#1f3a34" }}>JINA LA MWISHO</div>
-                      <div style={{ fontSize: "clamp(4px,0.7vw,7px)", color: "#555" }}>Last Name</div>
-                    </div>
-                    <div style={{ fontSize: "clamp(8px,1.5vw,15px)", fontWeight: 900, color: "#112222" }}>{ lastName.toUpperCase() || "KIBANJE" }</div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 15 }}>
-                    <div style={{ width: "160px" }}>
-                      <div style={{ fontSize: "clamp(6px,1vw,10px)", fontWeight: 800, color: "#1f3a34" }}>TAREHE YA KUZALIWA</div>
-                      <div style={{ fontSize: "clamp(4px,0.7vw,7px)", color: "#555" }}>Date of Birth</div>
-                    </div>
-                    <div style={{ fontSize: "clamp(8px,1.5vw,15px)", fontWeight: 900, color: "#112222" }}>{ formattedDob }</div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 15 }}>
-                    <div style={{ width: "160px" }}>
-                      <div style={{ fontSize: "clamp(6px,1vw,10px)", fontWeight: 800, color: "#1f3a34" }}>JINSI</div>
-                      <div style={{ fontSize: "clamp(4px,0.7vw,7px)", color: "#555" }}>Sex</div>
-                    </div>
-                    <div style={{ fontSize: "clamp(8px,1.5vw,15px)", fontWeight: 900, color: "#112222" }}>{ gender.toUpperCase() }</div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 15 }}>
-                    <div style={{ width: "160px" }}>
-                      <div style={{ fontSize: "clamp(6px,1vw,10px)", fontWeight: 800, color: "#1f3a34" }}>SAINI</div>
-                      <div style={{ fontSize: "clamp(4px,0.7vw,7px)", color: "#555" }}>Signature</div>
-                    </div>
-                    <div style={{ fontFamily: "cursive", fontStyle: "italic", fontSize: "clamp(8px,1.6vw,15px)", color: "#0a192f" }}>{signature || fullName}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Boksi la picha */}
-              <div style={{
-                width: "27%", minWidth: "22%", height: "82%", alignSelf: "center",
-                border: `2px solid ${CARD_DESIGN.colors.border}`,
-                background: "rgba(255,255,255,0.9)", display: "flex",
-                alignItems: "center", justifyContent: "center", overflow: "hidden"
-              }}>
-                {photo ? <img src={photo} alt="Picha" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
-              </div>
-            </div>
+        <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
+          <h2 style={{ fontSize: 20, margin: 0 }}>PREVIEW YA DEMO</h2>
+          <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box", aspectRatio: `${NIDA_DEMO_CARD_WIDTH} / ${NIDA_DEMO_CARD_HEIGHT}`, overflow: "hidden", borderRadius: 12, border: "1px solid #347d80", background: "#d8eddf", boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
+            <canvas ref={canvasRef} width={NIDA_DEMO_CARD_WIDTH} height={NIDA_DEMO_CARD_HEIGHT} role="img" aria-label={NIDA_DEMO_WATERMARK} style={{ display: "block", width: "100%", height: "100%" }} />
           </div>
+          {!assets && !assetError && <p role="status" style={{ margin: 0 }}>Inapakia picha za demo…</p>}
+          {assetError && <p role="alert" style={{ margin: 0, color: "#a1222b" }}>{assetError}</p>}
+          <p style={{ margin: 0, color: "#7b2027", fontSize: 13, fontWeight: 700 }}>Watermark ya DEMO itaonekana pia kwenye PNG iliyopakuliwa.</p>
         </div>
 
-        <button type="button" className="button button--green" style={{ marginTop: 20, width: "100%" }} onClick={downloadCard}>
-          <Download size={18} /> PAKUA KITAMBULISHO
+        <button type="button" className="button button--green" style={{ marginTop: 4, width: "100%" }} onClick={downloadCard} disabled={!assets || downloading}>
+          <Download size={18} /> {downloading ? "INAANDAA PNG…" : "PAKUA PNG YA DEMO"}
         </button>
       </section>
     </main>
