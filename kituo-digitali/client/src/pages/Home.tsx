@@ -1055,7 +1055,32 @@ export default function Home() {
   const [catalogInitialized, setCatalogInitialized] = useState(false);
   // Closing the mobile drawer on route changes prevents a stuck drawer after navigation/refresh.
   useEffect(() => { setMenuOpen(false); }, [location]);
-  useEffect(() => { if (!isAuthenticated || !firebaseUser) return; void claimDailyTokenBonus().catch(() => undefined); }, [isAuthenticated, firebaseUser?.uid]);
+  useEffect(() => {
+    if (!isAuthenticated || !firebaseUser) return;
+    let active = true;
+    let midnightTimer: ReturnType<typeof setTimeout> | undefined;
+    const claim = () => { if (active) void claimDailyTokenBonus().catch(() => undefined); };
+    const scheduleNextTanzaniaDay = () => {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Dar_es_Salaam", year: "numeric", month: "2-digit", day: "2-digit",
+      }).formatToParts(new Date());
+      const part = (type: string) => Number(parts.find((item) => item.type === type)?.value ?? 0);
+      const nextMidnight = Date.UTC(part("year"), part("month") - 1, part("day") + 1, -3, 0, 5);
+      midnightTimer = setTimeout(() => {
+        claim();
+        scheduleNextTanzaniaDay();
+      }, Math.max(1000, nextMidnight - Date.now()));
+    };
+    const onVisibilityChange = () => { if (document.visibilityState === "visible") claim(); };
+    claim();
+    scheduleNextTanzaniaDay();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      active = false;
+      if (midnightTimer) clearTimeout(midnightTimer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [isAuthenticated, firebaseUser?.uid]);
   useEffect(() => {
     let cancelled = false;
     void getCollectionOnce("services").then((rows) => {
