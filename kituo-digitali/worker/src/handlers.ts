@@ -501,7 +501,7 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
     const settingsSnapshot = await transaction.get(settingsRef);
     const alreadyInitialized = settingsSnapshot.data()?.catalogInitialized === true;
     const refsToSeed = alreadyInitialized && skipIfInitialized
-      ? refs.filter((item) => item.ref.parent.id === "services" && ["access-lipa-number", "access-lipa-airtel", "access-lipa-yas", "access-lipa-vodacom", "access-lipa-halotel", "sme-vodacom"].includes(String((item.data as { slug?: string }).slug ?? "")))
+      ? refs.filter((item) => item.ref.parent.id === "services" && ["access-lipa-number", "access-lipa-airtel", "access-lipa-yas", "access-lipa-vodacom", "access-lipa-halotel", "sme-vodacom", "kitambulisho-wakala-airtel", "kitambulisho-wakala-halotel", "kitambulisho-wakala-yas", "kitambulisho-wakala-vodacom", "kitambulisho-wakala-mbeya"].includes(String((item.data as { slug?: string }).slug ?? "")))
       : refs;
     const existingRecords: Array<{ item: (typeof refs)[number]; snapshot: DocumentSnapshot; targetRef: DocumentReference }> = [];
     for (const item of refsToSeed) {
