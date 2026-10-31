@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   authPersistenceReady,
+  authPersistenceHasResolved,
   ensureAuthenticatedProfile,
   ensureUserProfile,
   getFirebaseProfileOnce,
@@ -18,10 +19,12 @@ type UseAuthOptions = { redirectOnUnauthenticated?: boolean; redirectPath?: stri
 
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  // Reuse the already-restored Firebase user immediately when nested pages mount.
+  // This prevents child service pages from briefly treating an active session as a guest.
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(() => firebaseAuth.currentUser);
   const [profile, setProfile] = useState<FirebaseProfile | null>(null);
   const [authClaims, setAuthClaims] = useState<FirebaseRoleClaims | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !authPersistenceHasResolved);
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
