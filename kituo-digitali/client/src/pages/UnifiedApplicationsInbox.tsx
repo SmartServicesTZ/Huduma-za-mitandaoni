@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { LipaApplication, ServiceApplication } from "@/lib/firebase";
 type InboxKind = "ALL" | "SERVICE" | "LIPA";
 type InboxStatus = "ALL" | "NO_PAYMENT" | "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
-type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; person:string; service:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
+type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; person:string; service:string; serviceKey:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
 function dateValue(value:unknown):number {
   if(!value)return 0;
   try {
@@ -18,9 +18,9 @@ function statusClass(status:string):string {
   if(value==="processing")return "unified-inbox-status-processing";
   return "unified-inbox-status-pending";
 }
-export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect,initialKind="ALL"}:{
+export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect,initialKind="ALL",serviceFilter}:{
   serviceApplications:ServiceApplication[]; lipaApplications:LipaApplication[]; services:any[]; networks:any[];
-  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void; initialKind?:InboxKind;
+  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void; initialKind?:InboxKind; serviceFilter?:string;
 }) {
   const [kindFilter,setKindFilter]=useState<InboxKind>(initialKind);
   const [statusFilter,setStatusFilter]=useState<InboxStatus>("ALL");
@@ -36,7 +36,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
       const paidService=tillPayment;
       const paymentGated=paidService && String(application.status??"PENDING").toUpperCase()==="PENDING" && String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
-      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:network,phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
+      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:network,serviceKey:`${slug} ${fullName}`.toLowerCase(),phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
     });
     const lipaRows:InboxRow[]=lipaApplications.map((application)=>{
       const network=networks.find((item)=>item.id===application.networkId||item.id===application.network||item.name===application.network);
@@ -46,7 +46,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     const priority:Record<string,number>={PENDING:0,PROCESSING:1,APPROVED:2,REJECTED:3};
     return [...serviceRows,...lipaRows].sort((a,b)=>(priority[String(a.status).toUpperCase()]??4)-(priority[String(b.status).toUpperCase()]??4)||dateValue(b.dateValue)-dateValue(a.dateValue));
   },[serviceApplications,lipaApplications,services,networks]);
-  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
+  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(!serviceFilter||(row.kind==="SERVICE"&&row.serviceKey.includes("soft")&&row.serviceKey.includes("nida")))&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
   const counts={ALL:rows.length,NO_PAYMENT:rows.filter((r)=>r.paymentGated).length,PENDING:rows.filter((r)=>!r.paymentGated&&String(r.status).toUpperCase()==="PENDING").length,PROCESSING:rows.filter((r)=>String(r.status).toUpperCase()==="PROCESSING").length,APPROVED:rows.filter((r)=>String(r.status).toUpperCase()==="APPROVED").length,REJECTED:rows.filter((r)=>String(r.status).toUpperCase()==="REJECTED").length};
   return <div className="unified-inbox" aria-label="Orodha moja ya maombi yote">
     <style>{`
