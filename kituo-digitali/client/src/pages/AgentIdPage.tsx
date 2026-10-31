@@ -173,6 +173,7 @@ async function exportCard(source: HTMLElement, size: { w: number; h: number }, f
 export default function AgentIdPage() {
   const { firebaseUser } = useAuth();
   const [paid, setPaid] = useState(false);
+  const [downloadedSides, setDownloadedSides] = useState<("front" | "back")[]>([]);
   const [tokenCost, setTokenCost] = useState<number | null>(null);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [network, setNetwork] = useState<Network>("Airtel");
@@ -201,6 +202,7 @@ export default function AgentIdPage() {
 
   useEffect(() => {
     setPaid(false);
+    setDownloadedSides([]);
     setRequestId(crypto.randomUUID());
   }, [network, orientation, name, phone, type, region, district, area, issueDate, photo]);
 
@@ -241,6 +243,7 @@ export default function AgentIdPage() {
   };
 
   const downloadCards = async (side: "front" | "back") => {
+    if (downloadedSides.includes(side)) { toast.info("Upande huu wa kitambulisho tayari umepakuliwa. Badilisha taarifa au anza upya kwa kitambulisho kipya."); return; }
     const set = orientation === "landscape"
       ? { size: LAND, label: "mlalo", front: landFrontRef.current, back: landBackRef.current }
       : { size: PORT, label: "wima", front: portFrontRef.current, back: portBackRef.current };
@@ -289,6 +292,8 @@ export default function AgentIdPage() {
         triggerDownload(blobs[index], jobs[index].filename, "PNG");
         if (index < blobs.length - 1) await new Promise<void>((resolve) => window.setTimeout(resolve, 700));
       }
+      setDownloadedSides((current) => current.includes(side) ? current : [...current, side]);
+      toast.success(`Download ya ${network} (${side === "front" ? "mbele" : "nyuma"}) imekamilika. Taarifa ya tokeni imehifadhiwa kwenye historia.`);
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
     } finally { setBusy(false); }
@@ -321,8 +326,8 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho mbele au nyuma">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa mbele"} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
-          <button type="button" className="aid-download-back" disabled={busy || !formComplete} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua upande wa nyuma"} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null || downloadedSides.includes("front")} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : downloadedSides.includes("front") ? "Upande huu tayari umepakuliwa" : "Pakua upande wa mbele"} onClick={() => void downloadCards("front")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Mbele"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
+          <button type="button" className="aid-download-back" disabled={busy || !formComplete || tokenCost === null || downloadedSides.includes("back")} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : downloadedSides.includes("back") ? "Upande huu tayari umepakuliwa" : "Pakua upande wa nyuma"} onClick={() => void downloadCards("back")}><Download size={17} /> <span><b>{busy ? "Inaandaa..." : "Pakua Nyuma"}</b><small>{orientLabel} · PNG · {paid ? "IMESHALIPIWA" : tokenCost === null ? "Bei inasomwa" : `${tokenCost} TOKENI`}</small></span></button>
         </div>
         <p className="aid-note">Tarehe ya kuisha huwekwa moja kwa moja kuwa mwaka mmoja baada ya tarehe ya kutolewa.</p>
       </section>
