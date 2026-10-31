@@ -31,6 +31,11 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 10.34.2
+      - name: Set up Java for Firebase Emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
