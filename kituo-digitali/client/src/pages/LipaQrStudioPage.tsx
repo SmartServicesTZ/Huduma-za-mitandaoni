@@ -280,15 +280,24 @@ export default function LipaQrStudioPage() {
       </div>
       <section className="lq-editor-panel">
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
-        <label className="lq-field" htmlFor="lq-network"><span>Chagua mtandao wa stika</span>
-          <select id="lq-network" value={network} onChange={(event) => setNetwork(event.target.value as LipaNetwork)}>
-            <option value="voda">Vodacom M-Pesa</option>
-            <option value="yas">Yas</option>
-            <option value="airtel">Airtel Money</option>
-            <option value="halotel">Halotel</option>
-          </select>
+        <div className="lq-field" role="group" aria-labelledby="lq-network-label">
+          <span id="lq-network-label">Chagua mtandao wa stika</span>
+          <div className="lq-network-options">
+            <button type="button" className={`lq-network-option lq-network-option--voda ${network === "voda" ? "is-selected" : ""}`} aria-pressed={network === "voda"} onClick={() => setNetwork("voda")}>
+              <span className="lq-network-logo lq-network-logo--voda"><i>◉</i></span><span className="lq-network-option-copy"><strong>Vodacom</strong><small>M-Pesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" className={`lq-network-option lq-network-option--yas ${network === "yas" ? "is-selected" : ""}`} aria-pressed={network === "yas"} onClick={() => setNetwork("yas")}>
+              <span className="lq-network-logo lq-network-logo--yas">yas</span><span className="lq-network-option-copy"><strong>Yas</strong><small>Mixx by Yas</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" className={`lq-network-option lq-network-option--airtel ${network === "airtel" ? "is-selected" : ""}`} aria-pressed={network === "airtel"} onClick={() => setNetwork("airtel")}>
+              <span className="lq-network-logo lq-network-logo--airtel">◉</span><span className="lq-network-option-copy"><strong>Airtel</strong><small>Money</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" className={`lq-network-option lq-network-option--halotel ${network === "halotel" ? "is-selected" : ""}`} aria-pressed={network === "halotel"} onClick={() => setNetwork("halotel")}>
+              <span className="lq-network-logo lq-network-logo--halotel">H</span><span className="lq-network-option-copy"><strong>Halotel</strong><small>HaloPesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
           <small>{network === "halotel" ? "QR ya malipo ya Halotel bado haijawezeshwa." : "Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini."}</small>
-        </label>
+        </div>
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
           <input id="lq-number" inputMode="numeric" autoComplete="off" maxLength={12} placeholder="Tarakimu 5–12" value={values.lipaNumber} onChange={(event) => update("lipaNumber", event.target.value)} aria-invalid={Boolean(fieldError("lipaNumber"))} />
