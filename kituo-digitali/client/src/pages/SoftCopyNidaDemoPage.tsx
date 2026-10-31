@@ -91,13 +91,27 @@ export default function SoftCopyNidaDemoPage() {
         <label>Sahihi (andika jina)<input className="input" value={signature} onChange={e=>setSignature(e.target.value)} placeholder="Sahihi ya mfano"/></label>
         <label style={{gridColumn:"1 / -1"}}>Picha yako<input className="input" type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>readImage(e.target.files?.[0])}/></label>
       </div>
-      <div style={{marginTop:20,border:"1px solid #b8c9d8",borderRadius:16,padding:16,background:"linear-gradient(135deg,#f8fbff,#e2efff)",position:"relative",overflow:"hidden"}}>
-        <div style={{fontWeight:900,color:"#16466f",fontSize:20}}>PERSONAL PROFILE CARD</div><div style={{color:"#b45309",fontWeight:900,marginBottom:14}}>DEMO – NOT OFFICIAL</div>
-        <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-          {photo ? <img src={photo} alt="Picha ya mfano" style={{width:120,height:145,objectFit:"cover",borderRadius:8,border:"3px solid #16466f"}}/> : <div style={{width:120,height:145,display:"grid",placeItems:"center",background:"#d3e1ef",borderRadius:8}}><ImagePlus size={32}/></div>}
-          <div style={{flex:1,minWidth:200,color:"#173e60",lineHeight:2}}><strong>{fullName || "MAJINA YAKO"}</strong><br/>DEMO REF: {demoNumber || "DEMO-000000"}<br/>TAREHE YA KUZALIWA: {dob || "—"}<br/>JINSIA: {gender}<br/>URAIA: {nationality || "—"}<br/>SAHIHI: {signature || "—"}</div>
+      <div style={{marginTop:20,border:"2px solid #6a9f83",borderRadius:12,padding:16,background:"linear-gradient(135deg,#e4f3d9 0%,#bfe7e7 55%,#72c8d9 100%)",position:"relative",overflow:"hidden",color:"#172b31"}}>
+        <div style={{background:"rgba(255,255,255,.65)",padding:"14px 10px",textAlign:"center",borderRadius:8,position:"relative"}}>
+          <div style={{position:"absolute",left:10,top:8,width:42,height:42,borderRadius:"50%",background:"#287a5b",color:"#f2d56b",display:"grid",placeItems:"center",fontWeight:900}}>S</div>
+          <div style={{position:"absolute",right:10,top:0,fontSize:34}}>🦒</div>
+          <div style={{fontWeight:900,color:"#244d63"}}>KITAMBULISHO CHA MFANO</div>
+          <div style={{fontSize:22,fontWeight:900,color:"#46336f"}}>PERSONAL IDENTITY CARD</div>
+          <div style={{fontSize:11,fontWeight:900,color:"#285a67"}}>SAMPLE • NOT A GOVERNMENT DOCUMENT</div>
         </div>
-        <div style={{position:"absolute",right:12,bottom:10,color:"#b91c1c",fontWeight:900,opacity:.8}}>DEMO • NOT OFFICIAL</div>
+        <div style={{position:"absolute",left:"12%",top:"48%",transform:"rotate(-20deg)",fontSize:24,fontWeight:1000,color:"rgba(170,25,35,.24)",pointerEvents:"none"}}>DEMO • NOT OFFICIAL</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 130px",gap:12,alignItems:"center",marginTop:18}}>
+          <div style={{lineHeight:2,fontWeight:800,overflowWrap:"anywhere"}}>
+            <div style={{fontSize:18,fontWeight:1000}}>{demoNumber || "DEMO-000000"}</div>
+            <div>JINA: {fullName || "MAJINA YAKO"}</div>
+            <div>TAREHE YA KUZALIWA: {dob || "—"}</div>
+            <div>JINSIA: {gender}</div>
+            <div>URAIA: {nationality || "—"}</div>
+            <div style={{marginTop:12}}>SAHIHI: {signature || fullName || "—"}</div>
+          </div>
+          {photo ? <img src={photo} alt="Picha ya mfano" style={{width:130,height:155,objectFit:"cover",border:"3px solid #397a7a",borderRadius:4}}/> : <div style={{width:130,height:155,display:"grid",placeItems:"center",background:"#d4e5df",border:"2px solid #397a7a",borderRadius:4}}><ImagePlus size={32}/></div>}
+        </div>
+        <div style={{textAlign:"center",fontWeight:1000,color:"#9c2525",fontSize:12,marginTop:12}}>DEMO ONLY — NOT VALID FOR IDENTIFICATION</div>
       </div>
       <button type="button" className="button button--green" style={{marginTop:18,width:"100%"}} onClick={downloadCard}><Download size={18}/> PAKUA KADI YA DEMO</button>
       <p style={{fontSize:12,opacity:.75,marginTop:10}}>Picha na taarifa hazitumwi kwenye seva; hutumika kwenye kifaa chako kutengeneza kadi ya mfano.</p>
