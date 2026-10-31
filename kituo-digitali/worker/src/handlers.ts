@@ -1197,8 +1197,26 @@ export const updateServiceApplication = callable(async (request) => {
       if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key)) continue;
       if (typeof value === "string") {
         if (value.length > 4000) throw new ApiError("invalid-argument", `Taarifa ya ${key} ni ndefu sana.`);
-        if (/^(serviceUploads|serviceApplications)\//.test(value)) {
-          if (value !== previous[key]) throw new ApiError("invalid-argument", "Huwezi kubadilisha kiambatisho kupitia sehemu hii; pakia faili upya.");
+        if (/^serviceApplications\//.test(value)) {
+          if (value !== previous[key]) throw new ApiError("invalid-argument", "Kiambatisho cha ombi si sahihi.");
+          next[key] = value;
+          continue;
+        }
+        if (/^serviceUploads\//.test(value)) {
+          const expectedPrefix = `serviceUploads/${uid}/${applicationId}/`;
+          if (!value.startsWith(expectedPrefix) || value.includes("..")) throw new ApiError("invalid-argument", "Pakia kiambatisho hiki upya kupitia fomu ya ombi lako.");
+          const field = (Array.isArray(application.serviceFields) ? application.serviceFields as Array<Record<string, unknown>> : []).find((item) => String(item.fieldName ?? "") === key);
+          if (!field || !["IMAGE_UPLOAD", "FILE_UPLOAD"].includes(String(field.type ?? ""))) throw new ApiError("invalid-argument", "Aina ya kiambatisho hairuhusiwi.");
+          const sourceFile = bucket.file(value);
+          const [metadata] = await sourceFile.getMetadata().catch(() => { throw new ApiError("invalid-argument", "Kiambatisho hakikupatikana."); });
+          const accepted = Array.isArray(field.accept) ? field.accept : String(field.type) === "IMAGE_UPLOAD" ? ["image/jpeg", "image/png", "image/webp"] : [];
+          const maxSize = Math.min(Number(field.maxSizeMb ?? 5), 5) * 1024 * 1024;
+          if (Number(metadata.size) > maxSize || (accepted.length && !accepted.includes(String(metadata.contentType)))) throw new ApiError("invalid-argument", "Aina au ukubwa wa kiambatisho haurusiwi.");
+          const fileName = value.split("/").pop()?.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 80) ?? "document";
+          const finalPath = `serviceApplications/${applicationId}/documents/${key}-${fileName}`;
+          await sourceFile.copy(bucket.file(finalPath));
+          await sourceFile.delete().catch(() => undefined);
+          next[key] = finalPath;
           continue;
         }
         next[key] = value.trim();
