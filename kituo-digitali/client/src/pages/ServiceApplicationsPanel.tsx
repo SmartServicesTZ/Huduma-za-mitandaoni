@@ -177,9 +177,10 @@ function PanelStyles() {
   );
 }
 
-function StatusBadge({ status }: { status: ApplicationStatus }) {
-  const className = status.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
-  return <span className={`service-app-admin-status service-app-admin-status-${className}`}>{status}</span>;
+function StatusBadge({ status, paymentGated = false }: { status: ApplicationStatus; paymentGated?: boolean }) {
+  const displayStatus = paymentGated ? "NO PAYMENT" : status;
+  const className = (paymentGated ? "pending" : status).toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  return <span className={`service-app-admin-status service-app-admin-status-${className}`}>{displayStatus}</span>;
 }
 
 export function ServiceApplicationsPanel({ applications, services, onRun, adminId, busy, hideList = false, initialSelectedId = null }: ServiceApplicationsPanelProps) {
@@ -208,7 +209,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     void markServiceApplicationViewed(application.applicationId || application.id).catch(() => undefined);
     setSelected(application);
     setRejecting(false);
-    setRejectReason("");
+    setRejectReason(isPaymentGated(application) ? "Ombi lako limekataliwa sababu hujafanya malipo tafadhali fanya malipo kupata huduma" : "");
     setAllowResubmission(false);
     setReplyBody("");
     setReplySubject("");
@@ -372,7 +373,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
                       <div className="service-app-admin-mobile-name">{application.userName || "Jina halijawekwa"}</div>
                       <div className="service-app-admin-mobile-service">{service?.name ?? application.serviceName ?? "Huduma haijatajwa"}</div>
                     </div>
-                    <StatusBadge status={application.status} />
+                    <StatusBadge status={application.status} paymentGated={isPaymentGated(application)} />
                   </div>
                   <div className="service-app-admin-mobile-meta"><span>{dateText(application.submittedAt)}</span></div>
                   <div style={{ marginTop: 10 }}><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button className="service-app-admin-open" type="button" onClick={() => openApplication(application)}>FUNGUA OMBI</button>{tab === "MALIPO" && <button className="service-app-admin-open" type="button" disabled={busy} onClick={() => void onRun(() => setServiceApplicationStatus(application.applicationId || application.id, "PAYMENT_CONFIRMED"), "Malipo yamethibitishwa. Ombi limehamishwa kwenye maombi ya kawaida; sasa unaweza kulipeleka PROCESSING.")}>THIBITISHA MALIPO</button>}</div></div>
@@ -431,7 +432,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
               <div className="service-app-admin-detail-item"><dt>Huduma</dt><dd>{selectedService?.name ?? selected.serviceName ?? "—"}</dd></div>
               <div className="service-app-admin-detail-item"><dt>Mwombaji</dt><dd>{selected.userName || "—"}</dd></div>
               <div className="service-app-admin-detail-item"><dt>Tarehe</dt><dd>{dateText(selected.submittedAt)}</dd></div>
-              <div className="service-app-admin-detail-item"><dt>Hali ya ombi</dt><dd><StatusBadge status={selected.status} /></dd></div>
+              <div className="service-app-admin-detail-item"><dt>Hali ya ombi</dt><dd><StatusBadge status={selected.status} paymentGated={isPaymentGated(selected)} /></dd></div>
             </div>
 
             <h4 className="service-app-admin-section-title">Taarifa zilizojazwa</h4>
@@ -504,7 +505,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
             {selected.rejectionReason && <p className="service-app-admin-error"><strong>Rejection reason:</strong> {selected.rejectionReason}</p>}
             {error && <p className="service-app-admin-error" role="alert">{error}</p>}
             <div className="service-app-admin-actions">
-              {isPaymentGated(selected) ? <button className="service-app-admin-button" type="button" disabled={busy} onClick={() => void runStatus("PAYMENT_CONFIRMED")}>THIBITISHA MALIPO</button> : (selected.statusOptions ?? selectedService?.statusOptions ?? ["PENDING", "PROCESSING", "APPROVED", "REJECTED"]).filter((status) => status !== "PENDING" && status !== selected.status).map((status) => status === "REJECTED" ? <button key={status} className="service-app-admin-button service-app-admin-button-danger" type="button" disabled={busy} onClick={() => { setError(""); setRejecting(true); }}>Reject / Badili uamuzi</button> : <button key={status} className="service-app-admin-button" type="button" disabled={busy} onClick={() => void runStatus(status)}>{status === "PROCESSING" ? "Move to processing" : status === "APPROVED" ? "Approve / Badili uamuzi" : `Set ${status}`}</button>)}
+              {isPaymentGated(selected) ? <><button className="service-app-admin-button" type="button" disabled={busy} onClick={() => void runStatus("PAYMENT_CONFIRMED")}>THIBITISHA MALIPO</button><button className="service-app-admin-button service-app-admin-button-danger" type="button" disabled={busy} onClick={() => { setRejectReason("Ombi lako limekataliwa sababu hujafanya malipo tafadhali fanya malipo kupata huduma"); setError(""); setRejecting(true); }}>REJECT — HAKUNA MALIPO</button></> : (selected.statusOptions ?? selectedService?.statusOptions ?? ["PENDING", "PROCESSING", "APPROVED", "REJECTED"]).filter((status) => status !== "PENDING" && status !== selected.status).map((status) => status === "REJECTED" ? <button key={status} className="service-app-admin-button service-app-admin-button-danger" type="button" disabled={busy} onClick={() => { setError(""); setRejecting(true); }}>Reject / Badili uamuzi</button> : <button key={status} className="service-app-admin-button" type="button" disabled={busy} onClick={() => void runStatus(status)}>{status === "PROCESSING" ? "Move to processing" : status === "APPROVED" ? "Approve / Badili uamuzi" : `Set ${status}`}</button>)}
             </div>
           </div>
         </div>
@@ -515,8 +516,8 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
           <div className="service-app-admin-modal service-app-admin-modal-small" role="dialog" aria-modal="true" aria-labelledby="service-app-admin-reject-title">
             <div className="service-app-admin-modal-header">
               <div>
-                <h3 id="service-app-admin-reject-title">Reject application</h3>
-                <p>Provide a reason before rejecting this application.</p>
+                <h3 id="service-app-admin-reject-title">Kataa ombi</h3>
+                <p>Weka sababu itakayoonekana kwa mtumiaji.</p>
               </div>
               <button className="service-app-admin-close" type="button" aria-label="Close rejection dialog" onClick={() => setRejecting(false)}>×</button>
             </div>
@@ -524,6 +525,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
               <label htmlFor="service-app-admin-rejection-template">Chagua sababu ya kukataa</label>
               <select id="service-app-admin-rejection-template" value="" onChange={(event) => { if(event.target.value) setRejectReason(event.target.value); }}>
                 <option value="">Chagua sababu iliyo tayari...</option>
+                {isPaymentGated(selected) && <option value="Ombi lako limekataliwa sababu hujafanya malipo tafadhali fanya malipo kupata huduma">Hujafanya malipo</option>}
                 {(/vodacom|access-lipa-vodacom/i.test(String(selected.serviceSlug)+" "+String(selected.serviceName))) && <>
                   <option value="Laini imewezeshwa account ya M-PESA. Tafadhali sajili laini mpya na usiwezeshe account ya M-PESA.">Laini imewezeshwa account ya M-PESA</option>
                   <option value="NIDA hii tayari ina Lipa Namba. Hivyo basi utawezeshwa Store 2.">NIDA hii tayari ina Lipa Namba (Store 2)</option>
