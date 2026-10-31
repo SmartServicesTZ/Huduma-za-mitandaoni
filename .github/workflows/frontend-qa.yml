@@ -1,9 +1,13 @@
-name: Frontend QA
+name: Frontend and Worker QA
 
 on:
   push:
     branches:
+      - main
       - fix/admin-list-date-ordering-main
+    paths:
+      - "kituo-digitali/**"
+      - ".github/workflows/frontend-qa.yml"
   pull_request:
     paths:
       - "kituo-digitali/**"
@@ -15,7 +19,7 @@ permissions:
 
 jobs:
   frontend:
-    name: Type-check, tests, and production build
+    name: Frontend type-check, tests, and production build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -37,8 +41,36 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Type-check
         run: pnpm check
-      - name: Run tests
+      - name: Run frontend tests
         run: pnpm test
       - name: Build frontend and server bundle
-        if: always()
+        run: pnpm build
+
+  worker:
+    name: Cloudflare Worker type-check, tests, and build validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kituo-digitali/worker
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: kituo-digitali/pnpm-lock.yaml
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: kituo-digitali
+      - name: Type-check Worker
+        run: pnpm check
+      - name: Run Worker tests
+        run: pnpm test
+      - name: Validate Worker deployment bundle
         run: pnpm build
