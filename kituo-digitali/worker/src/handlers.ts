@@ -435,7 +435,7 @@ export const consumeTokens = callable(async (request) => {
         if (!Number.isSafeInteger(parsedRoleCost) || parsedRoleCost <= 0 || parsedRoleCost > 100000) {
           throw new ApiError("failed-precondition", "Bei ya aina ya wakala haijawekwa sawa kwenye Dashboard ya Admin.");
         }
-        roleCost = agentType === "Freelancer" && parsedRoleCost === 5 ? 10 : parsedRoleCost;
+        roleCost = parsedRoleCost;
       }
     }
     // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
