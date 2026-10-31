@@ -29,6 +29,7 @@ import {
   getLipaApplicationDocument,
   removeLipaUpload,
   submitLipaApplication,
+  updateLipaApplication,
   subscribeToCollection,
   subscribeUserLipaApplications,
   uploadLipaDocument,
@@ -334,6 +335,7 @@ export default function LipaNumberPage() {
   const [lastSubmittedNetworkId, setLastSubmittedNetworkId] = useState("");
   const [lastSubmittedApplicationId, setLastSubmittedApplicationId] = useState("");
   const [applicationId, setApplicationId] = useState<string>(() => crypto.randomUUID());
+  const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<LipaApplication | null>(null);
   const [documentPreview, setDocumentPreview] = useState<DocumentPreview | null>(null);
   const [documentLoading, setDocumentLoading] = useState(false);
@@ -487,19 +489,37 @@ export default function LipaNumberPage() {
         lastName: String(values.name3 ?? "").trim(),
         fullName: [values.name1, values.name2, values.name3].map((name) => String(name ?? "").trim()).filter(Boolean).join(" "),
       } : values;
-      await submitLipaApplication(applicationId, selectedNetwork.id, submissionValues);
+      if (editingApplicationId) await updateLipaApplication(editingApplicationId, submissionValues);
+      else await submitLipaApplication(applicationId, selectedNetwork.id, submissionValues);
       setLastSubmittedNetworkId(selectedNetwork.id);
-      setLastSubmittedApplicationId(applicationId);
+      setLastSubmittedApplicationId(editingApplicationId ?? applicationId);
+      setEditingApplicationId(null);
       setValues({});
       setErrors({});
       setSubmissionComplete(true);
       // Do not keep the submit button spinning while temporary upload files are cleaned up.
       void clearDraftUploads(crypto.randomUUID());
-      toast.success("TAARIFA ZIMEWASILISHWA", { description: "Ombi lako limepokelewa. Litaonekana kwenye Historia ya Lipa Namba." });
+      toast.success("TAARIFA ZIMEWASILISHWA", { description: editingApplicationId ? "Marekebisho yamehifadhiwa na ombi lilelile limerudishwa PENDING." : "Ombi lako limepokelewa. Litaonekana kwenye Historia ya Lipa Namba." });
     } catch (error) {
       if (isAlreadyExists(error)) toast.warning("Una ombi la mtandao huu ambalo bado linaendelea. Subiri likamilike kabla ya kutuma ombi jingine.");
       else toast.error(errorMessage(error));
     } finally { setSubmitting(false); }
+  };
+
+  const editRejectedApplication = (application: LipaApplication) => {
+    const network = configs.find((item) => item.id === application.networkId);
+    if (!network) { toast.error("Fomu ya mtandao huu haipatikani kwa sasa."); return; }
+    setSelectedId(application.networkId);
+    setApplicationId(application.applicationId);
+    setEditingApplicationId(application.applicationId);
+    setValues({ ...(application.applicantData ?? {}) });
+    setErrors({});
+    setSubmissionComplete(false);
+    setLastSubmittedNetworkId("");
+    setLastSubmittedApplicationId("");
+    setSelectedApplication(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.info("Rekebisha taarifa zilizoombwa. Ombi lilelile litatumwa tena.");
   };
 
   const openDocument = async (app: LipaApplication, fieldName: string, label: string) => {
@@ -637,7 +657,7 @@ export default function LipaNumberPage() {
       </>}
     </>}
     </section><aside className="lipa-side-stack"><div className="lipa-info-card"><h3>Mahitaji</h3><p>{selectedNetwork?.requirements ?? "Chagua mtandao ili kuona mahitaji ya huduma hiyo."}</p>{selectedNetwork?.paymentInfo && <><h3>Malipo</h3><p>{selectedNetwork.paymentInfo}</p></>}</div></aside></div>
-    {firebaseUser && <section className="lipa-history"><div className="section-title"><div><span className="overline">MAOMBI YAKO</span><h2>Historia ya Lipa Namba</h2></div><span className="section-count">{applications.length}</span></div>{applications.length === 0 ? <div className="lipa-empty">Bado hujatuma ombi la Lipa Namba. Maombi yako yataonekana hapa.</div> : <div className="lipa-history-list">{applications.map((application) => <div className="lipa-history-row" key={application.id || application.applicationId}><span className="lipa-network-mark" style={{ "--network-color": networkCards.find((item) => item.id === application.networkId)?.color ?? "#24527f" } as React.CSSProperties}>{(application.network?.[0] ?? "L").toUpperCase()}</span><div><strong>{application.network}</strong><small>{displayDate(application.submittedAt)} · Rejea {application.applicationId}</small></div><span className={`lipa-status lipa-status--${statusTone[application.status]}`}>{statusLabels[application.status]}</span><button type="button" className="lipa-icon-button" aria-label={`Fungua maelezo ya ombi ${application.applicationId}`} onClick={() => setSelectedApplication(application)}><Eye size={16} /></button></div>)}</div>}</section>}
+    {firebaseUser && <section className="lipa-history"><div className="section-title"><div><span className="overline">MAOMBI YAKO</span><h2>Historia ya Lipa Namba</h2></div><span className="section-count">{applications.length}</span></div>{applications.length === 0 ? <div className="lipa-empty">Bado hujatuma ombi la Lipa Namba. Maombi yako yataonekana hapa.</div> : <div className="lipa-history-list">{applications.map((application) => <div className="lipa-history-row" key={application.id || application.applicationId}><span className="lipa-network-mark" style={{ "--network-color": networkCards.find((item) => item.id === application.networkId)?.color ?? "#24527f" } as React.CSSProperties}>{(application.network?.[0] ?? "L").toUpperCase()}</span><div><strong>{application.network}</strong><small>{displayDate(application.submittedAt)} · Rejea {application.applicationId}</small></div><span className={`lipa-status lipa-status--${statusTone[application.status]}`}>{statusLabels[application.status]}</span><button type="button" className="lipa-icon-button" aria-label={`Fungua maelezo ya ombi ${application.applicationId}`} onClick={() => setSelectedApplication(application)}><Eye size={16} /></button>{application.status === "REJECTED" && <button type="button" className="lipa-button lipa-button--outline" onClick={() => editRejectedApplication(application)}>REKEBISHA NA TUMA TENA</button>}</div>)}</div>}</section>}
     {selectedApplication && <ApplicationModal application={selectedApplication} onClose={() => setSelectedApplication(null)} onDocument={(fieldName, label) => void openDocument(selectedApplication, fieldName, label)} />}
     {documentPreview && <div className="lipa-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDocumentPreview(null); }}><section className="lipa-document-viewer" role="dialog" aria-modal="true" aria-labelledby="lipa-document-title"><button className="lipa-icon-button lipa-modal-close" aria-label="Funga hakikisho" onClick={() => setDocumentPreview(null)}><X size={19} /></button><h3 id="lipa-document-title">{documentPreview.name}</h3>{documentPreview.url.toLowerCase().includes(".pdf") ? <iframe title={documentPreview.name} src={documentPreview.url} /> : <img src={documentPreview.url} alt={`Nyaraka ${documentPreview.name}`} /> }<div className="lipa-document-viewer-actions"><a className="lipa-button lipa-button--outline" href={documentPreview.url} target="_blank" rel="noreferrer"><Download size={15} /> Fungua / pakua</a><button className="lipa-button" onClick={() => setDocumentPreview(null)}>Funga</button></div></section></div>}
     {documentLoading && <div className="lipa-modal-backdrop" role="status"><div className="lipa-modal lipa-loading-modal"><RefreshCw size={23} className="lipa-spin" /> Inatengeneza kiungo salama cha nyaraka…</div></div>}
