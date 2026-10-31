@@ -10,7 +10,7 @@ function dateValue(value:unknown):number {
     const time=new Date(String(value)).getTime(); return Number.isFinite(time)?time:0;
   } catch { return 0; }
 }
-function dateLabel(value:unknown):string { const time=dateValue(value); return time?new Date(time).toLocaleString("sw-TZ"):"Tarehe haijatajwa"; }
+function dateLabel(value:unknown):string { const time=dateValue(value); return time?new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Dar_es_Salaam",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(time))+" · "+new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Dar_es_Salaam",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date(time)):"Tarehe haijatajwa"; }
 function statusClass(status:string):string {
   const value=status.toLowerCase();
   if(value==="approved")return "unified-inbox-status-approved";
@@ -28,19 +28,19 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     const serviceRows:InboxRow[]=serviceApplications.map((application)=>{
       const service=services.find((item)=>item.slug===application.serviceSlug||item.id===application.serviceSlug);
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
-      const requestName=service?.name??application.serviceName??application.serviceSlug??"Ombi";
+      const slug=String(application.serviceSlug??"").toLowerCase();\n      const fullName=String(service?.name??application.serviceName??application.serviceSlug??"Ombi");\n      const requestName=slug==="pata-till-mitandao-yote"?"TILL":slug.includes("access-lipa")?"ACCESS":fullName;
       const data=(application.applicantData??{}) as Record<string,unknown>;
       const slug=String(application.serviceSlug??"").toLowerCase();
       const network=String(data.network??"").toUpperCase();
       const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
       const paidService=["access-lipa-yas","access-lipa-airtel","access-lipa-vodacom"].includes(slug)||tillPayment;
       const paymentGated=paidService && String(application.status??"PENDING").toUpperCase()==="PENDING" && String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
-      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:"",phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
+      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:network,phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
     });
     const lipaRows:InboxRow[]=lipaApplications.map((application)=>{
       const network=networks.find((item)=>item.id===application.networkId||item.id===application.network||item.name===application.network);
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
-      const serviceId=String((application as any).serviceId??""); const requestName=/access.*lipa|lipa.*access/i.test(serviceId)?"ACCESS YA LIPA":/wifi|wi-fi/i.test(serviceId)?"WIFI":"LIPA NAMBA"; return {id:application.applicationId||application.id,kind:"LIPA",kindLabel:requestName,person:application.applicantName||application.userName||application.phone||"Jina halijawekwa",service:network?.name??application.network??"",phone:application.phone||"",status:application.status||"PENDING",paymentGated:false,dateValue:date,dateLabel:dateLabel(date)};
+      const serviceId=String((application as any).serviceId??""); const requestName=/access.*lipa|lipa.*access/i.test(serviceId)?"ACCESS":/wifi|wi-fi/i.test(serviceId)?"WIFI":"LIPA NAMBA"; return {id:application.applicationId||application.id,kind:"LIPA",kindLabel:requestName,person:application.applicantName||application.userName||application.phone||"Jina halijawekwa",service:network?.name??application.network??"",phone:application.phone||"",status:application.status||"PENDING",paymentGated:false,dateValue:date,dateLabel:dateLabel(date)};
     });
     const priority:Record<string,number>={PENDING:0,PROCESSING:1,APPROVED:2,REJECTED:3};
     return [...serviceRows,...lipaRows].sort((a,b)=>(priority[String(a.status).toUpperCase()]??4)-(priority[String(b.status).toUpperCase()]??4)||dateValue(b.dateValue)-dateValue(a.dateValue));
@@ -56,7 +56,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       .unified-inbox-count{border:2px solid #d5ded8;border-radius:10px;background:#f8fbf9;padding:9px 13px;font-size:.8rem;color:#25352c;font-weight:900}.unified-inbox-count:nth-child(2){background:#ffdf72;border-color:#d49a00;color:#573800}.unified-inbox-count:nth-child(3){background:#9acbff;border-color:#1671c5;color:#063d78}.unified-inbox-count:nth-child(4){background:#91e2a8;border-color:#159447;color:#064c23}.unified-inbox-count:nth-child(5){background:#ff9a91;border-color:#c92525;color:#750d0d}
       .unified-inbox-count strong{color:#17251f;margin-left:5px}.unified-inbox-count-no-payment{background:#fee2e2;border-color:#dc2626;color:#991b1b}.unified-inbox-status-no-payment{background:#dc2626;color:#fff;border:1px solid #991b1b}.status-row-no-payment{background:#ffe1e1!important;border-left:7px solid #dc2626!important}
       .unified-inbox-table-wrap{border:1px solid #e2e9e4;border-radius:12px;overflow-x:auto;background:#fff}
-      .unified-inbox-table{border-collapse:collapse;table-layout:fixed;min-width:0;width:100%}.unified-inbox-table th{background:#f7faf8;color:#34443b;font-size:.69rem;letter-spacing:.015em;text-align:left;text-transform:uppercase;white-space:normal;overflow-wrap:anywhere}.unified-inbox-table th:nth-child(1){width:16%}.unified-inbox-table th:nth-child(2){width:18%}.unified-inbox-table th:nth-child(3){width:12%}.unified-inbox-table th:nth-child(4){width:18%}.unified-inbox-table th:nth-child(5){width:14%}.unified-inbox-table th:nth-child(6){width:22%}
+      .unified-inbox-table{border-collapse:collapse;table-layout:fixed;min-width:0;width:100%}.unified-inbox-table th{background:#f7faf8;color:#34443b;font-size:.69rem;letter-spacing:.015em;text-align:left;text-transform:uppercase;white-space:normal;overflow-wrap:anywhere}.unified-inbox-table th:nth-child(1){width:14%}.unified-inbox-table th:nth-child(2){width:12%}.unified-inbox-table th:nth-child(3){width:14%}.unified-inbox-table th:nth-child(4){width:13%}.unified-inbox-table th:nth-child(5){width:16%}.unified-inbox-table th:nth-child(6){width:12%}.unified-inbox-table th:nth-child(7){width:9%}.unified-inbox-table th:nth-child(8){width:10%}
       .unified-inbox-table th,.unified-inbox-table td{border-bottom:1px solid #d9e1dc;padding:10px 7px;vertical-align:top;overflow-wrap:anywhere}.unified-inbox-table tbody tr:last-child td{border-bottom:0}.unified-inbox-table td{font-size:.84rem}
       .unified-inbox-table tbody tr.status-row-pending{background:#fff0a8;border-left:6px solid #d28a00}.unified-inbox-table tbody tr.status-row-processing{background:#c8e3ff;border-left:6px solid #0969c7}.unified-inbox-table tbody tr.status-row-approved{background:#baf2c8;border-left:6px solid #07833c}.unified-inbox-table tbody tr.status-row-rejected{background:#ffc8c4;border-left:6px solid #c51f1a}
       .unified-inbox-person{display:grid;gap:3px}.unified-inbox-person small{color:#68746e}.unified-inbox-kind{display:inline-flex;width:max-content;max-width:230px;border-radius:7px;background:#e9f8ef;color:#126c44;padding:5px 8px;font-size:.72rem;font-weight:900;overflow-wrap:anywhere}
@@ -77,11 +77,11 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       <span style={{fontSize:".8rem",color:"#63716a"}}>Inaonekana: <strong>{visibleRows.length}</strong> / {rows.length}</span>
     </div>
     {visibleRows.length===0?<div className="unified-inbox-empty">Hakuna maombi yanayolingana na vichujio ulivyochagua.</div>:<>
-      <div className="unified-inbox-table-wrap"><table className="unified-inbox-table"><thead><tr><th>MWOMBAJI</th><th>AINA HALISI YA OMBI</th><th>SIMU</th><th>TAREHE YA OMBI</th><th>HALI</th><th>VITENDO</th></tr></thead><tbody>{visibleRows.map((row)=><tr key={row.kind+":"+row.id} className={"status-row-"+(row.paymentGated?"no-payment":String(row.status).toLowerCase())}>
+      <div className="unified-inbox-table-wrap"><table className="unified-inbox-table"><thead><tr><th>MWOMBAJI</th><th>AINA YA OMBI</th><th>MTANDAO</th><th>SIMU</th><th>TAREHE YA OMBI</th><th>STATUS</th><th>VITENDO</th></tr></thead><tbody>{visibleRows.map((row)=><tr key={row.kind+":"+row.id} className={"status-row-"+(row.paymentGated?"no-payment":String(row.status).toLowerCase())}>
         <td><div className="unified-inbox-person"><strong>{row.person}</strong><small>{row.kind==="LIPA"?"Maombi ya Lipa":"Maombi ya huduma maalum"}</small></div></td>
         <td><span className="unified-inbox-kind">{row.kindLabel}</span>{row.service&&<small style={{display:"block",marginTop:5,color:"#68746e"}}>{row.service}</small>}</td>
         <td>{row.phone||"—"}</td><td>{row.dateLabel}</td><td><span className={"unified-inbox-status "+(row.paymentGated?"unified-inbox-status-no-payment":statusClass(String(row.status)))}>{row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></td>
-        <td><button type="button" className="unified-inbox-open" onClick={()=>onSelect(row.kind,row.id)}>Fungua ombi</button></td>
+        <td><button type="button" className="unified-inbox-open" onClick={()=>onSelect(row.kind,row.id)}>Open</button></td>
       </tr>)}</tbody></table></div>
       <div className="unified-inbox-mobile-list">{visibleRows.map((row)=><article className={"unified-inbox-mobile-item status-row-"+(row.paymentGated?"no-payment":String(row.status).toLowerCase())} key={row.kind+":"+row.id}>
         <div className="unified-inbox-mobile-top"><span className="unified-inbox-kind">{row.kindLabel}</span><span className={"unified-inbox-status "+(row.paymentGated?"unified-inbox-status-no-payment":statusClass(String(row.status)))}>{row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></div>
