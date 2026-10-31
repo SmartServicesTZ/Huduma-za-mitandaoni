@@ -6,6 +6,7 @@ import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import SoftCopyNidaDemoPage from "./pages/SoftCopyNidaDemoPage";
 import GeminiFloatingChat from "./components/GeminiFloatingChat";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/services"} component={Home} />
+        <Route path={"/nida-demo"} component={SoftCopyNidaDemoPage} />
         <Route path="/workbench" component={Home} />
         <Route path="/service/:slug" component={Home} />
         <Route path="/history" component={Home} />
