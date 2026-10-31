@@ -1092,7 +1092,7 @@ export const updateServiceApplication = callable(async (request) => {
     const application = snapshot.data()!;
     if (String(application.userId ?? "") !== uid) throw new ApiError("permission-denied", "Huwezi kuhariri ombi la mtumiaji mwingine.");
     const currentStatus = String(application.status ?? "PENDING");
-    const isAllowedRejectedRetry = currentStatus === "REJECTED" && application.allowResubmission === true;
+    const isAllowedRejectedRetry = currentStatus === "REJECTED";
     if (currentStatus !== "PENDING" && !isAllowedRejectedRetry) throw new ApiError("failed-precondition", "Ombi haliwezi kuhaririwa kwa sababu halijaruhusiwa kurudiwa au tayari limeanza kushughulikiwa.");
     const previous = application.applicantData && typeof application.applicantData === "object" ? application.applicantData as Record<string, unknown> : {};
     const next: Record<string, unknown> = { ...previous };
@@ -1129,7 +1129,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
   const status = text(data.status, 40);
   if (status === "PENDING") throw new ApiError("invalid-argument", "Hali PENDING huwekwa ombi linapotumwa.");
   const rejectionReason = typeof data.rejectionReason === "string" ? data.rejectionReason.trim().slice(0, 1000) : "";
-  const allowResubmission = status === "REJECTED" && data.allowResubmission === true;
+  const allowResubmission = status === "REJECTED";
   if (status === "REJECTED" && rejectionReason.length < 3) throw new ApiError("invalid-argument", "Sababu ya kukataliwa inahitajika.");
   const ref = db.collection("serviceApplications").doc(applicationId);
   const applicationSnapshot = await ref.get();
