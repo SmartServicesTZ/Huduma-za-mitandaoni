@@ -837,47 +837,10 @@ export async function reserveBusinessLicenseNumber(reservationId: string, licens
   return (await callable({ reservationId, licenseType })).data;
 }
 
-export type FirestoreCollectionPage = {
-  rows: DocumentData[];
-  nextCursor: string | null;
-  hasMore: boolean;
-};
-
-/**
- * Read one bounded page from a collection. Pass nextCursor to fetch the next
- * page; this keeps dashboards and admin screens from downloading an entire
- * collection just to render the first screen.
- */
-export async function getCollectionPage(name: string, options: { cursor?: string | null; pageSize?: number } = {}): Promise<FirestoreCollectionPage> {
-  const configuredLimit = collectionReadLimits[name] ?? 100;
-  const pageSize = Math.min(Math.max(Math.floor(options.pageSize ?? configuredLimit), 1), configuredLimit, 100);
-  const constraints = [orderBy(documentId()), ...(options.cursor ? [startAfter(options.cursor)] : []), limit(pageSize)];
-  const snapshot = await getDocs(query(collection(firestore, name), ...constraints));
-  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
-  const lastId = snapshot.docs.at(-1)?.id ?? null;
-  return { rows, nextCursor: snapshot.docs.length === pageSize ? lastId : null, hasMore: snapshot.docs.length === pageSize };
-}
-
-/**
- * Legacy full-read helper. Keep its historical all-records behavior for
- * reports and admin workflows that calculate totals across the whole dataset.
- * New list screens should use getCollectionPage and request subsequent pages
- * only when the user asks for them.
- */
 export async function getCollectionOnce(name: string): Promise<DocumentData[]> {
-  const pageSize = Math.min(collectionReadLimits[name] ?? 100, 100);
-  const documents = await readAllDocuments(
-    (cursor) => query(
-      collection(firestore, name),
-      orderBy(documentId()),
-      ...(cursor ? [startAfter(cursor)] : []),
-      limit(pageSize),
-    ),
-    pageSize,
-  );
-  return documents.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
+  const snapshot = await getDocs(collection(firestore, name));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
 }
-
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
   const existing = collectionListenerCache.get(name);
   if (existing) {
