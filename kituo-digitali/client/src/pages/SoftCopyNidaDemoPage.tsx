@@ -41,6 +41,25 @@ function containImageRect(image: HTMLImageElement, x: number, y: number, maxWidt
   return { x: x + (maxWidth - width) / 2, y: y + (maxHeight - height) / 2, width, height };
 }
 
+function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const targetRatio = width / height;
+  const sourceRatio = sourceWidth / sourceHeight;
+  let sourceX = 0;
+  let sourceY = 0;
+  let cropWidth = sourceWidth;
+  let cropHeight = sourceHeight;
+  if (sourceRatio > targetRatio) {
+    cropWidth = sourceHeight * targetRatio;
+    sourceX = (sourceWidth - cropWidth) / 2;
+  } else {
+    cropHeight = sourceWidth / targetRatio;
+    sourceY = (sourceHeight - cropHeight) / 2;
+  }
+  ctx.drawImage(image, sourceX, sourceY, cropWidth, cropHeight, x, y, width, height);
+}
+
 export default function SoftCopyNidaDemoPage() {
   const [, navigate] = useLocation();
   const [firstName, setFirstName] = useState("Awadhi");
@@ -98,26 +117,26 @@ export default function SoftCopyNidaDemoPage() {
 
     const canvas = document.createElement("canvas");
     canvas.width = 1600;
-    canvas.height = 1000;
+    canvas.height = 1045;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // 1. Mandhari ya Gradient
-    const gradient = ctx.createLinearGradient(0, 0, 1600, 1000);
+    const gradient = ctx.createLinearGradient(0, 0, 1600, 1045);
     gradient.addColorStop(0, CARD_DESIGN.colors.backgroundStart);
     gradient.addColorStop(0.5, CARD_DESIGN.colors.backgroundMid);
     gradient.addColorStop(1, CARD_DESIGN.colors.backgroundEnd);
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1600, 1000);
+    ctx.fillRect(0, 0, 1600, 1045);
 
     // 2. Taswira ya Mlima kwa nyuma
     ctx.fillStyle = "rgba(160, 60, 40, 0.10)";
     ctx.beginPath();
-    ctx.moveTo(250, 750);
+    ctx.moveTo(250, 800);
     ctx.lineTo(450, 380);
     ctx.lineTo(580, 500);
     ctx.lineTo(750, 280);
-    ctx.lineTo(950, 750);
+    ctx.lineTo(950, 800);
     ctx.closePath();
     ctx.fill();
 
@@ -125,7 +144,7 @@ export default function SoftCopyNidaDemoPage() {
       // Ukingo wa nje
       ctx.strokeStyle = CARD_DESIGN.colors.border;
       ctx.lineWidth = 10;
-      ctx.strokeRect(16, 16, 1568, 968);
+      ctx.strokeRect(16, 16, 1568, 1013);
 
       // Mistari 4 ya Juu
       ctx.textAlign = "center";
@@ -148,7 +167,7 @@ export default function SoftCopyNidaDemoPage() {
       ctx.textAlign = "left";
       ctx.fillStyle = "#101d24";
       ctx.font = "bold 44px Arial";
-      ctx.fillText(formattedNidaNumber, 75, 230);
+      ctx.fillText(formattedNidaNumber, 75, 255);
 
       // Taarifa za Kushoto
       const drawFieldExact = (labelKiswahili: string, labelEnglish: string, value: string, y: number) => {
@@ -165,25 +184,25 @@ export default function SoftCopyNidaDemoPage() {
         ctx.fillText(value || "—", 380, y + 10);
       };
 
-      drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 320);
-      drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 430);
-      drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 540);
-      drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 650);
+      drawFieldExact("JINA", "Given Name", (firstName + " " + middleName).trim().toUpperCase(), 350);
+      drawFieldExact("JINA LA MWISHO", "Last Name", lastName.toUpperCase(), 465);
+      drawFieldExact("TAREHE YA KUZALIWA", "Date of Birth", formattedDob, 580);
+      drawFieldExact("JINSI", "Sex", gender.toUpperCase(), 695);
 
       // Sahihi
       ctx.font = "bold 18px Arial";
       ctx.fillStyle = "#1f3a34";
-      ctx.fillText("SAINI", 75, 760);
+      ctx.fillText("SAINI", 75, 815);
       ctx.font = "14px Arial";
       ctx.fillStyle = "#555555";
-      ctx.fillText("Signature", 75, 782);
+      ctx.fillText("Signature", 75, 837);
 
       ctx.font = "italic 36px cursive";
       ctx.fillStyle = "#0a192f";
-      ctx.fillText(signature || fullName, 190, 775);
+      ctx.fillText(signature || fullName, 190, 830);
 
       // Picha ya Mtumiaji
-      const pX = 1120, pY = 270, pW = 390, pH = 480;
+      const pX = 1110, pY = 320, pW = 390, pH = 500;
       ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.fillRect(pX, pY, pW, pH);
       ctx.strokeStyle = CARD_DESIGN.colors.border;
@@ -200,7 +219,7 @@ export default function SoftCopyNidaDemoPage() {
       if (photo) {
         const userImg = new Image();
         userImg.onload = () => {
-          ctx.drawImage(userImg, pX + 10, pY + 10, pW - 20, pH - 20);
+          drawCoverImage(ctx, userImg, pX + 10, pY + 10, pW - 20, pH - 20);
           triggerDownload();
         };
         userImg.onerror = triggerDownload;
@@ -258,7 +277,7 @@ export default function SoftCopyNidaDemoPage() {
         <div style={{ marginTop: 26 }}>
           <h2 style={{ fontSize: 20, marginBottom: 12 }}>PREVIEW YA KITAMBULISHO</h2>
           <div style={{
-            position: "relative", overflow: "hidden", aspectRatio: "1.6 / 1",
+            position: "relative", overflow: "hidden", aspectRatio: "1.53 / 1",
             width: "100%", borderRadius: 16, border: `2px solid ${CARD_DESIGN.colors.border}`,
             padding: "clamp(12px,3vw,28px)", boxSizing: "border-box",
             background: "linear-gradient(125deg, #d4edda 0%, #bee5eb 50%, #78c6d7 100%)",
