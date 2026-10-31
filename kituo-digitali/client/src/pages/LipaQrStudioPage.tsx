@@ -73,7 +73,7 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork }>(function CardArtboard({ values, qrDataUrl, network }, ref) {
+const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean }>(function CardArtboard({ values, qrDataUrl, network, watermarked }, ref) {
   const isYas = network === "yas";
   const isAirtel = network === "airtel";
   return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network}>
@@ -102,7 +102,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <strong>LIPA<small>KWA SIMU</small></strong>
       </footer>
     </section> : <section className="lq-card-red">
-      <div className="lq-card-watermark" aria-hidden="true" />
+      {watermarked && <div className="lq-card-watermark" aria-hidden="true" />}
       <div className="lq-qr-frame"><div className="lq-qr-paper">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}</div></div>
       <div className="lq-merchant-box">
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
@@ -114,10 +114,10 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   </article>;
 });
 
-const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues }>(function HowToPayArtboard({ values }, ref) {
+const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues; watermarked: boolean }>(function HowToPayArtboard({ values, watermarked }, ref) {
   return <article ref={ref} className="lq-artboard lq-guide-artboard" data-lipa-export-page="guide">
     <header className="lq-guide-header">
-      <div className="lq-guide-watermark" aria-hidden="true" />
+      {watermarked && <div className="lq-guide-watermark" aria-hidden="true" />}
       <span className="lq-guide-eyebrow">MWONGOZO HURU · LIPA NAMBA</span>
       <h2>Jinsi ya kufanya malipo<br />kwa Lipa Namba</h2>
       <div className="lq-guide-merchant-pill"><span>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span><b>{values.lipaNumber || "NAMBA YA LIPA"}</b></div>
@@ -149,8 +149,8 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues }>(fun
 export default function LipaQrStudioPage() {
   const { firebaseUser, profile, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [entryStatus, setEntryStatus] = useState<"checking" | "pending" | "charging" | "paid" | "failed">("checking");
-  const [entryMessage, setEntryMessage] = useState("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
+  const [entryStatus, setEntryStatus] = useState<"checking" | "paid" | "failed">("checking");
+  const [entryMessage, setEntryMessage] = useState("Inafungua huduma...");
   const [serviceCost, setServiceCost] = useState<number | null>(null);
   const [serviceName, setServiceName] = useState("STIKA ZA LIPA");
   const entryRequestId = useRef(crypto.randomUUID());
@@ -178,40 +178,29 @@ export default function LipaQrStudioPage() {
     }
     if (!profile) return;
     setEntryStatus("checking");
-    setEntryMessage("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
-    void getServiceTokenConfig("stika-lipa").then((config) => {
-      if (!active) return;
-      setServiceCost(config.tokenCost);
-      setServiceName(config.name);
-      setEntryStatus("pending");
-      setEntryMessage(config.isFree
-        ? "Huduma hii imewekwa BURE na Admin. Hakuna tokeni zitakazokatwa. Utaruhusiwa kupakua stika MOJA tu."
-        : `Gharama ni tokeni ${config.tokenCost} kulingana na Dashboard ya Admin. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA tu. Hata usipopakua, tokeni hazitarejeshwa.`);
-    }).catch((error) => {
-      if (!active) return;
-      setEntryStatus("failed");
-      setEntryMessage(error instanceof Error ? error.message : "Imeshindikana kusoma gharama ya huduma.");
-    });
+    setEntryMessage("Inafungua huduma...");
+    void (async () => {
+      try {
+        const config = await getServiceTokenConfig("stika-lipa");
+        if (!active) return;
+        setServiceCost(config.tokenCost);
+        setServiceName(config.name);
+        await consumeFirebaseTokens(firebaseUser.uid, {
+          slug: "stika-lipa", name: config.name, tokenCost: config.tokenCost,
+          kind: config.isFree || config.tokenCost === 0 ? "free" : "paid", tokenType: "huduma",
+        }, entryRequestId.current);
+        if (!active) return;
+        setEntryStatus("paid");
+        setEntryMessage("Huduma imefunguliwa.");
+        toast.success(config.isFree || config.tokenCost === 0 ? "Huduma imefunguliwa bure." : `Tokeni ${config.tokenCost} zimekatwa. Unaweza kutengeneza stika yako.`);
+      } catch (error) {
+        if (!active) return;
+        setEntryStatus("failed");
+        setEntryMessage(error instanceof Error ? error.message : "Imeshindikana kufungua huduma. Jaribu tena.");
+      }
+    })();
     return () => { active = false; };
   }, [authLoading, firebaseUser, profile]);
-
-  const confirmTokenCharge = async () => {
-    if (!firebaseUser || entryStatus !== "pending" || serviceCost === null) return;
-    setEntryStatus("charging");
-    setEntryMessage("Tunasubiri uthibitisho wa makato...");
-    try {
-      await consumeFirebaseTokens(firebaseUser.uid, {
-        slug: "stika-lipa", name: serviceName, tokenCost: serviceCost, kind: serviceCost === 0 ? "free" : "paid", tokenType: "huduma",
-      }, entryRequestId.current);
-      setEntryStatus("paid");
-      setEntryMessage(serviceCost === 0
-        ? "Huduma ni BURE. Unaweza kupakua stika MOJA."
-        : `Tokeni ${serviceCost} zimekatwa kulingana na bei ya Admin. Unaweza kupakua stika MOJA. Baada ya kupakua utarudishwa kwenye huduma.`);
-    } catch (error) {
-      setEntryStatus("failed");
-      setEntryMessage(error instanceof Error ? error.message : "Imeshindikana kukata tokeni. Jaribu tena.");
-    }
-  };
 
   useEffect(() => {
     let current = true;
@@ -296,7 +285,7 @@ export default function LipaQrStudioPage() {
   const fieldError = (field: keyof LipaCardValues) => showErrors ? errors[field] : undefined;
   const readyToDownload = isValid && Boolean(qrDataUrl) && !exporting && entryStatus === "paid" && !outputUsed.current;
 
-  if (entryStatus !== "paid") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-amber-300 bg-white p-6 shadow-xl"><div className="mb-4 text-center text-4xl">🔐</div><h1 className="text-center text-2xl font-black">STIKA ZA LIPA</h1><div role="status" style={{marginTop:20,padding:16,borderRadius:12,border:"1px solid #f59e0b",background:"#fffbeb",color:"#78350f",fontSize:14,fontWeight:700,lineHeight:1.6}}><strong>TAARIFA YA MAKATO YA TOKENI</strong><p style={{marginTop:8}}>{entryMessage}</p></div>{entryStatus==="pending"&&<div style={{display:"grid",gap:12,marginTop:20}}><button type="button" onClick={()=>void confirmTokenCharge()} className="lq-button lq-button-light">{serviceCost===0?"NAKUBALI, ENDELEA BILA MAKATO":`NAKUBALI, KATA TOKENI ${serviceCost}`}</button><button type="button" onClick={()=>setLocation("/services")} className="lq-button lq-button-outline">SITAKI, RUDI NYUMA</button></div>}{(entryStatus==="checking"||entryStatus==="charging")&&<p style={{marginTop:16,textAlign:"center",fontWeight:700}}>Tafadhali subiri...</p>}<button type="button" onClick={()=>setLocation("/services")} style={{marginTop:16,width:"100%",textDecoration:"underline"}}>Rudi kwenye huduma</button></section></main>;
+  if (entryStatus !== "paid") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"><h1 className="text-center text-2xl font-black">STIKA ZA LIPA</h1><p role="status" style={{marginTop:18,textAlign:"center",color:entryStatus==="failed"?"#b91c1c":"#475569",fontWeight:700}}>{entryMessage}</p>{entryStatus==="checking"&&<p style={{textAlign:"center",marginTop:12}}>Tafadhali subiri...</p>}{entryStatus==="failed"&&<button type="button" onClick={()=>setLocation("/services")} className="lq-button lq-button-outline" style={{width:"100%",marginTop:18}}>RUDI KWENYE HUDUMA</button>}</section></main>;
   return <main className="lq-app">
     <aside className="lq-sidebar">
       <div className="lq-sidebar-top">
@@ -304,9 +293,6 @@ export default function LipaQrStudioPage() {
         <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>STIKA ZA LIPA</strong><small>Tengeneza kadi ya Lipa</small></span></span>
       </div>
       <section className="lq-editor-panel">
-        <div role="status" style={{marginBottom:14,padding:13,borderRadius:12,border:"1px solid #f59e0b",background:"#fffbeb",color:"#78350f",fontSize:13,fontWeight:700,lineHeight:1.5}}>
-          <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
-        </div>
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
         <label className="lq-field" htmlFor="lq-network"><span>Chagua mtandao wa stika</span>
           <select id="lq-network" value={network} onChange={(event) => setNetwork(event.target.value as LipaNetwork)}>
@@ -354,8 +340,8 @@ export default function LipaQrStudioPage() {
         </div>
       </div>
       <div className="lq-preview-pages lq-print-root">
-        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} />
-        {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} />}
+        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} watermarked={entryStatus === "paid"} />
+        {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} watermarked={entryStatus === "paid"} />}
       </div>
       <div className="lq-preview-footnote"><Info size={14} />Hakikisha QR inasomwa na inaonyesha jina na namba sahihi kabla ya kuchapisha.</div>
     </section>
