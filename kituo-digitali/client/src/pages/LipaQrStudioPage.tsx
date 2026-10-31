@@ -284,16 +284,16 @@ export default function LipaQrStudioPage() {
           <span id="lq-network-label">Chagua mtandao wa stika</span>
           <div className="lq-network-options">
             <button type="button" className={`lq-network-option lq-network-option--voda ${network === "voda" ? "is-selected" : ""}`} aria-pressed={network === "voda"} onClick={() => setNetwork("voda")}>
-              <span className="lq-network-logo lq-network-logo--voda"><i>◉</i></span><span className="lq-network-option-copy"><strong>Vodacom</strong><small>M-Pesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+              <span className="lq-network-logo lq-network-logo--voda"><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Vodacom</strong><small>M-Pesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
             <button type="button" className={`lq-network-option lq-network-option--yas ${network === "yas" ? "is-selected" : ""}`} aria-pressed={network === "yas"} onClick={() => setNetwork("yas")}>
-              <span className="lq-network-logo lq-network-logo--yas">yas</span><span className="lq-network-option-copy"><strong>Yas</strong><small>Mixx by Yas</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+              <span className="lq-network-logo lq-network-logo--yas"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Yas</strong><small>Mixx by Yas</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
             <button type="button" className={`lq-network-option lq-network-option--airtel ${network === "airtel" ? "is-selected" : ""}`} aria-pressed={network === "airtel"} onClick={() => setNetwork("airtel")}>
-              <span className="lq-network-logo lq-network-logo--airtel">◉</span><span className="lq-network-option-copy"><strong>Airtel</strong><small>Money</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+              <span className="lq-network-logo lq-network-logo--airtel"><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Airtel</strong><small>Money</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
             <button type="button" className={`lq-network-option lq-network-option--halotel ${network === "halotel" ? "is-selected" : ""}`} aria-pressed={network === "halotel"} onClick={() => setNetwork("halotel")}>
-              <span className="lq-network-logo lq-network-logo--halotel">H</span><span className="lq-network-option-copy"><strong>Halotel</strong><small>HaloPesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
+              <span className="lq-network-logo lq-network-logo--halotel"><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Halotel</strong><small>HaloPesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
           </div>
           <small>{network === "halotel" ? "QR ya malipo ya Halotel bado haijawezeshwa." : "Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini."}</small>
