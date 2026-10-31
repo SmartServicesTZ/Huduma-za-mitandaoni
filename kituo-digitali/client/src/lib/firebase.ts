@@ -594,7 +594,7 @@ export async function adminListServices() {
 }
 
 /** Read the live token price configured by Admin for a service. */
-export async function getServiceTokenConfig(slug: string): Promise<{ name: string; tokenCost: number; isFree: boolean }> {
+export async function getServiceTokenConfig(slug: string): Promise<{ name: string; tokenCost: number; isFree: boolean; agentTypeTokenCosts?: Record<string, number> }> {
   const snapshot = await getDocsFromServer(query(collection(firestore, "services"), where("slug", "==", slug), limit(1)));
   const row = snapshot.docs[0]?.data();
   if (!row) throw new Error("Bei ya huduma haijapatikana kwenye Dashboard ya Admin. Wasiliana na admin.");
@@ -606,6 +606,7 @@ export async function getServiceTokenConfig(slug: string): Promise<{ name: strin
     name: String(row.name ?? slug),
     tokenCost,
     isFree: row.isFree === true || tokenCost === 0,
+    agentTypeTokenCosts: row.agentTypeTokenCosts && typeof row.agentTypeTokenCosts === "object" ? row.agentTypeTokenCosts as Record<string, number> : undefined,
   };
 }
 
