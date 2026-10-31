@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   adminSaveCollectionItem,
+  authPersistenceReady,
+  firebaseAuth,
   getServiceApplicationDocument,
   markServiceApplicationViewed,
   replyToServiceApplication,
@@ -225,6 +227,7 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   }, [initialSelectedId, applications]);
 
   const closeApplication = () => {
+    if (documentPreview?.url.startsWith("blob:")) URL.revokeObjectURL(documentPreview.url);
     setSelected(null);
     setRejecting(false);
     setRejectReason("");
@@ -236,8 +239,10 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     if (!selected && !documentPreview) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        if (documentPreview) setDocumentPreview(null);
-        else closeApplication();
+        if (documentPreview) {
+          if (documentPreview.url.startsWith("blob:")) URL.revokeObjectURL(documentPreview.url);
+          setDocumentPreview(null);
+        } else closeApplication();
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -302,18 +307,36 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
     try {
       const result = await getServiceApplicationDocument(selected.applicationId || selected.id, field.fieldName);
       if (!result?.url) throw new Error("Hati haikupatikana.");
+      // The Worker download endpoint is intentionally protected by Firebase Auth.
+      // Fetch the bytes with the current user's ID token; a plain <img>/window.open
+      // navigation cannot attach the Authorization header and returns unauthenticated.
+      await authPersistenceReady;
+      const user = firebaseAuth.currentUser;
+      if (!user) throw new Error("Akaunti ya Admin haijaingia. Toka kisha ingia tena.");
+      const token = await user.getIdToken();
+      const response = await fetch(result.url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}`, Accept: "*/*" },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+        throw new Error(payload?.error?.message || `Imeshindikana kufungua hati (HTTP ${response.status}).`);
+      }
+      const fileBlob = await response.blob();
+      const fileUrl = URL.createObjectURL(fileBlob);
       if (action === "preview") {
-        setDocumentPreview({ url: result.url, label: field.label, image: field.type === "IMAGE_UPLOAD" });
-      } else if (action === "download") {
+        setDocumentPreview({ url: fileUrl, label: field.label, image: field.type === "IMAGE_UPLOAD" });
+      } else {
         const anchor = document.createElement("a");
-        anchor.href = result.url;
-        anchor.download = field.label;
+        anchor.href = fileUrl;
+        anchor.download = field.label || "document";
+        anchor.target = action === "open" ? "_blank" : "_self";
         anchor.rel = "noopener noreferrer";
         document.body.appendChild(anchor);
         anchor.click();
         anchor.remove();
-      } else {
-        window.open(result.url, "_blank", "noopener,noreferrer");
+        window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60_000);
       }
     } catch (documentError) {
       setError(`${field.label}: ${errorText(documentError)}`);
