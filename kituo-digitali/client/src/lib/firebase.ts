@@ -408,7 +408,7 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
       if (!Number.isSafeInteger(configuredCost) || configuredCost < 0 || configuredCost > 100000) {
         throw new Error("Gharama ya huduma haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
       }
-      currentCost = service.agentType ? service.tokenCost : configuredCost;
+      currentCost = service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : configuredCost;
       currentIsFree = !service.agentType && row.isFree === true && configuredCost === 0;
     }
   } catch (error) {
