@@ -16,7 +16,7 @@ import { getRecentSecurityLogs } from "@/lib/securityLogs";
 
 type Panel = "overview" | "agentIdPricing" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
-  ["overview", "Muhtasari", LayoutDashboard], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["lipaReport", "Ripoti za Lipa", BarChart3], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare],
+  ["overview", "Muhtasari", LayoutDashboard], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["agentIdPricing", "Bei za Kitambulisho", UserCog], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["lipaReport", "Ripoti za Lipa", BarChart3], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare],
 ];
 const emptyService = { id: "", name: "", slug: "", description: "", icon: "sparkles", tokenCost: 2, reward: 0, isFree: false, isVisible: true, active: true, isLocked: false, maintenanceMessage: "", category: "Huduma kuu", actionUrl: "", instructions: "", buttonText: "TUMA OMBI", statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], adminWorkflow: true, order: 0, fields: [] as ServiceFormField[] };
 const emptyMessage = { subject: "", body: "", recipientId: "" };
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<(AdminUserRecord & { id: string }) | null>(null);
   const [tokenForm, setTokenForm] = useState({ userId: "", amount: 1, tokenType: "huduma", reason: "" });
-  const [tokenBonusConfig, setTokenBonusConfig] = useState({ registrationBonus: 12, dailyBonus: 6 });
+  const [tokenBonusConfig, setTokenBonusConfig] = useState({ registrationBonus: 12, dailyBonus: 3 });
   const [service, setService] = useState(emptyService);
   const [serviceOrder, setServiceOrder] = useState<string[]>([]);
   const [homepageSectionOrder, setHomepageSectionOrder] = useState<string[]>(defaultHomepageSectionOrder);
@@ -235,7 +235,20 @@ export default function AdminDashboard() {
         if (Array.isArray(saved.homepageSectionOrder)) setHomepageSectionOrder(saved.homepageSectionOrder.filter((item): item is string => typeof item === "string"));
         setCms((current) => ({ ...current, ...Object.fromEntries(Object.keys(current).map((key) => [key, saved[key] ?? current[key as keyof typeof current]])) }));
         const bonus = saved.tokenBonusConfig as Record<string, unknown> | undefined;
-        if (bonus) setTokenBonusConfig({ registrationBonus: Number(bonus.registrationBonus ?? 12), dailyBonus: Number(bonus.dailyBonus ?? 6) });
+        if (bonus) {
+          const normalizedBonus = { registrationBonus: Number(bonus.registrationBonus ?? 12), dailyBonus: 3 };
+          setTokenBonusConfig(normalizedBonus);
+          // Hamisha mpangilio wa zamani wa bonus 6 kwenda kiwango kipya cha 3.
+          if (hasPermission("manageTokens") && needs("tokens") && Number(bonus.dailyBonus ?? 6) !== 3) {
+            try { await adminSaveSiteSettings(firebaseUser!.uid, { tokenBonusConfig: normalizedBonus }); }
+            catch (error) { setDataError((current) => current || "Bonasi ya kila siku haikuhifadhiwa: " + safeError(error)); }
+          }
+        } else if (hasPermission("manageTokens") && needs("tokens")) {
+          const normalizedBonus = { registrationBonus: 12, dailyBonus: 3 };
+          setTokenBonusConfig(normalizedBonus);
+          try { await adminSaveSiteSettings(firebaseUser!.uid, { tokenBonusConfig: normalizedBonus }); }
+          catch (error) { setDataError((current) => current || "Bonasi ya kila siku haikuhifadhiwa: " + safeError(error)); }
+        }
       }
     } finally { setLoadingData(false); }
   };
