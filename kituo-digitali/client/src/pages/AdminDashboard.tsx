@@ -14,9 +14,9 @@ import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
 import { UnifiedApplicationsInbox } from "./UnifiedApplicationsInbox";
 import { getRecentSecurityLogs } from "@/lib/securityLogs";
 
-type Panel = "overview" | "agentIdPricing" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages";
+type Panel = "overview" | "agentIdPricing" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages" | "cms" | "templates" | "appearance";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
-  ["overview", "Muhtasari", LayoutDashboard], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["agentIdPricing", "Bei za Kitambulisho", UserCog], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["lipa", "Lipa Namba", WalletCards], ["lipaReport", "Ripoti za Lipa", BarChart3], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare],
+  ["overview", "Muhtasari", LayoutDashboard], ["serviceControl", "Funga / Fungua Huduma", ShieldCheck], ["agentIdPricing", "Bei za Kitambulisho", UserCog], ["users", "Watumiaji", Users], ["agents", "MAWAKALA", UserCog], ["tokens", "Tokeni", WalletCards], ["services", "Huduma", Boxes], ["applications", "MAOMBI YA HUDUMA", ClipboardList], ["lipa", "Lipa Namba", WalletCards], ["lipaReport", "Ripoti za Lipa", BarChart3], ["transactions", "Transactions", BarChart3], ["reports", "Ripoti za biashara", BarChart3], ["security", "Usalama", ShieldCheck], ["messages", "Tuma ujumbe", MessageSquare], ["cms", "Muonekano & CMS", Palette], ["templates", "Templates za Nyaraka", ClipboardList], ["appearance", "Mpangilio wa Homepage", SlidersHorizontal],
 ];
 const emptyService = { id: "", name: "", slug: "", description: "", icon: "sparkles", tokenCost: 2, reward: 0, isFree: false, isVisible: true, active: true, isLocked: false, maintenanceMessage: "", category: "Huduma kuu", actionUrl: "", instructions: "", buttonText: "TUMA OMBI", statusOptions: ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], adminWorkflow: true, order: 0, fields: [] as ServiceFormField[] };
 const emptyMessage = { subject: "", body: "", recipientId: "" };
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
   const canManageLipaApplications = hasPermission("manageLipaApplications");
   const canManage = isAuthenticated && (isSuper || isAdmin || Object.values(permissions).some(Boolean));
   const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
-  const panel = ((rawPanel === "agentIdPricing" || nav.some(([key]) => key === rawPanel)) ? rawPanel : "overview") as Panel;
+  const panel = ((rawPanel === "agentIdPricing" || nav.some(([key]) => key === rawPanel)) ? rawPanel : rawPanel === "settings" ? "cms" : rawPanel === "licenses" ? "templates" : rawPanel === "audit" ? "security" : rawPanel === "analytics" ? "reports" : rawPanel === "videos" || rawPanel === "announcements" || rawPanel === "ads" || rawPanel === "roles" ? "overview" : "overview") as Panel;
   const visibleNav = nav.filter(([key]) => key === "overview" || !panelPermission[key] || hasPermission(panelPermission[key]!));
 
   // Keep the admin drawer transient on mobile and never let its open state
@@ -203,11 +203,11 @@ export default function AdminDashboard() {
       const needs = (...panels: Panel[]) => panels.includes(panel);
       const results = await Promise.allSettled([
         cachedRead("users", hasPermission("viewUsers") && needs("overview", "users", "tokens", "reports", "security"), adminListUsers, [], force),
-        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl", "agentIdPricing", "applications", "reports"), adminListServices, [], force),
+        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl", "agentIdPricing", "applications", "reports", "appearance"), adminListServices, [], force),
         cachedRead("transactions", hasPermission("manageReports") && needs("overview", "transactions", "reports"), adminListTransactions, [], force),
         cachedRead("messages", hasPermission("manageMessages") && needs("messages"), () => adminListCollection("messages"), [], force),
         cachedRead(`security:${auditCollection}`, hasPermission("viewAuditLogs") && needs("security"), () => getRecentSecurityLogs(auditCollection), { rows: [], cursor: null, hasMore: false }, force),
-        cachedRead("siteSettings", (hasPermission("manageSettings") && needs("services", "serviceControl")) || (hasPermission("manageTokens") && needs("tokens")), adminGetSiteSettings, null, force),
+        cachedRead("siteSettings", (hasPermission("manageSettings") && needs("services", "serviceControl", "cms", "templates")) || (hasPermission("manageTokens") && needs("tokens")), adminGetSiteSettings, null, force),
         cachedRead("serviceLocks", hasPermission("manageServices") && needs("services", "serviceControl"), () => adminListCollection("serviceLocks"), [], force),
         cachedRead("lipaServices", canManageLipaApplications && needs("applications", "lipa"), () => adminListCollection("lipaServices"), [], force),
         cachedRead("lipaApplications", canManageLipaApplications && needs("applications", "lipaReport", "lipa"), adminListLipaApplications, [], force),
@@ -355,6 +355,9 @@ export default function AdminDashboard() {
             {panel === "transactions" && <section className="admin-card"><div className="admin-card-heading"><div><span className="admin-kicker">AUDIT LEDGER</span><h2>Transactions</h2></div><button type="button" className="button button--green button--small" onClick={() => exportTransactionsCsv(transactions)} disabled={!transactions.length}>Pakua ripoti CSV</button></div><TransactionTable rows={transactions} /></section>}
       {panel === "reports" && <BusinessReport transactions={transactions} users={users} serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} />}
       {panel === "security" && <SecurityPanel isSuper={isSuper} users={users} audit={audit} collectionName={auditCollection} onCollectionChange={changeAuditCollection} hasMore={auditHasMore} loadingMore={auditLoadingMore} onLoadMore={loadMoreAudit} />}
+      {panel === "cms" && <CmsPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} />}
+      {panel === "templates" && <TemplateEditorPanel values={cms} setValues={setCms} onRun={run} adminId={firebaseUser!.uid} />}
+      {panel === "appearance" && <ServiceOrderingPanel services={services} serviceOrder={serviceOrder} setServiceOrder={setServiceOrder} sectionOrder={homepageSectionOrder} setSectionOrder={setHomepageSectionOrder} busy={busy} onSave={() => void run(() => adminSaveSiteSettings(firebaseUser!.uid, { serviceOrder, homepageSectionOrder }), "Mpangilio wa homepage umehifadhiwa.")} />}
       {panel === "messages" && <MessagesPanel users={users} form={message} setForm={setMessage} onRun={run} adminId={firebaseUser!.uid} />}
     </section>{selectedUser && <UserModal person={selectedUser} onClose={() => setSelectedUser(null)} />}</div>;
 }
@@ -373,7 +376,7 @@ const permissionOptions = [
   ["viewAuditLogs", "Audit logs: kuona historia ya actions"],
 ] as const;
 
-const panelPermission: Partial<Record<Panel, string>> = { agentIdPricing: "manageServices", agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", lipa: "manageLipaApplications", transactions: "manageReports", reports: "manageReports", security: "viewAuditLogs", messages: "manageMessages" };
+const panelPermission: Partial<Record<Panel, string>> = { agentIdPricing: "manageServices", agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", lipa: "manageLipaApplications", transactions: "manageReports", reports: "manageReports", security: "viewAuditLogs", messages: "manageMessages", cms: "manageSettings", templates: "manageSettings", appearance: "manageSettings" };
 
 function BusinessReport({ transactions, users, serviceApplications, lipaApplications, services }: { transactions: any[]; users: any[]; serviceApplications: ServiceApplication[]; lipaApplications: LipaApplication[]; services: any[] }) {
   const [from, setFrom] = useState("");
