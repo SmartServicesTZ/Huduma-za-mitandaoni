@@ -271,6 +271,18 @@ export const adminWrite = callable(async (request) => {
       if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) throw new ApiError("invalid-argument", "Gharama ya tokeni si sahihi.");
       patch.tokenCost = tokenCost;
     }
+    if (patch.agentTypeTokenCosts !== undefined) {
+      const rolePrices = objectValue(patch.agentTypeTokenCosts, "Bei za aina za wakala");
+      const validated: Record<string, number> = {};
+      for (const role of ["Freelancer", "Team Leader", "Team Reader", "Supervisor"]) {
+        const amount = Number(rolePrices[role]);
+        if (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000) {
+          throw new ApiError("invalid-argument", `Bei ya tokeni kwa ${role} si sahihi.`);
+        }
+        validated[role] = amount;
+      }
+      patch.agentTypeTokenCosts = validated;
+    }
     if (patch.fields !== undefined) patch.fields = validateConfiguredFields(patch.fields);
     if (patch.statusOptions !== undefined && (!Array.isArray(patch.statusOptions) || patch.statusOptions.length > 12 || patch.statusOptions.some((status) => typeof status !== "string" || status.length > 40))) throw new ApiError("invalid-argument", "Status options si sahihi.");
     if (patch.active !== undefined && typeof patch.active !== "boolean") throw new ApiError("invalid-argument", "Hali ya huduma si sahihi.");
