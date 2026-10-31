@@ -28,7 +28,8 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     const serviceRows:InboxRow[]=serviceApplications.map((application)=>{
       const service=services.find((item)=>item.slug===application.serviceSlug||item.id===application.serviceSlug);
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
-      const slug=String(application.serviceSlug??"").toLowerCase();\n      const fullName=String(service?.name??application.serviceName??application.serviceSlug??"Ombi");\n      const requestName=slug==="pata-till-mitandao-yote"?"TILL":slug.includes("access-lipa")?"ACCESS":fullName;
+      const fullName=String(service?.name??application.serviceName??application.serviceSlug??"Ombi");
+      const requestName=slug==="pata-till-mitandao-yote"?"TILL":slug.includes("access-lipa")?"ACCESS":fullName;
       const data=(application.applicantData??{}) as Record<string,unknown>;
       const slug=String(application.serviceSlug??"").toLowerCase();
       const network=String(data.network??"").toUpperCase();
@@ -79,14 +80,14 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     {visibleRows.length===0?<div className="unified-inbox-empty">Hakuna maombi yanayolingana na vichujio ulivyochagua.</div>:<>
       <div className="unified-inbox-table-wrap"><table className="unified-inbox-table"><thead><tr><th>MWOMBAJI</th><th>AINA YA OMBI</th><th>MTANDAO</th><th>SIMU</th><th>TAREHE YA OMBI</th><th>STATUS</th><th>VITENDO</th></tr></thead><tbody>{visibleRows.map((row)=><tr key={row.kind+":"+row.id} className={"status-row-"+(row.paymentGated?"no-payment":String(row.status).toLowerCase())}>
         <td><div className="unified-inbox-person"><strong>{row.person}</strong><small>{row.kind==="LIPA"?"Maombi ya Lipa":"Maombi ya huduma maalum"}</small></div></td>
-        <td><span className="unified-inbox-kind">{row.kindLabel}</span>{row.service&&<small style={{display:"block",marginTop:5,color:"#68746e"}}>{row.service}</small>}</td>
-        <td>{row.phone||"—"}</td><td>{row.dateLabel}</td><td><span className={"unified-inbox-status "+(row.paymentGated?"unified-inbox-status-no-payment":statusClass(String(row.status)))}>{row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></td>
+        <td><span className="unified-inbox-kind">{row.kindLabel}</span></td>
+        <td>{row.service||"—"}</td><td>{row.phone||"—"}</td><td>{row.dateLabel}</td><td><span className={"unified-inbox-status "+(row.paymentGated?"unified-inbox-status-no-payment":statusClass(String(row.status)))}>{row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></td>
         <td><button type="button" className="unified-inbox-open" onClick={()=>onSelect(row.kind,row.id)}>Open</button></td>
       </tr>)}</tbody></table></div>
       <div className="unified-inbox-mobile-list">{visibleRows.map((row)=><article className={"unified-inbox-mobile-item status-row-"+(row.paymentGated?"no-payment":String(row.status).toLowerCase())} key={row.kind+":"+row.id}>
         <div className="unified-inbox-mobile-top"><span className="unified-inbox-kind">{row.kindLabel}</span><span className={"unified-inbox-status "+(row.paymentGated?"unified-inbox-status-no-payment":statusClass(String(row.status)))}>{row.paymentGated?"NO PAYMENT":String(row.status).toUpperCase()}</span></div>
-        <h3>{row.person}</h3>{row.service&&<p style={{color:"#68746e",fontSize:".8rem",margin:"4px 0"}}>{row.service}</p>}
-        <div className="unified-inbox-mobile-meta"><span>{row.dateLabel}</span>{row.phone&&<span>Simu: {row.phone}</span>}</div>
+        <h3>{row.person}</h3>
+        <div className="unified-inbox-mobile-meta"><span>Aina: {row.kindLabel}</span><span>Mtandao: {row.service||"—"}</span>{row.phone&&<span>Simu: {row.phone}</span><span>{row.dateLabel}</span></div>
         <button type="button" className="unified-inbox-open" onClick={()=>onSelect(row.kind,row.id)}>Fungua ombi</button>
       </article>)}</div>
     </>}
