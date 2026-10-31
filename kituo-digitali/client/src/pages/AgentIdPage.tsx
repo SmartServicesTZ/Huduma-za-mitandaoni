@@ -373,6 +373,7 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
   const displayName = name.trim().toUpperCase();
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
   return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     {network === "Mbeya One Company Limited" && cfg.logo && <img className="idl-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idl-side">
       <LogoChip cfg={cfg} network={network} />
@@ -407,7 +408,6 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
   const title = network === "Mbeya One Company Limited" ? "KITAMBULISHO CHA LIPA KWA SIMU" : cfg.pattern === "huduma" ? "KITAMBULISHO CHA HUDUMA ZA MTANDAONI" : "KITAMBULISHO CHA WAKALA";
   const footer = network === "Mbeya One Company Limited" ? "MBEYA ONE COMPANY LIMITED • LIPA KWA SIMU AIRTEL • AUTHORIZED AGENT" : cfg.footer;
   return <div ref={innerRef} className={`idl idl-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
-    <CardWatermark paid={paid} />
     {network === "Mbeya One Company Limited" && cfg.logo && <img className="idl-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idl-head">
       <div><div className="idl-brand"><Words text={`HUDUMA ZA MTANDAONI • ${cfg.slogan}`} /></div><div className="idl-title"><Words text={title} /></div></div>
@@ -443,6 +443,7 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
 function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
+    <CardWatermark paid={paid} />
     {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idp-hero">
       <div className="idp-ring" />
@@ -478,7 +479,6 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
 /* ============================ KUSIMAMA · NYUMA ============================ */
 function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, paid }: BackProps) {
   return <div ref={innerRef} className={`idp idp-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
-    <CardWatermark paid={paid} />
     {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
     <div className="idp-hero idp-hero--sm">
       <div className="idp-ring" />
