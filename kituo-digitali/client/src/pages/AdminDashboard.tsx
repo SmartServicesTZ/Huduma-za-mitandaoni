@@ -224,7 +224,7 @@ export default function AdminDashboard() {
       const needs = (...panels: Panel[]) => panels.includes(panel);
       const results = await Promise.allSettled([
         cachedRead("users", hasPermission("viewUsers") && needs("overview", "users", "tokens", "reports", "security"), adminListUsers, [], force),
-        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl", "agentIdPricing", "applications", "reports", "appearance"), adminListServices, [], force),
+        cachedRead("services", hasPermission("manageServices") && needs("services", "serviceControl", "applications", "reports", "appearance"), adminListServices, [], force),
         cachedRead("transactions", hasPermission("manageReports") && needs("overview", "transactions", "reports"), adminListTransactions, [], force),
         cachedRead("messages", hasPermission("manageMessages") && needs("messages"), () => adminListCollection("messages"), [], force),
         cachedRead("announcements", hasPermission("manageContent") && needs("announcements"), () => adminListCollection("announcements"), [], force),
@@ -604,7 +604,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
       async () => {
         const slug = String(item.slug ?? item.id);
         await adminSetServiceLock(slug, locked);
-        await adminSaveService(adminId, { ...item, isLocked: locked, maintenanceMessage: message }, slug);
+        if (message && locked) await adminSaveService(adminId, { ...item, maintenanceMessage: message }, slug);
       },
       locked ? "Huduma imefungwa." : "Huduma imefunguliwa na inapatikana kwa watumiaji."
     );
