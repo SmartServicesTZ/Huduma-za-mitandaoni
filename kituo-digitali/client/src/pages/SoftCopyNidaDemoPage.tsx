@@ -28,32 +28,53 @@ export default function SoftCopyNidaDemoPage() {
     }
     const canvas = document.createElement("canvas");
     canvas.width = 1600; canvas.height = 1000;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    const ctx = context;
-    const gradient = ctx.createLinearGradient(0, 0, 1600, 1000);
-    gradient.addColorStop(0, "#f7fbff"); gradient.addColorStop(1, "#dcecff");
-    ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1600, 1000);
-    ctx.strokeStyle = "#174b79"; ctx.lineWidth = 18; ctx.strokeRect(18, 18, 1564, 964);
-    ctx.fillStyle = "#123c65"; ctx.fillRect(18, 18, 1564, 160);
-    ctx.fillStyle = "#fff"; ctx.font = "bold 58px Arial"; ctx.fillText("SOFT COPY • PERSONAL PROFILE", 70, 90);
-    ctx.font = "bold 34px Arial"; ctx.fillStyle = "#ffdc62"; ctx.fillText("DEMO – NOT OFFICIAL", 72, 145);
-    ctx.fillStyle = "#173e60"; ctx.font = "bold 38px Arial"; ctx.fillText("SAMPLE IDENTITY CARD", 72, 245);
-    if (photo) {
-      const img = new Image();
-      img.onload = () => { ctx.drawImage(img, 1120, 250, 360, 440); finish(); };
-      img.onerror = finish; img.src = photo;
-    } else finish();
-    function finish() {
-      ctx.fillStyle = "#173e60"; ctx.font = "bold 28px Arial";
-      const rows = [["FULL NAME", fullName], ["DEMO REFERENCE", demoNumber.toUpperCase()], ["DATE OF BIRTH", dob], ["GENDER", gender.toUpperCase()], ["NATIONALITY", nationality.toUpperCase()]];
-      rows.forEach((row, i) => { const y = 340 + i * 112; ctx.fillStyle = "#52718c"; ctx.font = "bold 22px Arial"; ctx.fillText(row[0], 80, y); ctx.fillStyle = "#173e60"; ctx.font = "bold 36px Arial"; ctx.fillText(row[1] || "—", 80, y + 48); });
-      if (signature) { ctx.fillStyle = "#173e60"; ctx.font = "italic 32px cursive"; ctx.fillText(signature, 80, 890); }
-      ctx.save(); ctx.translate(800, 650); ctx.rotate(-0.38); ctx.fillStyle = "rgba(190,35,35,.17)"; ctx.font = "bold 112px Arial"; ctx.textAlign = "center"; ctx.fillText("DEMO • NOT OFFICIAL", 0, 0); ctx.restore();
-      ctx.fillStyle = "#9c2525"; ctx.font = "bold 25px Arial"; ctx.fillText("THIS IS A PERSONAL DESIGN SAMPLE — NOT A GOVERNMENT ID", 80, 950);
-      const link = document.createElement("a"); link.download = "soft-copy-nida-demo.png"; link.href = canvas.toDataURL("image/png"); link.click();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const bg = ctx.createLinearGradient(0, 0, 1500, 1000);
+    bg.addColorStop(0, "#e4f3d9"); bg.addColorStop(.48, "#bfe7e7"); bg.addColorStop(1, "#72c8d9");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, 1600, 1000);
+    for (let i = 0; i < 11; i++) {
+      ctx.beginPath(); ctx.strokeStyle = "rgba(38,132,112,.12)"; ctx.lineWidth = 5;
+      ctx.ellipse(800, 540, 180 + i * 72, 100 + i * 39, -.25, 0, Math.PI * 2); ctx.stroke();
     }
+    ctx.strokeStyle = "#6a9f83"; ctx.lineWidth = 12; ctx.strokeRect(14, 14, 1572, 972);
+    ctx.fillStyle = "rgba(255,255,255,.65)"; ctx.fillRect(35, 28, 1530, 205);
+    ctx.textAlign = "center"; ctx.fillStyle = "#244d63"; ctx.font = "bold 36px Arial";
+    ctx.fillText("KITAMBULISHO CHA MFANO", 800, 76);
+    ctx.fillStyle = "#46336f"; ctx.font = "bold 58px Arial"; ctx.fillText("PERSONAL IDENTITY CARD", 800, 142);
+    ctx.fillStyle = "#285a67"; ctx.font = "bold 30px Arial"; ctx.fillText("SAMPLE • NOT A GOVERNMENT DOCUMENT", 800, 190);
+    // Fictional decorative emblem and giraffe motif; no official state insignia or flag.
+    ctx.fillStyle = "#287a5b"; ctx.beginPath(); ctx.arc(110, 125, 55, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f2d56b"; ctx.beginPath(); ctx.arc(110, 125, 37, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#28566b"; ctx.font = "bold 38px Arial"; ctx.fillText("S", 110, 139);
+    ctx.font = "64px Arial"; ctx.fillText("🦒", 1460, 150);
+    ctx.save(); ctx.translate(790, 625); ctx.rotate(-.30); ctx.fillStyle = "rgba(170,25,35,.24)";
+    ctx.font = "bold 120px Arial"; ctx.fillText("DEMO • NOT OFFICIAL", 0, 0); ctx.restore();
+    ctx.textAlign = "left"; ctx.fillStyle = "#101d24"; ctx.font = "bold 52px Arial";
+    ctx.fillText(demoNumber.toUpperCase(), 78, 300);
+    const rows = [["JINA", fullName], ["TAREHE YA KUZALIWA", dob], ["JINSIA", gender.toUpperCase()], ["URAIA", nationality.toUpperCase()]];
+    rows.forEach((row, i) => {
+      const y = 390 + i * 118; ctx.fillStyle = "#172b31"; ctx.font = "bold 29px Arial"; ctx.fillText(row[0] + " :", 78, y);
+      ctx.font = "bold 38px Arial"; ctx.fillText(row[1] || "—", 390, y);
+    });
+    ctx.fillStyle = "#172b31"; ctx.font = "bold 28px Arial"; ctx.fillText("SAHIHI / SIGNATURE:", 78, 850);
+    ctx.font = "italic 52px cursive"; ctx.fillText(signature || fullName, 370, 865);
+    const save = () => {
+      ctx.fillStyle = "#9c2525"; ctx.font = "bold 25px Arial"; ctx.textAlign = "center";
+      ctx.fillText("DEMO ONLY — NOT VALID FOR IDENTIFICATION", 800, 960);
+      const link = document.createElement("a"); link.download = "personal-identity-demo.png";
+      link.href = canvas.toDataURL("image/png"); link.click();
+    };
+    const drawPhoto = () => {
+      ctx.fillStyle = "rgba(255,255,255,.88)"; ctx.fillRect(1090, 350, 420, 490);
+      ctx.strokeStyle = "#397a7a"; ctx.lineWidth = 8; ctx.strokeRect(1090, 350, 420, 490);
+      if (!photo) { ctx.fillStyle = "#315d60"; ctx.font = "bold 30px Arial"; ctx.textAlign = "center"; ctx.fillText("PICHA YA MFANO", 1300, 600); save(); return; }
+      const img = new Image(); img.onload = () => { ctx.drawImage(img, 1105, 365, 390, 460); save(); };
+      img.onerror = save; img.src = photo;
+    };
+    drawPhoto();
   }
+
   return <main className="portal-main" style={{maxWidth:1050,margin:"0 auto",padding:"24px 16px"}}>
     <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{marginBottom:18}}><ArrowLeft size={16}/> Rudi kwenye huduma</button>
     <section className="license-form-card">
