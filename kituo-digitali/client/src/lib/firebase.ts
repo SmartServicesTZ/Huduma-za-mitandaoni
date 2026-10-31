@@ -19,6 +19,7 @@ import {
   connectFirestoreEmulator,
   deleteField,
   doc,
+  documentId,
   getDoc,
   getDocFromServer,
   getDocs,
@@ -495,9 +496,11 @@ export async function createServiceRequest(uid: string, service: { slug: string;
 
 export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
   let active = true;
-  void readAllDocuments((cursor) => query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
+  // History is displayed newest-first and capped to the latest 100 entries.
+  // Older entries can be loaded on demand through getCollectionPage-style queries.
+  void getDocs(query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), orderBy("createdAt", "desc"), limit(100))).then((snapshot) => {
     if (!active) return;
-    callback(documents.map((item) => ({ id: item.id, ...item.data() } as DocumentData)).sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))));
+    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData)));
   }).catch((error) => { if (active) onError?.(error); });
   return () => { active = false; };
 }
@@ -834,10 +837,34 @@ export async function reserveBusinessLicenseNumber(reservationId: string, licens
   return (await callable({ reservationId, licenseType })).data;
 }
 
+export type FirestoreCollectionPage = {
+  rows: DocumentData[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+/**
+ * Read one bounded page from a collection. Pass nextCursor to fetch the next
+ * page; this keeps dashboards and admin screens from downloading an entire
+ * collection just to render the first screen.
+ */
+export async function getCollectionPage(name: string, options: { cursor?: string | null; pageSize?: number } = {}): Promise<FirestoreCollectionPage> {
+  const configuredLimit = collectionReadLimits[name] ?? 100;
+  const pageSize = Math.min(Math.max(Math.floor(options.pageSize ?? configuredLimit), 1), configuredLimit, 100);
+  const constraints = [orderBy(documentId()), ...(options.cursor ? [startAfter(options.cursor)] : []), limit(pageSize)];
+  const snapshot = await getDocs(query(collection(firestore, name), ...constraints));
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
+  const lastId = snapshot.docs.at(-1)?.id ?? null;
+  return { rows, nextCursor: snapshot.docs.length === pageSize ? lastId : null, hasMore: snapshot.docs.length === pageSize };
+}
+
+/**
+ * Backwards-compatible first-page helper. Large collections must use
+ * getCollectionPage and continue with its cursor instead of reading every
+ * document in one request chain.
+ */
 export async function getCollectionOnce(name: string): Promise<DocumentData[]> {
-  const pageSize = collectionReadLimits[name] ?? 100;
-  const documents = await readAllDocuments((cursor) => query(collection(firestore, name), limit(pageSize), ...(cursor ? [startAfter(cursor)] : [])), pageSize);
-  return documents.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
+  return (await getCollectionPage(name)).rows;
 }
 
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
