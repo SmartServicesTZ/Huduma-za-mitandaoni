@@ -6,10 +6,23 @@ const paid = (slug: string, name: string, description: string, icon: string, cat
 const free = (slug: string, name: string, description: string, icon: string, category: string, order: number): DefaultService => ({ ...paid(slug, name, description, icon, category, order), tokenCost: 0, isFree: true });
 const locked = (slug: string, name: string, description: string, icon: string, order: number): DefaultService => ({ ...paid(slug, name, description, icon, "Huduma zilizofungwa", order), tokenCost: 0, isLocked: true, isFree: false });
 
+const nidaSoftCopy = (): DefaultService => ({
+  ...paid("nakala-nida", "NIDA SOFT COPY", "Pata nakala ya picha ya kitambulisho chako cha NIDA kwa muonekano wa card.", "contact", "Huduma kuu", 2),
+  instructions: "Jaza taarifa kama zilivyo kwenye NIDA kisha pakia picha iliyo wazi ya kitambulisho chako. Huduma hii inahifadhi na kukutumia picha uliyoleta; haitengenezi kitambulisho kipya cha serikali.",
+  fields: [
+    { fieldName: "fullName", label: "Majina kamili kama yalivyo kwenye NIDA", type: "TEXT", required: true, order: 1 },
+    { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, placeholder: "20068517-27520-00001-22", helpText: "Tarakimu 20 zilizo kwenye kitambulisho chako.", order: 2 },
+    { fieldName: "dateOfBirth", label: "Tarehe ya kuzaliwa", type: "DATE", required: true, order: 3 },
+    { fieldName: "sex", label: "Jinsia", type: "DROPDOWN", required: true, options: ["M", "F"], order: 4 },
+    { fieldName: "idCardImage", label: "Picha ya Kitambulisho cha Taifa (NIDA)", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha iliyo wazi, isiyokatwa na yenye pande zote za card kuonekana. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
+    { fieldName: "details", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, order: 6 },
+  ],
+});
+
 export const defaultServices: DefaultService[] = [
   paid("cheti-tin", "TIN NUMBER CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "Huduma kuu", 0),
   paid("thibitisha-tin", "THIBITISHA TIN", "Thibitisha taarifa za TIN yako.", "badge-check", "Huduma kuu", 1),
-  paid("nakala-nida", "NAKALA LAINI YA NIDA", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "Huduma kuu", 2),
+  nidaSoftCopy(),
   paid("stika-lipa", "STIKA ZA LIPA", "Pata stika za LIPA kwa matumizi yako.", "qr-code", "Huduma kuu", 3),
   paid("mpiga-kura", "MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "Huduma kuu", 4),
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "Huduma kuu", 5),

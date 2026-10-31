@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   createServiceApplication,
+  getServiceApplicationDocument,
   updateServiceApplication,
   removeServiceUpload,
   subscribeUserServiceApplications,
@@ -54,6 +55,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     () => [...(service.fields ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [service.fields],
   );
+  const isNidaSoftCopy = service.slug === "nakala-nida";
   const [applicationId] = useState(newApplicationId);
   const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
   const [values, setValues] = useState<ServiceFormValues>({});
@@ -63,6 +65,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [successReference, setSuccessReference] = useState("");
+  const [documentBusy, setDocumentBusy] = useState("");
   const [applications, setApplications] = useState<ServiceApplication[]>([]);
   const uploadsRef = useRef(uploads);
   const draftReady = useRef(false);
@@ -243,12 +246,28 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
     }
   };
 
+  const openApplicationDocument = async (applicationId: string, fieldName: string) => {
+    setDocumentBusy(`${applicationId}:${fieldName}`);
+    try {
+      const result = await getServiceApplicationDocument(applicationId, fieldName);
+      const link = document.createElement("a");
+      link.href = result.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.click();
+    } catch (error) {
+      setFormError(errorMessage(error, "Imeshindikana kufungua picha ya NIDA."));
+    } finally {
+      setDocumentBusy("");
+    }
+  };
+
   const renderUpload = (field: ServiceFormField) => {
     const upload = uploads[field.fieldName];
     const busy = uploading === field.fieldName;
     return (
       <div className="dynamic-service-upload">
-        {upload?.previewUrl && <img className="dynamic-service-upload-preview" src={upload.previewUrl} alt={`Hakikisho la ${field.label}`} />}
+        {upload?.previewUrl && <img className={`dynamic-service-upload-preview${isNidaSoftCopy && field.fieldName === "idCardImage" ? " dynamic-service-upload-preview--nida" : ""}`} src={upload.previewUrl} alt={`Hakikisho la ${field.label}`} />}
         {upload && (
           <div className="dynamic-service-upload-meta">
             <strong>{upload.fileName}</strong>
@@ -347,6 +366,9 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
         .dynamic-service-field-error { margin: 0; color: #b53d3d; font-size: .9rem; }
         .dynamic-service-upload { display: grid; gap: 10px; padding: 15px; border: 1px dashed #aec3d0; border-radius: 12px; background: #f9fbfc; }
         .dynamic-service-upload-preview { width: min(100%, 250px); max-height: 180px; object-fit: contain; border-radius: 8px; background: #e9f0f4; }
+        .dynamic-service-upload-preview--nida { width: min(100%, 520px); aspect-ratio: 1.531 / 1; max-height: none; object-fit: contain; border: 2px solid #b8d5d8; border-radius: 12px; background: #e8f4f3; box-shadow: 0 10px 24px rgba(19, 71, 77, .12); }
+        .dynamic-service-nida-note { display: grid; gap: 6px; margin: 20px 0 0; padding: 14px 16px; border: 1px solid #b7dcd7; border-radius: 12px; background: #effaf8; color: #225b59; line-height: 1.5; }
+        .dynamic-service-nida-note strong { color: #124c4a; }
         .dynamic-service-upload-meta { display: grid; gap: 2px; min-width: 0; }
         .dynamic-service-upload-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .dynamic-service-upload-meta span { color: #19736c; font-size: .88rem; }
@@ -373,6 +395,8 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
         .dynamic-service-history-meta strong { overflow-wrap: anywhere; }
         .dynamic-service-status { display: inline-block; border-radius: 99px; padding: 4px 9px; background: #eef3f7; color: #425d72; font-size: .75rem; font-weight: 800; }
         .dynamic-service-history-row small { display: block; margin-top: 5px; color: #637b8a; }
+        .dynamic-service-document-button { margin-top: 7px; border: 1px solid #19736c; border-radius: 8px; padding: 7px 10px; background: #effaf8; color: #125c57; font: inherit; font-size: .82rem; font-weight: 800; cursor: pointer; }
+        .dynamic-service-document-button:disabled { cursor: wait; opacity: .65; }
         .dynamic-service-rejection { margin-top: 8px; padding: 9px 11px; border-radius: 7px; color: #953939; background: #fff1f1; font-size: .88rem; }
         @media (max-width: 600px) { .dynamic-service-page { padding: 20px 12px 44px; } .dynamic-service-header, .dynamic-service-card { border-radius: 13px; } .dynamic-service-submit-row { display: block; } .dynamic-service-submit { width: 100%; } }
       `}</style>
@@ -382,6 +406,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
           <h1 className="dynamic-service-title">{service.name}</h1>
           {service.description && <p className="dynamic-service-description">{service.description}</p>}
           {service.instructions && <div className="dynamic-service-instructions"><strong>Maelekezo</strong><br />{service.instructions}</div>}
+          {isNidaSoftCopy && <div className="dynamic-service-nida-note"><strong>Muonekano wa Soft Copy NIDA</strong><span>Pakia picha yako halisi ya kitambulisho ikiwa imekaa kama card, imeangazwa vizuri na maandishi yanaonekana. Baada ya kupakiwa utaona hakikisho la picha hiyo katika muundo wa card. Mfumo hautengenezi au kubadilisha kitambulisho cha serikali.</span></div>}
         </header>
         <section className="dynamic-service-card">
           <h2 className="dynamic-service-card-heading">Taarifa za ombi</h2>
@@ -424,7 +449,7 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
             </form>
           ) : <p className="dynamic-service-empty">Fomu ya huduma hii bado haijawekewa sehemu za kujaza.</p>}
         </section>
-        {firebaseUser && <section className="dynamic-service-card dynamic-service-history" aria-labelledby="dynamic-service-history-heading"><h2 className="dynamic-service-card-heading" id="dynamic-service-history-heading">Maombi yangu ya {service.name}</h2>{ownApplications.length ? ownApplications.map((application) => <article className="dynamic-service-history-row" key={application.id}><div className="dynamic-service-history-meta"><strong>Rejea: {application.applicationId}</strong><span className="dynamic-service-status">{application.status}</span></div><small>Imetumwa: {formatDate(application.submittedAt)}</small><dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">{Object.entries(application.applicantData ?? {}).filter(([key,value]) => value !== undefined && value !== null && value !== "").map(([key,value]) => <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-2"><dt className="text-xs text-slate-500">{fields.find(field => field.fieldName === key)?.label ?? key}</dt><dd className="break-words text-sm font-semibold">{typeof value === "string" && (value.startsWith("serviceApplications/") || value.startsWith("serviceUploads/")) ? "Faili limeambatishwa" : String(value)}</dd></div>)}</dl>{application.status === "PENDING" && <button type="button" className="dynamic-service-upload-button mt-3" onClick={() => { setEditingApplicationId(application.applicationId || application.id); setValues({ ...(application.applicantData ?? {}) }); setUploads({}); setFormError("Unahariri ombi ambalo bado halijaanza kushughulikiwa. Badilisha taarifa kisha hifadhi."); setSuccessReference(""); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Hariri ombi</button>}{application.rejectionReason && <div className="dynamic-service-rejection"><strong>Sababu ya kukataliwa:</strong> {application.rejectionReason}</div>}</article>) : <p className="dynamic-service-empty">Bado hujatuma ombi la huduma hii.</p>}</section>}
+        {firebaseUser && <section className="dynamic-service-card dynamic-service-history" aria-labelledby="dynamic-service-history-heading"><h2 className="dynamic-service-card-heading" id="dynamic-service-history-heading">Maombi yangu ya {service.name}</h2>{ownApplications.length ? ownApplications.map((application) => <article className="dynamic-service-history-row" key={application.id}><div className="dynamic-service-history-meta"><strong>Rejea: {application.applicationId}</strong><span className="dynamic-service-status">{application.status}</span></div><small>Imetumwa: {formatDate(application.submittedAt)}</small>{fields.filter((field) => (field.type === "IMAGE_UPLOAD" || field.type === "FILE_UPLOAD") && typeof application.applicantData?.[field.fieldName] === "string").map((field) => { const busyKey = `${application.applicationId || application.id}:${field.fieldName}`; return <button key={field.fieldName} type="button" className="dynamic-service-document-button" disabled={documentBusy === busyKey} onClick={() => void openApplicationDocument(application.applicationId || application.id, field.fieldName)}>{documentBusy === busyKey ? "Inafungua…" : isNidaSoftCopy && field.fieldName === "idCardImage" ? "ONA PICHA YA NIDA" : `ONA ${field.label.toUpperCase()}`}</button>; })}<dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">{Object.entries(application.applicantData ?? {}).filter(([key,value]) => value !== undefined && value !== null && value !== "").map(([key,value]) => <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-2"><dt className="text-xs text-slate-500">{fields.find(field => field.fieldName === key)?.label ?? key}</dt><dd className="break-words text-sm font-semibold">{typeof value === "string" && (value.startsWith("serviceApplications/") || value.startsWith("serviceUploads/")) ? "Faili limeambatishwa" : String(value)}</dd></div>)}</dl>{application.status === "PENDING" && <button type="button" className="dynamic-service-upload-button mt-3" onClick={() => { setEditingApplicationId(application.applicationId || application.id); setValues({ ...(application.applicantData ?? {}) }); setUploads({}); setFormError("Unahariri ombi ambalo bado halijaanza kushughulikiwa. Badilisha taarifa kisha hifadhi."); setSuccessReference(""); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Hariri ombi</button>}{application.rejectionReason && <div className="dynamic-service-rejection"><strong>Sababu ya kukataliwa:</strong> {application.rejectionReason}</div>}</article>) : <p className="dynamic-service-empty">Bado hujatuma ombi la huduma hii.</p>}</section>}
       </div>
     </main>
   );

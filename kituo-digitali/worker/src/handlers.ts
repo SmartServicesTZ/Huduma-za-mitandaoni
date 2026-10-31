@@ -497,8 +497,16 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
         return;
       }
       const existing = snapshot.data()!;
-      const backfill = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
+      const backfill: Record<string, unknown> = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
       const isAccessService = targetRef.parent.id === "services" && /^access-lipa-(airtel|yas|vodacom|halotel)$/.test(String((item.data as { slug?: string }).slug ?? ""));
+      const serviceSlug = String((item.data as { slug?: string }).slug ?? "");
+      const existingFields = Array.isArray(existing.fields) ? existing.fields as Array<Record<string, unknown>> : [];
+      if (targetRef.parent.id === "services" && serviceSlug === "nakala-nida" && !existingFields.some((field) => field.fieldName === "idCardImage")) {
+        const serviceData = item.data as { fields?: unknown; instructions?: unknown; description?: unknown };
+        backfill.fields = serviceData.fields;
+        backfill.instructions = serviceData.instructions;
+        backfill.description = serviceData.description;
+      }
       if (isAccessService) {
         backfill.isVisible = true;
         backfill.active = true;
