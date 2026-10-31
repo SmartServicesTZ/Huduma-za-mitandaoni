@@ -147,7 +147,7 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues; water
 });
 
 export default function LipaQrStudioPage() {
-  const { firebaseUser, profile, loading: authLoading } = useAuth();
+  const { firebaseUser, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [entryStatus, setEntryStatus] = useState<"checking" | "ready" | "paid" | "failed">("checking");
   const [entryMessage, setEntryMessage] = useState("Inafungua huduma...");
@@ -173,11 +173,11 @@ export default function LipaQrStudioPage() {
       setEntryMessage("Ingia kwenye akaunti yako ili kutumia huduma hii.");
       return;
     }
-    if (!profile) return;
+    // Firebase Auth ndiyo sharti pekee la huduma; usisubiri profile ya Firestore.
     // Fungua studio mara moja. Tokeni zitakatwa tu mtumiaji anapoomba kupakua.
     setEntryStatus("ready");
     setEntryMessage("");
-  }, [authLoading, firebaseUser, profile]);
+  }, [authLoading, firebaseUser]);
 
   useEffect(() => {
     let current = true;
@@ -270,7 +270,8 @@ export default function LipaQrStudioPage() {
   const fieldError = (field: keyof LipaCardValues) => showErrors ? errors[field] : undefined;
   const readyToDownload = isValid && Boolean(qrDataUrl) && !exporting && entryStatus === "ready" && !outputUsed.current;
 
-  if (entryStatus === "checking" || entryStatus === "failed") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"><h1 className="text-center text-2xl font-black">STIKA ZA LIPA</h1><p role="status" style={{marginTop:18,textAlign:"center",color:entryStatus==="failed"?"#b91c1c":"#475569",fontWeight:700}}>{entryMessage}</p>{entryStatus==="checking"&&<p style={{textAlign:"center",marginTop:12}}>Tafadhali subiri...</p>}{entryStatus==="failed"&&<button type="button" onClick={()=>setLocation("/services")} className="lq-button lq-button-outline" style={{width:"100%",marginTop:18}}>RUDI KWENYE HUDUMA</button>}</section></main>;
+  if (entryStatus === "checking") return null;
+  if (entryStatus === "failed") return <main className="lq-app"><section className="lq-editor-panel" style={{maxWidth:480,margin:"48px auto"}}><p role="alert">{entryMessage}</p><button type="button" onClick={()=>setLocation("/services")} className="lq-button lq-button-outline" style={{width:"100%",marginTop:18}}>RUDI KWENYE HUDUMA</button></section></main>;
   return <main className="lq-app">
     <aside className="lq-sidebar">
       <div className="lq-sidebar-top">
