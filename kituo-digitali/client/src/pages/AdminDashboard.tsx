@@ -570,7 +570,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   // Firestore inaweza kuwa na config chache tu; control panel lazima ionyeshe catalog nzima, pamoja na ZANA ZA ZIADA.
   const normalizedServiceRecords = (services as any[]).map((item: any) => {
     const rawSlug = String(item.slug ?? item.id ?? "").toLowerCase();
-    return ["cheti-cha-tin", "cheti-tin-certificate", "tin-certificate"].includes(rawSlug)
+    return ["cheti-cha-tin", "cheti-tin-certificate", "cheti-cha-tin-certificate", "tin-certificate"].includes(rawSlug)
       ? { ...item, slug: "cheti-tin", name: "TIN CERTIFICATE" }
       : rawSlug === "cheti-tin" ? { ...item, name: "TIN CERTIFICATE" } : item;
   });
@@ -586,7 +586,7 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   for (const item of configuredServices) uniqueServices.set(String(item.slug), item);
   const rows = Array.from(uniqueServices.values()).map((item) => {
     const slug = String(item.slug ?? item.id);
-    const storedLock = lockBySlug.get(slug) ?? (slug === "cheti-tin" ? lockBySlug.get("cheti-cha-tin") : undefined);
+    const storedLock = lockBySlug.get(slug) ?? (slug === "cheti-tin" ? ["cheti-cha-tin", "cheti-tin-certificate", "cheti-cha-tin-certificate", "tin-certificate"].map((alias) => lockBySlug.get(alias)).find((value) => typeof value === "boolean") : undefined);
     const isLocked = isServiceLocked(slug, storedLock, item.isLocked === true || item.kind === "locked");
     return { ...item, name: slug === "cheti-tin" ? "TIN CERTIFICATE" : item.name, slug, isLocked };
   }).sort((a, b) => Number(a.order ?? 9999) - Number(b.order ?? 9999) || String(a.name).localeCompare(String(b.name)));
