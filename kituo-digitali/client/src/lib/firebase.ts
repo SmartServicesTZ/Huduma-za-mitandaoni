@@ -859,12 +859,23 @@ export async function getCollectionPage(name: string, options: { cursor?: string
 }
 
 /**
- * Backwards-compatible first-page helper. Large collections must use
- * getCollectionPage and continue with its cursor instead of reading every
- * document in one request chain.
+ * Legacy full-read helper. Keep its historical all-records behavior for
+ * reports and admin workflows that calculate totals across the whole dataset.
+ * New list screens should use getCollectionPage and request subsequent pages
+ * only when the user asks for them.
  */
 export async function getCollectionOnce(name: string): Promise<DocumentData[]> {
-  return (await getCollectionPage(name)).rows;
+  const pageSize = Math.min(collectionReadLimits[name] ?? 100, 100);
+  const documents = await readAllDocuments(
+    (cursor) => query(
+      collection(firestore, name),
+      orderBy(documentId()),
+      ...(cursor ? [startAfter(cursor)] : []),
+      limit(pageSize),
+    ),
+    pageSize,
+  );
+  return documents.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
 }
 
 export function subscribeToCollection(name: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
