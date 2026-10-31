@@ -411,7 +411,7 @@ export const consumeTokens = callable(async (request) => {
     const configuredCost = Number(service.tokenCost);
     // Bei ya kitambulisho cha wakala huamuliwa upande wa server kwa aina iliyochaguliwa.
     const agentType = text(data.agentType, 40);
-    const roleCost = agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Supervisor" || agentType === "Authorized Agent" ? 10 : 0;
+    const roleCost = agentType === "Freelancer" ? 5 : agentType === "Team Leader" || agentType === "Team Reader" || agentType === "Supervisor" ? 10 : 0;
     if (isAgentId && roleCost === 0) throw new ApiError("invalid-argument", "Aina ya wakala haijatambuliwa.");
     // Enforce the Yanga WhatsApp entry price even when Firestore still has an older catalog value.
     const cost = isAgentId ? roleCost : serviceId === "yanga-africans" ? 6 : configuredCost;
