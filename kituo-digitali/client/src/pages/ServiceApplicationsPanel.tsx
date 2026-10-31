@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   adminSaveCollectionItem,
   authPersistenceReady,
@@ -27,7 +27,7 @@ function isPaymentGated(application: ServiceApplication): boolean {
   const data = (application.applicantData ?? {}) as Record<string, unknown>;
   const network = String(data.network ?? "").toUpperCase();
   const tillPayment = slug === "pata-till-mitandao-yote" && network !== "HALOTEL" && network !== "";
-  const paidService = slug === "access-lipa-yas" || slug === "access-lipa-airtel" || slug === "access-lipa-vodacom" || tillPayment;
+  const paidService = tillPayment;
   return paidService && application.status === "PENDING" && String(data.paymentStatus ?? "UNPAID").toUpperCase() !== "PAID";
 }
 type RunAction = (action: () => Promise<unknown>, successMessage: string) => void | boolean | Promise<void | boolean>;
@@ -188,6 +188,7 @@ function StatusBadge({ status, paymentGated = false }: { status: ApplicationStat
 export function ServiceApplicationsPanel({ applications, services, onRun, adminId, busy, hideList = false, initialSelectedId = null }: ServiceApplicationsPanelProps) {
   const [tab, setTab] = useState<StatusTab>("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
+  const autoOpenedApplicationId = useRef<string | null>(null);
   const [selected, setSelected] = useState<ServiceApplication | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -221,9 +222,11 @@ export function ServiceApplicationsPanel({ applications, services, onRun, adminI
   };
 
   useEffect(() => {
-    if (!initialSelectedId) return;
+    if (!initialSelectedId || autoOpenedApplicationId.current === initialSelectedId) return;
     const application = applications.find((item) => (item.applicationId || item.id) === initialSelectedId);
-    if (application) openApplication(application);
+    if (!application) return;
+    autoOpenedApplicationId.current = initialSelectedId;
+    openApplication(application);
   }, [initialSelectedId, applications]);
 
   const closeApplication = () => {
