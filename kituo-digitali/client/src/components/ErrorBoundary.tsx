@@ -17,6 +17,23 @@ class ErrorBoundary extends Component<Props, State> {
     this.state = { hasError: false, error: null };
   }
 
+  componentDidCatch(error: Error) {
+    // A stale or partially cached lazy-loaded module can resolve without its default export.
+    // Retry once with a cache-busting URL; keep the error screen if the same failure repeats.
+    if (!/Cannot read properties of undefined \\(reading ['"]default['"]\\)/i.test(error?.message ?? "")) return;
+    const key = "smartservicestz-default-module-recovery-at";
+    try {
+      const lastAttempt = Number(sessionStorage.getItem(key) || "0");
+      if (Date.now() - lastAttempt < 60000) return;
+      sessionStorage.setItem(key, String(Date.now()));
+      const url = new URL(window.location.href);
+      url.searchParams.set("__module_recovery", String(Date.now()));
+      window.location.replace(url.toString());
+    } catch {
+      // If storage is unavailable, leave the manual recovery screen visible.
+    }
+  }
+
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
