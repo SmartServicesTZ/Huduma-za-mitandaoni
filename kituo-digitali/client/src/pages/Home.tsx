@@ -423,65 +423,48 @@ function ServiceGrid({ title, services, onUse }: { title: string; services: Serv
 }
 
 function SpecialSection() {
-  const [showGroupChoices, setShowGroupChoices] = useState(false);
-  const open = (item: typeof specialServices[number]) => {
-    if (item.slug === "kikundi-bure") {
-      setShowGroupChoices(true);
-      return;
-    }
-    if ("url" in item && item.url) {
-      window.location.href = item.url;
-      return;
-    }
-    const action = (item as unknown as { action?: string }).action;
-    if (action === "whatsapp") { window.location.href = whatsappUrl; return; }
-    toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => { window.location.href = whatsappUrl; } } });
-  };
   const groupLinks = [
     { label: "GROUP 1", url: "https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ" },
     { label: "GROUP 2", url: "https://chat.whatsapp.com/IxgAFV9QskmAPHV2J48ksX?s=cl&p=a&iam=2" },
   ];
-  if (showGroupChoices) {
-    return <section className="special-group-choice-page" aria-label="Machaguo ya Group la WhatsApp">
-      <button type="button" className="special-group-back" onClick={() => setShowGroupChoices(false)}><ArrowLeft size={18} /> RUDI NYUMA</button>
-      <div className="special-group-choice-heading">
-        <MessageCircle size={30} color="#25D366" />
-        <h2>GROUP LA WHATSAPP</h2>
-        <p>Chagua kundi unalotaka kujiunga nalo.</p>
-      </div>
-      <div className="special-group-choice-list">
-        {groupLinks.map((group) => <button key={group.label} type="button" className="special-card special-card--green" onClick={() => { window.location.href = group.url; }}>
-          <div><strong>{group.label}</strong><small><MessageCircle size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, color: "#25D366" }} />Fungua WhatsApp na ujiunge</small></div>
-          <MessageCircle size={21} aria-label="WhatsApp" color="#25D366" />
-        </button>)}
-      </div>
-    </section>;
-  }
-  return <div className="special-grid">{specialServices.map((item) => {
-    const isWhatsAppGroup = item.slug === "kikundi-bure";
-    const isExternalWhatsApp = "url" in item && typeof item.url === "string" && item.url.includes("chat.whatsapp.com");
-    return <button
-      key={item.slug}
-      type="button"
-      className={`special-card special-card--${item.tone}`}
-      aria-label={item.name}
-      onClick={() => {
-        if (isWhatsAppGroup) {
-          setShowGroupChoices(true);
-          return;
-        }
-        open(item);
-      }}
-    >
-      <div>
-        <strong>{item.name}</strong>
-        <small>{isWhatsAppGroup ? "Chagua GROUP 1 au GROUP 2" : isExternalWhatsApp ? "Fungua WhatsApp" : "Fungua huduma"}</small>
-      </div>
-      {isWhatsAppGroup || isExternalWhatsApp
-        ? <MessageCircle size={20} aria-label="WhatsApp" color="#25D366" />
-        : <ExternalLink size={18} />}
-    </button>;
-  })}</div>;
+  return <div className="special-grid">
+    {specialServices.map((item) => {
+      const isWhatsAppGroup = item.slug === "kikundi-bure";
+      const isExternalWhatsApp = "url" in item && typeof item.url === "string" && item.url.includes("chat.whatsapp.com");
+      if (isWhatsAppGroup) {
+        return <details key={item.slug} className="special-group-disclosure">
+          <summary className="special-card special-card--green">
+            <div><strong>GROUP LA WHATSAPP</strong><small>Gusa hapa kuchagua GROUP 1 au GROUP 2</small></div>
+            <MessageCircle size={20} aria-hidden="true" color="#25D366" />
+          </summary>
+          <section className="special-group-choice-page" aria-label="Machaguo ya Group la WhatsApp">
+            <div className="special-group-choice-heading">
+              <MessageCircle size={30} color="#25D366" />
+              <h2>CHAGUA GROUP UNALOTAKA</h2>
+              <p>Chagua kundi moja kati ya haya mawili.</p>
+            </div>
+            <div className="special-group-choice-list">
+              {groupLinks.map((group) => <a key={group.label} className="special-card special-card--green special-group-link" href={group.url} target="_blank" rel="noopener noreferrer">
+                <div><strong>{group.label}</strong><small>Fungua WhatsApp na ujiunge</small></div>
+                <MessageCircle size={21} aria-hidden="true" color="#25D366" />
+              </a>)}
+            </div>
+            <button type="button" className="special-group-back" onClick={(event) => {
+              const disclosure = event.currentTarget.closest("details");
+              if (disclosure) disclosure.open = false;
+            }}><ArrowLeft size={18} /> RUDI NYUMA</button>
+          </section>
+        </details>;
+      }
+      return <button key={item.slug} type="button" className={`special-card special-card--${item.tone}`} onClick={() => {
+        if ("url" in item && item.url) window.location.href = item.url;
+        else toast("Tuma ujumbe WhatsApp kupata maelezo ya malipo.", { action: { label: "WhatsApp", onClick: () => { window.location.href = whatsappUrl; } } });
+      }}>
+        <div><strong>{item.name}</strong><small>{isExternalWhatsApp ? "Fungua WhatsApp" : "Fungua huduma"}</small></div>
+        {isExternalWhatsApp ? <MessageCircle size={20} aria-label="WhatsApp" color="#25D366" /> : <ExternalLink size={18} />}
+      </button>;
+    })}
+  </div>;
 }
 function TopQuickServices({ services, onUse }: { services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {
   const items = ["access-lipa-number", "pata-lipa-namba"].map((slug) => services.find((service) => service.slug === slug)).filter(Boolean) as ServiceCatalogItem[];
