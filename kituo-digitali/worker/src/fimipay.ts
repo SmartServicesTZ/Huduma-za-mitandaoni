@@ -271,6 +271,11 @@ export async function checkFimipayOrder(request: Request) {
   if (!verification.confirmed) {
     if (["FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(verification.status)) {
       await markTerminalStatus(orderId, verification.status);
+      return json({ data: { order_id: orderId, payment_status: verification.status, paid: false, duplicate: false } });
+    }
+    if (["SUCCESS", "COMPLETED"].includes(verification.status)) {
+      await markNeedsReview(orderId, "Provider reports a completed payment, but the LIVE order verification did not satisfy the order integrity checks.");
+      return json({ data: { order_id: orderId, payment_status: "NEEDS_REVIEW", paid: false, duplicate: false } });
     }
     return json({ data: { order_id: orderId, payment_status: verification.status, paid: false, duplicate: false } });
   }
