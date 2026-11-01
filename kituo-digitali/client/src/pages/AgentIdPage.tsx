@@ -433,8 +433,8 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
         <div><small>REGION</small><b><Words text={region} fallback="—" /></b></div>
         <div><small>AREA</small><b><Words text={`${district || "—"} / ${area || "—"}`} /></b></div>
         <div className="wide"><small>COMPANY</small><b><Words text={COMPANY_LABELS[network]} /></b></div>
-        <div className="wide"><small>CONTRACTED BY</small><b><Words text={contractedBy} fallback="—" /></b></div>
       </div>
+      <div className="idl-contracted-front"><small>CONTRACTED BY</small><b><Words text={contractedBy} fallback="—" /></b></div>
       <div className="idl-bar">
         <div className="idl-valid"><small><Words text="VALID UNTIL" /></small><b><Words text={fmt(expiry(issueDate))} /></b></div>
         <Barcode seed={agentId} />
@@ -631,6 +631,9 @@ const AGENT_ID_CSS = `
 .idl-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 14px}
 .idl-grid>div{min-width:0}
 .idl-grid .wide{grid-column:1/-1}
+.idl-contracted-front{display:flex;align-items:baseline;gap:8px;margin-top:8px;padding:5px 8px;border-left:3px solid var(--c);border-radius:0 6px 6px 0;background:var(--accent);min-width:0}
+.idl-contracted-front small{flex:0 0 auto;font-size:7px;font-weight:900;letter-spacing:.07em;color:var(--d)}
+.idl-contracted-front b{min-width:0;font-size:10px;font-weight:900;line-height:1.2;color:#0f172a;overflow-wrap:anywhere}
 .idl-grid b{display:block;margin-top:3px;font-size:13px;font-weight:800;line-height:1.25;color:#0f172a;overflow-wrap:anywhere}
 .idl-bar{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:8px 0 12px;border-top:1px dashed #d5deea}
 .idl-valid b{display:block;margin-top:2px;font-size:13px;font-weight:900;color:var(--d)}
