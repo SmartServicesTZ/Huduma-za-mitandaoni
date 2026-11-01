@@ -352,9 +352,7 @@ async function settleTillPayment(orderId: string, providerOrder: Record<string, 
     const appSnapshot = await tx.get(appRef);
     if (!appSnapshot.exists) throw new ApiError("not-found", "Ombi la Till halikupatikana.");
     const application = appSnapshot.data()!;
-    const providerStatus = statusValue(providerOrder.payment_status ?? providerOrder.status);
-    const verified = isConfirmedLivePayment(providerOrder, orderId, expectedAmount)
-      && providerStatus === "COMPLETED";
+    const verified = isConfirmedLivePayment(providerOrder, orderId, expectedAmount);
     if (!verified || Number(order.amount) !== expectedAmount || String(order.currency).toUpperCase() !== "TZS"
       || String(order.userId) !== String(application.userId) || String(order.applicationId) !== String(application.applicationId)) {
       throw new ApiError("failed-precondition", "Uthibitisho wa malipo haujalingana na ombi.");
