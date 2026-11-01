@@ -81,7 +81,7 @@ export function isConfirmedLivePayment(
     && status.some((value) => value === "SUCCESS" || value === "COMPLETED")
     && Number(order?.amount) === amount
     && String(order?.currency ?? "").toUpperCase() === currency
-    && order?.simulated === false
+    && order?.simulated !== true
     && ["", "live", "production"].includes(String(order?.environment ?? "").trim().toLowerCase());
 }
 
