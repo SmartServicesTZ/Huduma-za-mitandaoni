@@ -132,7 +132,7 @@ export default function AccessLipaNumberPage() {
     setApplicationId(nextId);
     setEditingApplicationId(nextId);
     setPhone(String(data.phone ?? ""));
-    setFullName(String(data.fullName ?? [data.name1, data.name2, data.name3].filter(Boolean).join(" ") ?? ""));
+    setFullName(String(data.fullName ?? [data.name1, data.name2, data.name3].filter(Boolean).join(" ")));
     setName1(String(data.name1 ?? data.firstName ?? ""));
     setName2(String(data.name2 ?? data.middleName ?? ""));
     setName3(String(data.name3 ?? data.lastName ?? ""));
@@ -155,7 +155,7 @@ export default function AccessLipaNumberPage() {
 
   const submit = async () => {
     if (!firebaseUser?.uid) { toast.error("Ingia kwanza ili kutuma ombi."); return; }
-    if (!phone.trim()) { toast.error("Namba ya simu inahitajika."); return; }
+    if (selected !== "vodacom" && !phone.trim()) { toast.error("Namba ya simu inahitajika."); return; }
     if (selected === "airtel" && !contact.trim()) { toast.error("Jaza namba ya mawasiliano."); return; }
     if (selected === "yas" && (!nida.trim() || !passportPath || !contact.trim() || !tinNumber.trim() || !licensePath)) { toast.error("Yas inahitaji NIDA, TIN, picha ya leseni halali ya biashara, picha ya passport size na namba ya mawasiliano."); return; }
     if (selected === "vodacom" && (!fullName.trim() || !email.trim() || !nida.trim())) { toast.error("Jaza Majina 3, Email na Namba ya NIDA."); return; }
