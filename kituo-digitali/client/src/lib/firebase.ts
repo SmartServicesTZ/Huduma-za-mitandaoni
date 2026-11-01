@@ -169,6 +169,13 @@ export function createFimipayMobileOrder(input: { tokens: number; phone: string 
 export function checkFimipayMobileOrder(order_id: string) {
   return fimipayRequest<FimipayPaymentResult>("status", { order_id });
 }
+export type TillFimipayPaymentResult = { order_id: string; payment_status: string; paid?: boolean; duplicate?: boolean; amount?: number; currency?: string; test_mode?: boolean; simulated?: boolean };
+export function createTillFimipayOrder(input: { application_id: string; phone?: string }) {
+  return fimipayRequest<TillFimipayPaymentResult>("till/create-order", input as unknown as Record<string, unknown>);
+}
+export function checkTillFimipayOrder(order_id: string) {
+  return fimipayRequest<TillFimipayPaymentResult>("till/status", { order_id });
+}
 export type FimipaySavedOrder = { order_id: string; payment_status: string; amount: number; tokens: number; created_at: string };
 export async function listFimipayMobileOrders() {
   const result = await fimipayRequest<{ orders: FimipaySavedOrder[] }>("orders", {});
