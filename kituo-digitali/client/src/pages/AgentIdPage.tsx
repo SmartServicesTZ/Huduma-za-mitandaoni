@@ -483,7 +483,7 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
 }
 
 /* ============================ KUSIMAMA · MBELE ============================ */
-function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, tokenCost, region, district, area, issueDate, paid }: FrontProps) {
+function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, type, tokenCost, region, district, area, issueDate, contractedBy, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   return <div ref={innerRef} className={`idp idp-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
     <CardWatermark paid={paid} />
