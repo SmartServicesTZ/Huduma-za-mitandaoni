@@ -3,8 +3,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 /** SmartServicesTZ test pricing: every TZS 100 purchases exactly 1 service token. */
 export function tokenCreditsForAmount(amount: unknown): number | null {
   const value = Number(amount);
-  if (!Number.isSafeInteger(value) || value < 500 || value % 500 !== 0) return null;
-  const tokens = (value / 500) * 3;
+  if (!Number.isSafeInteger(value) || value < 100 || value % 100 !== 0) return null;
+  const tokens = value / 100;
   return Number.isSafeInteger(tokens) ? tokens : null;
 }
 
