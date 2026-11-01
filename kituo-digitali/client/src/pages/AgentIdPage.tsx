@@ -410,7 +410,7 @@ function CardWatermark({ paid }: { paid: boolean }) {
 }
 
 /* ============================ KULALA · MBELE ============================ */
-function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, paid }: FrontProps) {
+function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, type, region, district, area, issueDate, contractedBy, paid }: FrontProps) {
   const displayName = name.trim().toUpperCase();
   const role = network === "Mbeya One Company Limited" ? "LIPA KWA SIMU AIRTEL" : cfg.pattern === "huduma" ? "AUTHORIZED AGENT ID" : "SIM REGISTRATION AGENT";
   return <div ref={innerRef} className={`idl idl-f net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
@@ -433,6 +433,7 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
         <div><small>REGION</small><b><Words text={region} fallback="—" /></b></div>
         <div><small>AREA</small><b><Words text={`${district || "—"} / ${area || "—"}`} /></b></div>
         <div className="wide"><small>COMPANY</small><b><Words text={COMPANY_LABELS[network]} /></b></div>
+        <div className="wide"><small>CONTRACTED BY</small><b><Words text={contractedBy} fallback="—" /></b></div>
       </div>
       <div className="idl-bar">
         <div className="idl-valid"><small><Words text="VALID UNTIL" /></small><b><Words text={fmt(expiry(issueDate))} /></b></div>
