@@ -782,3 +782,48 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
   .special-card { min-height: 40px !important; padding: 5px 7px !important; }
   .special-card strong { font-size: 9px !important; }
 }
+
+
+/* Dedicated WhatsApp group choice page, opened from the single homepage card. */
+.special-group-choice-page {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 8px 0 28px;
+}
+.special-group-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: inherit;
+  background: rgba(148, 163, 184, .14);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.special-group-choice-heading {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  text-align: center;
+  padding: 28px 12px 22px;
+}
+.special-group-choice-heading h2 {
+  margin: 0;
+  font-size: clamp(21px, 5vw, 28px);
+  font-weight: 850;
+}
+.special-group-choice-heading p {
+  margin: 0;
+  opacity: .75;
+}
+.special-group-choice-list {
+  display: grid;
+  gap: 12px;
+}
+.special-group-choice-list .special-card {
+  width: 100%;
+  text-align: left;
+}
