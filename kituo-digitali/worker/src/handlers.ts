@@ -736,16 +736,31 @@ export const submitLipaApplication = callable(async (request) => {
     const existingApplication = await transaction.get(applicationRef);
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const previousLipaApplications = await transaction.get(db.collection("lipaApplications").where("userId", "==", uid).where("networkId", "==", networkId).limit(100));
-    const duplicate = /airtel/i.test(networkId) ? undefined : previousLipaApplications.docs.find((document) => {
+    const normalizeLipaPhone = (value: unknown) => {
+      let digits = String(value ?? "").replace(/\\D/g, "");
+      if (digits.startsWith("0")) digits = `255${digits.slice(1)}`;
+      else if (digits.length === 9) digits = `255${digits}`;
+      return digits;
+    };
+    const duplicate = previousLipaApplications.docs.find((document) => {
       const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
       if (status !== "PENDING" && status !== "PROCESSING") return false;
+      if (/airtel/i.test(networkId)) {
+        const previousData = recordValues(previous.applicantData);
+        return normalizeLipaPhone(previousData.phone ?? previous.phone) === normalizeLipaPhone(applicantData.phone);
+      }
       const previousFingerprint = typeof previous.duplicateFingerprint === "string"
         ? previous.duplicateFingerprint
         : applicationDuplicateFingerprint(`lipa:${networkId}`, recordValues(previous.applicantData));
       return previousFingerprint === duplicateFingerprint;
     });
-    if (duplicate) throw new ApiError("already-exists", "Tayari umetuma ombi la Lipa Namba lenye taarifa hizi. Subiri Admin aidhinishe au akatae ombi la awali.", { applicationId: duplicate.id });
+    if (duplicate) {
+      const message = /airtel/i.test(networkId)
+        ? "Namba hii ya Airtel tayari ina ombi la PENDING au PROCESSING. Tumia namba nyingine au subiri ombi la awali likamilike."
+        : "Tayari umetuma ombi la Lipa Namba lenye taarifa hizi. Subiri Admin aidhinishe au akatae ombi la awali.";
+      throw new ApiError("already-exists", message, { applicationId: duplicate.id });
+    }
     const application = {
       applicationId, userId: uid, userName: String(profile.name ?? ""), network: String(config.name ?? networkId), networkId, serviceId: "pata-lipa-namba",
       applicantName: [applicantData.firstName, applicantData.middleName, applicantData.lastName].filter(Boolean).join(" ") || String(profile.name ?? profile.firstName ?? "Mwombaji"),
