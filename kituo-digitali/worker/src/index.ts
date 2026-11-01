@@ -42,7 +42,7 @@ import { ApiError, ApiHttpResponse, type CallableRoute } from "./api-adapter.js"
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 import { getStorage, uploadStorageObject } from "./storage-rest.js";
 import { getFirestore } from "./firestore-rest.js";
-import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";
+import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";\nimport { checkFimipayOrder, createFimipayOrder, handleFimipayWebhook } from "./fimipay.js";
 
 interface Env extends WorkerEnv {}
 
@@ -390,6 +390,26 @@ const worker = {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     const url = new URL(request.url);
     if (url.pathname === "/chat") return handleGeminiChat(request, cors, env);
+    if (url.pathname === "/webhooks/fimipay" && request.method === "POST") {
+      return withWorkerEnv(env, () => handleFimipayWebhook(request).catch((error) => {
+        console.error("FimiPay webhook failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: "Webhook processing failed" }, 500, cors);
+      }));
+    }
+    if (url.pathname === "/payments/fimipay/create-order" && request.method === "POST") {
+      return withWorkerEnv(env, () => createFimipayOrder(request).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("FimiPay create order failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Ombi la malipo halikufanikiwa. Jaribu tena." } }, 500, cors);
+      }));
+    }
+    if (url.pathname === "/payments/fimipay/status" && request.method === "POST") {
+      return withWorkerEnv(env, () => checkFimipayOrder(request).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("FimiPay status check failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Hali ya malipo haikupatikana. Jaribu tena." } }, 500, cors);
+      }));
+    }
     if (url.pathname === "/health" && request.method === "GET") return jsonResponse({ ok: true }, 200, cors);
     if (url.pathname === "/ready" && request.method === "GET") {
       let validServiceAccount = false;
