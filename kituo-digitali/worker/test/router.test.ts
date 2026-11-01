@@ -77,3 +77,21 @@ test("Lipa application submission is registered and rejects unauthenticated call
   assert.equal(response.status, 401);
   assert.equal((await response.json() as { error: { code: string } }).error.code, "unauthenticated");
 });
+
+test("FimiPay create-order endpoint requires a Firebase-authenticated customer", async () => {
+  const response = await worker.fetch(new Request("https://worker.example/payments/fimipay/create-order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tokens: 3, phone: "0712345678" }),
+  }), baseEnv as never);
+  assert.equal(response.status, 401);
+});
+
+test("FimiPay order-status endpoint requires a Firebase-authenticated customer", async () => {
+  const response = await worker.fetch(new Request("https://worker.example/payments/fimipay/status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order_id: "fp_test_example" }),
+  }), baseEnv as never);
+  assert.equal(response.status, 401);
+});
