@@ -1,19 +1,11 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const TOKEN_PACKAGES = {
-  500: 3,
-  2000: 40,
-  5000: 100,
-  10000: 200,
-} as const;
-
-export type TokenPackageAmount = keyof typeof TOKEN_PACKAGES;
-
+/** SmartServicesTZ pricing: every TZS 500 purchases exactly 3 service tokens. */
 export function tokenCreditsForAmount(amount: unknown): number | null {
   const value = Number(amount);
-  return Number.isSafeInteger(value) && Object.hasOwn(TOKEN_PACKAGES, value)
-    ? TOKEN_PACKAGES[value as TokenPackageAmount]
-    : null;
+  if (!Number.isSafeInteger(value) || value < 500 || value % 500 !== 0) return null;
+  const tokens = (value / 500) * 3;
+  return Number.isSafeInteger(tokens) ? tokens : null;
 }
 
 function decodeSignature(value: unknown): Uint8Array | null {
@@ -56,14 +48,9 @@ export function verifyFimipayWebhookV2Signature(
 
   const supplied = decodeSignature(signatureHeader);
   if (!supplied) return false;
-  let bodyText: string;
-  try {
-    bodyText = new TextDecoder("utf-8", { fatal: true }).decode(rawBody);
-  } catch {
-    return false;
-  }
-  const signedText = `${timestamp}.${nonce}.${path}.${bodyText}`;
-  const expected = createHmac("sha256", secret).update(signedText, "utf8").digest();
+  // Preserve the exact request bytes after the signed metadata prefix.
+  const prefix = new TextEncoder().encode(`${timestamp}.${nonce}.${path}.`);
+  const expected = createHmac("sha256", secret).update(prefix).update(rawBody).digest();
   return safeEqual(expected, supplied);
 }
 
