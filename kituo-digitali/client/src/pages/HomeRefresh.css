@@ -440,7 +440,7 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
   background: rgba(255,255,255,.075);
   backdrop-filter: blur(10px);
 }
-.token-card:not(.token-card--compact) .token-account-name { color: #fff !important; font-size: 15px; }
+.token-card:not(.token-card--compact) .TK-account-name { color: #fff !important; font-size: 15px; }
 .token-card:not(.token-card--compact) .token-phone-line { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:7px; color:#c8d7ed !important; font-size:12px; }
 .token-card:not(.token-card--compact) .token-verification-status { color:#d7e7f8 !important; }
 .token-card:not(.token-card--compact) .token-add-button {
@@ -491,7 +491,7 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .wallet-fashion-account{position:relative;z-index:1;gap:11px;padding:13px 14px;border:1px solid #e2e8f0;border-radius:17px;background:#fff}
 .wallet-fashion-avatar{display:grid;place-items:center;width:39px;height:39px;flex:0 0 39px;border-radius:13px;background:linear-gradient(145deg,#dbeafe,#ede9fe);color:#4338ca;font-size:17px;font-weight:850}
 .wallet-fashion-account-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
-.wallet-fashion-account-copy .token-account-name{overflow:hidden;color:#0f172a;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+.wallet-fashion-account-copy .TK-account-name{overflow:hidden;color:#0f172a;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
 .wallet-fashion-account-copy>span{color:#64748b;font-size:10px}
 .wallet-fashion-status{padding:6px 8px;border-radius:8px;font-size:8px;font-weight:850;letter-spacing:.03em;text-align:center}
 .wallet-fashion-status.is-verified{background:#dcfce7;color:#166534}
@@ -511,7 +511,7 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
   box-shadow: 0 6px 18px rgba(15, 23, 42, .08);
 }
 .wallet-fashion-account .wallet-fashion-account-copy small { color: #64748b !important; }
-.wallet-fashion-account .wallet-fashion-account-copy .token-account-name { color: #172033 !important; }
+.wallet-fashion-account .wallet-fashion-account-copy .TK-account-name { color: #172033 !important; }
 .wallet-fashion-account .wallet-fashion-phone { color: #475569 !important; font-size: 12px !important; font-weight: 700; letter-spacing: .025em; }
 .wallet-fashion-account .verified-tick,
 .sidebar-user .verified-tick {
