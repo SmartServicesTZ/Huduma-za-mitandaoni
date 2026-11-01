@@ -116,7 +116,7 @@ export async function checkFimipayOrder(request: Request) {
   let settled: { paid: boolean; status: string; duplicate: boolean; balanceAfter?: number } = { paid: false, status, duplicate: false };
   if (isPaid(status)) settled = await settle(orderId, status, data.amount, data.currency, typeof data.transid === "string" ? data.transid : undefined);
   else if (status === "FAILED" || status === "CANCELLED") await settle(orderId, status, data.amount ?? saved.data()?.amount, data.currency ?? "TZS");
-  return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : status, paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter, simulated: data.simulated === true } });
+  return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : status, paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter, test_mode: settled.testMode === true, simulated: data.simulated === true } });
 }
 async function validSignature(raw: string, signature: string, secret: string) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
