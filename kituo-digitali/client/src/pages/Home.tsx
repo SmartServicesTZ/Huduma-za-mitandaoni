@@ -288,6 +288,9 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
   const [otherTokens, setOtherTokens] = useState("0");
   const [paidFromPhone, setPaidFromPhone] = useState(profile?.phone ?? "");
+  const [fimipayOrderId, setFimipayOrderId] = useState("");
+  const [fimipayStatus, setFimipayStatus] = useState("");
+  const [fimipayBusy, setFimipayBusy] = useState(false);
   const totalBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
   const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
@@ -313,31 +316,35 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       else toast.error("Imeshindikana kunakili. Shikilia namba uinakili mwenyewe.");
     }
   };
-  const openWhatsAppProof = () => {
-    if (!canProceed) return;
-    const message = [
-      "Habari SmartServicesTZ, nimelipia tokeni na natuma ushahidi wa malipo.",
-      "",
-      "Jina la akaunti: " + (profile?.name ?? "Halijatajwa"),
-      "Namba ya akaunti: " + (profile?.phone ?? "Haipo"),
-      "Namba iliyolipia: " + paymentPhone.trim(),
-      "Lipa namba: 29126823",
-      "Jina la mpokeaji: Steward Tz",
-      "Kiasi kilicholipwa: TZS " + totalAmount.toLocaleString("en-US"),
-      "Tokeni za huduma: " + otherCount + " (TZS " + otherAmount.toLocaleString("en-US") + ")",
-      "",
-      "Nimeambatisha ushahidi wa malipo. Tafadhali hakiki na ongeza tokeni kwenye akaunti yangu."
-    ].join("\n");
-    window.location.href = "https://wa.me/255692287767?text=" + encodeURIComponent(message);
-    setTokenChoiceOpen(false);
+  const openWhatsAppProof = async () => {
+    if (!canProceed || fimipayBusy) return;
+    setFimipayBusy(true);
+    try {
+      const result = await createFimipayMobileOrder({ tokens: otherCount, phone: paymentPhone });
+      setFimipayOrderId(result.order_id);
+      setFimipayStatus(result.payment_status || "PENDING");
+      toast.success("Ombi la malipo limetumwa. Kamilisha kwenye simu yako.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Imeshindikana kuanzisha malipo.");
+    } finally { setFimipayBusy(false); }
   };
-
+  const refreshFimipayStatus = async () => {
+    if (!fimipayOrderId || fimipayBusy) return;
+    setFimipayBusy(true);
+    try {
+      const result = await checkFimipayMobileOrder(fimipayOrderId);
+      setFimipayStatus(result.payment_status);
+      if (result.paid) toast.success("Malipo yamethibitishwa; tokeni zimeongezwa.");
+      else toast.info("Malipo bado hayajathibitishwa. Subiri kidogo kisha kagua tena.");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Hali ya malipo haikupatikana."); }
+    finally { setFimipayBusy(false); }
+  };
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
     <div className="wallet-fashion-head"><div className="wallet-fashion-brand"><span className="wallet-fashion-mark"><WalletCards size={22}/></span><span><small>SMARTSERVICESTZ</small><strong>WALLET YA TOKENI</strong></span></div><span className="wallet-fashion-chip"><span/> {isAuthenticated ? "AKAUNTI YAKO" : "KARIBU"}</span></div>
     <div className="wallet-fashion-balance"><div><span className="wallet-fashion-caption">SALIO LILILOKO</span><div className="wallet-fashion-amount">{isAuthenticated ? totalBalance : 0}<span>TK</span></div><p>Tokeni za kutumia huduma zako</p></div><div className="wallet-fashion-orbit" aria-hidden="true"><span/><span/><span/></div></div>
     <div className="wallet-fashion-account"><div className="wallet-fashion-avatar">{(profile?.name?.trim()?.slice(0,1) ?? "S").toUpperCase()}</div><div className="wallet-fashion-account-copy"><small>AKAUNTI</small><strong className="token-account-name">{profile?.name ?? "Mwanachama"} <VerifiedTick verified={status === "approved"} /></strong><span className="wallet-fashion-phone">{profile?.phone ?? "Ingia ili kuona taarifa zako"}</span></div><span className={"wallet-fashion-status " + (status === "approved" ? "is-verified" : "is-pending")}>{status === "approved" ? "IMETHIBITISHWA" : "INASUBIRI"}</span></div>
     {status !== "approved" && isAuthenticated && <div className="account-warning">Akaunti yako haijathibitishwa na admin. Huduma zitaanza baada ya admin kuidhinisha akaunti.</div>}
-    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Lipa kwanza, kisha tuma ushahidi WhatsApp</small></span><ChevronRight size={18}/></button>
+    <button className="button button--green token-add-button" disabled={!isAuthenticated} onClick={() => setTokenChoiceOpen(true)}><span className="token-add-plus">＋</span><span><b>ONGEZA TOKENI</b><small>Lipa moja kwa moja kwa simu yako</small></span><ChevronRight size={18}/></button>
     {!isAuthenticated && <small className="token-note">Ingia au jisajili ili kuongeza tokeni.</small>}
     {tokenChoiceOpen && typeof document !== "undefined" && createPortal(<div className="token-choice-modal" role="dialog" aria-modal="true">
       <div className="token-choice-card">
@@ -356,9 +363,11 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
           <div className="token-choice-payto-row"><span>MTANDAO</span><strong>Azam Pesa</strong></div>
           <p style={{margin:0,fontSize:12,lineHeight:1.55,color:"#475569"}}>Lipa kiasi kilichoonyeshwa hapo juu, kisha bonyeza kitufe cha kutuma uthibitisho WhatsApp.</p>
         </div>
-        <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA WHATSAPP</button>
+        <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>{fimipayBusy ? "INATUMA..." : "LIPA SASA"}</button>
         {otherCount > 0 && otherCount % 3 !== 0 && <p style={{margin:"8px 0 0",fontSize:12,color:"#b45309"}}>Chagua idadi inayogawanyika kwa 3, mfano tokeni 3, 6 au 9.</p>}
-        <p className="token-choice-help">Baada ya kulipa, tuma picha ya uthibitisho WhatsApp. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8,marginTop:12}}>{["M-Pesa","Airtel Money","Mixx by Yas","HaloPesa"].map(network => <span key={network} style={{padding:9,textAlign:"center",border:"1px solid #dbeafe",borderRadius:10,fontSize:12,fontWeight:800}}>{network}</span>)}</div>
+        <p className="token-choice-help">FimiPay itatambua mtandao kulingana na namba yako. Tokeni zitaongezwa baada ya malipo kuthibitishwa.</p>
+        {fimipayOrderId && <div role="status" style={{marginTop:10,padding:12,borderRadius:10,background:"#eff6ff"}}><b>Rejea: {fimipayOrderId}</b><p>Hali: {fimipayStatus}</p><button type="button" className="button button--small" disabled={fimipayBusy} onClick={refreshFimipayStatus}>KAGUA MALIPO</button></div>}
       </div>
     </div>, document.body)}
   </section>;
