@@ -5,7 +5,7 @@ import worker from "../src/index.js";
 const baseEnv = {
   FIREBASE_PROJECT_ID: "huduma-za-mtandaoni-b1c0c",
   FIREBASE_STORAGE_BUCKET: "huduma-za-mtandaoni-b1c0c.firebasestorage.app",
-  ALLOWED_ORIGINS: "https://steward-tz.github.io,http://localhost:5173",
+  ALLOWED_ORIGINS: "https://smartservicestz.github.io,https://steward-tz.github.io,http://localhost:5173",
 };
 
 function request(path: string, origin?: string) {
@@ -66,6 +66,33 @@ test("preflight requests only allow the configured website origin", async () => 
   }), baseEnv as never);
   assert.equal(response.status, 204);
   assert.equal(response.headers.get("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
+});
+
+test("SmartServicesTZ payment preflight and auth errors retain CORS headers", async () => {
+  const origin = "https://smartservicestz.github.io";
+  const preflight = await worker.fetch(new Request("https://worker.example/payments/fimipay/create-order", {
+    method: "OPTIONS",
+    headers: { Origin: origin, "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization,content-type" },
+  }), baseEnv as never);
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get("Access-Control-Allow-Origin"), origin);
+  assert.equal(preflight.headers.get("Vary"), "Origin");
+
+  const paymentError = await worker.fetch(new Request("https://worker.example/payments/fimipay/create-order", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ amount: 1000, requestId: "cors-payment-test" }),
+  }), { ...baseEnv, PAYMENT_FLOWS_ENABLED: "true" } as never);
+  assert.equal(paymentError.status, 401);
+  assert.equal(paymentError.headers.get("Access-Control-Allow-Origin"), origin);
+
+  const catalogError = await worker.fetch(new Request("https://worker.example/call/ensureDefaultServiceCatalog", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ data: {} }),
+  }), baseEnv as never);
+  assert.equal(catalogError.status, 401);
+  assert.equal(catalogError.headers.get("Access-Control-Allow-Origin"), origin);
 });
 
 test("Lipa application submission is registered and rejects unauthenticated calls", async () => {
