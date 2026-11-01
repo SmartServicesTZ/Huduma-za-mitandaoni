@@ -933,3 +933,9 @@
   .lq-tips-logo-image { max-width:112px; max-height:44px; }
   .lq-network-logos > img { height:28px; max-height:28px; }
 }
+
+
+/* Yas footer now uses the supplied brand artwork, not a CSS-drawn badge. */
+.lq-yas-footer { align-items:center; justify-content:flex-end; padding:2% 7% 2% 0; background:#ffdf00; }
+.lq-yas-official-footer-logo { display:block; width:43%; max-height:86%; object-fit:contain; }
+.lq-yas-yellow-shape { display:none !important; }
