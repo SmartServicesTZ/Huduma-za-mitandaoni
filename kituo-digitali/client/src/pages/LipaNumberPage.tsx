@@ -104,12 +104,12 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
           { fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya leseni yako ya biashara. Hakikisha picha iko wazi na inasomeka.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: licenseOrder },
         );
       }
-      if (id === "halotel") {
+      if (/halotel/i.test(id)) {
         fields = [
           { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 1 },
           { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
           { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
-          { fieldName: "idDocument", label: "Picha ya Kitambulisho kilichopo", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya kitambulisho ulichochagua. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+          { fieldName: "idDocument", label: "PAKIA PICHA YA KITAMBULISHO", type: "IMAGE_UPLOAD", required: true, helpText: "HATUA MUHIMU: Kwanza chagua aina ya kitambulisho hapo juu. Kisha pakia picha ya KITAMBULISHO HICHO HICHO (National ID/NIDA, Voter ID, Driving License au Passport). Picha ionyeshe kitambulisho kizima na maandishi yote yasomeke vizuri. Usipakie selfie, risiti, TIN au leseni ya biashara. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
         ];
       }
       if (id === "vodacom") {
@@ -157,9 +157,9 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
       }
       fields = fields.map((field) => field.type === "IMAGE_UPLOAD" && field.fieldName === identityFieldName ? {
         ...field,
-        label: id === "halotel" ? "Picha ya Kitambulisho kilichopo" : "Picha ya utambulisho wa mwombaji",
-        helpText: id === "halotel"
-          ? "PAKIA PICHA YA KITAMBULISHO ULICHOCHAGUA HAPO JUU (National ID, Voter ID, Driving License au Passport). Picha ionyeshe taarifa zote vizuri na isomeke. JPG, PNG au WebP; hadi MB 5."
+        label: /halotel/i.test(id) ? "PAKIA PICHA YA KITAMBULISHO" : "Picha ya utambulisho wa mwombaji",
+        helpText: /halotel/i.test(id)
+          ? "HATUA MUHIMU: Chagua aina ya kitambulisho hapo juu, kisha pakia picha ya kitambulisho hicho hicho. Picha ionyeshe kitambulisho kizima na taarifa zote zisomeke. Usipakie selfie, risiti, TIN wala leseni ya biashara. JPG, PNG au WebP; hadi MB 5."
           : "TAARIFA MUHIMU: Pakia PICHA MOJA TU ya utambulisho wa mwombaji. Chagua mojawapo: (1) Picha ya Passport Size, AU (2) Kitambulisho cha NIDA, AU (3) Kitambulisho cha Mpiga Kura. HAKUNA haja ya kupakia vyote. Hii SIYO TIN Certificate wala cheti cha biashara. Hakikisha picha inasomeka vizuri. JPG, PNG au WebP; hadi MB 5.",
         maxSizeMb: Math.min(Number(field.maxSizeMb ?? 5), 5),
         accept: ["image/jpeg", "image/png", "image/webp"],
