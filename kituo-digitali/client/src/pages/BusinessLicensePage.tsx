@@ -216,7 +216,7 @@ export default function BusinessLicensePage() {
       if (issuedFiles) {
         toast.success(`Hati ya ${format.toUpperCase()} imepakuliwa tena bila kukata tokeni nyingine.`, { description: `Rejea: ${files.reference}` });
       } else {
-        toast.success("Leseni imetengenezwa kikamilifu.", { description: files.duplicate ? `Ombi hili lilikuwa limekamilika tayari. Rejea: ${files.reference}` : `Tokeni 2 zimekatwa mara moja kwa hati hii. Rejea: ${files.reference}` });
+        toast.success("Leseni imetengenezwa kikamilifu.", { description: files.duplicate ? `Ombi hili lilikuwa limekamilika tayari. Rejea: ${files.reference}` : `Tokeni zimekatwa kulingana na gharama iliyowekwa kwenye Dashboard ya Admin. Rejea: ${files.reference}` });
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Imeshindikana kutengeneza hati. Jaribu tena.";
