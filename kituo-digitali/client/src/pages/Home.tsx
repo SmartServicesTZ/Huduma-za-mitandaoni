@@ -306,7 +306,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       setFimipayOrderId(result.order_id);
       setFimipayStatus(result.payment_status || "PENDING");
       if (result.test_mode) {
-        toast.info(`FimiPay TEST imepokea ombi (${result.payment_status || "PENDING"}). TEST haitumi USSD halisi; tumia KAGUA MALIPO kuona simulated status.`);
+        toast.info(`Mfumo wa majaribio umepokea ombi (${result.payment_status || "PENDING"}). Huu ni mfumo wa TEST na hautumi ombi halisi la malipo; tumia KAGUA MALIPO kuona hali ya jaribio.`);
       } else {
         toast.success("Ombi la malipo limetumwa. Kamilisha kwenye simu yako.");
       }
