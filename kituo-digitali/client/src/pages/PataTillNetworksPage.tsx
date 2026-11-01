@@ -50,6 +50,7 @@ export default function PataTillNetworksPage() {
   const [paymentApplication, setPaymentApplication] = useState<ServiceApplication | null>(null);
   const [submittedPaymentApplication, setSubmittedPaymentApplication] = useState<ServiceApplication | null>(null);
   const [paymentOrderId, setPaymentOrderId] = useState("");
+  const [paymentPhone, setPaymentPhone] = useState(String(accountUser?.phone ?? ""));
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [paymentStatusMessage, setPaymentStatusMessage] = useState("");
   const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
@@ -166,7 +167,7 @@ export default function PataTillNetworksPage() {
         <p style={{margin:0,fontSize:13}}>Namba ya kumbukumbu: <strong>{reference}</strong>. Unaweza kufuatilia hali yake kwenye sehemu ya Maombi yangu hapa chini.</p>
         <p style={{margin:0,fontSize:13}}>Ombi litasubiri uthibitisho wa malipo na hatua za Admin kama zilivyoelekezwa.</p>
         {network !== "HALOTEL" && submittedPaymentApplication && String(submittedPaymentApplication.applicantData?.paymentStatus).toUpperCase() !== "PAID"
-          ? <button type="button" onClick={() => { setPaymentApplication(submittedPaymentApplication); setPaymentOrderId(""); setPaymentStatusMessage(""); }} style={{border:0,borderRadius:10,padding:"13px 18px",fontWeight:900,color:"#fff",background:activeTheme.gradient,cursor:"pointer",minHeight:48}}>FANYA MALIPO</button>
+          ? <button type="button" onClick={() => { setPaymentApplication(submittedPaymentApplication); setPaymentPhone(String(accountUser?.phone ?? "")); setPaymentOrderId(""); setPaymentStatusMessage(""); }} style={{border:0,borderRadius:10,padding:"13px 18px",fontWeight:900,color:"#fff",background:activeTheme.gradient,cursor:"pointer",minHeight:48}}>FANYA MALIPO</button>
           : <button type="button" onClick={resetForm} style={{border:0,borderRadius:10,padding:"13px 18px",fontWeight:900,color:"#fff",background:activeTheme.gradient,cursor:"pointer",minHeight:48}}>TUMA OMBI JINGINE</button>}
       </div> : <form onSubmit={submit} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,260px),1fr))",gap:17}}>
         {network==="HALOTEL" && <>
@@ -200,10 +201,32 @@ export default function PataTillNetworksPage() {
         </div>
       </form>}
     </section>}
-    <section style={{...cardStyle,marginTop:25}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{width:38,height:38,borderRadius:10,background:"#f1f5f9",display:"grid",placeItems:"center",color:"#475569"}}><Clock3 size={19}/></div><div><h2 style={{margin:0,fontSize:19,color:"#172033"}}>Maombi yangu</h2><p style={{margin:"4px 0 0",fontSize:13,color:"#64748b"}}>Angalia hali ya maombi yako ya Till.</p></div></div>
-      {applications.length===0?<p style={{color:"#64748b",fontSize:14,marginBottom:0}}>Bado hujatuma maombi ya Till kupitia kipengele hiki.</p>:<div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:620}}><thead><tr>{["Mteja","Mtandao","Till / Lipa","Hali","Kiasi","Tarehe","Malipo","Marekebisho"].map(x=><th key={x} style={{textAlign:"left",padding:12,borderBottom:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569"}}>{x}</th>)}</tr></thead><tbody>{applications.map(app=>{const networkName=String(app.applicantData?.network??"").toUpperCase();const paymentPending=["AIRTEL","VODACOM"].includes(networkName)&&String(app.applicantData?.paymentStatus??"UNPAID").toUpperCase()!=="PAID";const visibleStatus=paymentPending?"MALIPO HAYAJATHIBITISHWA":String(app.status??"PENDING");return <tr key={app.id}>{[String(app.applicantData?.fullName??app.applicantData?.airtelPhone??app.applicantData?.nidaNumber??"—"),String(app.applicantData?.network??"—"),String(app.applicantData?.tillPhone??app.applicantData?.airtelPhone??"—"),visibleStatus,String(app.applicantData?.price??"—"),dateLabel(app.submittedAt??app.updatedAt)].map((v,i)=><td key={i} style={{padding:12,borderBottom:"1px solid #edf0f5",color:i===3&&v==="APPROVED"?"#15803d":i===3&&paymentPending?"#b45309":"#475569",fontWeight:i===3?800:400}}>{v}</td>)}<td style={{padding:12,borderBottom:"1px solid #edf0f5"}}>{paymentPending&&<button type="button" onClick={()=>setPaymentApplication(app)} style={{border:0,borderRadius:9,padding:"10px 13px",background:"#15803d",color:"#fff",fontWeight:850,cursor:"pointer",whiteSpace:"nowrap"}}>FANYA MALIPO</button>}</td><td style={{padding:12,borderBottom:"1px solid #edf0f5"}}>{String(app.status).toUpperCase()==="REJECTED"&&<button type="button" onClick={()=>editRejectedApplication(app)} style={{border:0,borderRadius:9,padding:"10px 13px",background:"#1d4ed8",color:"#fff",fontWeight:850,cursor:"pointer",whiteSpace:"nowrap"}}>REKEBISHA NA TUMA TENA</button>}</td></tr>})}</tbody></table></div>}
-      {applications.some(app=>["AIRTEL","VODACOM"].includes(String(app.applicantData?.network??"").toUpperCase())&&String(app.applicantData?.paymentStatus??"UNPAID").toUpperCase()!=="PAID")&&<div role="status" style={{marginTop:14,padding:16,border:"1px solid #f4c56a",borderRadius:12,background:"#fff8e8",color:"#854d0e",lineHeight:1.65}}><strong style={{display:"block",fontSize:14}}>OMBI LAKO HALIJAANZA KUFANYIWA KAZI</strong><p style={{margin:"6px 0"}}>Sababu: Hujafanya malipo au malipo yako bado hayajathibitishwa. Fanya malipo ili ombi lako lianze kufanyiwa kazi.</p><p style={{margin:"6px 0 0"}}>Kwa mawasiliano zaidi: <strong>0698232313</strong></p><a href={"https://wa.me/255698232313?text="+encodeURIComponent("Habari Admin, naomba kuthibitisha malipo ya ombi langu la Till.")} target="_blank" rel="noreferrer" style={{display:"inline-flex",marginTop:10,background:"#15803d",color:"#fff",padding:"10px 13px",borderRadius:9,textDecoration:"none",fontWeight:800}}>WASILIANA WHATSAPP 0698232313</a></div>}
+    <section style={{...cardStyle,marginTop:20,padding:16,minWidth:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+        <div style={{width:34,height:34,borderRadius:9,background:"#f1f5f9",display:"grid",placeItems:"center",color:"#475569",flexShrink:0}}><Clock3 size={18}/></div>
+        <div><h2 style={{margin:0,fontSize:18,color:"#172033"}}>Maombi yangu</h2><p style={{margin:"3px 0 0",fontSize:12,color:"#64748b"}}>Hali na malipo ya maombi yako ya Till.</p></div>
+      </div>
+      {applications.length===0?<p style={{color:"#64748b",fontSize:13,marginBottom:0}}>Bado hakuna ombi la Till.</p>:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,285px),1fr))",gap:10,minWidth:0}}>
+        {applications.map(app=>{
+          const data=app.applicantData??{};
+          const networkName=String(data.network??"").toUpperCase();
+          const paymentPending=["AIRTEL","VODACOM"].includes(networkName)&&String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
+          const status=paymentPending?"MALIPO HAYAJATHIBITISHWA":String(app.status??"PENDING");
+          const customer=String(data.fullName??data.airtelPhone??data.nidaNumber??"—");
+          const till=String(data.tillPhone??data.airtelPhone??"—");
+          const cell=(label:string,value:string)=><div style={{minWidth:0}}><small style={{display:"block",fontSize:10,color:"#64748b",fontWeight:750,marginBottom:3}}>{label}</small><strong style={{display:"block",fontSize:12,color:"#243247",overflowWrap:"anywhere"}}>{value}</strong></div>;
+          return <article key={app.id} style={{border:"1px solid #e2e8f0",borderRadius:12,padding:12,background:"#fff",minWidth:0,display:"grid",gap:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}><strong style={{fontSize:13,color:"#172033",overflowWrap:"anywhere"}}>{customer}</strong><span style={{fontSize:10,fontWeight:850,color:paymentPending?"#92400e":status==="APPROVED"?"#166534":"#475569",background:paymentPending?"#fef3c7":status==="APPROVED"?"#dcfce7":"#f1f5f9",padding:"5px 7px",borderRadius:7,textAlign:"center"}}>{status}</span></div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:"9px 12px"}}>
+              {cell("MTANDAO",networkName||"—")}{cell("TILL / LIPA",till)}{cell("KIASI",String(data.price??"—"))}{cell("TAREHE",dateLabel(app.submittedAt??app.updatedAt))}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+              {paymentPending&&<button type="button" onClick={()=>{setPaymentApplication(app);setPaymentPhone(String(accountUser?.phone??""));setPaymentOrderId("");setPaymentStatusMessage("");}} style={{border:0,borderRadius:8,padding:"9px 11px",background:"#15803d",color:"#fff",fontSize:11,fontWeight:850,cursor:"pointer"}}>FANYA MALIPO</button>}
+              {String(app.status).toUpperCase()==="REJECTED"&&<button type="button" onClick={()=>editRejectedApplication(app)} style={{border:0,borderRadius:8,padding:"9px 11px",background:"#1d4ed8",color:"#fff",fontSize:11,fontWeight:850,cursor:"pointer"}}>REKEBISHA OMBI</button>}
+            </div>
+          </article>;
+        })}
+      </div>}
     </section>
 
     {paymentApplication && (() => {
@@ -212,9 +235,10 @@ export default function PataTillNetworksPage() {
       const amount = networkName === "AIRTEL" ? "TSh 5,000" : "TSh 40,000";
       const startPayment = async () => {
         if (!paymentApplication.applicationId) return;
+        if (!/^\+?\d[\d ()-]{7,18}$/.test(paymentPhone.trim())) { setPaymentStatusMessage("Weka namba sahihi ya simu ya kulipia."); toast.error("Weka namba sahihi ya simu ya kulipia."); return; }
         setPaymentBusy(true); setPaymentStatusMessage("");
         try {
-          const order = await createTillFimipayOrder({ application_id: paymentApplication.applicationId, phone: String(accountUser?.phone ?? "") });
+          const order = await createTillFimipayOrder({ application_id: paymentApplication.applicationId, phone: paymentPhone.trim() });
           setPaymentOrderId(order.order_id);
           setPaymentStatusMessage("Ombi la malipo limetumwa kwenye simu. Kamilisha maelekezo ya malipo kisha gusa Hakiki malipo.");
           toast.success("Oda ya FimiPay imeanzishwa.");
@@ -246,7 +270,7 @@ export default function PataTillNetworksPage() {
           <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:13,padding:16,display:"grid",gap:9}}>
             <div><small style={{color:"#64748b"}}>MTANDAO</small><div style={{fontSize:18,fontWeight:900}}>{networkName}</div></div>
             <div><small style={{color:"#64748b"}}>KIASI CHA KULIPA</small><div style={{fontSize:22,fontWeight:900,color:"#15803d"}}>{amount}</div></div>
-            <div><small style={{color:"#64748b"}}>Namba ya simu ya malipo</small><div style={{fontSize:16,fontWeight:800}}>{String(accountUser?.phone ?? "Haijawekwa")}</div></div>
+            <label style={{display:"grid",gap:7,color:"#475569",fontSize:13,fontWeight:750}}>Namba ya simu ya kulipia<input type="tel" inputMode="tel" autoComplete="tel" value={paymentPhone} onChange={e=>setPaymentPhone(e.target.value)} placeholder="Mfano 0712345678" maxLength={16} style={{width:"100%",boxSizing:"border-box",padding:"13px 14px",border:"1px solid #cbd5e1",borderRadius:10,fontSize:16,color:"#172033",background:"#fff"}}/><small style={{fontWeight:500,color:"#64748b"}}>Unaweza kubadilisha namba hii kabla ya kuanzisha malipo.</small></label>
             {paymentOrderId && <div><small style={{color:"#64748b"}}>Namba ya oda ya malipo</small><div style={{fontSize:13,fontWeight:800,overflowWrap:"anywhere"}}>{paymentOrderId}</div></div>}
           </div>
           {paymentStatusMessage && <p role="status" style={{fontSize:13,lineHeight:1.6,color:"#334155",background:"#eff6ff",padding:12,borderRadius:10,marginTop:12}}>{paymentStatusMessage}</p>}
