@@ -317,7 +317,7 @@ jobs:
                   back.setOnClickListener(v -> goBack());
                   back.setEnabled(true);
                   refresh.setOnClickListener(v -> refreshPage());
-                  refreshLayout.setOnRefreshListener(() -> { webView.clearCache(true); webView.reload(); });
+                  refreshLayout.setOnRefreshListener(() -> webView.reload());
                   refreshLayout.setColorSchemeColors(Color.rgb(124,58,237), Color.rgb(37,99,235));
 
                   WebSettings s = webView.getSettings();
@@ -330,7 +330,7 @@ jobs:
                   s.setDisplayZoomControls(false);
                   s.setMediaPlaybackRequiresUserGesture(false);
                   s.setSupportMultipleWindows(false);
-                  s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                  s.setCacheMode(WebSettings.LOAD_DEFAULT);
                   s.setUserAgentString(s.getUserAgentString() + " SmartServicesTZApp/4.2.0");
                   webView.addJavascriptInterface(new DownloadBridge(), "AndroidDownload");
                   webView.addJavascriptInterface(new Object() {
