@@ -3,6 +3,13 @@ import { ApiError } from "./api-adapter.js";
 import { getFirestore, FieldValue } from "./firestore-rest.js";
 import { getSecret, getWorkerEnv } from "./runtime.js";
 import { normalizeTanzaniaPhone } from "../../shared/tanzaniaPhone.js";
+import {
+  fimipayTerminalStatus,
+  isConfirmedLivePayment,
+  isFimipaySuccessEvent,
+  verifyFimipayWebhookSignature,
+  verifyFimipayWebhookV2Signature,
+} from "./fimipayCore.js";
 
 const db = getFirestore();
 const API = "https://fimipay.com/api/v1";
@@ -10,77 +17,174 @@ const API = "https://fimipay.com/api/v1";
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 }
-function digits(value: string) { return value.replace(/\D/g, ""); }
+function digits(value: string) { return value.replace(/\\D/g, ""); }
 function statusValue(value: unknown) { return String(value ?? "").trim().toUpperCase(); }
 function isPaid(value: unknown) { return ["COMPLETED", "SUCCESS"].includes(statusValue(value)); }
+
+function fimipaySecret() {
+  const secret = getSecret("FIMIPAY_SECRET_KEY");
+  const environment = String(getWorkerEnv().FIMIPAY_ENV ?? "").trim().toLowerCase();
+  if (secret.startsWith("sk_live_")) return { secret, environment: "LIVE" as const };
+  if (secret.startsWith("sk_test_") && environment === "test") return { secret, environment: "TEST" as const };
+  throw new ApiError("failed-precondition", "FimiPay credentials hazijawekwa kwenye mazingira sahihi.");
+}
+
 async function provider(path: string, body: Record<string, unknown>) {
+  const credentials = fimipaySecret();
   const response = await fetch(API + path, {
     method: "POST",
-    headers: { Authorization: `Bearer ${getSecret("FIMIPAY_SECRET_KEY")}`, "Content-Type": "application/json", Accept: "application/json" },
+    headers: { Authorization: `Bearer ${credentials.secret}`, "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(20000),
   });
   const result = await response.json().catch(() => null) as Record<string, any> | null;
   const data = result?.data && typeof result.data === "object" ? result.data as Record<string, unknown> : result;
   console.info("FimiPay provider response", {
-    path,
-    httpStatus: response.status,
-    providerStatus: result?.status,
-    message: typeof result?.message === "string" ? result.message.slice(0, 240) : undefined,
+    path, httpStatus: response.status, providerStatus: result?.status,
     orderId: typeof data?.order_id === "string" ? data.order_id : undefined,
-    paymentStatus: data?.payment_status,
+    paymentStatus: data?.payment_status ?? data?.status,
     simulated: data?.simulated === true,
+    environment: credentials.environment,
   });
   if (!response.ok || !result) throw new Error("FimiPay request failed.");
-  return result;
+  return { result, data: data ?? {}, environment: credentials.environment };
 }
-async function settle(orderId: string, status: string, amount: unknown, currency: unknown, transid?: string) {
-  const orderRef = db.collection("fimipayOrders").doc(orderId);
+
+async function readPurchase(orderId: string) {
+  const canonical = await db.collection("tokenPurchaseOrders").doc(orderId).get();
+  if (canonical.exists) return { order: canonical.data()!, canonical: true };
+  const legacy = await db.collection("fimipayOrders").doc(orderId).get();
+  if (legacy.exists) return { order: legacy.data()!, canonical: false };
+  return null;
+}
+
+async function markNeedsReview(orderId: string, reason: string) {
+  const canonicalRef = db.collection("tokenPurchaseOrders").doc(orderId);
+  const legacyRef = db.collection("fimipayOrders").doc(orderId);
+  await db.runTransaction(async (tx) => {
+    const canonical = await tx.get(canonicalRef);
+    const legacy = await tx.get(legacyRef);
+    const now = FieldValue.serverTimestamp();
+    if (canonical.exists && canonical.data()?.status !== "PAID") tx.set(canonicalRef, { status: "NEEDS_REVIEW", reviewReason: reason, updatedAt: now }, { merge: true });
+    if (legacy.exists && legacy.data()?.settled !== true) tx.set(legacyRef, { paymentStatus: "NEEDS_REVIEW", reviewReason: reason, updatedAt: now }, { merge: true });
+    if (!canonical.exists && !legacy.exists) tx.set(db.collection("fimipayWebhookReviews").doc(orderId), {
+      orderId, status: "NEEDS_REVIEW", reason, updatedAt: now, createdAt: now,
+    }, { merge: true });
+  });
+}
+
+async function settle(orderId: string, providerOrder: Record<string, unknown>, transid?: string) {
+  const canonicalRef = db.collection("tokenPurchaseOrders").doc(orderId);
+  const legacyRef = db.collection("fimipayOrders").doc(orderId);
+  const ledgerRef = db.collection("tokenTransactions").doc(orderId);
+  const legacyLedgerRef = db.collection("tokenTransactions").doc("fimipay_" + orderId);
+
   return db.runTransaction(async (tx) => {
-    const snapshot = await tx.get(orderRef);
-    if (!snapshot.exists) throw new ApiError("not-found", "Oda ya malipo haijapatikana.");
-    const order = snapshot.data()!;
-    if (!isPaid(status)) {
-      if (status === "FAILED" || status === "CANCELLED") tx.set(orderRef, { paymentStatus: status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return { paid: false, status, duplicate: false };
+    const canonicalSnapshot = await tx.get(canonicalRef);
+    const legacySnapshot = await tx.get(legacyRef);
+    const ledgerSnapshot = await tx.get(ledgerRef);
+    const legacyLedgerSnapshot = await tx.get(legacyLedgerRef);
+
+    if (!canonicalSnapshot.exists && !legacySnapshot.exists) {
+      tx.set(db.collection("fimipayWebhookReviews").doc(orderId), {
+        orderId, status: "NEEDS_REVIEW", reason: "Original customer order was not found",
+        updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return { paid: false, review: true, duplicate: false };
     }
-    if (Number(amount) !== Number(order.amount) || String(currency ?? "").toUpperCase() !== "TZS") {
-      tx.set(orderRef, { paymentStatus: "REVIEW", providerStatus: status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      throw new ApiError("failed-precondition", "Kiasi au sarafu ya malipo haijalingana; wasiliana na msaada.");
+
+    const order = (canonicalSnapshot.exists ? canonicalSnapshot.data() : legacySnapshot.data())!;
+    const userId = String(order.userId ?? "");
+    const amount = Number(order.amount);
+    const tokens = Number(order.tokens ?? order.tokenAmount);
+    const providerStatus = statusValue(providerOrder.payment_status ?? providerOrder.status);
+    const providerAmount = Number(providerOrder.amount);
+    const currency = String(providerOrder.currency ?? "").toUpperCase();
+    const providerId = String(providerOrder.order_id ?? "");
+    const environment = String(order.environment ?? order.providerEnvironment ?? "").toUpperCase();
+
+    const markReviewInTransaction = (reason: string) => {
+      const now = FieldValue.serverTimestamp();
+      if (canonicalSnapshot.exists && order.status !== "PAID") tx.set(canonicalRef, { status: "NEEDS_REVIEW", reviewReason: reason, updatedAt: now }, { merge: true });
+      if (legacySnapshot.exists && order.settled !== true) tx.set(legacyRef, { paymentStatus: "NEEDS_REVIEW", reviewReason: reason, updatedAt: now }, { merge: true });
+      return { paid: false, review: true, duplicate: false };
+    };
+
+    if (providerId !== orderId || !isPaid(providerStatus) || providerAmount !== amount || currency !== "TZS"
+      || providerOrder.simulated === true || String(providerOrder.environment ?? "").toLowerCase() === "test"
+      || environment === "TEST" || !Number.isSafeInteger(tokens) || tokens < 1 || amount !== (tokens / 3) * 500) {
+      return markReviewInTransaction("Provider/order amount, currency, environment, status, or token integrity mismatch");
     }
-    if (order.environment === "TEST") {
-      if (order.settled === true) return { paid: true, status: "COMPLETED", duplicate: true, testMode: true };
-      const testLedgerRef = db.collection("fimipayTestTransactions").doc(orderId);
-      tx.create(testLedgerRef, { orderId, userId: String(order.userId), tokens: Number(order.tokens), amount: Number(order.amount), currency: "TZS", createdAt: FieldValue.serverTimestamp(), status: "simulated_success" });
-      tx.set(orderRef, { settled: true, paymentStatus: "COMPLETED", testVerified: true, settledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return { paid: true, status: "COMPLETED", duplicate: false, testMode: true };
-    }
-    if (order.settled === true) return { paid: true, status: "COMPLETED", duplicate: true, balanceAfter: Number(order.balanceAfter ?? 0) };
-    const userRef = db.collection("users").doc(String(order.userId));
+
+    const userRef = db.collection("users").doc(userId);
     const userSnapshot = await tx.get(userRef);
-    if (!userSnapshot.exists) throw new ApiError("not-found", "Akaunti ya mteja haijapatikana.");
-    const profile = userSnapshot.data()!;
-    const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
-    const tokens = Number(order.tokens);
-    if (!Number.isSafeInteger(before) || before < 0 || !Number.isSafeInteger(tokens) || tokens < 3) throw new ApiError("failed-precondition", "Salio la tokeni halisomeki.");
-    const after = before + tokens;
-    const ledgerRef = db.collection("tokenTransactions").doc("fimipay_" + orderId);
-    const ledger = await tx.get(ledgerRef);
-    if (ledger.exists) {
-      tx.set(orderRef, { settled: true, paymentStatus: "COMPLETED", balanceAfter: Number(ledger.data()?.balanceAfter ?? after), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return { paid: true, status: "COMPLETED", duplicate: true, balanceAfter: Number(ledger.data()?.balanceAfter ?? after) };
+    if (!userId || !userSnapshot.exists) return markReviewInTransaction("Original customer account is missing");
+
+    const verifyLedger = (data: Record<string, unknown> | undefined) => Boolean(data)
+      && String(data.userId ?? "") === userId
+      && Number(data.amount) === tokens
+      && (String(data.reference ?? "") === orderId || String(data.providerOrderId ?? "") === orderId);
+
+    if (ledgerSnapshot.exists || legacyLedgerSnapshot.exists) {
+      const ledger = ledgerSnapshot.exists ? ledgerSnapshot.data() : legacyLedgerSnapshot.data();
+      if (!verifyLedger(ledger)) return markReviewInTransaction("Existing token ledger has conflicting ownership or amount");
+      const now = FieldValue.serverTimestamp();
+      tx.set(canonicalRef, { ...order, orderId, userId, amount, currency: "TZS", tokens, tokenAmount: tokens, status: "PAID", settled: true, paymentStatus: "COMPLETED", creditedAt: now, updatedAt: now }, { merge: true });
+      if (legacySnapshot.exists) tx.set(legacyRef, { settled: true, paymentStatus: "COMPLETED", updatedAt: now }, { merge: true });
+      return { paid: true, status: "COMPLETED", duplicate: true, balanceAfter: Number(ledger?.balanceAfter ?? order.balanceAfter ?? 0) };
     }
-    tx.update(userRef, { tokenBalanceOther: after, tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-    tx.create(ledgerRef, { transactionId: ledgerRef.id, userId: String(order.userId), actorId: "FIMIPAY", tokenType: "huduma", type: "credit", amount: tokens, balanceBefore: before, balanceAfter: after, reason: `Ununuzi wa tokeni kupitia FimiPay (${orderId})`, serviceId: "fimipay-topup", serviceName: "Ununuzi wa tokeni", reference: transid || orderId, providerOrderId: orderId, paymentAmount: Number(order.amount), currency: "TZS", createdAt: FieldValue.serverTimestamp(), status: "completed" });
-    tx.set(orderRef, { settled: true, paymentStatus: "COMPLETED", providerTransactionId: transid ?? null, balanceBefore: before, balanceAfter: after, settledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+
+    if (order.status === "PAID" || order.settled === true) return markReviewInTransaction("Order is already marked paid but its token ledger is missing");
+
+    const user = userSnapshot.data()!;
+    const before = Number(user.tokenBalanceOther ?? user.tokenBalance ?? 0);
+    if (!Number.isSafeInteger(before) || before < 0 || !Number.isSafeInteger(before + tokens)) return markReviewInTransaction("Customer token balance failed integrity validation");
+    const after = before + tokens;
+    const now = FieldValue.serverTimestamp();
+    const transactionData = {
+      transactionId: orderId, userId, actorId: "FIMIPAY", tokenType: "huduma", type: "credit",
+      amount: tokens, balanceBefore: before, balanceAfter: after,
+      reason: `Ununuzi wa tokeni kupitia FimiPay (${orderId})`,
+      serviceId: "fimipay-topup", serviceName: "Ununuzi wa tokeni",
+      reference: orderId, providerOrderId: orderId, providerTransactionId: transid ?? null,
+      paymentAmount: amount, currency: "TZS", createdAt: now, status: "completed",
+    };
+
+    tx.update(userRef, { tokenBalanceOther: after, tokenBalance: after, updatedAt: now });
+    tx.create(ledgerRef, transactionData);
+    tx.set(canonicalRef, { ...order, orderId, userId, amount, currency: "TZS", tokens, tokenAmount: tokens, status: "PAID", settled: true, paymentStatus: "COMPLETED", providerTransactionId: transid ?? null, balanceBefore: before, balanceAfter: after, creditedAt: now, updatedAt: now }, { merge: true });
+    if (legacySnapshot.exists) tx.set(legacyRef, { settled: true, paymentStatus: "COMPLETED", providerTransactionId: transid ?? null, balanceBefore: before, balanceAfter: after, updatedAt: now }, { merge: true });
+    tx.create(db.collection("messages").doc(), {
+      recipientId: userId, subject: "Malipo ya tokeni yamepokelewa",
+      body: `Malipo yako ya TZS ${amount.toLocaleString("en-US")} yamethibitishwa. Tokeni ${tokens} zimeongezwa kwenye akaunti yako.`,
+      type: "tokenPurchasePaid", orderId, createdAt: now,
+    });
+    tx.create(db.collection("auditLogs").doc(), {
+      action: "FIMIPAY_TOKEN_PURCHASE_CREDITED", actorId: "FIMIPAY", userId, orderId,
+      amount, currency: "TZS", tokens, balanceBefore: before, balanceAfter: after, createdAt: now,
+    });
     return { paid: true, status: "COMPLETED", duplicate: false, balanceAfter: after };
   });
 }
+
+async function verifyProviderOrder(orderId: string, expectedAmount: number) {
+  const credentials = fimipaySecret();
+  if (credentials.environment !== "LIVE") throw new ApiError("failed-precondition", "Uthibitishaji wa malipo ya production unahitaji FimiPay LIVE key.");
+  const { result, data } = await provider("/payment/order_status", { order_id: orderId });
+  const status = statusValue(data.payment_status ?? data.status);
+  if (result.status !== "success" || !isConfirmedLivePayment(data, orderId, expectedAmount)) {
+    return { confirmed: false, status, data };
+  }
+  return { confirmed: true, status, data };
+}
+
 async function verifyOwner(request: Request) {
   return verifyFirebaseIdToken(request, getWorkerEnv().FIREBASE_PROJECT_ID);
 }
+
 export async function createFimipayOrder(request: Request) {
   const auth = await verifyOwner(request);
+  const credentials = fimipaySecret();
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const tokens = Number(body?.tokens);
   if (!Number.isSafeInteger(tokens) || tokens < 3 || tokens > 3000 || tokens % 3 !== 0) return json({ error: { message: "Chagua tokeni 3, 6, 9 ... hadi 3000." } }, 400);
@@ -92,62 +196,100 @@ export async function createFimipayOrder(request: Request) {
   const profile = userSnapshot.data()!;
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") return json({ error: { message: "Akaunti hairuhusiwi kufanya malipo." } }, 403);
   const amount = (tokens / 3) * 500;
-  const testMode = getSecret("FIMIPAY_SECRET_KEY").startsWith("sk_test_");
   const result = await provider("/payment/create_order", {
-    ...(testMode ? { test_outcome: "success" } : {}),
     buyer_phone: digits(phone),
     buyer_name: String(profile.name ?? [profile.firstName, profile.lastName].filter(Boolean).join(" ") ?? "Mteja").slice(0, 100),
-    amount,
-    currency: "TZS",
-    payment_method: "mobile",
+    amount, currency: "TZS", payment_method: "mobile",
   });
-  const data = (result.data && typeof result.data === "object" ? result.data : result) as Record<string, unknown>;
+  const data = (result.result.data && typeof result.result.data === "object" ? result.result.data : result.result) as Record<string, unknown>;
   const orderId = String(data.order_id ?? "").trim();
   if (!/^[A-Za-z0-9_-]{4,180}$/.test(orderId)) throw new Error("FimiPay did not return a valid order_id.");
-  await db.collection("fimipayOrders").doc(orderId).create({
-    orderId, userId: auth.uid, buyerPhone: phone, tokens, amount, currency: "TZS",
-    paymentStatus: statusValue(data.payment_status) || "PENDING",
-    environment: testMode ? "TEST" : "LIVE",
-    settled: false, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+  const purchase = {
+    orderId, providerOrderId: orderId, userId: auth.uid, buyerPhone: phone, tokens, tokenAmount: tokens,
+    amount, currency: "TZS", paymentStatus: statusValue(data.payment_status) || "PENDING",
+    status: "PENDING", environment: credentials.environment, settled: false,
+    simulated: data.simulated === true, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+  };
+  await db.runTransaction(async (tx) => {
+    const canonicalRef = db.collection("tokenPurchaseOrders").doc(orderId);
+    const legacyRef = db.collection("fimipayOrders").doc(orderId);
+    const [canonical, legacy] = await Promise.all([tx.get(canonicalRef), tx.get(legacyRef)]);
+    if (canonical.exists || legacy.exists) throw new ApiError("already-exists", "FimiPay imerudisha order ID iliyotumika tayari.");
+    tx.create(canonicalRef, purchase);
+    tx.create(legacyRef, purchase);
   });
-  return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", test_mode: testMode, simulated: data.simulated === true } });
+  return json({ data: { order_id: orderId, payment_status: purchase.paymentStatus, amount, currency: "TZS", test_mode: credentials.environment === "TEST", simulated: data.simulated === true } });
 }
+
 export async function checkFimipayOrder(request: Request) {
   const auth = await verifyOwner(request);
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const orderId = String(body?.order_id ?? "").trim();
   if (!orderId || orderId.length > 180) return json({ error: { message: "Oda ya malipo si sahihi." } }, 400);
-  const ref = db.collection("fimipayOrders").doc(orderId);
-  const saved = await ref.get();
-  if (!saved.exists || saved.data()?.userId !== auth.uid) return json({ error: { message: "Oda haijapatikana." } }, 404);
-  const savedOrder = saved.data()!;
-  const result = await provider("/payment/order_status", { order_id: orderId });
-  const data = (result.data && typeof result.data === "object" ? result.data : result) as Record<string, unknown>;
-  const status = statusValue(data.payment_status ?? data.status);
-  let settled: { paid: boolean; status: string; duplicate: boolean; balanceAfter?: number; testMode?: boolean } = { paid: false, status, duplicate: false };
-  if (isPaid(status)) settled = await settle(orderId, status, data.amount ?? (savedOrder.environment === "TEST" ? savedOrder.amount : undefined), data.currency ?? (savedOrder.environment === "TEST" ? "TZS" : undefined), typeof data.transid === "string" ? data.transid : undefined);
-  else if (status === "FAILED" || status === "CANCELLED") await settle(orderId, status, data.amount ?? saved.data()?.amount, data.currency ?? "TZS");
-  return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : status, paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter, test_mode: settled.testMode === true, simulated: data.simulated === true } });
+  const saved = await readPurchase(orderId);
+  if (!saved || saved.order.userId !== auth.uid) return json({ error: { message: "Oda haijapatikana." } }, 404);
+  if (String(saved.order.environment ?? "").toUpperCase() !== "LIVE") return json({ error: { message: "Oda hii si ya mazingira ya LIVE." } }, 409);
+  const expectedAmount = Number(saved.order.amount);
+  const verification = await verifyProviderOrder(orderId, expectedAmount);
+  if (!verification.confirmed) {
+    if (["FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(verification.status)) {
+      await markNeedsReview(orderId, `Provider terminal status: ${verification.status}`);
+    }
+    return json({ data: { order_id: orderId, payment_status: verification.status, paid: false, duplicate: false } });
+  }
+  const settled = await settle(orderId, verification.data, typeof verification.data.transid === "string" ? verification.data.transid : undefined);
+  return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : "NEEDS_REVIEW", paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter } });
 }
-async function validSignature(raw: string, signature: string, secret: string) {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const bytes = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(raw)));
-  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  if (hex.length !== signature.length) return false;
-  let diff = 0; for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ signature.toLowerCase().charCodeAt(i);
-  return diff === 0;
-}
+
 export async function handleFimipayWebhook(request: Request) {
-  const raw = await request.text();
-  const signature = request.headers.get("X-Fimipay-Signature") ?? "";
-  if (!signature || !(await validSignature(raw, signature, getSecret("FIMIPAY_WEBHOOK_SECRET")))) return json({ error: "Invalid signature" }, 401);
+  const rawBody = new Uint8Array(await request.arrayBuffer());
+  if (rawBody.length === 0 || rawBody.length > 65536) return json({ error: "Invalid payload" }, 400);
+  const secret = getSecret("FIMIPAY_WEBHOOK_SECRET");
+  const signatureV2 = request.headers.get("X-Fimipay-Signature-V2");
+  const signatureValid = signatureV2 !== null
+    ? verifyFimipayWebhookV2Signature(rawBody, signatureV2, secret, request.headers.get("X-Fimipay-Timestamp"), request.headers.get("X-Fimipay-Nonce"), new URL(request.url).pathname)
+    : verifyFimipayWebhookSignature(rawBody, request.headers.get("X-Fimipay-Signature"), secret);
+  if (!signatureValid) return json({ error: "Invalid signature" }, 401);
+
   let payload: Record<string, unknown>;
-  try { payload = JSON.parse(raw) as Record<string, unknown>; } catch { return json({ error: "Invalid JSON" }, 400); }
-  const event = String(payload.event ?? "");
-  if (!["payment.success", "payment.cancelled", "payment.failed"].includes(event)) return json({ received: true, ignored: true });
+  try {
+    const parsed: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(rawBody));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid payload");
+    payload = parsed as Record<string, unknown>;
+  } catch { return json({ error: "Invalid JSON" }, 400); }
+
   const orderId = String(payload.order_id ?? "").trim();
-  if (!orderId) return json({ error: "Missing order_id" }, 400);
-  const status = statusValue(payload.payment_status ?? (event === "payment.success" ? "COMPLETED" : event === "payment.cancelled" ? "CANCELLED" : "FAILED"));
-  await settle(orderId, status, payload.amount, payload.currency, typeof payload.transid === "string" ? payload.transid : undefined);
-  return json({ received: true });
+  if (!orderId || orderId.length > 180) return json({ error: "Missing order_id" }, 400);
+  const saved = await readPurchase(orderId);
+  if (!saved) {
+    await markNeedsReview(orderId, "Webhook arrived without a matching stored customer order");
+    return json({ received: true, review: true });
+  }
+
+  const terminal = fimipayTerminalStatus(payload);
+  if (!isFimipaySuccessEvent(payload)) {
+    if (terminal) await markNeedsReview(orderId, `Provider webhook terminal status: ${terminal}`);
+    return json({ received: true, pending: !terminal });
+  }
+  if (String(saved.order.environment ?? "").toUpperCase() !== "LIVE") {
+    await markNeedsReview(orderId, "Webhook order is not marked LIVE");
+    return json({ received: true, review: true });
+  }
+
+  try {
+    const verification = await verifyProviderOrder(orderId, Number(saved.order.amount));
+    if (!verification.confirmed) {
+      if (["PENDING", "INPROGRESS"].includes(verification.status)) return json({ received: false, pending: true }, 503);
+      await markNeedsReview(orderId, `FimiPay LIVE order_status did not confirm payment: ${verification.status}`);
+      return json({ received: true, review: true });
+    }
+    const settled = await settle(orderId, verification.data, typeof verification.data.transid === "string" ? verification.data.transid : undefined);
+    return json({ received: true, paid: settled.paid, duplicate: settled.duplicate, review: settled.review === true });
+  } catch (error) {
+    console.error("FimiPay webhook reconciliation failed", {
+      orderId, code: error instanceof Error ? error.name : "unknown",
+      message: error instanceof Error ? error.message.slice(0, 180) : "unknown",
+    });
+    return json({ received: false }, 503);
+  }
 }
