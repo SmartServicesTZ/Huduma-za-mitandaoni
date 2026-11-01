@@ -294,10 +294,10 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const totalBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const status = profile?.verificationStatus ?? "pending";
   const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
-  const totalAmount = Math.ceil(otherCount / 3) * 500;
+  const totalAmount = otherCount * 100;
   const otherAmount = totalAmount;
   const paymentPhone = paidFromPhone.trim() || profile?.phone || "";
-  const canProceed = totalAmount >= 500 && otherCount >= 3 && otherCount % 3 === 0 && paymentPhone.trim().length >= 9;
+  const canProceed = totalAmount >= 100 && otherCount >= 1 && otherCount <= 3000 && paymentPhone.trim().length >= 9;
   const openWhatsAppProof = async () => {
     if (!canProceed || fimipayBusy) return;
     setFimipayBusy(true);
@@ -338,17 +338,17 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Nunua tokeni za huduma</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
         <div className="token-choice-intro"><span className="token-choice-intro-icon"><CircleDollarSign size={19} /></span><div><strong>Chagua kifurushi chako</strong><small>Weka idadi ya tokeni za huduma unazohitaji</small></div></div>
         <div className="token-choice-fields">
-          <label className="token-choice-field token-choice-field--other"><span className="token-choice-field-icon"><WalletCards size={18} /></span><span className="token-choice-field-copy"><strong>Tokeni za huduma</strong><small>Tokeni 3 = TZS 500</small></span><input aria-label="Idadi ya tokeni za huduma" type="number" min="3" max="3000" step="3" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
+          <label className="token-choice-field token-choice-field--other"><span className="token-choice-field-icon"><WalletCards size={18} /></span><span className="token-choice-field-copy"><strong>Tokeni za huduma</strong><small>Tokeni 1 = TZS 100</small></span><input aria-label="Idadi ya tokeni za huduma" type="number" min="1" max="3000" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
-        <div className="token-choice-presets"><span>Chaguo la haraka</span><button type="button" onClick={() => setOtherTokens("3")}>Tokeni 3</button><button type="button" onClick={() => setOtherTokens("6")}>Tokeni 6</button><button type="button" onClick={() => setOtherTokens("9")}>Tokeni 9</button></div>
-        <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Bei: tokeni 3 = TZS 500, tokeni 6 = TZS 1,000; kila tokeni 3 za ziada ni TZS 500.</small></div>
+        <div className="token-choice-presets"><span>Chaguo la haraka</span><button type="button" onClick={() => setOtherTokens("1")}>Tokeni 1</button><button type="button" onClick={() => setOtherTokens("5")}>Tokeni 5</button><button type="button" onClick={() => setOtherTokens("10")}>Tokeni 10</button></div>
+        <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Bei ya majaribio: tokeni 1 = TZS 100.</small></div>
         <label className="token-choice-phone"><strong>Namba ya simu ya kulipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
         <div className="token-choice-secure">
           <div className="token-choice-secure__top"><span className="token-choice-secure__icon"><ShieldCheck size={19}/></span><div><strong>Malipo salama ya moja kwa moja</strong><small>Weka namba ya simu unayotaka kutumia kulipia. Ombi la malipo litatumwa moja kwa moja kwenye simu yako.</small></div></div>
           <div className="token-choice-secure__note"><ShieldCheck size={15}/><span>Tokeni zitaongezwa moja kwa moja kwenye akaunti yako baada ya malipo kuthibitishwa. Usifanye malipo mara mbili ikiwa ombi bado linasubiri.</span></div>
         </div>
         <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>{fimipayBusy ? "INATUMA OMBI..." : "ENDELEA NA MALIPO"}</button>
-        {otherCount > 0 && otherCount % 3 !== 0 && <p style={{margin:"8px 0 0",fontSize:12,color:"#b45309"}}>Chagua idadi inayogawanyika kwa 3, mfano tokeni 3, 6 au 9.</p>}
+        
         <div className="token-choice-networks"><div className="token-choice-networks-head"><strong>Mitandao inayotumika</strong><span>Airtel · Halotel · Vodacom · Yas</span></div><div className="token-network-grid">{[{name:"Airtel",file:"airtel-logo.png",tone:"airtel"},{name:"Halotel",file:"halotel-logo.png",tone:"halotel"},{name:"Vodacom",file:"vodacom-logo.png",tone:"vodacom"},{name:"Yas",file:"yas-logo.png",tone:"yas"}].map(network => <div className={`token-network token-network--${network.tone}`} key={network.name}><span className="token-network-logo"><img src={`${import.meta.env.BASE_URL}${network.file}`} alt={`${network.name} logo`} /></span><span>{network.name}</span></div>)}</div></div>
         <p className="token-choice-help">Mtandao utatambuliwa kulingana na namba yako ya simu. Tokeni zitaongezwa baada ya malipo kuthibitishwa.</p>
         {fimipayOrderId && <div role="status" style={{marginTop:10,padding:12,borderRadius:10,background:"#eff6ff"}}><b>Rejea: {fimipayOrderId}</b><p>Hali: {fimipayStatus}</p><button type="button" className="button button--small" disabled={fimipayBusy} onClick={refreshFimipayStatus}>KAGUA MALIPO</button></div>}
