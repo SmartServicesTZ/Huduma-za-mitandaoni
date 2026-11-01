@@ -213,7 +213,7 @@ export async function createFimipayOrder(request: Request) {
   const credentials = fimipaySecret();
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const tokens = Number(body?.tokens);
-  if (!Number.isSafeInteger(tokens) || tokens < 1 || tokens > 3000) return json({ error: { message: "Chagua tokeni 1 hadi 3000." } }, 400);
+  if (!Number.isSafeInteger(tokens) || tokens < 3 || tokens > 3000 || tokens % 3 !== 0) return json({ error: { message: "Chagua tokeni kwa mafungu ya 3 (3 hadi 3000)." } }, 400);
   let phone = "";
   try { phone = normalizeTanzaniaPhone(String(body?.phone ?? "")) ?? ""; } catch { /* invalid phone */ }
   if (!phone) return json({ error: { message: "Namba ya simu ya Tanzania si sahihi." } }, 400);
@@ -221,7 +221,7 @@ export async function createFimipayOrder(request: Request) {
   if (!userSnapshot.exists) return json({ error: { message: "Akaunti haijapatikana." } }, 404);
   const profile = userSnapshot.data()!;
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") return json({ error: { message: "Akaunti hairuhusiwi kufanya malipo." } }, 403);
-  const amount = tokens * 100;
+  const amount = (tokens / 3) * 500;
   const result = await provider("/payment/create_order", {
     buyer_phone: digits(phone),
     buyer_name: String(profile.name ?? [profile.firstName, profile.lastName].filter(Boolean).join(" ") ?? "Mteja").slice(0, 100),
