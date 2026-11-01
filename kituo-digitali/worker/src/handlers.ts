@@ -1206,7 +1206,7 @@ export const createServiceApplication = callable(async (request) => {
     const network = tillNetwork;
     if (!["HALOTEL", "AIRTEL", "VODACOM"].includes(network)) throw new ApiError("invalid-argument", "Mtandao wa Till si sahihi.");
     applicantData.network = network;
-    applicantData.price = network === "AIRTEL" ? "TSh 5,000" : network === "VODACOM" ? "TSh 40,000" : "BURE";
+    applicantData.price = network === "AIRTEL" || network === "VODACOM" ? "TSh 200" : "BURE";
     applicantData.paymentStatus = network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID";
   }
   const finalPaths: string[] = [];
