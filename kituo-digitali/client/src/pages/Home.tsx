@@ -298,24 +298,6 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const otherAmount = totalAmount;
   const paymentPhone = paidFromPhone.trim() || profile?.phone || "";
   const canProceed = totalAmount >= 500 && otherCount >= 3 && otherCount % 3 === 0 && paymentPhone.trim().length >= 9;
-  const copyLipaNumber = async () => {
-    try {
-      await navigator.clipboard.writeText("29126823");
-      toast.success("Lipa Namba imenakiliwa.");
-    } catch {
-      const field = document.createElement("textarea");
-      field.value = "29126823";
-      field.setAttribute("readonly", "true");
-      field.style.position = "fixed";
-      field.style.opacity = "0";
-      document.body.appendChild(field);
-      field.select();
-      const copied = document.execCommand("copy");
-      field.remove();
-      if (copied) toast.success("Lipa Namba imenakiliwa.");
-      else toast.error("Imeshindikana kunakili. Shikilia namba uinakili mwenyewe.");
-    }
-  };
   const openWhatsAppProof = async () => {
     if (!canProceed || fimipayBusy) return;
     setFimipayBusy(true);
@@ -361,16 +343,12 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         <div className="token-choice-presets"><span>Chaguo la haraka</span><button type="button" onClick={() => setOtherTokens("3")}>Tokeni 3</button><button type="button" onClick={() => setOtherTokens("6")}>Tokeni 6</button><button type="button" onClick={() => setOtherTokens("9")}>Tokeni 9</button></div>
         <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Bei: tokeni 3 = TZS 500, tokeni 6 = TZS 1,000; kila tokeni 3 za ziada ni TZS 500.</small></div>
         <label className="token-choice-phone"><strong>Namba ya simu ya kulipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
-        <div className="token-choice-payto" style={{display:"grid",gap:10,padding:16,border:"1px solid #dbeafe",borderRadius:16,background:"linear-gradient(145deg,#eff6ff 0%,#ffffff 85%)",marginTop:16}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-            <div><span style={{display:"block",fontSize:11,fontWeight:800,letterSpacing:".08em",color:"#64748b"}}>NAMBA YA LIPA</span><strong style={{display:"block",fontSize:26,letterSpacing:".04em",color:"#0f172a"}}>29126823</strong></div>
-            <button type="button" className="button button--small" onClick={copyLipaNumber} style={{display:"inline-flex",alignItems:"center",gap:7,justifyContent:"center"}}><Copy size={15}/> Nakili namba</button>
-          </div>
-          <div className="token-choice-payto-row"><span>JINA LA MPOKEAJI</span><strong>Steward Tz</strong></div>
-          <div className="token-choice-payto-row"><span>MTANDAO</span><strong>Azam Pesa</strong></div>
-          <p style={{margin:0,fontSize:12,lineHeight:1.55,color:"#475569"}}>Lipa kiasi kilichoonyeshwa hapo juu, kisha bonyeza kitufe cha kutuma uthibitisho WhatsApp.</p>
+        <div className="token-choice-secure">
+          <div className="token-choice-secure__top"><span className="token-choice-secure__icon"><ShieldCheck size={19}/></span><div><strong>Malipo salama ya moja kwa moja</strong><small>Chagua mtandao unaopokea malipo kwenye simu yako. Ombi la malipo litatumwa na FimiPay.</small></div></div>
+          <div className="token-choice-networks"><div className="token-choice-networks-head"><strong>Mitandao inayotumika</strong><span>Mtandao utatambuliwa kwa namba yako</span></div><div className="token-network-grid">{[{name:"Airtel",file:"airtel-logo.png",tone:"airtel"},{name:"Halotel",file:"halotel-logo.png",tone:"halotel"},{name:"Vodacom",file:"vodacom-logo.png",tone:"vodacom"},{name:"Yas",file:"yas-logo.png",tone:"yas"}].map(network => <div className={`token-network token-network--${network.tone}`} key={network.name}><span className="token-network-logo"><img src={`${import.meta.env.BASE_URL}${network.file}`} alt={`${network.name} logo`} /></span><span>{network.name}</span></div>)}</div></div>
+          <div className="token-choice-secure__note"><ShieldCheck size={15}/><span>Tokeni zitaingia moja kwa moja kwenye akaunti yako baada ya FimiPay kuthibitisha malipo. Usifanye malipo mara mbili ikiwa ombi bado linasubiri.</span></div>
         </div>
-        <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>{fimipayBusy ? "INATUMA..." : "LIPA SASA"}</button>
+        <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>{fimipayBusy ? "INATUMA OMBI..." : "ENDELEA KULIPA"}</button>
         {otherCount > 0 && otherCount % 3 !== 0 && <p style={{margin:"8px 0 0",fontSize:12,color:"#b45309"}}>Chagua idadi inayogawanyika kwa 3, mfano tokeni 3, 6 au 9.</p>}
         <div className="token-choice-networks"><div className="token-choice-networks-head"><strong>Lipa kupitia mtandao wako</strong><span>Chagua mtandao unaotumia kwenye simu</span></div><div className="token-network-grid">{[{name:"Airtel",file:"Airtel.png",tone:"airtel"},{name:"Halotel",file:"Halotel.png",tone:"halotel"},{name:"Vodacom",file:"Vodacom.png",tone:"vodacom"},{name:"Yas",file:"Yas.png",tone:"yas"}].map(network => <div className={`token-network token-network--${network.tone}`} key={network.name}><span className="token-network-logo"><img src={`${import.meta.env.BASE_URL}${network.file}`} alt={`${network.name} logo`} /></span><span>{network.name}</span></div>)}</div></div>
         <p className="token-choice-help">FimiPay itatambua mtandao kulingana na namba yako. Tokeni zitaongezwa baada ya malipo kuthibitishwa.</p>
