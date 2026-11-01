@@ -38,6 +38,13 @@ async function settle(orderId: string, status: string, amount: unknown, currency
       tx.set(orderRef, { paymentStatus: "REVIEW", providerStatus: status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       throw new ApiError("failed-precondition", "Kiasi au sarafu ya malipo haijalingana; wasiliana na msaada.");
     }
+    if (order.environment === "TEST") {
+      if (order.settled === true) return { paid: true, status: "COMPLETED", duplicate: true, testMode: true };
+      const testLedgerRef = db.collection("fimipayTestTransactions").doc(orderId);
+      tx.create(testLedgerRef, { orderId, userId: String(order.userId), tokens: Number(order.tokens), amount: Number(order.amount), currency: "TZS", createdAt: FieldValue.serverTimestamp(), status: "simulated_success" });
+      tx.set(orderRef, { settled: true, paymentStatus: "COMPLETED", testVerified: true, settledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return { paid: true, status: "COMPLETED", duplicate: false, testMode: true };
+    }
     if (order.settled === true) return { paid: true, status: "COMPLETED", duplicate: true, balanceAfter: Number(order.balanceAfter ?? 0) };
     const userRef = db.collection("users").doc(String(order.userId));
     const userSnapshot = await tx.get(userRef);
