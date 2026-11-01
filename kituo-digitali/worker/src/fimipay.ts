@@ -7,6 +7,8 @@ import {
   fimipayTerminalStatus,
   isConfirmedLivePayment,
   isFimipaySuccessEvent,
+  fimipayCredentialMode,
+  shouldCreditTokenPurchase,
   verifyFimipayWebhookSignature,
   verifyFimipayWebhookV2Signature,
 } from "./fimipayCore.js";
@@ -23,10 +25,9 @@ function isPaid(value: unknown) { return ["COMPLETED", "SUCCESS"].includes(statu
 
 function fimipaySecret() {
   const secret = getSecret("FIMIPAY_SECRET_KEY");
-  const environment = String(getWorkerEnv().FIMIPAY_ENV ?? "").trim().toLowerCase();
-  if (secret.startsWith("sk_live_")) return { secret, environment: "LIVE" as const };
-  if (secret.startsWith("sk_test_") && environment === "test") return { secret, environment: "TEST" as const };
-  throw new ApiError("failed-precondition", "FimiPay credentials hazijawekwa kwenye mazingira sahihi.");
+  const environment = fimipayCredentialMode(secret, getWorkerEnv().FIMIPAY_ENV);
+  if (!environment) throw new ApiError("failed-precondition", "FimiPay credentials hazijawekwa kwenye mazingira sahihi.");
+  return { secret, environment };
 }
 
 async function provider(path: string, body: Record<string, unknown>) {
@@ -125,16 +126,24 @@ async function settle(orderId: string, providerOrder: Record<string, unknown>, t
       && Number(data.amount) === tokens
       && (String(data.reference ?? "") === orderId || String(data.providerOrderId ?? "") === orderId);
 
-    if (ledgerSnapshot.exists || legacyLedgerSnapshot.exists) {
-      const ledger = ledgerSnapshot.exists ? ledgerSnapshot.data() : legacyLedgerSnapshot.data();
-      if (!verifyLedger(ledger)) return markReviewInTransaction("Existing token ledger has conflicting ownership or amount");
+    const ledgerExists = ledgerSnapshot.exists || legacyLedgerSnapshot.exists;
+    const ledger = ledgerSnapshot.exists ? ledgerSnapshot.data() : legacyLedgerSnapshot.data();
+    const ledgerMatches = verifyLedger(ledger);
+    const settlementDecision = shouldCreditTokenPurchase({
+      orderStatus: order.status ?? order.paymentStatus,
+      settled: order.settled,
+      ledgerExists,
+      ledgerMatches,
+    });
+    if (settlementDecision === "REVIEW") return markReviewInTransaction(ledgerExists
+      ? "Existing token ledger has conflicting ownership or amount"
+      : "Order is already marked paid but its token ledger is missing");
+    if (settlementDecision === "DUPLICATE") {
       const now = FieldValue.serverTimestamp();
       tx.set(canonicalRef, { ...order, orderId, userId, amount, currency: "TZS", tokens, tokenAmount: tokens, status: "PAID", settled: true, paymentStatus: "COMPLETED", creditedAt: now, updatedAt: now }, { merge: true });
       if (legacySnapshot.exists) tx.set(legacyRef, { settled: true, paymentStatus: "COMPLETED", updatedAt: now }, { merge: true });
       return { paid: true, status: "COMPLETED", duplicate: true, balanceAfter: Number(ledger?.balanceAfter ?? order.balanceAfter ?? 0) };
     }
-
-    if (order.status === "PAID" || order.settled === true) return markReviewInTransaction("Order is already marked paid but its token ledger is missing");
 
     const user = userSnapshot.data()!;
     const before = Number(user.tokenBalanceOther ?? user.tokenBalance ?? 0);
