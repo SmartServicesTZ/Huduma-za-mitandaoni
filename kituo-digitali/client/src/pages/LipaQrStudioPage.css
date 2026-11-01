@@ -1055,3 +1055,19 @@
   max-height:88% !important; height:auto !important;
   object-fit:contain !important; object-position:center !important;
 }
+
+
+/* Show the original phone + Lipa kwa simu mark from Yas campaign artwork.
+   The artwork is clipped to the compact yellow footer corner, not redrawn. */
+.lq-card-artboard--yas .lq-yas-footer {
+  width:76% !important; flex-basis:19% !important; height:19% !important;
+  overflow:hidden !important; padding:0 !important;
+  display:flex !important; align-items:flex-start !important; justify-content:flex-end !important;
+  background:#ffdf00 !important;
+}
+.lq-card-artboard--yas .lq-yas-official-footer-logo {
+  display:block !important; flex:0 0 auto !important;
+  width:100% !important; height:100% !important;
+  max-width:none !important; max-height:none !important;
+  object-fit:none !important; object-position:right top !important;
+}
