@@ -17,7 +17,7 @@ const API = "https://fimipay.com/api/v1";
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 }
-function digits(value: string) { return value.replace(/\\D/g, ""); }
+function digits(value: string) { return value.replace(/\D/g, ""); }
 function statusValue(value: unknown) { return String(value ?? "").trim().toUpperCase(); }
 function isPaid(value: unknown) { return ["COMPLETED", "SUCCESS"].includes(statusValue(value)); }
 
