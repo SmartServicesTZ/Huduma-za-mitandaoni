@@ -322,6 +322,7 @@ export async function createTillPaymentOrder(request: Request) {
   const phone = normalizeTanzaniaPhone(String(body?.phone ?? profile.phone ?? ""));
   if (!phone) throw new ApiError("invalid-argument", "Namba ya simu ya malipo si sahihi.");
   const credentials = fimipaySecret();
+  if (credentials.environment !== "LIVE") throw new ApiError("failed-precondition", "Malipo ya Till yanahitaji FimiPay LIVE key; hakuna malipo ya TEST yatakayokubaliwa.");
   const result = await provider("/payment/create_order", {
     buyer_phone: digits(phone),
     buyer_name: String(profile.name ?? [profile.firstName, profile.lastName].filter(Boolean).join(" ") ?? "Mteja").slice(0, 100),
