@@ -121,6 +121,7 @@ async function settle(orderId: string, providerOrder: Record<string, unknown>, t
     const environment = String(order.environment ?? order.providerEnvironment ?? "").toUpperCase();
 
     const markReviewInTransaction = (reason: string) => {
+      console.warn("FimiPay settlement requires review", { orderId, reason, providerStatus, providerAmount, amount, currency, providerId, environment, simulatedOrder: order.simulated === true, simulatedProvider: providerOrder.simulated === true, userIdPresent: Boolean(userId) });
       const now = FieldValue.serverTimestamp();
       if (canonicalSnapshot.exists && order.status !== "PAID") tx.set(canonicalRef, { status: "NEEDS_REVIEW", reviewReason: reason, updatedAt: now }, { merge: true });
       if (legacySnapshot.exists && order.settled !== true) tx.set(legacyRef, { paymentStatus: "NEEDS_REVIEW", reviewReason: reason, updatedAt: now }, { merge: true });
@@ -198,6 +199,16 @@ async function verifyProviderOrder(orderId: string, expectedAmount: number) {
   if (credentials.environment !== "LIVE") throw new ApiError("failed-precondition", "Uthibitishaji wa malipo ya production unahitaji FimiPay LIVE key.");
   const { result, data } = await provider("/payment/order_status", { order_id: orderId });
   const status = statusValue(data.payment_status ?? data.status);
+  const verificationChecks = {
+    providerRequestSucceeded: result.status === "success",
+    orderIdMatches: String(data.order_id ?? "") === orderId,
+    amountMatches: Number(data.amount) === expectedAmount,
+    currencyMatches: String(data.currency ?? "").toUpperCase() === "TZS",
+    simulated: data.simulated === true,
+    providerEnvironment: String(data.environment ?? ""),
+    paymentStatus: status,
+  };
+  console.info("FimiPay order verification checks", { orderId, ...verificationChecks });
   if (result.status !== "success" || !isConfirmedLivePayment(data, orderId, expectedAmount)) {
     return { confirmed: false, status, data };
   }
