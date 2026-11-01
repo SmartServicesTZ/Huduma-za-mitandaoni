@@ -90,7 +90,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       <strong className="lq-yas-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
       <strong className="lq-yas-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
       <p>Lipa kutoka mitandao yote na Benki</p>
-      <div className="lq-yas-footer"><img className="lq-yas-official-footer-logo" src="https://www.zurichbilling.co.tz/images/a8-removebg-preview.png" alt="Mixx by Yas" /></div>
+      <div className="lq-yas-footer"><img className="lq-yas-official-footer-logo" src="https://pbs.twimg.com/media/GxMhbdOWkAEKgIx.jpg" alt="Lipa kwa simu" /></div>
     </section> : isAirtel ? <section className="lq-airtel-body">
       <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" aria-hidden="true" />
       <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
