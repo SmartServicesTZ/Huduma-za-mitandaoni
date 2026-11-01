@@ -741,7 +741,7 @@ export const submitLipaApplication = callable(async (request) => {
     const duplicate = previousLipaApplications.docs.find((document) => {
       const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
-      if (status !== "PENDING" && status !== "PROCESSING") return false;
+      if (status !== "PENDING" && status !== "PROCESSING" && status !== "AWAITING_PAYMENT") return false;
       if (/airtel/i.test(networkId)) {
         const previousData = recordValues(previous.applicantData);
         return normalizeLipaPhone(previousData.phone ?? previous.phone) === normalizeLipaPhone(applicantData.phone);
@@ -1188,11 +1188,25 @@ export const createServiceApplication = callable(async (request) => {
   const isDedicatedSmeForm = ["sme-airtel", "sme-vodacom"].includes(serviceSlug);
   if (!isDedicatedSmeForm && (service.active === false || (!isAccessService && service.isVisible === false))) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
   if (serviceSlug === "pata-lipa-namba" || serviceSlug === "leseni-biashara") throw new ApiError("failed-precondition", "Tumia fomu maalum ya huduma hii.");
-  const fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
-  const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId, "serviceUploads");
+  let fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
+  const rawValues = objectValue(data.values, "Fomu");
+  const tillNetwork = serviceSlug === "pata-till-mitandao-yote" ? String(rawValues.network ?? "").toUpperCase() : "";
+  if (serviceSlug === "pata-till-mitandao-yote" && tillNetwork === "AIRTEL") {
+    fields = [
+      { fieldName: "airtelPhone", label: "Namba", type: "PHONE", required: true, order: 1 },
+      { fieldName: "nidaNumber", label: "NIDA", type: "NIDA", required: true, order: 2 },
+    ];
+    const phone = String(rawValues.airtelPhone ?? "").replace(/\\D/g, "");
+    const nida = String(rawValues.nidaNumber ?? "").replace(/\\D/g, "");
+    if (!/^0[67]\\d{8}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya Airtel si sahihi.");
+    if (!/^\\d{20}$/.test(nida)) throw new ApiError("invalid-argument", "NIDA lazima iwe na tarakimu 20.");
+  }
+  const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId, "serviceUploads");
   if (serviceSlug === "pata-till-mitandao-yote") {
-    const network = String(applicantData.network ?? "").toUpperCase();
+    const network = tillNetwork;
     if (!["HALOTEL", "AIRTEL", "VODACOM"].includes(network)) throw new ApiError("invalid-argument", "Mtandao wa Till si sahihi.");
+    applicantData.network = network;
+    applicantData.price = network === "AIRTEL" ? "TSh 5,000" : network === "VODACOM" ? "TSh 40,000" : "BURE";
     applicantData.paymentStatus = network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID";
   }
   const finalPaths: string[] = [];
@@ -1257,10 +1271,14 @@ export const createServiceApplication = callable(async (request) => {
       ledgerRef = db.collection("tokenTransactions").doc(applicationId);
       transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
     }
-    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, duplicateFingerprint, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
+    const awaitingTillPayment = serviceSlug === "pata-till-mitandao-yote" && ["AIRTEL", "VODACOM"].includes(String(applicantData.network ?? "").toUpperCase());
+    const initialStatus = awaitingTillPayment ? "AWAITING_PAYMENT" : "PENDING";
+    const configuredStatuses = Array.isArray(service.statusOptions) ? service.statusOptions as string[] : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"];
+    const statusOptions = serviceSlug === "pata-till-mitandao-yote" ? Array.from(new Set(["AWAITING_PAYMENT", ...configuredStatuses])) : configuredStatuses;
+    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions, applicantData, duplicateFingerprint, status: initialStatus, submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
     transaction.create(openRef, { applicationId, userId: uid, serviceSlug, createdAt: FieldValue.serverTimestamp() });
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(service.name ?? serviceSlug)} limepokelewa`, body: "Maombi yako yametumwa kikamilifu na yanasubiri kukaguliwa.", type: "serviceApplication", applicationId, createdAt: FieldValue.serverTimestamp() });
-    return { applicationId, status: "PENDING", balanceAfter, reference: ledgerRef?.id ?? applicationId, duplicate: false };
+    return { applicationId, status: initialStatus, balanceAfter, reference: ledgerRef?.id ?? applicationId, duplicate: false };
   });
   if (result.duplicate) await Promise.all(finalPaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
   await Promise.all(sourcePaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
@@ -1361,7 +1379,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
     const requiresTillPayment = isTillApplication && ["AIRTEL", "VODACOM"].includes(tillNetwork);
     if (status === "PAYMENT_CONFIRMED") {
       if (!requiresTillPayment) throw new ApiError("failed-precondition", "Uthibitishaji huu wa malipo unatumika kwa Till za Airtel na Vodacom pekee.");
-      if (from !== "PENDING" || String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() === "PAID") throw new ApiError("failed-precondition", "Ombi hili halisubiri uthibitisho wa malipo.");
+      if (!["PENDING", "AWAITING_PAYMENT"].includes(from) || String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() === "PAID") throw new ApiError("failed-precondition", "Ombi hili halisubiri uthibitisho wa malipo.");
       const now = FieldValue.serverTimestamp();
       transaction.update(ref, { applicantData: { ...applicantData, paymentStatus: "PAID", paymentConfirmedAt: now, paymentConfirmedBy: uid }, paymentConfirmedAt: now, paymentConfirmedBy: uid, updatedAt: now });
       transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: "Malipo ya ombi la Till yamethibitishwa", body: "Malipo yako yamethibitishwa na Admin. Ombi lako sasa linasubiri kuanza kushughulikiwa. Utaona hali ya PENDING, PROCESSING, REJECTED au APPROVED kadri linavyoendelea.", type: "serviceApplicationPaymentConfirmed", applicationId, createdAt: now });
