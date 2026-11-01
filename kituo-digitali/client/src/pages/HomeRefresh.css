@@ -506,13 +506,13 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 
 /* Strong contrast for account identity and verified tick */
 .wallet-fashion-account {
-  background: linear-gradient(125deg, #102a50 0%, #173c70 58%, #164e63 100%) !important;
-  border: 1px solid rgba(147, 197, 253, .42) !important;
-  box-shadow: 0 10px 24px rgba(15, 39, 75, .18);
+  background: #ffffff !important;
+  border: 1px solid #dbe4ef !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .08);
 }
-.wallet-fashion-account .wallet-fashion-account-copy small { color: #b8d8ff !important; }
-.wallet-fashion-account .wallet-fashion-account-copy .token-account-name { color: #ffffff !important; }
-.wallet-fashion-account .wallet-fashion-phone { color: #d8eaff !important; font-size: 12px !important; font-weight: 650; letter-spacing: .025em; }
+.wallet-fashion-account .wallet-fashion-account-copy small { color: #64748b !important; }
+.wallet-fashion-account .wallet-fashion-account-copy .token-account-name { color: #172033 !important; }
+.wallet-fashion-account .wallet-fashion-phone { color: #475569 !important; font-size: 12px !important; font-weight: 700; letter-spacing: .025em; }
 .wallet-fashion-account .verified-tick,
 .sidebar-user .verified-tick {
   display: inline-grid;
@@ -923,3 +923,14 @@ html body{background:var(--ss-paper);color:var(--ss-ink);font-family:Inter,ui-sa
  .token-network-logo{width:38px!important;height:30px!important}
  .token-network-logo img{max-width:36px!important;max-height:27px!important}
 }
+
+/* Token-balance tick states: 0 = black, 1-9 = blue, 10+ = green */
+.verified-tick--black,
+.wallet-fashion-account .verified-tick--black,
+.sidebar-user .verified-tick--black { background:#111827 !important; border-color:#e5e7eb !important; color:#fff !important; box-shadow:0 0 0 2px rgba(17,24,39,.12) !important; }
+.verified-tick--blue,
+.wallet-fashion-account .verified-tick--blue,
+.sidebar-user .verified-tick--blue { background:#1685ff !important; border-color:#dbeafe !important; color:#fff !important; box-shadow:0 0 0 2px rgba(22,133,255,.16) !important; }
+.verified-tick--green,
+.wallet-fashion-account .verified-tick--green,
+.sidebar-user .verified-tick--green { background:#16a34a !important; border-color:#dcfce7 !important; color:#fff !important; box-shadow:0 0 0 2px rgba(22,163,74,.16) !important; }
