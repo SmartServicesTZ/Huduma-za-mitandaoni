@@ -55,11 +55,6 @@ const callableRoutes: Record<string, CallableRoute> = {
   resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateLipaApplication, syncAuthClaims, updateUserAccess, updateLipaRewardTracking, verifyUser,
 };
-const webhook: HttpRoute = fimipayWebhook;
-function paymentFlowsEnabled(env: Env) {
-  return String(env.PAYMENT_FLOWS_ENABLED ?? "").trim().toLowerCase() === "true"; // Keep payments OFF by default; enable only after live credentials/webhook verification.
-}
-
 function allowedOrigins(env: Env) {
   return new Set((env.ALLOWED_ORIGINS ?? "https://smartservicestz.github.io,https://steward-tz.github.io")
     .split(",").map((origin) => origin.trim()).filter(Boolean));
