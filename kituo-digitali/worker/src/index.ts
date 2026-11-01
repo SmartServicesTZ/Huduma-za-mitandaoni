@@ -14,9 +14,7 @@ import {
   updateServiceApplication,
   updateLipaApplication,
   createLipaDocumentUploadUrl,
-  createTokenPurchaseOrder,
   ensureDefaultServiceCatalog,
-  fimipayWebhook,
   generateBusinessLicense,
   getLipaApplicationDocument,
   getServiceApplicationDocument,
@@ -40,7 +38,7 @@ import {
   verifyUser,
   enforceAccountRestriction,
 } from "./handlers.js";
-import { ApiError, ApiHttpResponse, type CallableRoute, type HttpRoute } from "./api-adapter.js";
+import { ApiError, ApiHttpResponse, type CallableRoute } from "./api-adapter.js";
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 import { getStorage, uploadStorageObject } from "./storage-rest.js";
 import { getFirestore } from "./firestore-rest.js";
@@ -50,7 +48,7 @@ interface Env extends WorkerEnv {}
 
 const callableRoutes: Record<string, CallableRoute> = {
   adminDelete, adminWrite, adjustTokens, claimDailyTokenBonus, changeOwnPassword, claimRegistrationPhone, completeBusinessLicense, consumeTokens,
-  createPocketWifiOrder, createServiceApplication, updateServiceApplication, createLipaDocumentUploadUrl, createTokenPurchaseOrder, ensureDefaultServiceCatalog,
+  createPocketWifiOrder, createServiceApplication, updateServiceApplication, createLipaDocumentUploadUrl, ensureDefaultServiceCatalog,
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   listAdminUsers, listServiceApplications, replyToLipaApplication, replyToServiceApplication,
   listLipaApplications, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
@@ -74,7 +72,7 @@ function corsHeaders(request: Request, env: Env): Headers | null {
   if (!allowedOrigins(env).has(origin)) return null;
   headers.set("Access-Control-Allow-Origin", origin);
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-FIMIPAY-SIGNATURE");
+  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
   headers.set("Access-Control-Max-Age", "600");
   return headers;
 }
@@ -136,23 +134,6 @@ async function handleCallable(request: Request, name: string, cors: Headers, env
     }
     return jsonResponse({ error: { code: "internal", message: "Ombi halijakamilika kwa sasa. Jaribu tena baadaye." } }, 500, cors);
   }
-}
-
-async function handleWebhook(request: Request, cors: Headers) {
-  if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
-  const contentLength = Number(request.headers.get("Content-Length") ?? 0);
-  if (Number.isFinite(contentLength) && contentLength > 65536) return jsonResponse({ error: { code: "invalid-argument", message: "Webhook imezidi ukubwa unaoruhusiwa." } }, 413, cors);
-  const body = new Uint8Array(await request.arrayBuffer());
-  if (body.byteLength === 0 || body.byteLength > 65536) return jsonResponse({ error: { code: "invalid-argument", message: "Webhook haikubaliki." } }, 400, cors);
-  const incoming = request.clone();
-  const compatRequest = {
-    method: incoming.method,
-    rawBody: Buffer.from(body),
-    get: (headerName: string) => incoming.headers.get(headerName) ?? undefined,
-  };
-  const response = new ApiHttpResponse();
-  await webhook.handler(compatRequest, response);
-  return response.toResponse(cors);
 }
 
 async function handleLipaDocumentUpload(request: Request, cors: Headers, env: Env) {
@@ -464,22 +445,9 @@ const worker = {
         return jsonResponse({ error: { code: "internal", message: "Picha haikupatikana kwa sasa." } }, 500, cors);
       }));
     }
-    if (url.pathname === "/webhooks/fimipay") {
-      if (!paymentFlowsEnabled(env)) {
-        return jsonResponse({ error: { code: "unavailable", message: "Malipo yamesitishwa kwa muda." } }, 503, cors);
-      }
-      return withWorkerEnv(env, () => handleWebhook(request, cors).catch((error) => {
-        const code = error instanceof Error ? error.name : "unknown";
-        console.error("Worker webhook failed", { code });
-        return jsonResponse({ error: { code: "internal", message: "Webhook haijakamilika." } }, 500, cors);
-      }));
-    }
     if (url.pathname === "/turn/credentials") return jsonResponse({ error: { code: "unavailable", message: "Simu za sauti/video zimezimwa kwa muda." } }, 503, cors);
     const match = /^\/call\/([A-Za-z][A-Za-z0-9]*)$/.exec(url.pathname);
     if (match) {
-      if (match[1] === "createTokenPurchaseOrder" && !paymentFlowsEnabled(env)) {
-        return jsonResponse({ error: { code: "unavailable", message: "Ununuzi wa tokeni umesitishwa kwa muda." } }, 503, cors);
-      }
       return withWorkerEnv(env, () => handleCallable(request, match[1], cors, env).catch((error) => {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
         const code = error instanceof Error ? error.name : "unknown";
