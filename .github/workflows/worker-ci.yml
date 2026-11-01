@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -55,6 +57,9 @@ jobs:
         if: ${{ hashFiles('kituo-digitali/worker/scripts/d1-poc-schema-contract.py') != '' }}
         run: pnpm --dir worker d1:poc:schema-contract
 
+      - name: Check patch whitespace
+        run: git diff --check origin/main...HEAD
+
       - name: Worker tests
         run: pnpm --dir worker test
 
@@ -65,9 +70,11 @@ jobs:
         run: pnpm --dir worker build
 
       - name: Initialize isolated local D1 PoC schema
+        if: ${{ hashFiles('kituo-digitali/worker/wrangler.poc.toml') != '' }}
         run: pnpm --dir worker d1:poc:migrate:local
 
       - name: Verify local synthetic fixtures
+        if: ${{ hashFiles('kituo-digitali/worker/wrangler.poc.toml') != '' }}
         run: pnpm --dir worker d1:poc:verify:local
 
       - name: Rehearse local D1 backup and restore
