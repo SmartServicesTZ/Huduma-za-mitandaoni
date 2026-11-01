@@ -1241,7 +1241,7 @@ export const createServiceApplication = callable(async (request) => {
     const duplicate = existingServiceApplications.docs.find((document) => {
       const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
-      if (status !== "PENDING" && status !== "PROCESSING") return false;
+      if (status !== "PENDING" && status !== "PROCESSING" && status !== "AWAITING_PAYMENT") return false;
       const previousFingerprint = typeof previous.duplicateFingerprint === "string"
         ? previous.duplicateFingerprint
         : applicationDuplicateFingerprint(`service:${serviceSlug}`, recordValues(previous.applicantData));
