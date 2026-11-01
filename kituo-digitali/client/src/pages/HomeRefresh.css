@@ -937,3 +937,17 @@ html body{background:var(--ss-paper);color:var(--ss-ink);font-family:Inter,ui-sa
 
 
 /* Account identity is shown in the wallet account row beside its blue tick, not in the top bar. */
+
+/* Compact token purchase panel: clearer pricing and less scrolling */
+.token-choice-card{width:min(100%,460px)!important;max-height:min(82vh,700px)!important;padding:16px!important;border-radius:18px!important;gap:10px!important}
+.token-choice-head{margin-bottom:10px!important}
+.token-choice-head h3{font-size:19px!important}
+.token-choice-intro{padding:10px!important}
+.token-choice-secure{gap:9px!important;margin-top:10px!important;padding:11px!important;border-radius:13px!important}
+.token-choice-secure__top small{font-size:10px!important}
+.token-choice-secure__note{padding:8px 9px!important;font-size:9px!important}
+.token-choice-networks{padding-top:9px!important}
+.token-network{padding:7px 5px!important;gap:4px!important}
+.token-choice-help{margin:6px 0!important}
+.token-minimum-note{margin:8px 0 0!important;padding:9px 10px!important;border-radius:10px!important;background:#fff7ed!important;border:1px solid #fed7aa!important;color:#9a3412!important;font-size:11px!important;line-height:1.45!important}
+@media(max-width:620px){.token-choice-card{max-height:86dvh!important;padding:13px!important;border-radius:16px!important}.token-choice-head h3{font-size:17px!important}}
