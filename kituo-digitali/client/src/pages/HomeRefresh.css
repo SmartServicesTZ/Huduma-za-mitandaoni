@@ -845,3 +845,6 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 .special-group-disclosure .special-group-choice-heading { padding: 12px 8px 18px; }
 .special-group-link { display: flex; width: 100%; text-decoration: none; color: inherit; }
 .special-group-disclosure .special-group-back { margin-top: 14px; }
+
+/* FimiPay checkout replaces the retired manual Lipa-number panel. */
+.token-choice-payto{display:none!important}
