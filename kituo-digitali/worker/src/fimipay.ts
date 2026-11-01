@@ -75,7 +75,9 @@ export async function createFimipayOrder(request: Request) {
   const profile = userSnapshot.data()!;
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") return json({ error: { message: "Akaunti hairuhusiwi kufanya malipo." } }, 403);
   const amount = (tokens / 3) * 500;
+  const testMode = getSecret("FIMIPAY_SECRET_KEY").startsWith("sk_test_");
   const result = await provider("/payment/create_order", {
+    ...(testMode ? { test_outcome: "success" } : {}),
     buyer_phone: digits(phone),
     buyer_name: String(profile.name ?? [profile.firstName, profile.lastName].filter(Boolean).join(" ") ?? "Mteja").slice(0, 100),
     amount,
@@ -84,11 +86,11 @@ export async function createFimipayOrder(request: Request) {
   });
   const data = (result.data && typeof result.data === "object" ? result.data : result) as Record<string, unknown>;
   const orderId = String(data.order_id ?? "").trim();
-  if (!orderId || orderId.length > 180) throw new Error("FimiPay did not return a valid order_id.");
+  if (!/^[A-Za-z0-9_-]{4,180}$/.test(orderId)) throw new Error("FimiPay did not return a valid order_id.");
   await db.collection("fimipayOrders").doc(orderId).create({
     orderId, userId: auth.uid, buyerPhone: phone, tokens, amount, currency: "TZS",
     paymentStatus: statusValue(data.payment_status) || "PENDING",
-    environment: getSecret("FIMIPAY_SECRET_KEY").startsWith("sk_test_") ? "TEST" : "LIVE",
+    environment: testMode ? "TEST" : "LIVE",
     settled: false, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
   });
   return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", simulated: data.simulated === true } });
