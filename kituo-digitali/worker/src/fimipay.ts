@@ -319,7 +319,7 @@ export async function createTillPaymentOrder(request: Request) {
   if (!profileSnapshot.exists) throw new ApiError("not-found", "Akaunti haikupatikana.");
   const profile = profileSnapshot.data()!;
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hairuhusiwi kufanya malipo.");
-  const phone = normalizeTanzaniaPhone(String(body?.phone ?? profile.phone ?? ""));
+  const phone = normalizeTanzaniaPhone(String(body?.phone || profile.phone || ""));
   if (!phone) throw new ApiError("invalid-argument", "Namba ya simu ya malipo si sahihi.");
   const credentials = fimipaySecret();
   if (credentials.environment !== "LIVE") throw new ApiError("failed-precondition", "Malipo ya Till yanahitaji FimiPay LIVE key; hakuna malipo ya TEST yatakayokubaliwa.");
