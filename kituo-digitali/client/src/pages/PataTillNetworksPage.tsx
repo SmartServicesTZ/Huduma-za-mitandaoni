@@ -160,7 +160,7 @@ export default function PataTillNetworksPage() {
         <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{display:"grid",placeItems:"center",width:42,height:42,borderRadius:"50%",background:"#16a34a",color:"#fff"}}><CheckCircle2 size={24}/></span><div><strong style={{fontSize:17}}>TAARIFA ZIMEWASILISHWA</strong><p style={{margin:"4px 0 0",fontSize:13}}>Ombi lako limepokelewa kikamilifu.</p></div></div>
         <p style={{margin:0,fontSize:13}}>Namba ya kumbukumbu: <strong>{reference}</strong>. Unaweza kufuatilia hali yake kwenye sehemu ya Maombi yangu hapa chini.</p>
         <p style={{margin:0,fontSize:13}}>Ombi litasubiri uthibitisho wa malipo na hatua za Admin kama zilivyoelekezwa.</p>
-        {network !== "HALOTEL" && submittedPaymentApplication
+        {network !== "HALOTEL" && submittedPaymentApplication && String(submittedPaymentApplication.applicantData?.paymentStatus).toUpperCase() !== "PAID"
           ? <button type="button" onClick={() => { setPaymentApplication(submittedPaymentApplication); setPaymentOrderId(""); setPaymentStatusMessage(""); }} style={{border:0,borderRadius:10,padding:"13px 18px",fontWeight:900,color:"#fff",background:activeTheme.gradient,cursor:"pointer",minHeight:48}}>FANYA MALIPO</button>
           : <button type="button" onClick={resetForm} style={{border:0,borderRadius:10,padding:"13px 18px",fontWeight:900,color:"#fff",background:activeTheme.gradient,cursor:"pointer",minHeight:48}}>TUMA OMBI JINGINE</button>}
       </div> : <form onSubmit={submit} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,260px),1fr))",gap:17}}>
@@ -226,6 +226,7 @@ export default function PataTillNetworksPage() {
           if (result.paid) {
             setPaymentStatusMessage("Malipo yamethibitishwa. Ombi lako sasa linasubiri hatua za Admin.");
             toast.success("Malipo yamethibitishwa; ombi limewekwa PENDING.");
+            setSubmittedPaymentApplication((current) => current ? { ...current, status: "PENDING", applicantData: { ...current.applicantData, paymentStatus: "PAID", paymentOrderId } } : current);
             setPaymentApplication(null);
           } else setPaymentStatusMessage("Hali ya malipo: " + String(result.payment_status || "PENDING") + ". Ikiwa umekamilisha malipo, subiri kidogo kisha hakiki tena.");
         } catch (error) {
