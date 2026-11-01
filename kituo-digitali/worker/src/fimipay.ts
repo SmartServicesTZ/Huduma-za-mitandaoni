@@ -21,7 +21,7 @@ function json(body: unknown, status = 200) {
 }
 function digits(value: string) { return value.replace(/\D/g, ""); }
 function statusValue(value: unknown) { return String(value ?? "").trim().toUpperCase(); }
-function isPaid(value: unknown) { return ["COMPLETED", "SUCCESS"].includes(statusValue(value)); }
+function isPaid(value: unknown) { return ["COMPLETED", "COMPLETE", "SUCCESS"].includes(statusValue(value)); }
 
 function fimipaySecret() {
   const secret = getSecret("FIMIPAY_SECRET_KEY");
