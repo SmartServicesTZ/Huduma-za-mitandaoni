@@ -1144,7 +1144,7 @@ export const createPocketWifiOrder = callable(async (request) => {
     const duplicate = previousOrders.docs.find((document) => {
       const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
-      if (status !== "PENDING" && status !== "PROCESSING") return false;
+      if (status !== "PENDING" && status !== "PROCESSING" && status !== "AWAITING_PAYMENT") return false;
       const previousValues = recordValues(previous.applicantData);
       const previousFingerprint = typeof previous.duplicateFingerprint === "string"
         ? previous.duplicateFingerprint
