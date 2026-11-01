@@ -2019,26 +2019,36 @@ export const completeBusinessLicense = callable(async (request) => {
     if (application.status === "COMPLETED") return { reference: String(application.reference ?? ledgerRef.id), duplicate: true };
     if (application.status !== "PROCESSING") throw new ApiError("failed-precondition", "Ombi hili haliwezi kukamilishwa kwa sasa.");
     if (await serviceIsLocked(transaction, "leseni-biashara")) throw new ApiError("failed-precondition", "Huduma ya Leseni ya Biashara imefungwa kwa sasa.");
+    // The Admin Dashboard service catalog is the single source of truth for
+    // the charge. Never keep a second, hard-coded token price in this handler.
+    const serviceConfigSnapshot = await transaction.get(db.collection("services").where("slug", "==", "leseni-biashara").limit(1));
+    const serviceConfig = serviceConfigSnapshot.docs[0]?.data();
+    const configuredTokenCost = Number(serviceConfig?.tokenCost);
+    if (!serviceConfig || !Number.isSafeInteger(configuredTokenCost) || configuredTokenCost < 0 || configuredTokenCost > 100000) {
+      throw new ApiError("failed-precondition", "Gharama ya Leseni ya Biashara haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
+    }
+    const tokenCost = serviceConfig.isFree === true && configuredTokenCost === 0 ? 0 : configuredTokenCost;
     const profile = userSnapshot.data() as Profile | undefined;
     if (!profile || profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii imezuiwa.");
     if (profile.verificationStatus !== "approved") throw new ApiError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
 
     if (priorLedger.exists) {
       const prior = priorLedger.data()!;
-      if (prior.userId !== uid || Number(prior.amount) !== -2 || prior.applicationId !== application.applicationId) throw new ApiError("already-exists", "Rejea hii ya tokeni tayari imetumika.");
+      const priorCost = Math.abs(Number(prior.amount));
+      if (prior.userId !== uid || !Number.isSafeInteger(priorCost) || priorCost < 0 || prior.applicationId !== application.applicationId) throw new ApiError("already-exists", "Rejea hii ya tokeni tayari imetumika.");
       transaction.update(applicationRef, { status: "COMPLETED", documentGenerated: true, reference: ledgerRef.id, updatedAt: FieldValue.serverTimestamp() });
-      if (!usageSnapshot.exists) transaction.create(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId: application.applicationId, tokensUsed: 2, balanceBefore: prior.balanceBefore, balanceAfter: prior.balanceAfter, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: FieldValue.serverTimestamp(), reference: ledgerRef.id });
+      if (!usageSnapshot.exists) transaction.create(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId: application.applicationId, tokensUsed: priorCost, balanceBefore: prior.balanceBefore, balanceAfter: prior.balanceAfter, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: FieldValue.serverTimestamp(), reference: ledgerRef.id });
       return { reference: ledgerRef.id, duplicate: true };
     }
 
     const before = profile.tokenBalanceOther === undefined ? Number(profile.tokenBalance ?? 0) : Number(profile.tokenBalanceOther);
-    if (!Number.isSafeInteger(before) || before < 2) throw new ApiError("failed-precondition", "Huna tokeni za huduma za kutosha kupakua hati hii. Unahitaji tokeni 2.");
-    const after = before - 2;
+    if (!Number.isSafeInteger(before) || before < tokenCost) throw new ApiError("failed-precondition", `Huna tokeni za huduma za kutosha kupakua hati hii. Unahitaji tokeni ${tokenCost}.`);
+    const after = before - tokenCost;
     transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "huduma", type: "service_usage", amount: -2, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
-    transaction.create(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId: application.applicationId, tokensUsed: 2, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: FieldValue.serverTimestamp(), reference: ledgerRef.id });
+    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "huduma", type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
+    transaction.create(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId: application.applicationId, tokensUsed: tokenCost, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: FieldValue.serverTimestamp(), reference: ledgerRef.id });
     transaction.update(applicationRef, { status: "COMPLETED", documentGenerated: true, reference: ledgerRef.id, updatedAt: FieldValue.serverTimestamp() });
-    recordAudit(transaction, uid, String(profile.role ?? "user"), "GENERATE_BUSINESS_LICENSE_PDF", "licenseApplication", String(application.applicationId), { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: 2, reference: ledgerRef.id });
+    recordAudit(transaction, uid, String(profile.role ?? "user"), "GENERATE_BUSINESS_LICENSE_PDF", "licenseApplication", String(application.applicationId), { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: tokenCost, reference: ledgerRef.id });
     return { reference: ledgerRef.id, duplicate: false };
   });
   const completed = await applicationRef.get();
