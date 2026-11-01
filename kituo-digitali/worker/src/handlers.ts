@@ -741,7 +741,7 @@ export const submitLipaApplication = callable(async (request) => {
     const duplicate = previousLipaApplications.docs.find((document) => {
       const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
-      if (status !== "PENDING" && status !== "PROCESSING") return false;
+      if (status !== "PENDING" && status !== "PROCESSING" && status !== "AWAITING_PAYMENT") return false;
       if (/airtel/i.test(networkId)) {
         const previousData = recordValues(previous.applicantData);
         return normalizeLipaPhone(previousData.phone ?? previous.phone) === normalizeLipaPhone(applicantData.phone);
@@ -1257,10 +1257,12 @@ export const createServiceApplication = callable(async (request) => {
       ledgerRef = db.collection("tokenTransactions").doc(applicationId);
       transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
     }
-    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, duplicateFingerprint, status: "PENDING", submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
+    const awaitingTillPayment = serviceSlug === "pata-till-mitandao-yote" && ["AIRTEL", "VODACOM"].includes(String(applicantData.network ?? "").toUpperCase());
+    const initialStatus = awaitingTillPayment ? "AWAITING_PAYMENT" : "PENDING";
+    transaction.create(applicationRef, { applicationId, userId: uid, userName: String(user.name ?? ""), serviceSlug, serviceName: String(service.name ?? serviceSlug), serviceFields: fields, statusOptions: Array.isArray(service.statusOptions) ? service.statusOptions : ["AWAITING_PAYMENT", "PENDING", "PROCESSING", "APPROVED", "REJECTED"], applicantData, duplicateFingerprint, status: initialStatus, submittedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp(), ...(balanceAfter !== null ? { balanceAfter } : {}) });
     transaction.create(openRef, { applicationId, userId: uid, serviceSlug, createdAt: FieldValue.serverTimestamp() });
     transaction.set(db.collection("messages").doc(), { recipientId: uid, subject: `Ombi la ${String(service.name ?? serviceSlug)} limepokelewa`, body: "Maombi yako yametumwa kikamilifu na yanasubiri kukaguliwa.", type: "serviceApplication", applicationId, createdAt: FieldValue.serverTimestamp() });
-    return { applicationId, status: "PENDING", balanceAfter, reference: ledgerRef?.id ?? applicationId, duplicate: false };
+    return { applicationId, status: initialStatus, balanceAfter, reference: ledgerRef?.id ?? applicationId, duplicate: false };
   });
   if (result.duplicate) await Promise.all(finalPaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
   await Promise.all(sourcePaths.map((file) => bucket.file(file).delete().catch(() => undefined)));
