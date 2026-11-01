@@ -4,6 +4,8 @@ import { createHmac } from "node:crypto";
 import {
   fimipayTerminalStatus,
   isConfirmedLivePayment,
+  fimipayCredentialMode,
+  shouldCreditTokenPurchase,
   isFimipaySuccessEvent,
   tokenCreditsForAmount,
   verifyFimipayWebhookSignature,
@@ -85,4 +87,19 @@ test("LIVE provider validation requires exact order, amount, currency and reject
     { status: "PENDING" }, { simulated: true }, { environment: "test" },
   ]) assert.equal(isConfirmedLivePayment({ ...good, ...patch }, "fp_1", 500), false);
   assert.equal(isConfirmedLivePayment(undefined, "fp_1", 500), false);
+});
+
+test("production rejects test credentials and test credentials require explicit test environment", () => {
+  assert.equal(fimipayCredentialMode("sk_live_example", "production"), "LIVE");
+  assert.equal(fimipayCredentialMode("sk_test_example", "production"), null);
+  assert.equal(fimipayCredentialMode("sk_test_example", "test"), "TEST");
+  assert.equal(fimipayCredentialMode("invalid", "test"), null);
+});
+
+test("settlement is idempotent: existing matching ledger never credits balance again", () => {
+  assert.equal(shouldCreditTokenPurchase({ orderStatus: "PENDING", settled: false, ledgerExists: false, ledgerMatches: false }), "CREDIT");
+  assert.equal(shouldCreditTokenPurchase({ orderStatus: "PAID", settled: true, ledgerExists: true, ledgerMatches: true }), "DUPLICATE");
+  assert.equal(shouldCreditTokenPurchase({ orderStatus: "PENDING", settled: false, ledgerExists: true, ledgerMatches: true }), "DUPLICATE");
+  assert.equal(shouldCreditTokenPurchase({ orderStatus: "PENDING", settled: false, ledgerExists: true, ledgerMatches: false }), "REVIEW");
+  assert.equal(shouldCreditTokenPurchase({ orderStatus: "PAID", settled: true, ledgerExists: false, ledgerMatches: false }), "REVIEW");
 });
