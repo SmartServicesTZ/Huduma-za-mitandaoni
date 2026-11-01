@@ -350,7 +350,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       <div className="token-choice-card">
         <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Nunua tokeni za huduma</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
         <div className="token-choice-fields">
-          <label><strong>Idadi ya tokeni za huduma</strong><span>Tokeni 3 = TZS 500 • Tokeni 6 = TZS 1,000</span><input aria-label="Idadi ya tokeni za huduma" type="number" min="0" step="3" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
+          <label><strong>Idadi ya tokeni za huduma</strong><span>Tokeni 3 = TZS 500 • Tokeni 6 = TZS 1,000</span><input aria-label="Idadi ya tokeni za huduma" type="number" min="3" max="3000" step="3" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
         <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Bei: tokeni 3 = TZS 500, tokeni 6 = TZS 1,000; kila tokeni 3 za ziada ni TZS 500.</small></div>
         <label className="token-choice-phone"><strong>Namba ya simu ya kulipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
