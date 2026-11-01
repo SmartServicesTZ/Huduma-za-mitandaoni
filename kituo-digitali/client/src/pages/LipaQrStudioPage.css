@@ -898,3 +898,38 @@
 .lq-network-logo img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;border-radius:inherit}
 .lq-network-logo--voda,.lq-network-logo--yas,.lq-network-logo--airtel,.lq-network-logo--halotel{padding:5px;background:#fff}
 .lq-network-logo--yas{background:#fff}
+
+
+/* Brand-accurate network identity: use the supplied original logo image files. */
+.lq-card-header { position:relative; z-index:2; }
+.lq-tips-logo-image { display:block; width:34%; max-width:145px; max-height:58px; object-fit:contain; object-position:left center; }
+.lq-network-brand { display:flex; align-items:center; justify-content:flex-end; width:38%; min-width:0; height:100%; }
+.lq-network-brand img { display:block; width:100%; max-width:150px; max-height:58px; object-fit:contain; object-position:right center; }
+.lq-network-watermark { position:absolute; z-index:0; width:66%; height:43%; top:34%; left:17%; object-fit:contain; opacity:.105; filter:grayscale(1); pointer-events:none; }
+.lq-card-red, .lq-yas-body, .lq-airtel-body { position:relative; z-index:1; }
+.lq-card-red--voda { background-color:#e31837; background-image:linear-gradient(145deg,#ed1b3b 0%,#c90027 58%,#9f001e 100%); }
+.lq-card-red--yas { background-color:#123e87; background-image:linear-gradient(145deg,#1764b5 0%,#12458d 58%,#092b62 100%); }
+.lq-card-red--airtel { background-color:#ed1c2e; background-image:linear-gradient(145deg,#f22a3b 0%,#d70c27 58%,#a9001b 100%); }
+.lq-card-red--halotel { background-color:#f58220; background-image:linear-gradient(145deg,#ffad36 0%,#f58220 54%,#d85a0a 100%); }
+.lq-card-red--halotel .lq-merchant-number { border-bottom-color:#f58220; }
+.lq-card-red--halotel .lq-pay-banner { color:#d85a0a; }
+.lq-card-red--yas .lq-merchant-number { border-bottom-color:#1764b5; }
+.lq-card-red--yas .lq-pay-banner { color:#12458d; }
+.lq-card-red--airtel .lq-merchant-number { border-bottom-color:#ed1c2e; }
+.lq-yas-body { isolation:isolate; }
+.lq-airtel-body { isolation:isolate; }
+.lq-airtel-footer { position:relative; z-index:1; }
+.lq-network-logos { display:flex; align-items:center; justify-content:center; gap:3%; width:100%; }
+.lq-network-logos > img { display:block; width:16%; height:35px; max-height:35px; object-fit:contain; }
+.lq-network-logos > img:nth-child(2) { width:14%; }
+.lq-bank-mark { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:#303944; font-size:clamp(6px,1.7cqw,10px); font-weight:900; line-height:1; }
+.lq-bank-mark svg { width:23px; height:23px; }
+.lq-yas-body { background:#123e87; color:#fff; }
+.lq-yas-body .lq-yas-footer { background:#f9d323; }
+.lq-yas-body .lq-yas-yellow-shape { color:#123e87; }
+.lq-airtel-body { background:#ed1c2e; color:#fff; }
+@media (max-width:700px) {
+  .lq-network-brand img { max-width:112px; max-height:44px; }
+  .lq-tips-logo-image { max-width:112px; max-height:44px; }
+  .lq-network-logos > img { height:28px; max-height:28px; }
+}
