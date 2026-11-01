@@ -97,3 +97,21 @@ export function isConfirmedLivePayment(
     && order?.simulated !== true
     && String(order?.environment ?? "").toLowerCase() !== "test";
 }
+
+export function fimipayCredentialMode(secret: unknown, environment: unknown): "LIVE" | "TEST" | null {
+  if (typeof secret !== "string") return null;
+  if (secret.startsWith("sk_live_")) return "LIVE";
+  if (secret.startsWith("sk_test_") && String(environment ?? "").trim().toLowerCase() === "test") return "TEST";
+  return null;
+}
+
+export function shouldCreditTokenPurchase(input: {
+  orderStatus: unknown;
+  settled: unknown;
+  ledgerExists: boolean;
+  ledgerMatches: boolean;
+}): "CREDIT" | "DUPLICATE" | "REVIEW" {
+  if (input.ledgerExists) return input.ledgerMatches ? "DUPLICATE" : "REVIEW";
+  if (String(input.orderStatus ?? "").toUpperCase() === "PAID" || input.settled === true) return "REVIEW";
+  return "CREDIT";
+}
