@@ -288,14 +288,13 @@ export default function AgentIdPage() {
     event.target.value = "";
   };
 
-  const downloadCards = async () => {
+  const downloadCards = async (side: "front" | "back") => {
     const selected = orientation === "landscape"
       ? { size: LAND, label: "mlalo", front: landFrontRef.current, back: landBackRef.current }
       : { size: PORT, label: "wima", front: portFrontRef.current, back: portBackRef.current };
-    const jobs: { el: HTMLElement; size: { w: number; h: number }; filename: string }[] = [];
-    if (selected.front) jobs.push({ el: selected.front, size: selected.size, filename: `kitambulisho-${selected.label}-mbele.png` });
-    if (selected.back) jobs.push({ el: selected.back, size: selected.size, filename: `kitambulisho-${selected.label}-nyuma.png` });
-    if (jobs.length !== 2) { window.alert("Picha za mbele na nyuma bado hazijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+    const source = side === "front" ? selected.front : selected.back;
+    if (!source) { window.alert("Upande wa kitambulisho bado haujajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+    const job = { el: source, size: selected.size, filename: `kitambulisho-${selected.label}-${side === "front" ? "mbele" : "nyuma"}.png` };
     if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
     if (!photo.trim() || !name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim() || !issueDate.trim() || !type.trim()) {
       window.alert("Jaza taarifa zote na pakia picha ya wakala kabla ya kupakua kitambulisho.");
@@ -331,13 +330,12 @@ export default function AgentIdPage() {
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
         toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}.`);
       }
-      // Hifadhi kila upande kama PNG yake tofauti: mbele na nyuma.
-      const blobs = await Promise.all(jobs.map((job) => exportCard(job.el, job.size, job.filename)));
-      for (let index = 0; index < blobs.length; index++) {
-        await downloadBlobAndWait(blobs[index], jobs[index].filename, "PNG");
-      }
-      setDownloadedSides(["front", "back"]);
-      toast.success("Kitambulisho kimepakuliwa: picha mbili tofauti (mbele na nyuma).");
+      // Pakua upande uliochaguliwa kama PNG tofauti; hakuna downloads mbili
+      // zinazoshindana ndani ya click moja ya simu.
+      const blob = await exportCard(job.el, job.size, job.filename);
+      await downloadBlobAndWait(blob, job.filename, "PNG");
+      setDownloadedSides((current) => current.includes(side) ? current : [...current, side]);
+      toast.success(side === "front" ? "Picha ya mbele imepakuliwa." : "Picha ya nyuma imepakuliwa.");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
     } finally { setBusy(false); }
@@ -367,7 +365,8 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua picha mbili tofauti: mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "DOWNLOAD"}</b><small>(Mbele &amp; Nyuma)</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} onClick={() => void downloadCards("front")}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "PAKUA MBELE"}</b><small>{downloadedSides.includes("front") ? "Imepakuliwa" : "PNG tofauti"}</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} onClick={() => void downloadCards("back")}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "PAKUA NYUMA"}</b><small>{downloadedSides.includes("back") ? "Imepakuliwa" : "PNG tofauti"}</small></span></button>
         </div>
         <div className="aid-note"><b>NOTES</b><p>Baada ya kupakua kitambulisho, usiende kukichapisha mpaka kisainiwe na kiongozi wako.</p></div>
       </section>
