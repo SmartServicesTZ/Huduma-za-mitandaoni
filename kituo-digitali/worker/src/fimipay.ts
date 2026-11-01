@@ -310,11 +310,12 @@ export async function createTillPaymentOrder(request: Request) {
   const amount = network === "AIRTEL" ? 5000 : network === "VODACOM" ? 40000 : 0;
   if (!amount) throw new ApiError("failed-precondition", "Mtandao huu hauna malipo ya Till kupitia mfumo huu.");
   if (statusValue(applicant.paymentStatus) === "PAID" || String(application.status) !== "AWAITING_PAYMENT") throw new ApiError("failed-precondition", "Ombi hili halisubiri malipo.");
-  const existing = await db.collection("servicePaymentOrders").where("applicationId", "==", applicationId).where("userId", "==", auth.uid).where("status", "==", "PENDING").limit(1).get();
-  if (!existing.empty) {
-    const saved = existing.docs[0]!;
-    return json({ data: { order_id: saved.id, payment_status: "PENDING", amount, currency: "TZS", reused: true } });
-  }
+  const existing = await db.collection("servicePaymentOrders").where("applicationId", "==", applicationId).limit(20).get();
+  const reusable = existing.docs.find((document) => {
+    const saved = document.data()!;
+    return String(saved.userId ?? "") === auth.uid && statusValue(saved.status) === "PENDING" && String(saved.environment ?? "").toUpperCase() === "LIVE";
+  });
+  if (reusable) return json({ data: { order_id: reusable.id, payment_status: "PENDING", amount, currency: "TZS", reused: true } });
   const profileSnapshot = await db.collection("users").doc(auth.uid).get();
   if (!profileSnapshot.exists) throw new ApiError("not-found", "Akaunti haikupatikana.");
   const profile = profileSnapshot.data()!;
