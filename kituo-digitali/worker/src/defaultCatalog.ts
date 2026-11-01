@@ -113,9 +113,11 @@ const accessFields = {
   ] as ServiceFormField[],
   vodacom: [
     { fieldName: "network", label: "Mtandao", type: "TEXT", required: true, order: 0 },
-    { fieldName: "fullName", label: "Majina 3", type: "TEXT", required: true, order: 1 },
-    { fieldName: "email", label: "Email", type: "TEXT", required: true, order: 2 },
-    { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 3 },
+    { fieldName: "phone", label: "Namba ya simu", type: "PHONE", required: true, order: 1 },
+    { fieldName: "fullName", label: "Majina 3", type: "TEXT", required: true, order: 2 },
+    { fieldName: "email", label: "E-mail", type: "TEXT", required: true, order: 3 },
+    { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 4 },
+    { fieldName: "contact", label: "Namba ya mawasiliano", type: "PHONE", required: true, order: 5 },
   ] as ServiceFormField[],
   halotel: [
     { fieldName: "network", label: "Mtandao", type: "TEXT", required: true, order: 0 },
