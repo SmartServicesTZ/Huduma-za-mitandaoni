@@ -121,7 +121,7 @@ async function settle(orderId: string, providerOrder: Record<string, unknown>, t
     const userSnapshot = await tx.get(userRef);
     if (!userId || !userSnapshot.exists) return markReviewInTransaction("Original customer account is missing");
 
-    const verifyLedger = (data: Record<string, unknown> | undefined) => Boolean(data)
+    const verifyLedger = (data: Record<string, unknown> | undefined) => data !== undefined
       && String(data.userId ?? "") === userId
       && Number(data.amount) === tokens
       && (String(data.reference ?? "") === orderId || String(data.providerOrderId ?? "") === orderId);
