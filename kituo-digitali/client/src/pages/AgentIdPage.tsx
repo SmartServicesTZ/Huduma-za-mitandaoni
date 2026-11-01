@@ -433,7 +433,10 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
         <div><small>REGION</small><b><Words text={region} fallback="—" /></b></div>
         <div><small>AREA</small><b><Words text={`${district || "—"} / ${area || "—"}`} /></b></div>
         <div className="wide"><small>COMPANY</small><b><Words text={COMPANY_LABELS[network]} /></b></div>
-        <div className="wide"><small>CONTRACTED BY</small><b><Words text={contractedBy} fallback="—" /></b></div>
+      </div>
+      <div className="idl-contracted-line" style={{display:"flex",alignItems:"baseline",gap:8,marginTop:8,padding:"6px 9px",borderLeft:"3px solid var(--c)",borderRadius:"0 7px 7px 0",background:"var(--accent)",minWidth:0}}>
+        <small style={{flex:"0 0 auto",fontSize:8,fontWeight:900,letterSpacing:".08em",color:"var(--d)"}}>CONTRACTED BY</small>
+        <b style={{minWidth:0,fontSize:11,fontWeight:900,lineHeight:1.2,color:"#0f172a",overflowWrap:"anywhere"}}><Words text={contractedBy} fallback="—" /></b>
       </div>
       <div className="idl-bar">
         <div className="idl-valid"><small><Words text="VALID UNTIL" /></small><b><Words text={fmt(expiry(issueDate))} /></b></div>
