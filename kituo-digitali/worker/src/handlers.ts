@@ -530,7 +530,9 @@ export const setServiceLock = callable(async (request) => {
     const existing = await transaction.get(ref);
     const directService = await transaction.get(serviceRef);
     const aliasSnapshots = await Promise.all(aliases.map((alias) => transaction.get(db.collection("services").doc(alias))));
-    const matchingServices = await transaction.get(db.collection("services").where("slug", "in", aliases).limit(10));
+    // The REST Firestore adapter supports equality filters only. Query each legacy slug separately.
+    const matchingServicePages = await Promise.all(aliases.map((alias) => transaction.get(db.collection("services").where("slug", "==", alias).limit(10))));
+    const matchingServices = [...new Map(matchingServicePages.flatMap((page) => page.docs).map((snapshot) => [snapshot.ref.path, snapshot])).values()];
     const before = existing.exists
       ? existing.data()?.isLocked === true
       : (directService.exists ? directService.data()?.isLocked === true : aliasSnapshots.some((snapshot) => snapshot.exists && snapshot.data()?.isLocked === true) || defaultLockedServiceSlugs.has(slug));
@@ -545,7 +547,7 @@ export const setServiceLock = callable(async (request) => {
         touched.add(snapshot.ref.path);
       }
     });
-    matchingServices.docs.forEach((snapshot) => {
+    matchingServices.forEach((snapshot) => {
       if (!touched.has(snapshot.ref.path)) {
         transaction.set(snapshot.ref, { isLocked: after, updatedAt: now }, { merge: true });
         touched.add(snapshot.ref.path);
