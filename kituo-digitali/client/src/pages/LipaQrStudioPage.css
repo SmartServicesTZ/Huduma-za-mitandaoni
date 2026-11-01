@@ -939,3 +939,9 @@
 .lq-yas-footer { align-items:center; justify-content:flex-end; padding:2% 7% 2% 0; background:#ffdf00; }
 .lq-yas-official-footer-logo { display:block; width:43%; max-height:86%; object-fit:contain; }
 .lq-yas-yellow-shape { display:none !important; }
+
+
+/* Keep original brand watermark visible over the network-colored panel but below QR/text. */
+.lq-card-red, .lq-yas-body, .lq-airtel-body { isolation:isolate; }
+.lq-network-watermark { position:absolute; z-index:0; width:64%; height:42%; top:34%; left:18%; object-fit:contain; opacity:.13; filter:grayscale(1); pointer-events:none; }
+.lq-card-red > :not(.lq-network-watermark), .lq-yas-body > :not(.lq-network-watermark), .lq-airtel-body > :not(.lq-network-watermark) { position:relative; z-index:1; }
