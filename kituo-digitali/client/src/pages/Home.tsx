@@ -893,7 +893,7 @@ function BottomNav() {
   const [location] = useLocation();
   const items = [
     { href: "/", label: "Mwanzo", icon: LayoutGrid },
-    { href: "/services", label: "Huduma", icon: Zap },
+    { href: "/tokens", label: "Tokeni", icon: CircleDollarSign },
     { href: "/my-applications", label: "Maombi", icon: FileBadge },
     { href: "/account", label: "Akaunti", icon: UserRound },
   ];
