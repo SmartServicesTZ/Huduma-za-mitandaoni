@@ -936,9 +936,4 @@ html body{background:var(--ss-paper);color:var(--ss-ink);font-family:Inter,ui-sa
 .sidebar-user .verified-tick--green { background:#16a34a !important; border-color:#dcfce7 !important; color:#fff !important; box-shadow:0 0 0 2px rgba(22,163,74,.16) !important; }
 
 
-/* Account identity in the top bar: show the account name clearly above its phone number. */
-.portal-shell .header-user--profile{display:inline-flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:2px!important;min-width:110px!important;max-width:min(34vw,220px)!important;padding:7px 12px!important;border:1px solid #b9d7ee!important;border-radius:13px!important;background:linear-gradient(135deg,#eaf5ff,#f4f0ff)!important;color:#10243a!important;box-shadow:0 4px 13px rgba(15,73,120,.10)!important;white-space:normal!important;line-height:1.15!important}
-.portal-shell .header-user--profile strong{display:block!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#123b67!important;font-size:13px!important;font-weight:900!important;letter-spacing:.01em}
-.portal-shell .header-user--profile small{display:block!important;color:#536b83!important;font-size:10px!important;font-weight:750!important;letter-spacing:.03em}
-.portal-shell .header-user--profile .verified-tick{position:absolute;right:7px;top:7px}
-@media(max-width:560px){.portal-shell .header-user--profile{max-width:34vw!important;min-width:86px!important;padding:6px 22px 6px 8px!important;border-radius:11px!important}.portal-shell .header-user--profile strong{font-size:11px!important}.portal-shell .header-user--profile small{font-size:9px!important}}
+/* Account identity is shown in the wallet account row beside its blue tick, not in the top bar. */
