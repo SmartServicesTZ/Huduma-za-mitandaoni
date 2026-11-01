@@ -294,6 +294,119 @@ export async function checkFimipayOrder(request: Request) {
   return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : "NEEDS_REVIEW", paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter } });
 }
 
+ 
+export async function createTillPaymentOrder(request: Request) {
+  const auth = await verifyOwner(request);
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const applicationId = String(body?.application_id ?? "").trim();
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(applicationId)) throw new ApiError("invalid-argument", "Namba ya ombi si sahihi.");
+  const applicationRef = db.collection("serviceApplications").doc(applicationId);
+  const applicationSnapshot = await applicationRef.get();
+  if (!applicationSnapshot.exists) throw new ApiError("not-found", "Ombi la Till halikupatikana.");
+  const application = applicationSnapshot.data()!;
+  if (String(application.userId ?? "") !== auth.uid || String(application.serviceSlug ?? "") !== "pata-till-mitandao-yote") throw new ApiError("permission-denied", "Huna ruhusa ya kulipia ombi hili.");
+  const applicant = application.applicantData && typeof application.applicantData === "object" ? application.applicantData as Record<string, unknown> : {};
+  const network = statusValue(applicant.network);
+  const amount = network === "AIRTEL" ? 5000 : network === "VODACOM" ? 40000 : 0;
+  if (!amount) throw new ApiError("failed-precondition", "Mtandao huu hauna malipo ya Till kupitia mfumo huu.");
+  if (statusValue(applicant.paymentStatus) === "PAID" || String(application.status) !== "AWAITING_PAYMENT") throw new ApiError("failed-precondition", "Ombi hili halisubiri malipo.");
+  const existing = await db.collection("servicePaymentOrders").where("applicationId", "==", applicationId).where("userId", "==", auth.uid).where("status", "==", "PENDING").limit(1).get();
+  if (!existing.empty) {
+    const saved = existing.docs[0]!;
+    return json({ data: { order_id: saved.id, payment_status: "PENDING", amount, currency: "TZS", reused: true } });
+  }
+  const profileSnapshot = await db.collection("users").doc(auth.uid).get();
+  if (!profileSnapshot.exists) throw new ApiError("not-found", "Akaunti haikupatikana.");
+  const profile = profileSnapshot.data()!;
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hairuhusiwi kufanya malipo.");
+  const phone = normalizeTanzaniaPhone(String(body?.phone ?? profile.phone ?? ""));
+  if (!phone) throw new ApiError("invalid-argument", "Namba ya simu ya malipo si sahihi.");
+  const credentials = fimipaySecret();
+  const result = await provider("/payment/create_order", {
+    buyer_phone: digits(phone),
+    buyer_name: String(profile.name ?? [profile.firstName, profile.lastName].filter(Boolean).join(" ") ?? "Mteja").slice(0, 100),
+    amount, currency: "TZS", payment_method: "mobile",
+  });
+  const data = (result.result.data && typeof result.result.data === "object" ? result.result.data : result.result) as Record<string, unknown>;
+  const orderId = String(data.order_id ?? "").trim();
+  if (!/^[A-Za-z0-9_-]{4,180}$/.test(orderId)) throw new Error("FimiPay did not return a valid order_id.");
+  await db.collection("servicePaymentOrders").doc(orderId).create({
+    orderId, userId: auth.uid, applicationId, serviceSlug: "pata-till-mitandao-yote",
+    network, amount, currency: "TZS", buyerPhone: phone,
+    paymentStatus: statusValue(data.payment_status) || "PENDING", status: "PENDING",
+    environment: credentials.environment, simulated: data.simulated === true,
+    createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+  });
+  return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", test_mode: credentials.environment === "TEST", simulated: data.simulated === true } });
+}
+
+async function settleTillPayment(orderId: string, providerOrder: Record<string, unknown>, expectedAmount: number) {
+  const orderRef = db.collection("servicePaymentOrders").doc(orderId);
+  return db.runTransaction(async (tx) => {
+    const orderSnapshot = await tx.get(orderRef);
+    if (!orderSnapshot.exists) throw new ApiError("not-found", "Oda ya malipo haikupatikana.");
+    const order = orderSnapshot.data()!;
+    const appRef = db.collection("serviceApplications").doc(String(order.applicationId ?? ""));
+    const appSnapshot = await tx.get(appRef);
+    if (!appSnapshot.exists) throw new ApiError("not-found", "Ombi la Till halikupatikana.");
+    const application = appSnapshot.data()!;
+    const providerStatus = statusValue(providerOrder.payment_status ?? providerOrder.status);
+    const verified = isConfirmedLivePayment(providerOrder, orderId, expectedAmount)
+      && providerStatus === "COMPLETED";
+    if (!verified || Number(order.amount) !== expectedAmount || String(order.currency).toUpperCase() !== "TZS"
+      || String(order.userId) !== String(application.userId) || String(order.applicationId) !== String(application.applicationId)) {
+      throw new ApiError("failed-precondition", "Uthibitisho wa malipo haujalingana na ombi.");
+    }
+    if (String(order.status) === "COMPLETED" || String(application.applicantData?.paymentStatus).toUpperCase() === "PAID") {
+      return { paid: true, duplicate: true };
+    }
+    const applicant = application.applicantData && typeof application.applicantData === "object"
+      ? application.applicantData as Record<string, unknown> : {};
+    if (String(application.status) !== "AWAITING_PAYMENT" || String(applicant.paymentStatus).toUpperCase() !== "UNPAID") {
+      throw new ApiError("failed-precondition", "Ombi hili haliko kwenye hali ya kusubiri malipo.");
+    }
+    const now = FieldValue.serverTimestamp();
+    tx.set(appRef, {
+      status: "PENDING",
+      applicantData: { ...applicant, paymentStatus: "PAID", paymentOrderId: orderId, paymentTransactionId: String(providerOrder.transid ?? "") },
+      updatedAt: now,
+    }, { merge: true });
+    tx.set(orderRef, { status: "COMPLETED", paymentStatus: "COMPLETED", providerTransactionId: String(providerOrder.transid ?? ""), paidAt: now, updatedAt: now }, { merge: true });
+    tx.create(db.collection("messages").doc(), {
+      recipientId: String(application.userId), subject: "Malipo ya ombi la Till yamethibitishwa",
+      body: "Malipo yako yamethibitishwa. Ombi lako la Till sasa linasubiri hatua za Admin.",
+      type: "serviceApplicationPayment", applicationId: String(application.applicationId), orderId, createdAt: now,
+    });
+    tx.create(db.collection("auditLogs").doc(), {
+      action: "FIMIPAY_TILL_APPLICATION_PAID", actorId: "FIMIPAY", userId: String(application.userId),
+      applicationId: String(application.applicationId), orderId, amount: expectedAmount, currency: "TZS", createdAt: now,
+    });
+    return { paid: true, duplicate: false };
+  });
+}
+
+export async function checkTillPaymentOrder(request: Request) {
+  const auth = await verifyOwner(request);
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const orderId = String(body?.order_id ?? "").trim();
+  if (!orderId || orderId.length > 180) throw new ApiError("invalid-argument", "Oda ya malipo si sahihi.");
+  const orderSnapshot = await db.collection("servicePaymentOrders").doc(orderId).get();
+  if (!orderSnapshot.exists || String(orderSnapshot.data()?.userId ?? "") !== auth.uid) throw new ApiError("not-found", "Oda ya malipo haikupatikana.");
+  const order = orderSnapshot.data()!;
+  if (String(order.environment ?? "").toUpperCase() !== "LIVE") throw new ApiError("failed-precondition", "Oda hii si ya mazingira ya LIVE.");
+  if (String(order.status) === "COMPLETED") return json({ data: { order_id: orderId, payment_status: "COMPLETED", paid: true, duplicate: true } });
+  const expectedAmount = Number(order.amount);
+  const verification = await verifyProviderOrder(orderId, expectedAmount);
+  if (!verification.confirmed) {
+    if (["FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(verification.status)) {
+      await db.collection("servicePaymentOrders").doc(orderId).set({ status: verification.status, paymentStatus: verification.status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
+    return json({ data: { order_id: orderId, payment_status: verification.status, paid: false, duplicate: false } });
+  }
+  const settled = await settleTillPayment(orderId, verification.data, expectedAmount);
+  return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : "PENDING", paid: settled.paid, duplicate: settled.duplicate } });
+}
+
 export async function handleFimipayWebhook(request: Request) {
   const rawBody = new Uint8Array(await request.arrayBuffer());
   if (rawBody.length === 0 || rawBody.length > 65536) return json({ error: "Invalid payload" }, 400);
