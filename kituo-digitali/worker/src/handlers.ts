@@ -673,6 +673,14 @@ export const submitLipaApplication = callable(async (request) => {
   if (!config) throw new ApiError("not-found", "Mtandao huu haujapatikana.");
   if (config.active !== true) throw new ApiError("failed-precondition", "Maombi ya mtandao huu yamefungwa kwa sasa.");
   let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
+  if (/halotel/i.test(networkId)) {
+    fields = [
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", required: true, order: 1 },
+      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
+      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
+      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+    ];
+  }
   if (/yas|tigo/i.test(networkId)) {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
@@ -728,7 +736,7 @@ export const submitLipaApplication = callable(async (request) => {
     const existingApplication = await transaction.get(applicationRef);
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const previousLipaApplications = await transaction.get(db.collection("lipaApplications").where("userId", "==", uid).where("networkId", "==", networkId).limit(100));
-    const duplicate = previousLipaApplications.docs.find((document) => {
+    const duplicate = /airtel/i.test(networkId) ? undefined : previousLipaApplications.docs.find((document) => {
       const previous = document.data() ?? {};
       const status = String(previous.status ?? "PENDING").toUpperCase();
       if (status !== "PENDING" && status !== "PROCESSING") return false;
@@ -775,6 +783,14 @@ export const updateLipaApplication = callable(async (request) => {
   const config = configSnapshot.exists ? configSnapshot.data()! : defaultLipaServices.find((item) => String(item.id) === networkId);
   if (!config) throw new ApiError("not-found", "Mipangilio ya mtandao huu haikupatikana.");
   let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
+  if (/halotel/i.test(networkId)) {
+    fields = [
+      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", required: true, order: 1 },
+      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
+      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
+      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+    ];
+  }
   if (/yas|tigo/i.test(networkId)) {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
