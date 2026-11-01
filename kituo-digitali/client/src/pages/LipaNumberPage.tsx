@@ -87,9 +87,9 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
     name: String(row.name ?? id),
     title: String(row.title ?? `PATA LIPA NAMBA — ${String(row.name ?? id).toUpperCase()}`),
     introduction: String(row.introduction ?? "Jaza taarifa zako kwa usahihi ili ombi lako lichakatwe kwa haraka."),
-    requirements: id === "vodacom" ? "Zawadi ya TSh 5,000: angalau miamala 3 ndani ya mwezi husika; miamala yote lazima iwe ya Vodacom pekee; jumla ya thamani isiwe chini ya TSh 70,000. Miamala ya mitandao mingine haitahesabika." : String(row.requirements ?? "Taarifa sahihi za mwombaji na kitambulisho halali."),
+    requirements: id === "vodacom" ? "Zawadi ya TSh 5,000: angalau miamala 3 ndani ya mwezi husika; miamala yote lazima iwe ya Vodacom pekee; jumla ya thamani isiwe chini ya TSh 70,000. Miamala ya mitandao mingine haitahesabika." : /airtel/i.test(id) ? "Zawadi ya TSh 2,500: Lipa Namba ifanye miamala 5 au zaidi, miamala hiyo ifanyike siku tofauti, na jumla ya TTV iwe TSh 30,000 au zaidi." : String(row.requirements ?? "Taarifa sahihi za mwombaji na kitambulisho halali."),
     paymentInfo: String(row.paymentInfo ?? "Malipo yatafanyika baada ya ombi lako kukamilika."),
-    reward: id === "vodacom" ? 5000 : Number(row.reward ?? 0),
+    reward: id === "vodacom" ? 5000 : /airtel/i.test(id) ? 2500 : Number(row.reward ?? 0),
     active: row.active !== false,
     fields: (() => {
       let fields = safeFields(row.fields);
@@ -174,10 +174,10 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     id: "airtel",
     name: "Airtel",
     title: "AIRTEL — PATA LIPA NAMBA",
-    introduction: "Ndugu Agent, utajipatia sh 500 kwa Lipa Namba itakayotengenezwa hapa.",
-    requirements: "Ifanye miamala jumla isiyopungua sh 10,000.",
+    introduction: "Ndugu Agent, utapata zawadi ya TSh 2,500 ukitimiza vigezo vya miamala vilivyoainishwa hapa.",
+    requirements: "Zawadi ya TSh 2,500: Lipa Namba ifanye miamala 5 au zaidi, miamala hiyo ifanyike siku tofauti, na jumla ya TTV iwe TSh 30,000 au zaidi.",
     paymentInfo: "Malipo hulipwa kwenye namba uliyotumia kufungua account yako.",
-    reward: 500,
+    reward: 2500,
     active: true,
     fields: [
       { fieldName: "phone", label: "Namba ya Simu ya Mwombaji", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Hakikisha namba haijafunguliwa Lipa Namba nyingine.", order: 1 },
