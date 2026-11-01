@@ -94,15 +94,23 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
     fields: (() => {
       let fields = safeFields(row.fields);
       if (/yas|tigo/i.test(id)) {
-        fields = fields.filter((field) => field.fieldName !== "businessLicense");
-        if (!fields.some((field) => field.fieldName === "hasTinNumber")) {
-          const tinOrder = fields.find((field) => field.fieldName === "tinNumber")?.order ?? 3;
-          fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, lazima uandike namba ya TIN.", order: tinOrder - 0.1 });
-        }
-        if (!fields.some((field) => field.fieldName === "tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: false, helpText: "Inahitajika ukichagua Ndiyo kwenye swali la TIN.", order: 3 });
-        fields = fields.map((field) => field.fieldName === "tinNumber" ? { ...field, required: false, label: "Namba ya TIN", placeholder: "123-123-123" } : field.fieldName === "businessLicensePhoto" ? { ...field, required: false } : field);
-        if (!fields.some((field) => field.fieldName === "hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, pakia picha ya leseni.", order: 4 });
-        if (!fields.some((field) => field.fieldName === "businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, helpText: "Inahitajika ukichagua Ndiyo. Picha iwe wazi na isomeke vizuri.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+        // TIN na leseni ni masharti ya lazima; hakuna maswali ya Ndiyo/Hapana.
+        fields = fields.filter((field) => !["businessLicense", "hasTinNumber", "hasBusinessLicense"].includes(field.fieldName));
+        const tinOrder = fields.find((field) => field.fieldName === "tinNumber")?.order ?? 3;
+        const licenseOrder = fields.find((field) => field.fieldName === "businessLicensePhoto")?.order ?? 5;
+        fields = fields.filter((field) => !["tinNumber", "businessLicensePhoto"].includes(field.fieldName));
+        fields.push(
+          { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: true, helpText: "Andika namba za TIN pekee kwa muundo unaoonekana kwenye cheti chako.", order: tinOrder },
+          { fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya leseni yako ya biashara. Hakikisha picha iko wazi na inasomeka.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: licenseOrder },
+        );
+      }
+      if (id === "halotel") {
+        fields = [
+          { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 1 },
+          { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
+          { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
+          { fieldName: "idDocument", label: "Picha ya Kitambulisho kilichopo", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya kitambulisho ulichochagua. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+        ];
       }
       if (id === "vodacom") {
         // Always show three separate name inputs, even if Firestore still has the legacy fullName schema.
@@ -224,7 +232,6 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     fields: [
       { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, order: 1 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
-      { fieldName: "tinNumber", label: "TIN Number", type: "TIN", placeholder: "123-123-123", required: false, order: 3 },
       { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", required: true, options: ["National ID", "Voter ID", "Driving License", "Passport"], order: 4 },
       { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, helpText: "JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
     ],
@@ -447,10 +454,10 @@ export default function LipaNumberPage() {
     if (!firebaseAuth.currentUser) { toast.error("Ingia kwanza ili kuomba Lipa Namba."); return; }
     if (!selectedNetwork) { toast.error("Chagua mtandao wenye huduma iliyo wazi."); return; }
     const isYasNetwork = /yas|tigo/i.test(selectedNetwork.id);
-    const hasConditionalTin = selectedNetwork.id === "vodacom" || isYasNetwork;
+    const hasConditionalTin = selectedNetwork.id === "vodacom";
     const visibleFields = selectedNetwork.fields.filter((field) =>
       (field.fieldName !== "tinNumber" || !hasConditionalTin || values.hasTinNumber === "Ndiyo") &&
-      (field.fieldName !== "businessLicensePhoto" || !isYasNetwork || values.hasBusinessLicense === "Ndiyo")
+      (field.fieldName !== "businessLicensePhoto" || !isYasNetwork || true)
     );
     const nextErrors = validateServiceForm(visibleFields, values);
     for (const fieldName of ["phone", "contactPhone"]) {
@@ -544,8 +551,8 @@ export default function LipaNumberPage() {
 
   const renderField = (field: ServiceFormField) => {
     const value = valueForField(values, field);
-    if (field.fieldName === "tinNumber" && (selectedNetwork?.id === "vodacom" || /yas|tigo/i.test(selectedNetwork?.id ?? "")) && values.hasTinNumber !== "Ndiyo") return null;
-    if (field.fieldName === "businessLicensePhoto" && /yas|tigo/i.test(selectedNetwork?.id ?? "") && values.hasBusinessLicense !== "Ndiyo") return null;
+    if (field.fieldName === "tinNumber" && selectedNetwork?.id === "vodacom" && values.hasTinNumber !== "Ndiyo") return null;
+    
     const inputId = `lipa-${field.fieldName}`;
     const common = { id: inputId, name: field.fieldName, placeholder: field.placeholder, value, required: field.required, "aria-invalid": Boolean(errors[field.fieldName]), "aria-describedby": `${inputId}-help` };
     const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
