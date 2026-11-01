@@ -79,6 +79,12 @@ function jsonResponse(body: unknown, status: number, headers?: HeadersInit) {
   return new Response(JSON.stringify(body), { status, headers: responseHeaders });
 }
 
+function withCors(response: Response, cors: Headers) {
+  const headers = new Headers(response.headers);
+  cors.forEach((value, key) => headers.set(key, value));
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 function statusForError(code: string) {
   const statuses: Record<string, number> = {
     "invalid-argument": 400,
@@ -397,15 +403,17 @@ const worker = {
         return jsonResponse({ error: "Webhook processing failed" }, 500, cors);
       }));
     }
-    if (url.pathname === "/payments/fimipay/create-order" && request.method === "POST") {
-      return withWorkerEnv(env, () => createFimipayOrder(request).catch((error) => {
+    if (url.pathname === "/payments/fimipay/create-order") {
+      if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+      return withWorkerEnv(env, () => createFimipayOrder(request).then((response) => withCors(response, cors)).catch((error) => {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
         console.error("FimiPay create order failed", { code: error instanceof Error ? error.name : "unknown" });
         return jsonResponse({ error: { code: "internal", message: "Ombi la malipo halikufanikiwa. Jaribu tena." } }, 500, cors);
       }));
     }
-    if (url.pathname === "/payments/fimipay/status" && request.method === "POST") {
-      return withWorkerEnv(env, () => checkFimipayOrder(request).catch((error) => {
+    if (url.pathname === "/payments/fimipay/status") {
+      if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+      return withWorkerEnv(env, () => checkFimipayOrder(request).then((response) => withCors(response, cors)).catch((error) => {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
         console.error("FimiPay status check failed", { code: error instanceof Error ? error.name : "unknown" });
         return jsonResponse({ error: { code: "internal", message: "Hali ya malipo haikupatikana. Jaribu tena." } }, 500, cors);

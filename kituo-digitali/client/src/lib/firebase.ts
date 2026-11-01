@@ -121,15 +121,47 @@ async function fimipayRequest<T>(path: string, data: Record<string, unknown>): P
   await authPersistenceReady;
   const user = firebaseAuth.currentUser;
   if (!user) throw new Error("Ingia kwanza.");
-  const token = await user.getIdToken();
-  const response = await fetch(`${workerBaseUrl()}/payments/fimipay/${path}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(data),
-  });
-  const result = await response.json().catch(() => null) as { data?: T; error?: { message?: string } } | null;
-  if (!response.ok || !result?.data) throw new Error(result?.error?.message ?? "Ombi la malipo halikufanikiwa.");
-  return result.data;
+  const url = `${workerBaseUrl()}/payments/fimipay/${path}`;
+  let token = await user.getIdToken();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(data),
+      });
+      const rawBody = await response.text();
+      const result = JSON.parse(rawBody) as { data?: T; error?: { code?: string; message?: string } } | null;
+      console.info("FimiPay API response", { path, status: response.status, uid: user.uid, body: rawBody.slice(0, 500) });
+      if (response.status === 401 && attempt === 0) {
+        token = await user.getIdToken(true);
+        continue;
+      }
+      if (!response.ok || !result?.data) {
+        const code = result?.error?.code ?? (response.status === 401 ? "unauthenticated" : response.status === 0 ? "network" : "api/request-failed");
+        const message = result?.error?.message ?? `Ombi la malipo limeshindikana (HTTP ${response.status}).`;
+        const error = new Error(message);
+        Object.assign(error, { code, status: response.status });
+        throw error;
+      }
+      return result.data;
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      console.warn("FimiPay API request failed", { path, url, uid: user.uid, errorName: error instanceof Error ? error.name : "unknown", errorMessage: detail.slice(0, 300) });
+      if (attempt === 0 && error instanceof TypeError) {
+        const retryToken = await user.getIdToken(true);
+        token = retryToken;
+        continue;
+      }
+      if (error instanceof TypeError) {
+        const networkError = new Error("Mtandao au CORS ya API haikupatikana. Kagua internet, kisha jaribu tena.");
+        Object.assign(networkError, { code: "api/network-or-cors" });
+        throw networkError;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Ombi la malipo halikukamilika. Jaribu tena.");
 }
 export function createFimipayMobileOrder(input: { tokens: number; phone: string }) {
   return fimipayRequest<FimipayPaymentResult>("create-order", input);
