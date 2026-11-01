@@ -1188,11 +1188,25 @@ export const createServiceApplication = callable(async (request) => {
   const isDedicatedSmeForm = ["sme-airtel", "sme-vodacom"].includes(serviceSlug);
   if (!isDedicatedSmeForm && (service.active === false || (!isAccessService && service.isVisible === false))) throw new ApiError("failed-precondition", "Huduma hii haipatikani kwa sasa.");
   if (serviceSlug === "pata-lipa-namba" || serviceSlug === "leseni-biashara") throw new ApiError("failed-precondition", "Tumia fomu maalum ya huduma hii.");
-  const fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
-  const applicantData = cleanApplicationValues(objectValue(data.values, "Fomu"), fields, uid, applicationId, "serviceUploads");
+  let fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
+  const rawValues = objectValue(data.values, "Fomu");
+  const tillNetwork = serviceSlug === "pata-till-mitandao-yote" ? String(rawValues.network ?? "").toUpperCase() : "";
+  if (serviceSlug === "pata-till-mitandao-yote" && tillNetwork === "AIRTEL") {
+    fields = [
+      { fieldName: "airtelPhone", label: "Namba", type: "PHONE", required: true, order: 1 },
+      { fieldName: "nidaNumber", label: "NIDA", type: "NIDA", required: true, order: 2 },
+    ];
+    const phone = String(rawValues.airtelPhone ?? "").replace(/\\D/g, "");
+    const nida = String(rawValues.nidaNumber ?? "").replace(/\\D/g, "");
+    if (!/^0[67]\\d{8}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya Airtel si sahihi.");
+    if (!/^\\d{20}$/.test(nida)) throw new ApiError("invalid-argument", "NIDA lazima iwe na tarakimu 20.");
+  }
+  const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId, "serviceUploads");
   if (serviceSlug === "pata-till-mitandao-yote") {
-    const network = String(applicantData.network ?? "").toUpperCase();
+    const network = tillNetwork;
     if (!["HALOTEL", "AIRTEL", "VODACOM"].includes(network)) throw new ApiError("invalid-argument", "Mtandao wa Till si sahihi.");
+    applicantData.network = network;
+    applicantData.price = network === "AIRTEL" ? "TSh 5,000" : network === "VODACOM" ? "TSh 40,000" : "BURE";
     applicantData.paymentStatus = network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID";
   }
   const finalPaths: string[] = [];
