@@ -83,7 +83,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <img src={`${import.meta.env.BASE_URL}${network === "voda" ? "lipa-assets/mpesa-header-reference.png" : network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} />
       </div>
     </header>
-    <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />
+    <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />
     {isYas ? <section className="lq-yas-body">
       <h2>Lipa kwa kuscan</h2>
       <div className="lq-yas-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya TIPS" /> : <span>QR CODE</span>}</div>
