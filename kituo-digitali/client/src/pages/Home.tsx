@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders, createTillFimipayOrder, checkTillFimipayOrder } from "@/lib/firebase";
 import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -630,6 +630,10 @@ function MyApplicationsPage() {
   const { firebaseUser, user: accountUser } = useAuth();
   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
   const [paymentApplication, setPaymentApplication] = useState<any | null>(null);
+  const [paymentPhone, setPaymentPhone] = useState(String(accountUser?.phone ?? ""));
+  const [paymentOrderId, setPaymentOrderId] = useState("");
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [paymentStatusMessage, setPaymentStatusMessage] = useState("");
   const [serviceApplications, setServiceApplications] = useState<any[]>([]);
   const [lipaApplications, setLipaApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -740,7 +744,71 @@ function MyApplicationsPage() {
         </div>}
       <p style={{fontSize:12,color:"#64748b",marginTop:16}}>Ikiwa hali bado ni “LINASUBIRI” au “LINAFANYIWA KAZI”, hutahitaji kutuma ombi lilelile tena. Fungua ombi hili kufuatilia rejea yake au wasiliana na support.</p>
     </section>}
-    <>{paymentApplication && <div role="presentation" onClick={() => setPaymentApplication(null)} style={{position:"fixed",inset:0,zIndex:10010,display:"grid",placeItems:"center",padding:14,background:"rgba(2,6,23,.76)"}}><section role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()} style={{width:"min(100%,480px)",padding:22,borderRadius:18,background:"#fff",color:"#0f172a"}}><button type="button" onClick={() => setPaymentApplication(null)}>Funga ×</button><h2>LIPA KWA AZAM PESA</h2><h3>{String(paymentApplication.raw?.applicantData?.network ?? "").toUpperCase()==="AIRTEL" ? "TSh 5,000" : "TSh 40,000"}</h3><p>Lipa Namba: <strong>29126823</strong></p><p>Jina la akaunti: <strong>Steward Tz</strong></p><p>Fanya malipo kwa Azam Pesa, kisha bonyeza hapa chini kuthibitisha kupitia WhatsApp.</p><button type="button" onClick={() => { const d=paymentApplication.raw?.applicantData ?? {}; const n=String(d.network ?? "").toUpperCase(); const m=["Habari Admin, nimelipia PATA TILL MITANDAO YOTE.","Jina: "+String(accountUser?.name ?? "—"),"Simu: "+String(accountUser?.phone ?? firebaseUser?.phoneNumber ?? "—"),"Mtandao: "+n,"Jina la mteja: "+String(d.fullName ?? "—"),"Namba ya Till: "+String(d.tillPhone ?? d.airtelPhone ?? "—"),"Kiasi: "+(n==="AIRTEL"?"TSh 5,000":"TSh 40,000"),"Azam Pesa Lipa Namba: 29126823","Akaunti: Steward Tz","Rejea: "+String(paymentApplication.reference ?? paymentApplication.id)].join("\n"); window.open("https://wa.me/255698232313?text="+encodeURIComponent(m),"_blank","noopener,noreferrer"); }} style={{width:"100%",padding:14,border:0,borderRadius:10,background:"#16a34a",color:"#fff",fontWeight:900}}>TAYARI NIMELIPIA – THIBITISHA</button><small>Admin atahakiki malipo kabla ombi halijaanza kushughulikiwa.</small></section></div>}</>
+    {paymentApplication && (() => {
+      const data = paymentApplication.raw?.applicantData ?? {};
+      const networkName = String(data.network ?? "").toUpperCase();
+      const amount = networkName === "AIRTEL" ? "TSh 5,000" : "TSh 40,000";
+      const startPayment = async () => {
+        if (!/^\\+?\\d[\\d ()-]{7,18}$/.test(paymentPhone.trim())) {
+          setPaymentStatusMessage("Weka namba sahihi ya simu ya kulipia.");
+          toast.error("Weka namba sahihi ya simu ya kulipia.");
+          return;
+        }
+        setPaymentBusy(true);
+        setPaymentStatusMessage("");
+        try {
+          const order = await createTillFimipayOrder({ application_id: paymentApplication.id, phone: paymentPhone.trim() });
+          setPaymentOrderId(order.order_id);
+          setPaymentStatusMessage("Ombi la malipo limetumwa kwenye simu. Kamilisha maelekezo ya malipo kisha gusa Hakiki malipo.");
+          toast.success("Oda ya malipo imeanzishwa.");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Imeshindikana kuanzisha malipo.";
+          setPaymentStatusMessage(message);
+          toast.error(message);
+        } finally { setPaymentBusy(false); }
+      };
+      const verifyPayment = async () => {
+        if (!paymentOrderId) return;
+        setPaymentBusy(true);
+        try {
+          const result = await checkTillFimipayOrder(paymentOrderId);
+          if (result.paid) {
+            setPaymentStatusMessage("Malipo yamethibitishwa. Ombi lako sasa linasubiri hatua za Admin.");
+            toast.success("Malipo yamethibitishwa; ombi limewekwa PENDING.");
+            setPaymentApplication(null);
+          } else {
+            setPaymentStatusMessage("Hali ya malipo: " + String(result.payment_status || "PENDING") + ". Ikiwa umekamilisha malipo, subiri kidogo kisha hakiki tena.");
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Imeshindikana kuhakiki malipo.";
+          setPaymentStatusMessage(message);
+          toast.error(message);
+        } finally { setPaymentBusy(false); }
+      };
+      return <div role="dialog" aria-modal="true" aria-label="Malipo ya mfumo mpya" style={{position:"fixed",inset:0,zIndex:10010,background:"rgba(15,23,42,.72)",display:"grid",placeItems:"center",padding:14}}>
+        <section style={{width:"min(100%,480px)",maxHeight:"90vh",overflowY:"auto",padding:22,borderRadius:18,background:"#fff",color:"#172033",boxShadow:"0 20px 60px rgba(0,0,0,.25)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+            <h2 style={{margin:0,fontSize:21}}>FANYA MALIPO</h2>
+            <button type="button" onClick={() => setPaymentApplication(null)} aria-label="Funga" style={{border:0,background:"#f1f5f9",borderRadius:9,padding:"7px 12px",fontSize:20,cursor:"pointer"}}>×</button>
+          </div>
+          <p style={{color:"#64748b",fontSize:14,lineHeight:1.6}}>Lipa kupitia mfumo salama wa malipo. Hakuna Lipa Namba ya Azam Pesa au uthibitisho wa WhatsApp unaohitajika.</p>
+          <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:13,padding:16,display:"grid",gap:9}}>
+            <div><small style={{color:"#64748b"}}>MTANDAO</small><div style={{fontSize:18,fontWeight:900}}>{networkName}</div></div>
+            <div><small style={{color:"#64748b"}}>KIASI CHA KULIPA</small><div style={{fontSize:22,fontWeight:900,color:"#15803d"}}>{amount}</div></div>
+            <label style={{display:"grid",gap:7,color:"#475569",fontSize:13,fontWeight:750}}>Namba ya simu ya kulipia
+              <input type="tel" inputMode="tel" autoComplete="tel" value={paymentPhone} onChange={e=>setPaymentPhone(e.target.value)} placeholder="Mfano 0712345678" maxLength={16} style={{width:"100%",boxSizing:"border-box",padding:"13px 14px",border:"1px solid #cbd5e1",borderRadius:10,fontSize:16,color:"#172033",background:"#fff"}}/>
+              <small style={{fontWeight:500,color:"#64748b"}}>Unaweza kubadilisha namba hii kabla ya kuanzisha malipo.</small>
+            </label>
+            {paymentOrderId && <div><small style={{color:"#64748b"}}>Namba ya oda ya malipo</small><div style={{fontSize:13,fontWeight:800,overflowWrap:"anywhere"}}>{paymentOrderId}</div></div>}
+          </div>
+          {paymentStatusMessage && <p role="status" style={{fontSize:13,lineHeight:1.6,color:"#334155",background:"#eff6ff",padding:12,borderRadius:10,marginTop:12}}>{paymentStatusMessage}</p>}
+          {!paymentOrderId
+            ? <button type="button" disabled={paymentBusy} onClick={startPayment} style={{width:"100%",marginTop:16,border:0,borderRadius:11,padding:15,background:"#15803d",color:"#fff",fontSize:15,fontWeight:900,cursor:paymentBusy?"wait":"pointer"}}>{paymentBusy?"INAANZISHA...":"ANZA MALIPO KWA SIMU"}</button>
+            : <button type="button" disabled={paymentBusy} onClick={verifyPayment} style={{width:"100%",marginTop:16,border:0,borderRadius:11,padding:15,background:"#15803d",color:"#fff",fontSize:15,fontWeight:900,cursor:paymentBusy?"wait":"pointer"}}>{paymentBusy?"INAHakIKI...":"HAKIKI MALIPO"}</button>}
+          <p style={{fontSize:12,color:"#64748b",lineHeight:1.5,marginBottom:0}}>Ombi lako litawekwa kwenye hatua inayofuata baada tu ya mfumo kuthibitisha malipo halisi.</p>
+        </section>
+      </div>;
+    })()}
     {selectedApplication && <div role="presentation" onClick={() => setSelectedApplication(null)} style={{position:"fixed",inset:0,zIndex:10000,display:"grid",placeItems:"center",padding:14,background:"rgba(2,6,23,.72)",backdropFilter:"blur(5px)"}}>
       <section role="dialog" aria-modal="true" aria-labelledby="my-application-detail-title" onClick={(event) => event.stopPropagation()} style={{width:"min(100%,680px)",maxHeight:"88dvh",overflowY:"auto",padding:20,borderRadius:18,background:"#fff",color:"#0f172a",boxShadow:"0 24px 70px rgba(0,0,0,.3)"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
