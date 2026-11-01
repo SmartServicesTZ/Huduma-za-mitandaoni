@@ -334,7 +334,8 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     try {
       const result = await checkFimipayMobileOrder(fimipayOrderId);
       setFimipayStatus(result.payment_status);
-      if (result.paid) toast.success("Malipo yamethibitishwa; tokeni zimeongezwa.");
+      if (result.paid && result.test_mode) toast.info("Jaribio la TEST limefanikiwa. Salio halisi la tokeni halijabadilishwa.");
+      else if (result.paid) toast.success("Malipo yamethibitishwa; tokeni zimeongezwa.");
       else toast.info("Malipo bado hayajathibitishwa. Subiri kidogo kisha kagua tena.");
     } catch (error) { toast.error(error instanceof Error ? error.message : "Hali ya malipo haikupatikana."); }
     finally { setFimipayBusy(false); }
