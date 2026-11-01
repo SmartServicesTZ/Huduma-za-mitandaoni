@@ -65,9 +65,11 @@ jobs:
         run: pnpm --dir worker build
 
       - name: Initialize isolated local D1 PoC schema
+        if: ${{ hashFiles('kituo-digitali/worker/wrangler.poc.toml') != '' }}
         run: pnpm --dir worker d1:poc:migrate:local
 
       - name: Verify local synthetic fixtures
+        if: ${{ hashFiles('kituo-digitali/worker/wrangler.poc.toml') != '' }}
         run: pnpm --dir worker d1:poc:verify:local
 
       - name: Rehearse local D1 backup and restore
