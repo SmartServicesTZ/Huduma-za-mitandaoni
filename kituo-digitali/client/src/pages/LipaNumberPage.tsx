@@ -157,8 +157,10 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
       }
       fields = fields.map((field) => field.type === "IMAGE_UPLOAD" && field.fieldName === identityFieldName ? {
         ...field,
-        label: "Picha ya utambulisho wa mwombaji",
-        helpText: "TAARIFA MUHIMU: Pakia PICHA MOJA TU ya utambulisho wa mwombaji. Chagua mojawapo: (1) Picha ya Passport Size, AU (2) Kitambulisho cha NIDA, AU (3) Kitambulisho cha Mpiga Kura. HAKUNA haja ya kupakia vyote. Hii SIYO TIN Certificate wala cheti cha biashara. Hakikisha picha inasomeka vizuri. JPG, PNG au WebP; hadi MB 5.",
+        label: id === "halotel" ? "Picha ya Kitambulisho kilichopo" : "Picha ya utambulisho wa mwombaji",
+        helpText: id === "halotel"
+          ? "PAKIA PICHA YA KITAMBULISHO ULICHOCHAGUA HAPO JUU (National ID, Voter ID, Driving License au Passport). Picha ionyeshe taarifa zote vizuri na isomeke. JPG, PNG au WebP; hadi MB 5."
+          : "TAARIFA MUHIMU: Pakia PICHA MOJA TU ya utambulisho wa mwombaji. Chagua mojawapo: (1) Picha ya Passport Size, AU (2) Kitambulisho cha NIDA, AU (3) Kitambulisho cha Mpiga Kura. HAKUNA haja ya kupakia vyote. Hii SIYO TIN Certificate wala cheti cha biashara. Hakikisha picha inasomeka vizuri. JPG, PNG au WebP; hadi MB 5.",
         maxSizeMb: Math.min(Number(field.maxSizeMb ?? 5), 5),
         accept: ["image/jpeg", "image/png", "image/webp"],
       } : field);
@@ -214,10 +216,8 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
     fields: [
       { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", placeholder: "07XXXXXXXX", required: true, helpText: "Weka namba ya simu ya usajili/mawasiliano, tarakimu 10 (mfano 0712345678).", order: 1 },
       { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", placeholder: "20068517-27520-00001-22", required: true, order: 2 },
-      { fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, lazima uandike namba ya TIN.", order: 2.8 },
-      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: false, helpText: "Inahitajika ukichagua Ndiyo kwenye swali la TIN.", order: 3 },
-      { fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Ukichagua Ndiyo, pakia picha ya leseni.", order: 4 },
-      { fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, helpText: "Inahitajika ukichagua Ndiyo. Picha iwe wazi na isomeke vizuri.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
+      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: true, helpText: "Andika namba za TIN pekee. TIN ni sharti la lazima.", order: 3 },
+      { fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya leseni yako ya biashara. Leseni ni sharti la lazima; hakikisha picha iko wazi na inasomeka.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 },
     ],
   },
   {
@@ -468,8 +468,8 @@ export default function LipaNumberPage() {
     if (hasConditionalTin && values.hasTinNumber === "Ndiyo" && !String(values.tinNumber ?? "").trim()) {
       nextErrors.tinNumber = "Umechagua Ndiyo; tafadhali andika namba yako ya TIN.";
     }
-    if (isYasNetwork && values.hasBusinessLicense === "Ndiyo" && !String(values.businessLicensePhoto ?? "").startsWith("lipaUploads/")) {
-      nextErrors.businessLicensePhoto = "Umechagua Ndiyo; pakia picha ya leseni ya biashara iliyo wazi na inayosomeka.";
+    if (isYasNetwork && !String(values.businessLicensePhoto ?? "").startsWith("lipaUploads/")) {
+      nextErrors.businessLicensePhoto = "Pakia picha ya leseni ya biashara iliyo wazi na inayosomeka.";
     }
     if (selectedNetwork.id === "vodacom" && values.mpesaAccountConfirmed !== "true") nextErrors.mpesaAccountConfirmed = "Thibitisha kuwa laini hii haina akaunti ya M-PESA.";
     if (selectedNetwork.id === "vodacom" && String(values.lipaSequence ?? "1") === "1" && values.firstLipaConfirmed !== "true") nextErrors.firstLipaConfirmed = "Thibitisha kuwa hii ni Lipa ya kwanza katika NIDA hii.";
