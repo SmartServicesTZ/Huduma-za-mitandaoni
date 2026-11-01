@@ -78,7 +78,7 @@ export function isConfirmedLivePayment(
   const status = [order?.payment_status, order?.status].map((value) => String(value ?? "").toUpperCase());
   return Boolean(order)
     && String(order?.order_id ?? "") === orderId
-    && status.some((value) => value === "SUCCESS" || value === "COMPLETED")
+    && status.some((value) => value === "SUCCESS" || value === "COMPLETED" || value === "COMPLETE")
     && Number(order?.amount) === amount
     && String(order?.currency ?? "").toUpperCase() === currency
     && order?.simulated !== true
