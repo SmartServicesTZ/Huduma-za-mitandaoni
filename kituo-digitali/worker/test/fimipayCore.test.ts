@@ -71,12 +71,14 @@ test("success event and provider status markers are recognized without accepting
   assert.equal(fimipayTerminalStatus({ status: "PENDING" }), null);
 });
 
-test("TZS 500 maps to 3 tokens and existing package mappings remain unchanged", () => {
+test("all token top-ups follow the live price of 3 tokens per TZS 500", () => {
   assert.equal(tokenCreditsForAmount(500), 3);
-  assert.equal(tokenCreditsForAmount(2000), 40);
-  assert.equal(tokenCreditsForAmount(5000), 100);
-  assert.equal(tokenCreditsForAmount(10000), 200);
-  assert.equal(tokenCreditsForAmount(1000), null);
+  assert.equal(tokenCreditsForAmount(1000), 6);
+  assert.equal(tokenCreditsForAmount(2000), 12);
+  assert.equal(tokenCreditsForAmount(5000), 30);
+  assert.equal(tokenCreditsForAmount(10000), 60);
+  assert.equal(tokenCreditsForAmount(750), null);
+  assert.equal(tokenCreditsForAmount(0), null);
 });
 
 test("LIVE provider validation requires exact order, amount, currency and rejects simulated/test", () => {
