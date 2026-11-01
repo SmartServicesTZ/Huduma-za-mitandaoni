@@ -458,12 +458,28 @@ function SpecialSection() {
     </section>;
   }
   return <div className="special-grid">{specialServices.map((item) => {
-    const action = (item as unknown as { action?: string }).action;
-    const isWhatsAppGroup = "url" in item && typeof item.url === "string" && item.url.includes("chat.whatsapp.com");
-    const isAppDownload = item.slug === "download-app";
-    return <button key={item.slug} type="button" className={`special-card special-card--${item.tone}`} onClick={() => open(item)}>
-      <div><strong>{item.name}</strong><small>{isAppDownload ? "Pakua SmartServicesTZ App (APK)" : isWhatsAppGroup ? <><MessageCircle size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, color: "#25D366" }} />Fungua WhatsApp</> : "url" in item ? "Fungua huduma" : action === "whatsapp" ? <><MessageCircle size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, color: "#25D366" }} />Fungua WhatsApp</> : item.slug === "kikundi-bure" ? "Chagua Group 1 au Group 2" : "Wasiliana nasi kwa malipo"}</small></div>
-      {item.slug === "kikundi-bure" || isWhatsAppGroup ? <MessageCircle size={20} aria-label="WhatsApp" color="#25D366" /> : isAppDownload ? <Smartphone size={20} aria-label="Download App" /> : <ExternalLink size={18} />}
+    const isWhatsAppGroup = item.slug === "kikundi-bure";
+    const isExternalWhatsApp = "url" in item && typeof item.url === "string" && item.url.includes("chat.whatsapp.com");
+    return <button
+      key={item.slug}
+      type="button"
+      className={`special-card special-card--${item.tone}`}
+      aria-label={item.name}
+      onClick={() => {
+        if (isWhatsAppGroup) {
+          setShowGroupChoices(true);
+          return;
+        }
+        open(item);
+      }}
+    >
+      <div>
+        <strong>{item.name}</strong>
+        <small>{isWhatsAppGroup ? "Chagua GROUP 1 au GROUP 2" : isExternalWhatsApp ? "Fungua WhatsApp" : "Fungua huduma"}</small>
+      </div>
+      {isWhatsAppGroup || isExternalWhatsApp
+        ? <MessageCircle size={20} aria-label="WhatsApp" color="#25D366" />
+        : <ExternalLink size={18} />}
     </button>;
   })}</div>;
 }
