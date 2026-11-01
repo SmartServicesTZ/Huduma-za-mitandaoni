@@ -169,6 +169,11 @@ export function createFimipayMobileOrder(input: { tokens: number; phone: string 
 export function checkFimipayMobileOrder(order_id: string) {
   return fimipayRequest<FimipayPaymentResult>("status", { order_id });
 }
+export type FimipaySavedOrder = { order_id: string; payment_status: string; amount: number; tokens: number; created_at: string };
+export async function listFimipayMobileOrders() {
+  const result = await fimipayRequest<{ orders: FimipaySavedOrder[] }>("orders", {});
+  return result.orders ?? [];
+}
 
 function createWorkerCall<TRequest = unknown, TResponse = unknown>(name: string) {
   return async (data?: TRequest): Promise<{ data: TResponse }> => ({ data: await invokeWorker<TResponse>(name, data ?? {}) });

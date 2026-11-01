@@ -208,6 +208,17 @@ async function verifyOwner(request: Request) {
   return verifyFirebaseIdToken(request, getWorkerEnv().FIREBASE_PROJECT_ID);
 }
 
+export async function listFimipayOrders(request: Request) {
+  const auth = await verifyOwner(request);
+  const snapshot = await db.collection("tokenPurchaseOrders").where("userId", "==", auth.uid).limit(50).get();
+  const orders = snapshot.docs.map((item) => {
+    const order = item.data()!;
+    const createdAt = order.createdAt instanceof Date ? order.createdAt.toISOString() : "";
+    return { order_id: item.id, payment_status: statusValue(order.status ?? order.paymentStatus) || "PENDING", amount: Number(order.amount ?? 0), tokens: Number(order.tokens ?? order.tokenAmount ?? 0), created_at: createdAt };
+  }).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 20);
+  return json({ data: { orders } });
+}
+
 export async function createFimipayOrder(request: Request) {
   const auth = await verifyOwner(request);
   const credentials = fimipaySecret();
