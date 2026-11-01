@@ -749,7 +749,7 @@ function MyApplicationsPage() {
       const networkName = String(data.network ?? "").toUpperCase();
       const amount = networkName === "AIRTEL" ? "TSh 5,000" : "TSh 40,000";
       const startPayment = async () => {
-        if (!/^\\+?\\d[\\d ()-]{7,18}$/.test(paymentPhone.trim())) {
+        if (!/^\+?\d[\d ()-]{7,18}$/.test(paymentPhone.trim())) {
           setPaymentStatusMessage("Weka namba sahihi ya simu ya kulipia.");
           toast.error("Weka namba sahihi ya simu ya kulipia.");
           return;
