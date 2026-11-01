@@ -317,7 +317,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     let checking = false;
     const checkSavedOrder = async () => {
       if (!active || checking) return;
-      if (["PAID", "COMPLETED", "SUCCESS", "FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(fimipayStatus.toUpperCase())) return;
+      if (["PAID", "COMPLETED", "SUCCESS", "FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED", "NEEDS_REVIEW"].includes(fimipayStatus.toUpperCase())) return;
       checking = true;
       try {
         const result = await checkFimipayMobileOrder(fimipayOrderId);
@@ -342,7 +342,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const canProceed = otherCount >= 1 && otherCount <= 3000 && totalAmount >= 200 && paymentPhone.trim().length >= 9;
   const openWhatsAppProof = async () => {
     if (!canProceed || fimipayBusy) return;
-    if (fimipayOrderId && !["PAID", "COMPLETED", "SUCCESS", "FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(fimipayStatus.toUpperCase())) {
+    if (fimipayOrderId && !["PAID", "COMPLETED", "SUCCESS", "FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED", "NEEDS_REVIEW"].includes(fimipayStatus.toUpperCase())) {
       toast.info("Una oda ya malipo inayosubiri. Kagua hali yake kwanza; usianzishe malipo mengine.");
       return;
     }
