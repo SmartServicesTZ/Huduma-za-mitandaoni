@@ -38,7 +38,7 @@ async function settle(orderId: string, status: string, amount: unknown, currency
       tx.set(orderRef, { paymentStatus: "REVIEW", providerStatus: status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       throw new ApiError("failed-precondition", "Kiasi au sarafu ya malipo haijalingana; wasiliana na msaada.");
     }
-    if (order.settled === true) return { paid: true, status: "COMPLETED", duplicate: true, balanceAfter: order.balanceAfter };
+    if (order.settled === true) return { paid: true, status: "COMPLETED", duplicate: true, balanceAfter: Number(order.balanceAfter ?? 0) };
     const userRef = db.collection("users").doc(String(order.userId));
     const userSnapshot = await tx.get(userRef);
     if (!userSnapshot.exists) throw new ApiError("not-found", "Akaunti ya mteja haijapatikana.");
@@ -105,7 +105,7 @@ export async function checkFimipayOrder(request: Request) {
   const data = (result.data && typeof result.data === "object" ? result.data : result) as Record<string, unknown>;
   const status = statusValue(data.payment_status ?? data.status);
   let settled: { paid: boolean; status: string; duplicate: boolean; balanceAfter?: number } = { paid: false, status, duplicate: false };
-  if (isPaid(status)) settled = await settle(orderId, status, data.amount ?? saved.data()?.amount, data.currency ?? "TZS", typeof data.transid === "string" ? data.transid : undefined);
+  if (isPaid(status)) settled = await settle(orderId, status, data.amount, data.currency, typeof data.transid === "string" ? data.transid : undefined);
   else if (status === "FAILED" || status === "CANCELLED") await settle(orderId, status, data.amount ?? saved.data()?.amount, data.currency ?? "TZS");
   return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : status, paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter, simulated: data.simulated === true } });
 }
