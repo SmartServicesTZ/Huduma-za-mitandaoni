@@ -45,6 +45,10 @@ jobs:
         working-directory: kituo-digitali
         run: pnpm install --frozen-lockfile
 
+      - name: Validate Cloudflare Worker
+        working-directory: kituo-digitali
+        run: pnpm worker:check && pnpm worker:test && pnpm worker:build
+
       - name: Build frontend
         working-directory: kituo-digitali
         env:
