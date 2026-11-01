@@ -1,4 +1,4 @@
-import { normalizeTanzaniaPhone } from "./fimipayCore.js";
+import { normalizeTanzaniaPhone } from "../../shared/tanzaniaPhone.js";
 
 export type AuthRole = "user" | "admin" | "moderator" | "support" | "super_admin";
 
