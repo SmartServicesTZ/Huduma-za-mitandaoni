@@ -59,6 +59,22 @@ async function readPurchase(orderId: string) {
   return null;
 }
 
+async function markTerminalStatus(orderId: string, status: string) {
+  const canonicalRef = db.collection("tokenPurchaseOrders").doc(orderId);
+  const legacyRef = db.collection("fimipayOrders").doc(orderId);
+  await db.runTransaction(async (tx) => {
+    const canonical = await tx.get(canonicalRef);
+    const legacy = await tx.get(legacyRef);
+    const now = FieldValue.serverTimestamp();
+    if (canonical.exists && canonical.data()?.status !== "PAID") {
+      tx.set(canonicalRef, { status, paymentStatus: status, updatedAt: now }, { merge: true });
+    }
+    if (legacy.exists && legacy.data()?.settled !== true) {
+      tx.set(legacyRef, { paymentStatus: status, updatedAt: now }, { merge: true });
+    }
+  });
+}
+
 async function markNeedsReview(orderId: string, reason: string) {
   const canonicalRef = db.collection("tokenPurchaseOrders").doc(orderId);
   const legacyRef = db.collection("fimipayOrders").doc(orderId);
@@ -113,7 +129,8 @@ async function settle(orderId: string, providerOrder: Record<string, unknown>, t
 
     if (providerId !== orderId || !isPaid(providerStatus) || providerAmount !== amount || currency !== "TZS"
       || providerOrder.simulated === true || String(providerOrder.environment ?? "").toLowerCase() === "test"
-      || environment === "TEST" || !Number.isSafeInteger(tokens) || tokens < 1 || amount !== (tokens / 3) * 500) {
+      || order.simulated === true || environment !== "LIVE"
+      || !Number.isSafeInteger(tokens) || tokens < 1 || amount !== (tokens / 3) * 500) {
       return markReviewInTransaction("Provider/order amount, currency, environment, status, or token integrity mismatch");
     }
 
@@ -242,7 +259,7 @@ export async function checkFimipayOrder(request: Request) {
   const verification = await verifyProviderOrder(orderId, expectedAmount);
   if (!verification.confirmed) {
     if (["FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(verification.status)) {
-      await markNeedsReview(orderId, `Provider terminal status: ${verification.status}`);
+      await markTerminalStatus(orderId, verification.status);
     }
     return json({ data: { order_id: orderId, payment_status: verification.status, paid: false, duplicate: false } });
   }
@@ -277,7 +294,7 @@ export async function handleFimipayWebhook(request: Request) {
 
   const terminal = fimipayTerminalStatus(payload);
   if (!isFimipaySuccessEvent(payload)) {
-    if (terminal) await markNeedsReview(orderId, `Provider webhook terminal status: ${terminal}`);
+    if (terminal) await markTerminalStatus(orderId, terminal);
     return json({ received: true, pending: !terminal });
   }
   if (String(saved.order.environment ?? "").toUpperCase() !== "LIVE") {
