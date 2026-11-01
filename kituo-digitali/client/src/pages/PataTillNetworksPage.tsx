@@ -10,7 +10,7 @@ import airtelLogo from "../../public/airtel-logo.png";
 import vodacomLogo from "../../public/vodacom-logo.png";
 
 type Network = "HALOTEL" | "AIRTEL" | "VODACOM";
-const price: Record<Network, string> = { HALOTEL: "BURE", AIRTEL: "TSh 5,000", VODACOM: "TSh 40,000" };
+const price: Record<Network, string> = { HALOTEL: "BURE", AIRTEL: "TSh 200", VODACOM: "TSh 200" };
 const priceBadge: Record<Network, { color: string; background: string; border: string }> = {
   HALOTEL: { color: "#166534", background: "#dcfce7", border: "#86efac" },
   AIRTEL: { color: "#1d4ed8", background: "#dbeafe", border: "#93c5fd" },
@@ -18,8 +18,8 @@ const priceBadge: Record<Network, { color: string; background: string; border: s
 };
 const networkDetails: Record<Network, string[]> = {
   HALOTEL: ["Laini ya Halotel iwe na float/salio la angalau TSh 100,000.", "Mteja asiwe na Lipa Namba tayari.", "TIN namba inahitajika.", "Pakia picha ya kitambulisho cha taifa, mpiga kura au leseni ya udereva.", "Asiye na kitambulisho cha taifa aweke namba ya NIDA."],
-  AIRTEL: ["Lazima uwe na laini ya Airtel.", "Namba ya NIDA inahitajika.", "Huduma hii inahitaji malipo ya TSh 5,000 kabla ya kukamilishwa.", "Baada ya kutuma ombi, wasiliana na Admin kwa OTP."],
-  VODACOM: ["Usisajili laini kabla ya kupata maelekezo.", "Mteja awe na namba ya NIDA.", "Hakikisha una scanner au Famoco yenye scanner.", "Malipo ya TSh 40,000 yafanyike kwanza; kisha utapewa user ya kuwasha Till.", "Taarifa nyingine zitakamilishwa na Admin."],
+  AIRTEL: ["Lazima uwe na laini ya Airtel.", "Namba ya NIDA inahitajika.", "Huduma hii inahitaji malipo ya majaribio ya TSh 200 kabla ya kukamilishwa.", "Baada ya kutuma ombi, wasiliana na Admin kwa OTP."],
+  VODACOM: ["Usisajili laini kabla ya kupata maelekezo.", "Mteja awe na namba ya NIDA.", "Hakikisha una scanner au Famoco yenye scanner.", "Malipo ya majaribio ya TSh 200 yafanyike kwanza; kisha utapewa user ya kuwasha Till.", "Taarifa nyingine zitakamilishwa na Admin."],
 };
 const logos: Record<Network, string> = { HALOTEL: halotelLogo, AIRTEL: airtelLogo, VODACOM: vodacomLogo };
 const themes: Record<Network, { accent: string; soft: string; border: string; text: string; gradient: string; warning: string }> = {
@@ -105,7 +105,7 @@ export default function PataTillNetworksPage() {
         ...(values.idType === "NIDA" && values.idNumber ? { idNumber: formatNida(values.idNumber) } : {}),
         identityDocument: identityPath,
         floatConfirmed: String(floatConfirmed), noExistingLipa: String(noExistingLipa), paidConfirmed: String(paidConfirmed), otpRequired: String(network === "AIRTEL"),
-        adminInstructions: network === "AIRTEL" ? "Hali ya awali: PENDING / HALIJAANZA KUSHUGHULIKIWA. Thibitisha malipo ya TSh 5,000 kwanza; mteja atawasiliana WhatsApp 0698232313. Baada ya uthibitisho, toa maelekezo ya OTP." : network === "VODACOM" ? "Hali ya awali: PENDING / HALIJAANZA KUSHUGHULIKIWA. Thibitisha malipo ya TSh 40,000 kabla ya kuanza kushughulikia au kumpa user ya kuwasha Till." : "Hakiki float ya TSh 100,000, TIN na nyaraka.",
+        adminInstructions: network === "AIRTEL" ? "Hali ya awali: PENDING / HALIJAANZA KUSHUGHULIKIWA. Thibitisha malipo ya majaribio ya TSh 200 kwanza; mteja atawasiliana WhatsApp 0698232313. Baada ya uthibitisho, toa maelekezo ya OTP." : network === "VODACOM" ? "Hali ya awali: PENDING / HALIJAANZA KUSHUGHULIKIWA. Thibitisha malipo ya majaribio ya TSh 200 kabla ya kuanza kushughulikia au kumpa user ya kuwasha Till." : "Hakiki float ya TSh 100,000, TIN na nyaraka.",
         status: "PENDING",
       };
       const result = editingApplicationId
@@ -186,13 +186,13 @@ export default function PataTillNetworksPage() {
         {network==="AIRTEL" && <>
           <label style={labelStyle}>Namba *<input style={fieldStyle} value={values.airtelPhone??""} onChange={e=>set("airtelPhone",e.target.value.replace(/\D/g,"").slice(0,10))} required inputMode="numeric" maxLength={10} placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
           <label style={labelStyle}>NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value.replace(/\D/g,"").slice(0,20))} required inputMode="numeric" maxLength={20} placeholder="Tarakimu 20 za NIDA"/><small style={{color:"#64748b",fontWeight:500}}>Weka tarakimu 20 bila alama au nafasi.</small></label>
-          <div style={{gridColumn:"1 / -1",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:11,padding:15,color:"#1e40af",fontSize:14,lineHeight:1.7}}>Ada ya huduma ni <b>TSh 5,000</b>. Baada ya kutuma ombi, gusa Fanya malipo ili uthibitishe kupitia FimiPay.</div>
+          <div style={{gridColumn:"1 / -1",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:11,padding:15,color:"#1e40af",fontSize:14,lineHeight:1.7}}>Ada ya majaribio ya huduma ni <b>TSh 200</b>. Baada ya kutuma ombi, gusa Fanya malipo ili uthibitishe kupitia FimiPay.</div>
         </>}
         {network==="VODACOM" && <>
           <label style={labelStyle}>Majina kamili ya mteja *<input style={fieldStyle} value={values.fullName??""} onChange={e=>set("fullName",e.target.value)} required placeholder="Majina kama yalivyo kwenye NIDA"/></label>
           <label style={labelStyle}>Namba ya NIDA *<input style={fieldStyle} value={values.nidaNumber??""} onChange={e=>set("nidaNumber",e.target.value.replace(/\D/g,"").slice(0,20))} required inputMode="numeric" maxLength={20} placeholder="Tarakimu 20 za NIDA"/><small style={{color:"#64748b",fontWeight:500}}>Weka tarakimu 20 bila alama au nafasi.</small></label>
           <label style={labelStyle}>Namba ya mawasiliano *<input style={fieldStyle} value={values.contactPhone??""} onChange={e=>set("contactPhone",e.target.value)} required inputMode="tel" placeholder="06XXXXXXXX au 07XXXXXXXX"/></label>
-          <div style={{gridColumn:"1 / -1",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:11,padding:15,color:"#5b21b6",fontSize:14,lineHeight:1.7}}>Usisajili laini kabla ya kupata maelekezo. Hakikisha una scanner au Famoco yenye scanner. Gharama ya huduma ni <b>TSh 40,000</b>.</div>
+          <div style={{gridColumn:"1 / -1",background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:11,padding:15,color:"#5b21b6",fontSize:14,lineHeight:1.7}}>Usisajili laini kabla ya kupata maelekezo. Hakikisha una scanner au Famoco yenye scanner. Gharama ya majaribio ya huduma ni <b>TSh 200</b>.</div>
         </>}
         {network!=="HALOTEL" && <label style={{display:"flex",gap:11,alignItems:"flex-start",gridColumn:"1 / -1",padding:14,border:"1px solid #e2e8f0",borderRadius:11,color:"#334155",lineHeight:1.6,fontSize:14}}><input type="checkbox" checked={paidConfirmed} onChange={e=>setPaidConfirmed(e.target.checked)} required style={{marginTop:4,accentColor:activeTheme.accent,width:17,height:17,flexShrink:0}}/><span>Nimeelewa kuwa gharama ya huduma ni {price[network]} na nitafuata maelekezo ya malipo yaliyothibitishwa na Admin.</span></label>}
         <div style={{gridColumn:"1 / -1",display:"flex",gap:10,flexWrap:"wrap",marginTop:4,paddingTop:16,borderTop:"1px solid #e9edf3"}}>
