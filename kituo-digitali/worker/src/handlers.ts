@@ -78,7 +78,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "appli
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", claimDailyTokenBonus: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createPocketWifiOrder: "applications", createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", updateLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
-  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", createTokenPurchaseOrder: "payments",
+  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin",
   markUserMessageRead: "read", registerFcmToken: "profile", sendPushNotification: "admin", syncAuthClaims: "auth",
 };
 
