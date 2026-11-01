@@ -130,7 +130,7 @@ async function settle(orderId: string, providerOrder: Record<string, unknown>, t
     if (providerId !== orderId || !isPaid(providerStatus) || providerAmount !== amount || currency !== "TZS"
       || providerOrder.simulated === true || String(providerOrder.environment ?? "").toLowerCase() === "test"
       || order.simulated === true || environment !== "LIVE"
-      || !Number.isSafeInteger(tokens) || tokens < 1 || (amount !== tokens * 100 && amount !== (tokens / 3) * 500)) {
+      || !Number.isSafeInteger(tokens) || tokens < 1 || (amount !== tokens * 200 && amount !== tokens * 100 && amount !== (tokens / 3) * 500)) {
       return markReviewInTransaction("Provider/order amount, currency, environment, status, or token integrity mismatch");
     }
 
@@ -213,7 +213,7 @@ export async function createFimipayOrder(request: Request) {
   const credentials = fimipaySecret();
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const tokens = Number(body?.tokens);
-  if (!Number.isSafeInteger(tokens) || tokens < 3 || tokens > 3000 || tokens % 3 !== 0) return json({ error: { message: "Chagua tokeni kwa mafungu ya 3 (3 hadi 3000)." } }, 400);
+  if (!Number.isSafeInteger(tokens) || tokens < 1 || tokens > 3000) return json({ error: { message: "Chagua tokeni 1 hadi 3000." } }, 400);
   let phone = "";
   try { phone = normalizeTanzaniaPhone(String(body?.phone ?? "")) ?? ""; } catch { /* invalid phone */ }
   if (!phone) return json({ error: { message: "Namba ya simu ya Tanzania si sahihi." } }, 400);
@@ -221,7 +221,7 @@ export async function createFimipayOrder(request: Request) {
   if (!userSnapshot.exists) return json({ error: { message: "Akaunti haijapatikana." } }, 404);
   const profile = userSnapshot.data()!;
   if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") return json({ error: { message: "Akaunti hairuhusiwi kufanya malipo." } }, 403);
-  const amount = (tokens / 3) * 500;
+  const amount = tokens * 200;
   const result = await provider("/payment/create_order", {
     buyer_phone: digits(phone),
     buyer_name: String(profile.name ?? [profile.firstName, profile.lastName].filter(Boolean).join(" ") ?? "Mteja").slice(0, 100),
