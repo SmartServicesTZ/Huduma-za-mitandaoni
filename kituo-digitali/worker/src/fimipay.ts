@@ -426,6 +426,28 @@ export async function handleFimipayWebhook(request: Request) {
 
   const orderId = String(payload.order_id ?? "").trim();
   if (!orderId || orderId.length > 180) return json({ error: "Missing order_id" }, 400);
+  const tillOrderSnapshot = await db.collection("servicePaymentOrders").doc(orderId).get();
+  if (tillOrderSnapshot.exists) {
+    const tillOrder = tillOrderSnapshot.data()!;
+    if (String(tillOrder.environment ?? "").toUpperCase() !== "LIVE") {
+      await db.collection("servicePaymentOrders").doc(orderId).set({ status: "NEEDS_REVIEW", paymentStatus: "NEEDS_REVIEW", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return json({ received: true, review: true });
+    }
+    if (!isFimipaySuccessEvent(payload)) {
+      const terminal = fimipayTerminalStatus(payload);
+      if (terminal) await db.collection("servicePaymentOrders").doc(orderId).set({ status: terminal, paymentStatus: terminal, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return json({ received: true, pending: !terminal });
+    }
+    try {
+      const verification = await verifyProviderOrder(orderId, Number(tillOrder.amount));
+      if (!verification.confirmed) return json({ received: false, pending: true }, 503);
+      const settled = await settleTillPayment(orderId, verification.data, Number(tillOrder.amount));
+      return json({ received: true, paid: settled.paid, duplicate: settled.duplicate });
+    } catch (error) {
+      console.error("FimiPay Till webhook settlement failed", { orderId, code: error instanceof Error ? error.name : "unknown" });
+      return json({ received: false }, 503);
+    }
+  }
   const saved = await readPurchase(orderId);
   if (!saved) {
     await markNeedsReview(orderId, "Webhook arrived without a matching stored customer order");
