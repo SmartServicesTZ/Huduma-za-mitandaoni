@@ -43,7 +43,7 @@ import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 import { getStorage, uploadStorageObject } from "./storage-rest.js";
 import { getFirestore } from "./firestore-rest.js";
 import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";
-import { checkFimipayOrder, createFimipayOrder, listFimipayOrders, handleFimipayWebhook } from "./fimipay.js";
+import { checkFimipayOrder, createFimipayOrder, listFimipayOrders, handleFimipayWebhook, createTillPaymentOrder, checkTillPaymentOrder } from "./fimipay.js";
 
 interface Env extends WorkerEnv {}
 
@@ -409,6 +409,22 @@ const worker = {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
         console.error("FimiPay create order failed", { code: error instanceof Error ? error.name : "unknown" });
         return jsonResponse({ error: { code: "internal", message: "Ombi la malipo halikufanikiwa. Jaribu tena." } }, 500, cors);
+      }));
+    }
+    if (url.pathname === "/payments/fimipay/till/create-order") {
+      if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+      return withWorkerEnv(env, () => createTillPaymentOrder(request).then((response) => withCors(response, cors)).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("FimiPay Till order creation failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Oda ya malipo ya Till haikuanzishwa. Jaribu tena." } }, 500, cors);
+      }));
+    }
+    if (url.pathname === "/payments/fimipay/till/status") {
+      if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+      return withWorkerEnv(env, () => checkTillPaymentOrder(request).then((response) => withCors(response, cors)).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("FimiPay Till status check failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Hali ya malipo ya Till haikupatikana. Jaribu tena." } }, 500, cors);
       }));
     }
     if (url.pathname === "/payments/fimipay/orders") {
