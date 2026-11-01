@@ -848,3 +848,78 @@ html body .portal-shell .portal-content .portal-main .token-card:not(.token-card
 
 /* FimiPay checkout replaces the retired manual Lipa-number panel. */
 .token-choice-payto{display:none!important}
+
+
+/* SmartServicesTZ — premium interface refresh */
+:root{--ss-ink:#10243a;--ss-muted:#718096;--ss-line:#e7edf2;--ss-paper:#f5f7fa;--ss-teal:#087f80;--ss-mint:#e5f6f1;--ss-shadow:0 14px 38px rgba(16,36,58,.075)}
+html body{background:var(--ss-paper);color:var(--ss-ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.portal-shell,.portal-content{background:var(--ss-paper)!important}
+.app-header{min-height:74px!important;padding:12px clamp(16px,3vw,38px)!important;background:rgba(255,255,255,.94)!important;border-bottom:1px solid var(--ss-line)!important;box-shadow:0 4px 20px rgba(16,36,58,.035)!important;backdrop-filter:blur(18px)}
+.portal-brand{color:var(--ss-ink)!important;font-weight:850!important;letter-spacing:-.045em}
+.portal-logo{border-radius:14px!important;background:linear-gradient(145deg,#087f80,#075b67)!important;box-shadow:0 8px 18px #087f8030!important}
+.brand-subtitle{color:#8291a2!important}
+.global-search{border:1px solid var(--ss-line)!important;border-radius:13px!important;background:#f8fafc!important}
+.header-icon{border:1px solid var(--ss-line)!important;border-radius:12px!important;background:#fff!important}
+.sidebar-portal{background:#10243a!important;border:0!important;box-shadow:10px 0 35px #10243a12!important}
+.sidebar-brand{padding:10px 9px 22px!important}
+.sidebar-brand b{color:#fff!important}
+.sidebar-user{border:1px solid #ffffff1b!important;border-radius:15px!important;background:#ffffff0b!important}
+.sidebar-user strong{color:#fff!important}
+.portal-nav-item{border:1px solid transparent!important;border-radius:12px!important;color:#a9b8c8!important;transition:background .18s ease,color .18s ease!important}
+.portal-nav-item:hover{background:#ffffff10!important;color:#fff!important;transform:none!important}
+.portal-nav-item.active{background:#d8f5ec!important;color:#075b67!important;box-shadow:0 8px 20px #00000012!important}
+.portal-main{max-width:1400px!important;padding:30px clamp(16px,3vw,42px) 34px!important}
+.page-heading h1{color:var(--ss-ink)!important;font-size:clamp(25px,3vw,34px)!important;letter-spacing:-.055em!important}
+.page-heading p{color:var(--ss-muted)!important}
+.modern-hero{border:0!important;border-radius:25px!important;background:linear-gradient(118deg,#10243a 0%,#124b56 58%,#087f80 100%)!important;box-shadow:0 20px 45px #10243a1a!important}
+.modern-hero-copy h1{letter-spacing:-.055em!important}
+.quick-metrics>div,.portal-service-card,.tutorial-card,.history-table,.account-panel,.admin-panel{border:1px solid var(--ss-line)!important;border-radius:18px!important;background:#fff!important;box-shadow:var(--ss-shadow)!important}
+.portal-service-card{transition:transform .2s ease,box-shadow .2s ease!important}
+.portal-service-card:hover{transform:translateY(-3px)!important;box-shadow:0 18px 38px #10243a12!important}
+.service-card-icon{border-radius:14px!important}
+.section-title h2{color:var(--ss-ink)!important;letter-spacing:-.035em!important}
+.token-card:not(.token-card--compact){border:1px solid #e3eaf0!important;border-radius:24px!important;background:#fff!important;box-shadow:var(--ss-shadow)!important;color:var(--ss-ink)!important}
+.token-card:not(.token-card--compact)::before{height:4px!important;background:linear-gradient(90deg,#087f80,#62c4a6,#f2a36b)!important}
+.token-card:not(.token-card--compact)::after{opacity:.35!important}
+.wallet-fashion-brand small,.wallet-fashion-account-copy small{color:#8190a1!important}
+.wallet-fashion-brand strong{color:var(--ss-ink)!important}
+.wallet-fashion-mark{border-radius:14px!important;color:#087f80!important;background:#e5f6f1!important}
+.wallet-fashion-chip{background:#eaf7f3!important;color:#08715f!important}
+.wallet-fashion-balance{border-radius:19px!important;background:linear-gradient(120deg,#10243a,#174b59 70%,#087f80)!important}
+.wallet-fashion-account{border-color:var(--ss-line)!important;border-radius:15px!important;background:#fbfcfd!important}
+.token-add-button{border-radius:14px!important;box-shadow:0 8px 18px #087f8025!important}
+.token-choice-modal{background:rgba(9,22,36,.66)!important;backdrop-filter:blur(8px)!important}
+.token-choice-card{width:min(100%,560px)!important;max-height:min(90vh,850px)!important;overflow:auto!important;padding:clamp(18px,4vw,28px)!important;border:1px solid #e7edf2!important;border-radius:25px!important;background:#fff!important;box-shadow:0 28px 90px #071a2d45!important}
+.token-choice-head{align-items:center!important;margin-bottom:20px!important}
+.token-choice-head h3{color:var(--ss-ink)!important;font-size:23px!important;letter-spacing:-.045em!important}
+.token-choice-head .overline{color:#087f80!important}
+.token-choice-head>button{width:38px!important;height:38px!important;border:1px solid var(--ss-line)!important;border-radius:12px!important;background:#f8fafc!important;color:#526477!important}
+.token-choice-intro{padding:14px!important;border:1px solid #e8eef2!important;border-radius:15px!important;background:#f8fafb!important}
+.token-choice-intro-icon{border-radius:12px!important;background:#e5f6f1!important;color:#087f80!important}
+.token-choice-secure{display:grid;gap:16px;margin-top:16px;padding:17px;border:1px solid #e2ebe8;border-radius:18px;background:linear-gradient(145deg,#f6fbf9,#fff 72%)}
+.token-choice-secure__top{display:flex;align-items:flex-start;gap:11px}
+.token-choice-secure__icon{display:grid;width:38px;height:38px;flex:none;place-items:center;border-radius:12px;color:#087f60;background:#e3f5ec}
+.token-choice-secure__top strong,.token-choice-secure__top small{display:block}
+.token-choice-secure__top strong{color:#18354a;font-size:13px;font-weight:850}
+.token-choice-secure__top small{margin-top:4px;color:#718096;font-size:10px;line-height:1.55}
+.token-choice-networks{margin:0!important;padding-top:14px;border-top:1px solid #e5eeea}
+.token-choice-networks-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+.token-choice-networks-head strong{color:#18354a;font-size:11px;font-weight:850}
+.token-choice-networks-head span{color:#8291a2;font-size:9px}
+.token-network-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+.token-network{display:grid!important;justify-items:center!important;gap:7px!important;min-width:0!important;padding:11px 7px!important;border:1px solid #e5ebef!important;border-radius:13px!important;background:#fff!important;color:#526477!important;font-size:10px!important;font-weight:800!important}
+.token-network-logo{display:grid!important;width:100%!important;height:35px!important;place-items:center!important}
+.token-network-logo img{display:block!important;max-width:76px!important;max-height:30px!important;width:auto!important;height:auto!important;object-fit:contain!important}
+.token-choice-secure__note{display:flex;align-items:flex-start;gap:8px;padding:11px 12px;border-radius:12px;background:#edf8f3;color:#426957;font-size:10px;line-height:1.55}
+.token-choice-secure__note svg{flex:none;color:#16845b}
+.token-choice-card .button--green{min-height:48px!important;border-radius:13px!important;background:linear-gradient(110deg,#087f80,#0b9b78)!important;box-shadow:0 9px 20px #087f8026!important;font-weight:850!important;letter-spacing:.025em}
+.token-choice-help{color:#728295!important;font-size:10px!important;line-height:1.55!important}
+@media(max-width:620px){
+ .portal-main{padding:20px 14px 28px!important}
+ .modern-hero{border-radius:19px!important}
+ .token-choice-card{width:100%!important;max-height:94vh!important;padding:17px!important;border-radius:20px!important}
+ .token-network-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .token-network{grid-template-columns:38px 1fr!important;justify-items:start!important;align-items:center!important;text-align:left!important;padding:9px 10px!important}
+ .token-network-logo{width:38px!important;height:30px!important}
+ .token-network-logo img{max-width:36px!important;max-height:27px!important}
+}
