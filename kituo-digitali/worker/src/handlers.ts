@@ -1855,7 +1855,8 @@ function normalizeLicenseRequest(data: LicenseRequest) {
     region: titleCaseLocation(typeof data.region === "string" ? data.region.trim().slice(0, 80) : ""),
     // Kata is optional; some business locations do not use a ward value in the submitted address.
     ward: titleCaseLocation(typeof data.ward === "string" ? data.ward.trim().slice(0, 100) : ""),
-    street: titleCaseLocation(cleanText(data.street, "Mtaa / Kijiji", 140)),
+    // Kijiji / mtaa is descriptive only: accept any user-entered value and do not block license generation.
+    street: typeof data.street === "string" ? titleCaseLocation(data.street.trim().replace(/\\s+/g, " ").slice(0, 140)) : "",
     tin: cleanText(data.tin, "TIN", 40).toUpperCase(),
     licenseFee: Number(data.licenseFee),
   };
