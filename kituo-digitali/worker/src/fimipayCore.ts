@@ -56,7 +56,7 @@ export function verifyFimipayWebhookV2Signature(
 
 export function isFimipaySuccessEvent(event: Record<string, unknown>) {
   return String(event.event ?? "").toLowerCase() === "payment.success"
-    || [event.payment_status, event.status].some((value) => ["SUCCESS", "COMPLETED"].includes(String(value ?? "").toUpperCase()));
+    || [event.payment_status, event.status].some((value) => ["SUCCESS", "COMPLETED", "COMPLETE"].includes(String(value ?? "").trim().toUpperCase()));
 }
 
 export function fimipayTerminalStatus(event: Record<string, unknown>) {
