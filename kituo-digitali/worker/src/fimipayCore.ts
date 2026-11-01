@@ -46,7 +46,7 @@ export function verifyFimipayWebhookV2Signature(
   toleranceMs = 5 * 60 * 1000,
 ) {
   if (!secret || !(rawBody instanceof Uint8Array)) return false;
-  if (typeof timestamp !== "string" || !/^\\d{10,13}$/.test(timestamp)) return false;
+  if (typeof timestamp !== "string" || !/^\d{10,13}$/.test(timestamp)) return false;
   if (typeof nonce !== "string" || !/^[A-Za-z0-9._~-]{8,200}$/.test(nonce)) return false;
   if (typeof path !== "string" || !path.startsWith("/") || path.includes("?") || path.includes("#")) return false;
 
