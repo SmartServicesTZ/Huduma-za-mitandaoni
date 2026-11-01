@@ -294,7 +294,6 @@ export async function checkFimipayOrder(request: Request) {
   return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : "NEEDS_REVIEW", paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter } });
 }
 
- 
 export async function createTillPaymentOrder(request: Request) {
   const auth = await verifyOwner(request);
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -339,7 +338,7 @@ export async function createTillPaymentOrder(request: Request) {
     environment: credentials.environment, simulated: data.simulated === true,
     createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
   });
-  return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", test_mode: credentials.environment === "TEST", simulated: data.simulated === true } });
+  return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", simulated: data.simulated === true } });
 }
 
 async function settleTillPayment(orderId: string, providerOrder: Record<string, unknown>, expectedAmount: number) {
@@ -357,11 +356,10 @@ async function settleTillPayment(orderId: string, providerOrder: Record<string, 
       || String(order.userId) !== String(application.userId) || String(order.applicationId) !== String(application.applicationId)) {
       throw new ApiError("failed-precondition", "Uthibitisho wa malipo haujalingana na ombi.");
     }
-    if (String(order.status) === "COMPLETED" || String(application.applicantData?.paymentStatus).toUpperCase() === "PAID") {
+    if (String(order.status) === "COMPLETED" || String(applicationData?.paymentStatus).toUpperCase() === "PAID") {
       return { paid: true, duplicate: true };
     }
-    const applicant = application.applicantData && typeof application.applicantData === "object"
-      ? application.applicantData as Record<string, unknown> : {};
+    const applicant = applicationData ?? {};
     if (String(application.status) !== "AWAITING_PAYMENT" || String(applicant.paymentStatus).toUpperCase() !== "UNPAID") {
       throw new ApiError("failed-precondition", "Ombi hili haliko kwenye hali ya kusubiri malipo.");
     }
