@@ -6,7 +6,7 @@ import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
 import { resolveAuthRole } from "./authClaims.js";
 import { defaultAccessLipaServices, defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 import { generateRandomBusinessLicenseNumber } from "./businessLicenseNumber.js";
-import { phoneAuthAlias } from "../../shared/tanzaniaPhone.js";
+import { normalizeTanzaniaPhone, phoneAuthAlias } from "../../shared/tanzaniaPhone.js";
 import { accountRestrictionActions, resolveAccountAccessMode, type AccountRestrictionAction } from "../../shared/accountAccess.js";
 
 const db = getFirestore();
