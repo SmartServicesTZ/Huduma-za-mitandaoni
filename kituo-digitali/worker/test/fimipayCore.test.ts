@@ -71,12 +71,12 @@ test("success event and provider status markers are recognized without accepting
   assert.equal(fimipayTerminalStatus({ status: "PENDING" }), null);
 });
 
-test("test token top-ups follow the price of 1 token per TZS 100", () => {
-  assert.equal(tokenCreditsForAmount(100), 1);
-  assert.equal(tokenCreditsForAmount(500), 5);
-  assert.equal(tokenCreditsForAmount(1000), 10);
-  assert.equal(tokenCreditsForAmount(2000), 20);
-  assert.equal(tokenCreditsForAmount(5000), 50);
+test("token top-ups follow the price of 3 tokens per TZS 500", () => {
+  assert.equal(tokenCreditsForAmount(500), 3);
+  assert.equal(tokenCreditsForAmount(1000), 6);
+  assert.equal(tokenCreditsForAmount(1500), 9);
+  assert.equal(tokenCreditsForAmount(5000), 30);
+  assert.equal(tokenCreditsForAmount(100), null);
   assert.equal(tokenCreditsForAmount(750), null);
   assert.equal(tokenCreditsForAmount(0), null);
 });
