@@ -6,9 +6,9 @@ import { triggerDownload } from "@/lib/downloadHistory";
 
 type Network = "AIRTEL" | "VODACOM" | "YAS" | "HALOTEL";
 const palettes: Record<Network, { main: string; dark: string; accent: string; text: string; logo: string; label: string }> = {
-  AIRTEL: { main: "#ed1c2e", dark: "#b80e20", accent: "#ffc928", text: "#fff", logo: "/airtel-logo.png", label: "AIRTEL MONEY" },
+  AIRTEL: { main: "#ed1c2e", dark: "#b80e20", accent: "#fff", text: "#fff", logo: "/airtel-logo.png", label: "AIRTEL MONEY" },
   VODACOM: { main: "#e31837", dark: "#a9001c", accent: "#fff", text: "#fff", logo: "/vodacom-logo.png", label: "M-PESA" },
-  YAS: { main: "#ffd500", dark: "#102d69", accent: "#102d69", text: "#102d69", logo: "/yas-logo.png", label: "YAS PESA" },
+  YAS: { main: "#6b2c91", dark: "#42145f", accent: "#fff", text: "#fff", logo: "/yas-logo.png", label: "YAS PESA" },
   HALOTEL: { main: "#f58220", dark: "#b64d00", accent: "#fff", text: "#fff", logo: "/halotel-logo.png", label: "HALOPESA" },
 };
 const clean = (v: string) => v.replace(/\\s+/g, " ").trim();
