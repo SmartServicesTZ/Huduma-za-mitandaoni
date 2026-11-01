@@ -92,17 +92,28 @@ export function useAuth(options?: UseAuthOptions) {
     await signOutFirebaseUser();
   }, []);
 
-  const user = useMemo(() => firebaseUser
-    ? {
-        ...(profile ?? {}),
-        id: firebaseUser.uid,
-        uid: firebaseUser.uid,
-        name: profile?.name ?? firebaseUser.displayName ?? "Mwanachama",
-        phone: profile?.phone ?? "",
-        role: authClaims?.role ?? profile?.role ?? "user",
-        permissions: authClaims?.permissions ?? profile?.permissions ?? {},
-      } as FirebaseProfile & { id: string }
-    : null, [firebaseUser, profile, authClaims]);
+  const user = useMemo(() => {
+    if (!firebaseUser) return null;
+    const profileName = [profile?.firstName, profile?.lastName]
+      .map((part) => String(part ?? "").trim())
+      .filter(Boolean)
+      .join(" ");
+    const savedName = String(profile?.name ?? "").trim();
+    const savedNameIsPhone = /^\\+?[\\d\\s()-]{9,}$/.test(savedName);
+    const displayName = profileName
+      || (savedName && !savedNameIsPhone ? savedName : "")
+      || firebaseUser.displayName?.trim()
+      || "Mwanachama";
+    return {
+      ...(profile ?? {}),
+      id: firebaseUser.uid,
+      uid: firebaseUser.uid,
+      name: displayName,
+      phone: profile?.phone ?? "",
+      role: authClaims?.role ?? profile?.role ?? "user",
+      permissions: authClaims?.permissions ?? profile?.permissions ?? {},
+    } as FirebaseProfile & { id: string };
+  }, [firebaseUser, profile, authClaims]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated || loading || firebaseUser || typeof window === "undefined") return;
