@@ -112,11 +112,16 @@ export default function PataTillNetworksPage() {
         : await createServiceApplication(applicationId, "pata-till-mitandao-yote", payload);
       const savedReference = String(("reference" in result ? result.reference : result.applicationId) ?? applicationId);
       setReference(savedReference);
-      if (!editingApplicationId) setSubmittedPaymentApplication({
-        id: applicationId, applicationId, userId: firebaseUser.uid, serviceSlug: "pata-till-mitandao-yote", serviceName: "PATA TILL MITANDAO YOTE",
-        applicantData: { ...payload, paymentStatus: network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID" },
-        status: network === "HALOTEL" ? "PENDING" : "AWAITING_PAYMENT",
-      } as ServiceApplication);
+      if (!editingApplicationId) {
+        const savedApplicationId = String("applicationId" in result ? result.applicationId : applicationId);
+        const existingApplication = applications.find((app) => app.id === savedApplicationId || app.applicationId === savedApplicationId);
+        setSubmittedPaymentApplication({
+          id: savedApplicationId, applicationId: savedApplicationId, userId: firebaseUser.uid,
+          serviceSlug: "pata-till-mitandao-yote", serviceName: "PATA TILL MITANDAO YOTE",
+          applicantData: existingApplication?.applicantData ?? { ...payload, paymentStatus: network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID" },
+          status: existingApplication?.status ?? result.status ?? (network === "HALOTEL" ? "PENDING" : "AWAITING_PAYMENT"),
+        } as ServiceApplication);
+      }
       setPaymentOrderId(""); setPaymentStatusMessage("");
       toast.success("TAARIFA ZIMEWASILISHWA", { description: editingApplicationId ? "Marekebisho yamehifadhiwa." : "Ombi lako limepokelewa. Linasubiri malipo na hatua za Admin." });
       setEditingApplicationId(null);
