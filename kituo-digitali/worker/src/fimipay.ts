@@ -100,7 +100,7 @@ export async function createFimipayOrder(request: Request) {
     environment: testMode ? "TEST" : "LIVE",
     settled: false, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
   });
-  return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", simulated: data.simulated === true } });
+  return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", test_mode: testMode, simulated: data.simulated === true } });
 }
 export async function checkFimipayOrder(request: Request) {
   const auth = await verifyOwner(request);
