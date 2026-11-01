@@ -1379,7 +1379,7 @@ export const setServiceApplicationStatus = callable(async (request) => {
     const requiresTillPayment = isTillApplication && ["AIRTEL", "VODACOM"].includes(tillNetwork);
     if (status === "PAYMENT_CONFIRMED") {
       if (!requiresTillPayment) throw new ApiError("failed-precondition", "Uthibitishaji huu wa malipo unatumika kwa Till za Airtel na Vodacom pekee.");
-      if (from !== "PENDING" || String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() === "PAID") throw new ApiError("failed-precondition", "Ombi hili halisubiri uthibitisho wa malipo.");
+      if (!["PENDING", "AWAITING_PAYMENT"].includes(from) || String(applicantData.paymentStatus ?? "UNPAID").toUpperCase() === "PAID") throw new ApiError("failed-precondition", "Ombi hili halisubiri uthibitisho wa malipo.");
       const now = FieldValue.serverTimestamp();
       transaction.update(ref, { applicantData: { ...applicantData, paymentStatus: "PAID", paymentConfirmedAt: now, paymentConfirmedBy: uid }, paymentConfirmedAt: now, paymentConfirmedBy: uid, updatedAt: now });
       transaction.set(db.collection("messages").doc(), { recipientId: application.userId, subject: "Malipo ya ombi la Till yamethibitishwa", body: "Malipo yako yamethibitishwa na Admin. Ombi lako sasa linasubiri kuanza kushughulikiwa. Utaona hali ya PENDING, PROCESSING, REJECTED au APPROVED kadri linavyoendelea.", type: "serviceApplicationPaymentConfirmed", applicationId, createdAt: now });
