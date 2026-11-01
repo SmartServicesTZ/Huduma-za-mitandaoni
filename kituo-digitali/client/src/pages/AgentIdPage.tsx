@@ -331,13 +331,31 @@ export default function AgentIdPage() {
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
         toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}.`);
       }
-      // Faili mbili tofauti: mbele na nyuma, zote zikiwa kwenye mkao uliochaguliwa.
+      // Tengeneza faili MOJA lenye pande zote mbili. Hii huepusha Android/PWA
+      // kuacha faili la kwanza na kuonyesha la pili pekee wakati wa downloads mbili mfululizo.
       const blobs = await Promise.all(jobs.map((job) => exportCard(job.el, job.size, job.filename)));
-      for (let index = 0; index < blobs.length; index++) {
-        await downloadBlobAndWait(blobs[index], jobs[index].filename, "PNG");
+      const bitmaps = await Promise.all(blobs.map((blob) => createImageBitmap(blob)));
+      try {
+        const gap = 48;
+        const output = document.createElement("canvas");
+        output.width = Math.max(bitmaps[0].width, bitmaps[1].width);
+        output.height = bitmaps[0].height + gap + bitmaps[1].height;
+        const context = output.getContext("2d");
+        if (!context) throw new Error("Imeshindikana kuunganisha mbele na nyuma za kitambulisho.");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, output.width, output.height);
+        context.drawImage(bitmaps[0], 0, 0);
+        context.drawImage(bitmaps[1], 0, bitmaps[0].height + gap);
+        const combinedBlob = await new Promise<Blob>((resolve, reject) => {
+          output.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuandaa faili la kitambulisho.")), "image/png");
+        });
+        const filename = `kitambulisho-${selected.label}-mbele-na-nyuma.png`;
+        await downloadBlobAndWait(combinedBlob, filename, "PNG");
+      } finally {
+        bitmaps.forEach((bitmap) => bitmap.close());
       }
       setDownloadedSides(["front", "back"]);
-      toast.success("Kitambulisho kimepakuliwa: picha mbili tofauti (mbele na nyuma).");
+      toast.success("Kitambulisho kimepakuliwa kwenye faili moja lenye mbele na nyuma.");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
     } finally { setBusy(false); }
@@ -367,7 +385,7 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua picha mbili tofauti: mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "DOWNLOAD"}</b><small>(Mbele &amp; Nyuma)</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} title={!formComplete ? "Jaza taarifa zote na pakia picha kwanza" : "Pakua faili moja lenye mbele na nyuma"} onClick={() => void downloadCards()}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "DOWNLOAD"}</b><small>(Mbele + Nyuma, faili moja)</small></span></button>
         </div>
         <div className="aid-note"><b>NOTES</b><p>Baada ya kupakua kitambulisho, usiende kukichapisha mpaka kisainiwe na kiongozi wako.</p></div>
       </section>
