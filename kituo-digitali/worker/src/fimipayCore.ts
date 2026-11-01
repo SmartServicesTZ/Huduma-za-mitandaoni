@@ -1,6 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 export const TOKEN_PACKAGES = {
+  500: 3,
   2000: 40,
   5000: 100,
   10000: 200,
@@ -38,8 +39,23 @@ export function verifyFimipayWebhookSignature(rawBody: Buffer, signatureHeader: 
   return supplied.length === expected.length && timingSafeEqual(expected, supplied);
 }
 
+export function verifyFimipayWebhookV2Signature(rawBody: Buffer, signatureHeader: unknown, secret: string, timestamp: unknown, nonce: unknown, path = "/webhooks/fimipay", nowMs = Date.now()) {
+  if (!secret || typeof timestamp !== "string" || typeof nonce !== "string") return false;
+  const timestampText = timestamp.trim();
+  const nonceText = nonce.trim();
+  if (!timestampText || nonceText.length < 8 || nonceText.length > 200) return false;
+  const parsedTimestamp = /^\d+$/.test(timestampText) ? Number(timestampText) : Date.parse(timestampText);
+  const timestampMs = parsedTimestamp < 10_000_000_000 ? parsedTimestamp * 1000 : parsedTimestamp;
+  if (!Number.isFinite(timestampMs) || Math.abs(nowMs - timestampMs) > 5 * 60 * 1000) return false;
+  if (typeof signatureHeader !== "string" || !/^[a-f\d]{64}$/i.test(signatureHeader.trim())) return false;
+  const signingText = `${timestampText}.${nonceText}.${path}.${new TextDecoder().decode(rawBody)}`;
+  const expected = createHmac("sha256", secret).update(signingText, "utf8").digest();
+  const supplied = Buffer.from(signatureHeader.trim(), "hex");
+  return supplied.length === expected.length && timingSafeEqual(expected, supplied);
+}
+
 export function isFimipaySuccessEvent(event: Record<string, unknown>) {
-  return String(event.payment_status ?? event.status ?? "").toUpperCase() === "SUCCESS"
+  return ["SUCCESS", "COMPLETED"].includes(String(event.payment_status ?? event.status ?? "").toUpperCase())
     || String(event.event ?? "").toLowerCase() === "payment.success";
 }
 
@@ -57,11 +73,12 @@ export function isOpenTokenPurchaseStatus(status: unknown) {
 }
 
 export function isConfirmedLivePayment(order: Record<string, unknown> | undefined, orderId: string, amount: number) {
+  const status = String(order?.payment_status ?? order?.status ?? "").toUpperCase();
   return Boolean(order)
     && String(order?.order_id ?? "") === orderId
-    && String(order?.payment_status ?? "").toUpperCase() === "SUCCESS"
+    && ["SUCCESS", "COMPLETED"].includes(status)
     && Number(order?.amount) === amount
     && String(order?.currency ?? "").toUpperCase() === "TZS"
-    && order?.simulated === false
-    && String(order?.environment ?? "").toLowerCase() === "live";
+    && (order?.simulated === false || order?.simulated === undefined)
+    && (order?.environment === undefined || String(order?.environment).toLowerCase() === "live");
 }

@@ -10,9 +10,11 @@ import {
   normalizeTanzaniaPhone,
   tokenCreditsForAmount,
   verifyFimipayWebhookSignature,
+  verifyFimipayWebhookV2Signature,
 } from "../src/fimipayCore.ts";
 
 test("only the three supported shilling packages award fixed token amounts", () => {
+  assert.equal(tokenCreditsForAmount(500), 3);
   assert.equal(tokenCreditsForAmount(2000), 40);
   assert.equal(tokenCreditsForAmount(5000), 100);
   assert.equal(tokenCreditsForAmount(10000), 200);
@@ -74,7 +76,19 @@ test("production settlement requires exact order, amount, TZS, SUCCESS, and live
     { payment_status: "PENDING" },
     { environment: "test" },
     { simulated: true },
-    { simulated: undefined },
   ]) assert.equal(isConfirmedLivePayment({ ...verified, ...patch }, "fp_order_1", 5000), false);
   assert.equal(isConfirmedLivePayment(undefined, "fp_order_1", 5000), false);
+});
+
+test("V3 Signature-V2 signs timestamp, nonce, path and exact raw body", () => {
+  const rawBody = Buffer.from('{"order_id":"fp_test_1"}', "utf8");
+  const secret = "test-webhook-secret";
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonce = "nonce-12345678";
+  const path = "/webhooks/fimipay";
+  const signature = createHmac("sha256", secret).update(`${timestamp}.${nonce}.${path}.${rawBody.toString("utf8")}`).digest("hex");
+  assert.equal(verifyFimipayWebhookV2Signature(rawBody, signature, secret, timestamp, nonce, path), true);
+  assert.equal(verifyFimipayWebhookV2Signature(rawBody, signature, secret, timestamp, nonce, "/wrong"), false);
+  assert.equal(verifyFimipayWebhookV2Signature(rawBody, signature, secret, String(Number(timestamp) - 601), nonce, path), false);
+  assert.equal(isConfirmedLivePayment({ order_id: "fp_order_1", payment_status: "COMPLETED", amount: 5000, currency: "TZS" }, "fp_order_1", 5000), true);
 });

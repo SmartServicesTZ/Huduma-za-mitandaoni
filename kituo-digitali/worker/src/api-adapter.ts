@@ -8,6 +8,7 @@ export interface ApiRequest<T = unknown> {
 
 export interface WorkerHttpRequest {
   method: string;
+  path?: string;
   rawBody: Buffer;
   get(headerName: string): string | undefined;
 }

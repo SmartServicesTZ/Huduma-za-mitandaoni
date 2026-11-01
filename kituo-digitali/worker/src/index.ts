@@ -174,6 +174,7 @@ async function handleWebhook(request: Request, cors: Headers) {
   const incoming = request.clone();
   const compatRequest = {
     method: incoming.method,
+    path: new URL(incoming.url).pathname,
     rawBody: Buffer.from(body),
     get: (headerName: string) => incoming.headers.get(headerName) ?? undefined,
   };

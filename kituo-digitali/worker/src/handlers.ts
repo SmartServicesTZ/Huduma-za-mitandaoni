@@ -7,7 +7,7 @@ import { getGoogleAccessToken, getWorkerEnv } from "./runtime.js";
 import { resolveAuthRole } from "./authClaims.js";
 import { defaultAccessLipaServices, defaultLipaServices, defaultServices } from "./defaultCatalog.js";
 import { generateRandomBusinessLicenseNumber } from "./businessLicenseNumber.js";
-import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature } from "./fimipayCore.js";
+import { fimipayTerminalStatus, isConfirmedLivePayment, isFimipaySuccessEvent, isOpenTokenPurchaseStatus, makeTokenPurchaseOrderId, normalizeTanzaniaPhone, tokenCreditsForAmount, verifyFimipayWebhookSignature, verifyFimipayWebhookV2Signature } from "./fimipayCore.js";
 import { phoneAuthAlias } from "../../shared/tanzaniaPhone.js";
 import { accountRestrictionActions, resolveAccountAccessMode, type AccountRestrictionAction } from "../../shared/accountAccess.js";
 
@@ -1896,9 +1896,11 @@ export const createTokenPurchaseOrder = callable(async (request) => {
   if (reservation.duplicate && isOpenTokenPurchaseStatus(reservation.status)) return { orderId, status: reservation.status, amount, tokenAmount: credits, duplicate: true };
 
   try {
+    const fimipaySecret = fimipayApiSecret.value();
+    if (!fimipaySecret.startsWith("sk_live_")) throw new ApiError("failed-precondition", "FimiPay LIVE haijasanidiwa kwa usalama.");
     const response = await fetch("https://fimipay.com/api/v1/payment/create_order", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "HudumaZaMtandaoni/1.0", Authorization: `Bearer ${fimipayApiSecret.value()}` },
+      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "HudumaZaMtandaoni/1.0", Authorization: `Bearer ${fimipaySecret}` },
       body: JSON.stringify({ order_id: orderId, buyer_phone: phone, amount, currency: "TZS", payment_method: "mobile" }),
       signal: AbortSignal.timeout(20000),
     });
@@ -1942,7 +1944,12 @@ export const fimipayWebhook = httpEndpoint(async (req, res) => {
   if (req.method !== "POST") { res.set("Allow", "POST").status(405).send("Method not allowed"); return; }
   const rawBody = req.rawBody;
   if (!Buffer.isBuffer(rawBody) || rawBody.length === 0 || rawBody.length > 65536) { res.status(400).send("Invalid payload"); return; }
-  if (!verifyFimipayWebhookSignature(rawBody, req.get("X-FIMIPAY-SIGNATURE"), fimipayWebhookSecret.value())) { res.status(401).send("Invalid signature"); return; }
+  const webhookSecret = fimipayWebhookSecret.value();
+  const signatureV2 = req.get("X-FIMIPAY-SIGNATURE-V2");
+  const signatureValid = signatureV2
+    ? verifyFimipayWebhookV2Signature(rawBody, signatureV2, webhookSecret, req.get("X-FIMIPAY-TIMESTAMP"), req.get("X-FIMIPAY-NONCE"), req.path ?? "/webhooks/fimipay")
+    : verifyFimipayWebhookSignature(rawBody, req.get("X-FIMIPAY-SIGNATURE"), webhookSecret);
+  if (!signatureValid) { res.status(401).send("Invalid signature"); return; }
 
   let event: Record<string, unknown>;
   try {
@@ -1991,9 +1998,11 @@ export const fimipayWebhook = httpEndpoint(async (req, res) => {
   }
 
   try {
+    const fimipaySecret = fimipayApiSecret.value();
+    if (!fimipaySecret.startsWith("sk_live_")) { res.status(503).json({ received: false, error: "LIVE payment secret is not configured" }); return; }
     const verificationResponse = await fetch("https://fimipay.com/api/v1/payment/order_status", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "HudumaZaMtandaoni/1.0", Authorization: `Bearer ${fimipayApiSecret.value()}` },
+      headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "HudumaZaMtandaoni/1.0", Authorization: `Bearer ${fimipaySecret}` },
       body: JSON.stringify({ order_id: providerOrderId }),
       signal: AbortSignal.timeout(15000),
     });
