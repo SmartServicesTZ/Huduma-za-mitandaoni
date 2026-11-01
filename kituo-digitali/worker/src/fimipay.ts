@@ -110,11 +110,12 @@ export async function checkFimipayOrder(request: Request) {
   const ref = db.collection("fimipayOrders").doc(orderId);
   const saved = await ref.get();
   if (!saved.exists || saved.data()?.userId !== auth.uid) return json({ error: { message: "Oda haijapatikana." } }, 404);
+  const savedOrder = saved.data()!;
   const result = await provider("/payment/order_status", { order_id: orderId });
   const data = (result.data && typeof result.data === "object" ? result.data : result) as Record<string, unknown>;
   const status = statusValue(data.payment_status ?? data.status);
   let settled: { paid: boolean; status: string; duplicate: boolean; balanceAfter?: number; testMode?: boolean } = { paid: false, status, duplicate: false };
-  if (isPaid(status)) settled = await settle(orderId, status, data.amount, data.currency, typeof data.transid === "string" ? data.transid : undefined);
+  if (isPaid(status)) settled = await settle(orderId, status, data.amount ?? (savedOrder.environment === "TEST" ? savedOrder.amount : undefined), data.currency ?? (savedOrder.environment === "TEST" ? "TZS" : undefined), typeof data.transid === "string" ? data.transid : undefined);
   else if (status === "FAILED" || status === "CANCELLED") await settle(orderId, status, data.amount ?? saved.data()?.amount, data.currency ?? "TZS");
   return json({ data: { order_id: orderId, payment_status: settled.paid ? "COMPLETED" : status, paid: settled.paid, duplicate: settled.duplicate, balance: settled.balanceAfter, test_mode: settled.testMode === true, simulated: data.simulated === true } });
 }
