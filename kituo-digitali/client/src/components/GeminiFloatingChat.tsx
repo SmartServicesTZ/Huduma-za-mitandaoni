@@ -60,7 +60,7 @@ export default function GeminiFloatingChat() {
   if (typeof window !== "undefined" && window.location.pathname.endsWith("/nida-demo")) return null;
 
   return (
-    <div style={{ position: "fixed", right: 16, bottom: "calc(86px + env(safe-area-inset-bottom))", zIndex: 1200, fontFamily: "inherit" }}>
+    <div style={{ position: "fixed", right: 16, bottom: "calc(132px + env(safe-area-inset-bottom))", zIndex: 1200, fontFamily: "inherit" }}>
       {open && (
         <section aria-label="Msaidizi wa AI" style={{ width: "min(370px, calc(100vw - 32px))", height: "min(560px, calc(100dvh - 130px))", marginBottom: 12, display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: 22, background: "#f8fafc", border: "1px solid #dbe4ef", boxShadow: "0 18px 60px rgba(2, 6, 23, .3)" }}>
           <header style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 16px", color: "#fff", background: "linear-gradient(135deg,#075e54,#128c7e)" }}>
@@ -85,12 +85,12 @@ export default function GeminiFloatingChat() {
           <div style={{ padding: "0 12px 9px", background: "#fff", textAlign: "center", fontSize: 10, color: "#94a3b8" }}>Usitume password au taarifa nyeti.</div>
         </section>
       )}
-      <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "flex-end", gap: 10, maxWidth: "100%" }}>
-        <a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" aria-label="Pakua SmartServicesTZ App" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.9)", borderRadius: 999, background: "linear-gradient(135deg,#1d4ed8,#2563eb)", color: "#fff", boxShadow: "0 8px 26px rgba(37,99,235,.35)", fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
-          <Download size={21} /> DOWNLOAD APP
+      <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "flex-end", gap: 7, maxWidth: "100%" }}>
+        <a href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk" aria-label="Pakua SmartServicesTZ App" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "9px 13px", border: "2px solid rgba(255,255,255,.9)", borderRadius: 999, background: "linear-gradient(135deg,#1d4ed8,#2563eb)", color: "#fff", boxShadow: "0 8px 26px rgba(37,99,235,.35)", fontWeight: 800, fontSize: 11.5, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <Download size={18} /> DOWNLOAD APP
         </a>
-        <a href="https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&iam=2" target="_blank" rel="noreferrer" aria-label="Jiunge na Group la WhatsApp la SmartServicesTZ" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.85)", borderRadius: 999, background: "linear-gradient(135deg,#075e54,#128c7e)", color: "#fff", boxShadow: "0 8px 26px rgba(7,94,84,.4)", fontWeight: 750, fontSize: 13, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
-          <MessageCircle size={21} /> GROUP LA WHATSAPP
+        <a href="https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4?s=cl&p=a&iam=2" target="_blank" rel="noreferrer" aria-label="Jiunge na Group la WhatsApp la SmartServicesTZ" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 17px", border: "2px solid rgba(255,255,255,.85)", borderRadius: 999, background: "linear-gradient(135deg,#075e54,#128c7e)", color: "#fff", boxShadow: "0 8px 26px rgba(7,94,84,.4)", fontWeight: 750, fontSize: 11.5, cursor: "pointer", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <MessageCircle size={18} /> GROUP LA WHATSAPP
         </a>
       </div>
     </div>
