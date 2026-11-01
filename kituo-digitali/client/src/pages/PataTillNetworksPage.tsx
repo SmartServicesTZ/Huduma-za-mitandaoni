@@ -92,7 +92,7 @@ export default function PataTillNetworksPage() {
       if (!floatConfirmed) { toast.error("Thibitisha kwanza kuwa float ya TSh 100,000 ipo kwenye laini."); return; }
       if (!noExistingLipa) { toast.error("Thibitisha kuwa mteja hana Lipa Namba tayari."); return; }
     }
-    if (network === "AIRTEL" && (!values.fullName?.trim() || !/^0[67]\d{8}$/.test(values.airtelPhone ?? "") || !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, "")))) { toast.error("Weka namba ya Airtel na NIDA yenye tarakimu 20."); return; }
+    if (network === "AIRTEL" && (!/^0[67]\d{8}$/.test(values.airtelPhone ?? "") || !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, "")))) { toast.error("Weka namba ya Airtel na NIDA yenye tarakimu 20."); return; }
     if (network === "VODACOM" && (!values.fullName?.trim() || !/^\d{20}$/.test(String(values.nidaNumber ?? "").replace(/\D/g, "")))) { toast.error("Namba ya NIDA lazima iwe na tarakimu 20."); return; }
     setBusy(true);
     try {
