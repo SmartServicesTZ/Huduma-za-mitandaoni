@@ -1030,3 +1030,28 @@
   .lq-card-artboard--yas .lq-network-brand--yas img { max-width:100% !important; max-height:90% !important; }
   .lq-card-artboard--yas .lq-yas-qr { width:49% !important; }
 }
+
+
+/* Final Yas logo fit: no clipping, and a restrained bottom-right corner mark. */
+.lq-card-artboard--yas .lq-card-header { overflow:visible !important; }
+.lq-card-artboard--yas .lq-network-brand--yas {
+  width:43% !important; min-width:0 !important; overflow:visible !important;
+  padding:0 1.5% !important; box-sizing:border-box !important;
+}
+.lq-card-artboard--yas .lq-network-brand--yas img {
+  width:100% !important; height:auto !important; max-width:none !important;
+  max-height:none !important; object-fit:contain !important; overflow:visible !important;
+}
+.lq-card-artboard--yas .lq-yas-footer {
+  flex:0 0 19% !important; width:76% !important; min-height:0 !important;
+  height:19% !important; max-height:19% !important;
+  margin:0 -6% 0 auto !important; padding:1% 8% 1% 20% !important;
+  border-radius:100% 0 0 0 / 100% 0 0 0 !important;
+  justify-content:center !important; align-items:center !important;
+  overflow:visible !important;
+}
+.lq-card-artboard--yas .lq-yas-official-footer-logo {
+  width:54% !important; max-width:54% !important;
+  max-height:88% !important; height:auto !important;
+  object-fit:contain !important; object-position:center !important;
+}
