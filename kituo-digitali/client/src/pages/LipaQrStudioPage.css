@@ -945,3 +945,88 @@
 .lq-card-red, .lq-yas-body, .lq-airtel-body { isolation:isolate; }
 .lq-network-watermark { position:absolute; z-index:0; width:64%; height:42%; top:34%; left:18%; object-fit:contain; opacity:.13; filter:grayscale(1); pointer-events:none; }
 .lq-card-red > :not(.lq-network-watermark), .lq-yas-body > :not(.lq-network-watermark), .lq-airtel-body > :not(.lq-network-watermark) { position:relative; z-index:1; }
+
+
+/* Yas / Mixx sticker: match the supplied real-world reference composition. */
+.lq-card-artboard--yas { background:#fff !important; }
+.lq-card-artboard--yas .lq-card-header {
+  flex:0 0 14.7% !important; min-height:0 !important;
+  display:flex !important; align-items:center !important; justify-content:space-between !important;
+  gap:5% !important; padding:2.8% 6% !important;
+  background:#fff !important; border:0 !important;
+}
+.lq-card-artboard--yas .lq-tips-logo-image {
+  display:block !important; width:36% !important; max-width:39% !important;
+  max-height:90% !important; object-fit:contain !important;
+}
+.lq-card-artboard--yas .lq-network-brand--yas {
+  display:flex !important; align-items:center !important; justify-content:flex-end !important;
+  width:38% !important; height:100% !important;
+}
+.lq-card-artboard--yas .lq-network-brand--yas img {
+  display:block !important; width:100% !important; max-width:100% !important;
+  max-height:90% !important; object-fit:contain !important;
+}
+.lq-card-artboard--yas .lq-yas-body {
+  flex:1 1 auto !important; min-height:0 !important; gap:2.5% !important;
+  padding:3.2% 6% 0 !important; overflow:hidden !important;
+  background:#103e7d !important; color:#fff !important;
+}
+.lq-card-artboard--yas .lq-network-watermark {
+  top:30% !important; left:18% !important; width:64% !important; height:42% !important;
+  opacity:.035 !important; filter:none !important;
+}
+.lq-card-artboard--yas .lq-yas-body h2 {
+  margin:0 0 1% !important; padding:0 !important; align-self:center !important;
+  color:#ffdf00 !important; background:transparent !important; border:0 !important;
+  border-radius:0 !important; font-size:5.3cqw !important; font-weight:900 !important;
+  letter-spacing:0 !important; text-transform:none !important;
+}
+.lq-card-artboard--yas .lq-yas-qr {
+  width:49% !important; aspect-ratio:1 !important; flex:0 0 auto !important;
+  padding:4.2% !important; border:0 !important; border-radius:4% !important;
+  background:#fff !important; box-shadow:none !important;
+}
+.lq-card-artboard--yas .lq-yas-number,
+.lq-card-artboard--yas .lq-yas-name {
+  width:72% !important; max-width:72% !important; min-height:7.2% !important;
+  justify-content:center !important; padding:1.4% 3% !important;
+  border:0 !important; border-radius:10px !important; color:#111 !important;
+  background:#fff !important; box-shadow:none !important; text-align:center !important;
+}
+.lq-card-artboard--yas .lq-yas-number {
+  font-size:4.9cqw !important; font-weight:600 !important; letter-spacing:.09em !important;
+}
+.lq-card-artboard--yas .lq-yas-name {
+  width:82% !important; max-width:82% !important;
+  font-size:3.5cqw !important; font-weight:600 !important;
+}
+.lq-card-artboard--yas .lq-yas-number::before,
+.lq-card-artboard--yas .lq-yas-name::before { content:none !important; }
+.lq-card-artboard--yas .lq-yas-body p {
+  margin:1% 0 0 !important; padding:0 !important; border-radius:0 !important;
+  color:#fff !important; background:transparent !important;
+  font-size:3.35cqw !important; font-weight:850 !important;
+}
+.lq-card-artboard--yas .lq-yas-footer {
+  flex:1 1 auto !important; width:118% !important; min-height:18% !important;
+  margin:0 -18% -1% 0 !important; padding:2% 7% 2% 18% !important;
+  display:flex !important; flex-direction:column !important;
+  align-items:center !important; justify-content:center !important; gap:1% !important;
+  overflow:hidden !important; background:#ffdf00 !important;
+  border-radius:68% 0 0 0 / 85% 0 0 0 !important;
+}
+.lq-card-artboard--yas .lq-yas-official-footer-logo {
+  display:block !important; width:40% !important; max-width:40% !important;
+  max-height:72% !important; object-fit:contain !important;
+}
+.lq-card-artboard--yas .lq-yas-footer-caption {
+  display:block !important; color:#073b78 !important;
+  font-size:2.9cqw !important; line-height:1 !important;
+  font-weight:950 !important; letter-spacing:.08em !important;
+}
+@media(max-width:700px) {
+  .lq-card-artboard--yas .lq-card-header { flex-basis:14.7% !important; }
+  .lq-card-artboard--yas .lq-network-brand--yas img { max-width:100% !important; max-height:90% !important; }
+  .lq-card-artboard--yas .lq-yas-qr { width:49% !important; }
+}
