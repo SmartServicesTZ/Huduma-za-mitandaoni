@@ -113,7 +113,7 @@ export default function PataTillNetworksPage() {
       const savedReference = String(("reference" in result ? result.reference : result.applicationId) ?? applicationId);
       setReference(savedReference);
       if (!editingApplicationId) setSubmittedPaymentApplication({
-        id: applicationId, applicationId, userId: firebaseUser.uid, serviceSlug: "pata-till-mitandao-yote",
+        id: applicationId, applicationId, userId: firebaseUser.uid, serviceSlug: "pata-till-mitandao-yote", serviceName: "PATA TILL MITANDAO YOTE",
         applicantData: { ...payload, paymentStatus: network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID" },
         status: network === "HALOTEL" ? "PENDING" : "AWAITING_PAYMENT",
       } as ServiceApplication);
