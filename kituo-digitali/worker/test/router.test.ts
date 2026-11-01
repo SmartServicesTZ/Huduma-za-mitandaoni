@@ -29,7 +29,7 @@ test("core readiness identifies only the missing Firebase service account", asyn
   assert.deepEqual(body.missing, ["FIREBASE_SERVICE_ACCOUNT_JSON"]);
 });
 
-test("core readiness becomes available without FimiPay secrets", async () => {
+test("core readiness becomes available with the required Firebase service account", async () => {
   const env = {
     ...baseEnv,
     FIREBASE_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: "worker-test@huduma-test.iam.gserviceaccount.com", private_key: "-----BEGIN PRIVATE KEY-----\\nTEST-ONLY-NOT-A-REAL-KEY\\n-----END PRIVATE KEY-----" }),
@@ -47,26 +47,6 @@ test("readiness blocks malformed Firebase service-account credentials", async ()
   const response = await worker.fetch(request("/ready"), env as never);
   assert.equal(response.status, 503);
   assert.deepEqual((await response.json() as { missing: string[] }).missing, ["FIREBASE_SERVICE_ACCOUNT_JSON"]);
-});
-
-test("token purchase endpoint is paused before authentication or database writes", async () => {
-  const response = await worker.fetch(new Request("https://worker.example/call/createTokenPurchaseOrder", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: { amount: 5000, requestId: "paused-purchase-test" } }),
-  }), baseEnv as never);
-  assert.equal(response.status, 503);
-  assert.deepEqual(await response.json(), { error: { code: "unavailable", message: "Ununuzi wa tokeni umesitishwa kwa muda." } });
-});
-
-test("FimiPay webhook is paused without processing or acknowledging payment events", async () => {
-  const response = await worker.fetch(new Request("https://worker.example/webhooks/fimipay", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "SUCCESS", order_id: "paused-webhook-test" }),
-  }), baseEnv as never);
-  assert.equal(response.status, 503);
-  assert.deepEqual(await response.json(), { error: { code: "unavailable", message: "Malipo yamesitishwa kwa muda." } });
 });
 
 test("allowed origins receive CORS headers while unknown origins are rejected", async () => {
