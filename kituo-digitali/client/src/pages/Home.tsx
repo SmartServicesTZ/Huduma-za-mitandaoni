@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders } from "@/lib/firebase";
 import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -284,7 +284,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 }
 
 function TokenCard({ compact = false }: { compact?: boolean }) {
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated, profile, refresh: refreshProfile } = useAuth();
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
   const [otherTokens, setOtherTokens] = useState("0");
   const [paidFromPhone, setPaidFromPhone] = useState(profile?.phone ?? "");
@@ -292,6 +292,48 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const [fimipayStatus, setFimipayStatus] = useState("");
   const [fimipayBusy, setFimipayBusy] = useState(false);
   const totalBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
+
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated) {
+      setFimipayOrderId("");
+      setFimipayStatus("");
+      return;
+    }
+    void listFimipayMobileOrders().then((orders) => {
+      if (!active || !orders.length) return;
+      const latest = orders[0];
+      const latestStatus = String(latest.payment_status ?? "PENDING").toUpperCase();
+      setFimipayOrderId(latest.order_id);
+      setFimipayStatus(latestStatus);
+      if (["PAID", "COMPLETED", "SUCCESS"].includes(latestStatus)) void refreshProfile().catch(() => undefined);
+    }).catch((error) => console.warn("Could not restore saved FimiPay order", error));
+    return () => { active = false; };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !fimipayOrderId) return;
+    let active = true;
+    let checking = false;
+    const checkSavedOrder = async () => {
+      if (!active || checking) return;
+      if (["PAID", "COMPLETED", "SUCCESS", "FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(fimipayStatus.toUpperCase())) return;
+      checking = true;
+      try {
+        const result = await checkFimipayMobileOrder(fimipayOrderId);
+        if (!active) return;
+        setFimipayStatus(result.payment_status);
+        if (result.paid) {
+          toast.success("Malipo yamethibitishwa; tokeni zimeongezwa.");
+          await refreshProfile().catch(() => undefined);
+        }
+      } catch (error) {
+        console.warn("Automatic FimiPay status check failed", error);
+      } finally { checking = false; }
+    };
+    const timer = window.setInterval(() => { void checkSavedOrder(); }, 8000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [isAuthenticated, fimipayOrderId, fimipayStatus]);
   const status = profile?.verificationStatus ?? "pending";
   const otherCount = Math.max(0, Math.floor(Number(otherTokens) || 0));
   const totalAmount = otherCount * 200;
@@ -300,6 +342,10 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const canProceed = otherCount >= 1 && otherCount <= 3000 && totalAmount >= 200 && paymentPhone.trim().length >= 9;
   const openWhatsAppProof = async () => {
     if (!canProceed || fimipayBusy) return;
+    if (fimipayOrderId && !["PAID", "COMPLETED", "SUCCESS", "FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(fimipayStatus.toUpperCase())) {
+      toast.info("Una oda ya malipo inayosubiri. Kagua hali yake kwanza; usianzishe malipo mengine.");
+      return;
+    }
     setFimipayBusy(true);
     try {
       const result = await createFimipayMobileOrder({ tokens: otherCount, phone: paymentPhone });
@@ -321,7 +367,10 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       const result = await checkFimipayMobileOrder(fimipayOrderId);
       setFimipayStatus(result.payment_status);
       if (result.paid && result.test_mode) toast.info("Jaribio la TEST limefanikiwa. Salio halisi la tokeni halijabadilishwa.");
-      else if (result.paid) toast.success("Malipo yamethibitishwa; tokeni zimeongezwa.");
+      else if (result.paid) {
+        toast.success("Malipo yamethibitishwa; tokeni zimeongezwa.");
+        await refreshProfile().catch(() => undefined);
+      }
       else toast.info("Malipo bado hayajathibitishwa. Subiri kidogo kisha kagua tena.");
     } catch (error) { toast.error(error instanceof Error ? error.message : "Hali ya malipo haikupatikana."); }
     finally { setFimipayBusy(false); }
