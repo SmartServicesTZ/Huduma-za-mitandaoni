@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download, Info, Printer, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowLeft, Building2, Download, Info, Printer, ShieldCheck, WalletCards } from "lucide-react";
 import * as QRCode from "qrcode";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -80,7 +80,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     <header className={`lq-card-header lq-card-header--${network}`}>
       <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
       <div className={`lq-network-brand lq-network-brand--${network}`} aria-label={LIPA_NETWORKS[network].label}>
-        {isAirtel ? <><span className="lq-airtel-symbol">◉</span><span className="lq-airtel-wordmark"><b>airtel</b><small>money</small></span></> : isYas ? <span className="lq-mixx-wordmark"><b>mixx</b><small>By <i>yas</i></small></span> : network === "voda" ? <span className="lq-voda-lockup"><b className="lq-voda-symbol">◉</b><span><strong>vodacom</strong><small>M-PESA</small></span><b className="lq-voda-phone">▯</b></span> : <span>HALOTEL</span>}
+        <img src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} />
       </div>
     </header>
     {isYas ? <section className="lq-yas-body">
@@ -98,11 +98,17 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <label>JINA</label><strong className="lq-airtel-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
       </div>
       <footer className="lq-airtel-footer">
-        <div className="lq-network-logos"><b>mixx</b><b className="vodacom">◉</b><b className="halotel">halotel</b><b className="airtel-mini">◉</b></div>
+        <div className="lq-network-logos" aria-label="Mitandao na benki zinazokubaliwa">
+          <img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" />
+          <img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Yas" />
+          <img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" />
+          <img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" />
+          <span className="lq-bank-mark"><Building2 aria-hidden="true" /> BENKI</span>
+        </div>
         <strong>LIPA<small>KWA SIMU</small></strong>
       </footer>
-    </section> : <section className="lq-card-red">
-      {watermarked && <div className="lq-card-watermark" aria-hidden="true" />}
+    </section> : <section className={`lq-card-red lq-card-red--${network}`}>
+      {watermarked && <img className="lq-card-watermark-image" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />}
       <div className="lq-qr-frame"><div className="lq-qr-paper">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}</div></div>
       <div className="lq-merchant-box">
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
