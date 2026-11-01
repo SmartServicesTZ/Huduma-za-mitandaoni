@@ -34,7 +34,7 @@ const COMPANY_LABELS: Record<Network, string> = {
 const LAND = { w: 560, h: 350 };
 const PORT = { w: 320, h: 520 };
 
-type AgentData = { name: string; agentId: string; phone: string; type: string; tokenCost: number; region: string; district: string; area: string; issueDate: string };
+type AgentData = { name: string; agentId: string; phone: string; type: string; tokenCost: number; region: string; district: string; area: string; issueDate: string; contractedBy: string };
 
 const regionCodes: Record<string, string> = { "dar es salaam": "DSM", "dodoma": "DOM", "arusha": "ARU", "mwanza": "MWZ", "mbeya": "MBY", "morogoro": "MOR", "tanga": "TNG", "kilimanjaro": "KLM", "iringa": "IRG", "tabora": "TBR", "singida": "SNG", "kigoma": "KGM", "ruvuma": "RVM", "mtwara": "MTW", "lindi": "LND", "pwani": "PWN", "kagera": "KGR", "mara": "MRA", "shinyanga": "SHY", "geita": "GET", "simiyu": "SMY", "njombe": "NJB", "rukwa": "RKW", "katavi": "KTV", "songwe": "SGW", "manyara": "MNY", "zanzibar": "ZNZ" };
 const networkCode: Record<Network, string> = { Airtel: "AIR", Vodacom: "VOD", Yas: "YAS", Halotel: "HAL", "Mbeya One Company Limited": "MBC", "Huduma za Mtandaoni": "HMT" };
@@ -206,6 +206,7 @@ export default function AgentIdPage() {
   const [network, setNetwork] = useState<Network>("Airtel");
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [name, setName] = useState("");
+  const [contractedBy, setContractedBy] = useState("");
   const [agentId, setAgentId] = useState(() => makeAgentId("Airtel", "", "", "Freelancer"));
   const [phone, setPhone] = useState("");
   const [type, setType] = useState("Freelancer");
@@ -223,10 +224,10 @@ export default function AgentIdPage() {
   const portFrontRef = useRef<HTMLDivElement>(null);
   const portBackRef = useRef<HTMLDivElement>(null);
   const cfg = NETWORKS[network];
-  const data: AgentData = { name, agentId, phone, type, tokenCost: tokenCost ?? 0, region, district, area, issueDate };
+  const data: AgentData = { name, agentId, phone, type, tokenCost: tokenCost ?? 0, region, district, area, issueDate, contractedBy };
 
   // QR inabeba taarifa nne muhimu ili skani ionyeshe majina, Agent ID, cheo na mkoa.
-  const qrText = useMemo(() => JSON.stringify({ Majina: name.trim(), "Agent ID": agentId.trim(), "Aina ya cheo": type, Mkoa: region }), [name, agentId, type, region]);
+  const qrText = useMemo(() => JSON.stringify({ Majina: name.trim(), "Agent ID": agentId.trim(), "Aina ya cheo": type, "Contracted by": contractedBy, Mkoa: region }), [name, agentId, type, contractedBy, region]);
 
   useEffect(() => {
     setPaid(false);
@@ -277,7 +278,7 @@ export default function AgentIdPage() {
     return () => { cancelled = true; };
   }, [qrText]);
 
-  const reset = () => { setName(""); setPhone(""); setType("Freelancer"); setRegion(""); setDistrict(""); setArea(""); setIssueDate(today()); setPhoto(""); setNetwork("Airtel"); setAgentId(makeAgentId("Airtel", "", "", "Freelancer")); };
+  const reset = () => { setName(""); setContractedBy(""); setPhone(""); setType("Freelancer"); setRegion(""); setDistrict(""); setArea(""); setIssueDate(today()); setPhoto(""); setNetwork("Airtel"); setAgentId(makeAgentId("Airtel", "", "", "Freelancer")); };
 
   const onPhoto = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -358,6 +359,7 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Jina Kamili</span><input value={name} maxLength={60} onChange={(e) => setName(e.target.value)} /></label>
         <label className="aid-field"><span>Agent ID</span><input value={agentId} readOnly aria-readonly="true" /></label>
         <label className="aid-field"><span>Simu</span><input inputMode="tel" value={phone} maxLength={16} onChange={(e) => setPhone(e.target.value)} /></label>
+        <label className="aid-field"><span>Contracted by</span><input value={contractedBy} maxLength={60} onChange={(e) => setContractedBy(e.target.value)} placeholder="Mf. TL Kampuni n.k." /></label>
         <label className="aid-field"><span>Cheo</span><select value={type} onChange={(e) => setType(e.target.value)}>{(["Freelancer", "Team Leader", "Team Reader", "Supervisor"] as const).map((roleName) => <option key={roleName} value={roleName}>{roleName} — {roleCosts[roleName] ?? agentIdTokenCost(roleName)} TOKENI</option>)}</select></label>
         <label className="aid-field"><span>Mkoa</span><select value={region} onChange={(e) => { setRegion(e.target.value); setDistrict(""); }} required><option value="">Chagua mkoa</option>{tanzaniaRegions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
         <label className="aid-field"><span>Wilaya</span><select value={district} onChange={(e) => setDistrict(e.target.value)} disabled={!region} required><option value="">Chagua wilaya</option>{districtsForRegion(region).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
@@ -443,7 +445,7 @@ function LandscapeFront({ innerRef, cfg, network, photo, name, agentId, phone, t
 }
 
 /* ============================ KULALA · NYUMA ============================ */
-function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, issueDate, paid }: BackProps) {
+function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, issueDate, contractedBy, paid }: BackProps) {
   const title = network === "Mbeya One Company Limited" ? "KITAMBULISHO CHA LIPA KWA SIMU" : cfg.pattern === "huduma" ? "KITAMBULISHO CHA HUDUMA ZA MTANDAONI" : "KITAMBULISHO CHA WAKALA";
   const footer = network === "Mbeya One Company Limited" ? "MBEYA ONE COMPANY LIMITED • LIPA KWA SIMU AIRTEL • AUTHORIZED AGENT" : cfg.footer;
   return <div ref={innerRef} className={`idl idl-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
@@ -471,6 +473,7 @@ function LandscapeBack({ innerRef, cfg, network, qr, name, agentId, phone, regio
       <div className="c2"><small><Words text="JINA LA WAKALA" /></small><b><Words text={name.trim().toUpperCase()} fallback="—" /></b></div>
       <div><small><Words text="AGENT CODE" /></small><b><Words text={agentId} fallback="—" /></b></div>
       <div><small><Words text="NAMBA YA SIMU" /></small><b><Words text={phone} fallback="—" /></b></div>
+      <div><small>CONTRACTED BY</small><b><Words text={contractedBy} fallback="—" /></b></div>
       <div><small>MKOA</small><b><Words text={region} fallback="—" /></b></div>
       <div><small><Words text="WILAYA / ENEO" /></small><b><Words text={`${district || "—"} / ${area || "—"}`} /></b></div>
       <div className="c2"><small><Words text="ISSUE / EXPIRY" /></small><b><Words text={`${fmt(issueDate)} / ${fmt(expiry(issueDate))}`} /></b></div>
@@ -501,6 +504,7 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
     <div className="idp-grid">
       <div><small><Words text="AGENT ID" /></small><b><Words text={agentId} fallback="—" /></b></div>
       <div><small>SIMU</small><b><Words text={phone} fallback="—" /></b></div>
+      <div><small>CONTRACTED BY</small><b><Words text={contractedBy} fallback="—" /></b></div>
       <div><small>MKOA</small><b><Words text={region} fallback="—" /></b></div>
       <div><small><Words text="WILAYA / ENEO" /></small><b><Words text={`${district || "—"} / ${area || "—"}`} /></b></div>
       <div className="wide"><small>MTANDAO</small><b><Words text={COMPANY_LABELS[network]} /></b></div>
@@ -517,7 +521,7 @@ function PortraitFront({ innerRef, cfg, network, photo, name, agentId, phone, ty
 }
 
 /* ============================ KUSIMAMA · NYUMA ============================ */
-function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, paid }: BackProps) {
+function PortraitBack({ innerRef, cfg, network, qr, name, agentId, phone, region, district, area, contractedBy, paid }: BackProps) {
   return <div ref={innerRef} className={`idp idp-b net-${cfg.pattern}`} style={{ ...cardVars(cfg), position: "relative" }}>
     <CardWatermark paid={paid} />
     {cfg.logo && <img className="idp-bg-logo" src={cfg.logo} alt="" aria-hidden="true" />}
