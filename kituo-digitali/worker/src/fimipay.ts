@@ -21,6 +21,16 @@ async function provider(path: string, body: Record<string, unknown>) {
     signal: AbortSignal.timeout(20000),
   });
   const result = await response.json().catch(() => null) as Record<string, any> | null;
+  const data = result?.data && typeof result.data === "object" ? result.data as Record<string, unknown> : result;
+  console.info("FimiPay provider response", {
+    path,
+    httpStatus: response.status,
+    providerStatus: result?.status,
+    message: typeof result?.message === "string" ? result.message.slice(0, 240) : undefined,
+    orderId: typeof data?.order_id === "string" ? data.order_id : undefined,
+    paymentStatus: data?.payment_status,
+    simulated: data?.simulated === true,
+  });
   if (!response.ok || !result) throw new Error("FimiPay request failed.");
   return result;
 }

@@ -323,7 +323,11 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       const result = await createFimipayMobileOrder({ tokens: otherCount, phone: paymentPhone });
       setFimipayOrderId(result.order_id);
       setFimipayStatus(result.payment_status || "PENDING");
-      toast.success("Ombi la malipo limetumwa. Kamilisha kwenye simu yako.");
+      if (result.test_mode) {
+        toast.info(`FimiPay TEST imepokea ombi (${result.payment_status || "PENDING"}). TEST haitumi USSD halisi; tumia KAGUA MALIPO kuona simulated status.`);
+      } else {
+        toast.success("Ombi la malipo limetumwa. Kamilisha kwenye simu yako.");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kuanzisha malipo.");
     } finally { setFimipayBusy(false); }
