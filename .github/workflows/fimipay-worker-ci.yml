@@ -1,0 +1,58 @@
+name: FimiPay Worker CI
+
+on:
+  push:
+    branches:
+      - "fix/fimipay-v3-webhook-live"
+    paths:
+      - "kituo-digitali/worker/**"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - ".github/workflows/fimipay-worker-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "kituo-digitali/worker/**"
+      - "kituo-digitali/pnpm-lock.yaml"
+      - ".github/workflows/fimipay-worker-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fimipay-worker-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: kituo-digitali
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: kituo-digitali/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Worker typecheck
+        run: pnpm --dir worker check
+
+      - name: Worker tests
+        run: pnpm --dir worker test
+
+      - name: Worker production dry-run build
+        run: pnpm --dir worker build
