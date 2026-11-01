@@ -64,6 +64,7 @@ test("success event and provider status markers are recognized without accepting
   assert.equal(isFimipaySuccessEvent({ event: "payment.success" }), true);
   assert.equal(isFimipaySuccessEvent({ payment_status: "SUCCESS" }), true);
   assert.equal(isFimipaySuccessEvent({ status: "COMPLETED" }), true);
+  assert.equal(isFimipaySuccessEvent({ status: "Complete" }), true);
   for (const status of ["PENDING", "INPROGRESS", "FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"]) {
     assert.equal(isFimipaySuccessEvent({ status }), false);
   }
@@ -86,6 +87,8 @@ test("LIVE provider validation accepts omitted simulation metadata but rejects s
   assert.equal(isConfirmedLivePayment(good, "fp_1", 500), true);
   const providerWithoutSimulationFlag = { order_id: "fp_1", status: "COMPLETED", amount: 500, currency: "TZS", environment: "live" };
   assert.equal(isConfirmedLivePayment(providerWithoutSimulationFlag, "fp_1", 500), true);
+  const providerComplete = { order_id: "fp_1", status: "Complete", amount: 500, currency: "TZS", environment: "live" };
+  assert.equal(isConfirmedLivePayment(providerComplete, "fp_1", 500), true);
   for (const patch of [
     { order_id: "fp_other" }, { amount: 501 }, { currency: "KES" },
     { status: "PENDING" }, { simulated: true }, { environment: "test" },
