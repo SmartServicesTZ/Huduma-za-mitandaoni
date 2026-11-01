@@ -81,9 +81,11 @@ test("token top-ups follow the test price of 1 token per TZS 200", () => {
   assert.equal(tokenCreditsForAmount(0), null);
 });
 
-test("LIVE provider validation requires exact order, amount, currency and rejects simulated/test", () => {
+test("LIVE provider validation accepts omitted simulation metadata but rejects simulated/test", () => {
   const good = { order_id: "fp_1", status: "SUCCESS", amount: 500, currency: "TZS", simulated: false, environment: "live" };
   assert.equal(isConfirmedLivePayment(good, "fp_1", 500), true);
+  const providerWithoutSimulationFlag = { order_id: "fp_1", status: "COMPLETED", amount: 500, currency: "TZS", environment: "live" };
+  assert.equal(isConfirmedLivePayment(providerWithoutSimulationFlag, "fp_1", 500), true);
   for (const patch of [
     { order_id: "fp_other" }, { amount: 501 }, { currency: "KES" },
     { status: "PENDING" }, { simulated: true }, { environment: "test" },
