@@ -42,7 +42,8 @@ import { ApiError, ApiHttpResponse, type CallableRoute } from "./api-adapter.js"
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 import { getStorage, uploadStorageObject } from "./storage-rest.js";
 import { getFirestore } from "./firestore-rest.js";
-import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";\nimport { checkFimipayOrder, createFimipayOrder, handleFimipayWebhook } from "./fimipay.js";
+import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";
+import { checkFimipayOrder, createFimipayOrder, handleFimipayWebhook } from "./fimipay.js";
 
 interface Env extends WorkerEnv {}
 
