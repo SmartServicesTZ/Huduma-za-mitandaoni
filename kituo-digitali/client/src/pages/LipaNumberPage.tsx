@@ -456,8 +456,7 @@ export default function LipaNumberPage() {
     const isYasNetwork = /yas|tigo/i.test(selectedNetwork.id);
     const hasConditionalTin = selectedNetwork.id === "vodacom";
     const visibleFields = selectedNetwork.fields.filter((field) =>
-      (field.fieldName !== "tinNumber" || !hasConditionalTin || values.hasTinNumber === "Ndiyo") &&
-      (field.fieldName !== "businessLicensePhoto" || !isYasNetwork || true)
+      field.fieldName !== "tinNumber" || !hasConditionalTin || values.hasTinNumber === "Ndiyo"
     );
     const nextErrors = validateServiceForm(visibleFields, values);
     for (const fieldName of ["phone", "contactPhone"]) {
