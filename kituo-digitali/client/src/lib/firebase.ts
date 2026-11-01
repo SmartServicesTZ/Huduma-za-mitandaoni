@@ -116,6 +116,28 @@ async function invokeWorker<TResponse>(name: string, data: unknown, authUser?: U
   return result.data as TResponse;
 }
 
+export type FimipayPaymentResult = { order_id: string; payment_status: string; paid?: boolean; duplicate?: boolean; balance?: number; simulated?: boolean; amount?: number; currency?: string };
+async function fimipayRequest<T>(path: string, data: Record<string, unknown>): Promise<T> {
+  await authPersistenceReady;
+  const user = firebaseAuth.currentUser;
+  if (!user) throw new Error("Ingia kwanza.");
+  const token = await user.getIdToken();
+  const response = await fetch(`${workerBaseUrl()}/payments/fimipay/${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(data),
+  });
+  const result = await response.json().catch(() => null) as { data?: T; error?: { message?: string } } | null;
+  if (!response.ok || !result?.data) throw new Error(result?.error?.message ?? "Ombi la malipo halikufanikiwa.");
+  return result.data;
+}
+export function createFimipayMobileOrder(input: { tokens: number; phone: string }) {
+  return fimipayRequest<FimipayPaymentResult>("create-order", input);
+}
+export function checkFimipayMobileOrder(order_id: string) {
+  return fimipayRequest<FimipayPaymentResult>("status", { order_id });
+}
+
 function createWorkerCall<TRequest = unknown, TResponse = unknown>(name: string) {
   return async (data?: TRequest): Promise<{ data: TResponse }> => ({ data: await invokeWorker<TResponse>(name, data ?? {}) });
 }
