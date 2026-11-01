@@ -111,7 +111,6 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       </footer>
     </section> : <section className={`lq-card-red lq-card-red--${network}`}>
       <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />
-      {watermarked && <img className="lq-card-watermark-image" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />}
       <div className="lq-qr-frame"><div className="lq-qr-paper">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}</div></div>
       <div className="lq-merchant-box">
         <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
