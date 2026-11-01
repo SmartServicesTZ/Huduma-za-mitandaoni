@@ -506,6 +506,10 @@ export default function LipaNumberPage() {
       // Do not keep the submit button spinning while temporary upload files are cleaned up.
       void clearDraftUploads(crypto.randomUUID());
       toast.success("TAARIFA ZIMEWASILISHWA", { description: editingApplicationId ? "Marekebisho yamehifadhiwa na ombi lilelile limerudishwa PENDING." : "Ombi lako limepokelewa. Litaonekana kwenye Historia ya Lipa Namba." });
+      if (selectedNetwork.id === "airtel") {
+        const otpMessage = "Habari Admin, nimetuma ombi la AIRTEL LIPA NAMBA. Naomba unisaidie hatua ya OTP. Namba ya Lipa: " + String(values.phone ?? "") + ". Rejea: " + (editingApplicationId ?? applicationId);
+        window.open("https://wa.me/255698232313?text=" + encodeURIComponent(otpMessage), "_blank", "noopener,noreferrer");
+      }
     } catch (error) {
       if (isAlreadyExists(error)) toast.warning("Una ombi la mtandao huu ambalo bado linaendelea. Subiri likamilike kabla ya kutuma ombi jingine.");
       else toast.error(errorMessage(error));
