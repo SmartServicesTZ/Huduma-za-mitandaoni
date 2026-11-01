@@ -3,7 +3,7 @@ import { ArrowLeft, ChevronDown, Download, FileCheck2, RefreshCw, RotateCcw, Shi
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { generateBusinessLicense, reserveBusinessLicenseNumber, subscribeToCollection } from "@/lib/firebase";
+import { generateBusinessLicense, getServiceTokenConfig, reserveBusinessLicenseNumber, subscribeToCollection } from "@/lib/firebase";
 import { triggerDownload } from "@/lib/downloadHistory";
 import LicenseTemplatePreview from "./LicenseTemplatePreview";
 
@@ -215,7 +215,12 @@ export default function BusinessLicensePage() {
       if (issuedFiles) {
         toast.success(`Hati ya ${format.toUpperCase()} imepakuliwa tena bila kukata tokeni nyingine.`, { description: `Rejea: ${files.reference}` });
       } else {
-        toast.success("Leseni imetengenezwa kikamilifu.", { description: files.duplicate ? `Ombi hili lilikuwa limekamilika tayari. Rejea: ${files.reference}` : `Tokeni zimekatwa kulingana na gharama iliyowekwa kwenye Dashboard ya Admin. Rejea: ${files.reference}` });
+        if (files.duplicate) {
+          toast.success("Leseni imetengenezwa kikamilifu.", { description: `Ombi hili lilikuwa limekamilika tayari. Rejea: ${files.reference}` });
+        } else {
+          const tokenConfig = await getServiceTokenConfig("leseni-biashara");
+          toast.success("Leseni imetengenezwa kikamilifu.", { description: `Tokeni ${tokenConfig.tokenCost} zimekatwa. Rejea: ${files.reference}` });
+        }
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Imeshindikana kutengeneza hati. Jaribu tena.";
