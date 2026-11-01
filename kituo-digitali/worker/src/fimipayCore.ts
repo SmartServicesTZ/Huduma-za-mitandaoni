@@ -81,8 +81,8 @@ export function isConfirmedLivePayment(
     && status.some((value) => value === "SUCCESS" || value === "COMPLETED")
     && Number(order?.amount) === amount
     && String(order?.currency ?? "").toUpperCase() === currency
-    && order?.simulated !== true
-    && String(order?.environment ?? "").toLowerCase() !== "test";
+    && order?.simulated === false
+    && ["", "live", "production"].includes(String(order?.environment ?? "").trim().toLowerCase());
 }
 
 export function fimipayCredentialMode(secret: unknown, environment: unknown): "LIVE" | "TEST" | null {
