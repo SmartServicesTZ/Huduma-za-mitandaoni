@@ -83,8 +83,8 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <img src={`${import.meta.env.BASE_URL}${network === "voda" ? "lipa-assets/mpesa-header-reference.png" : network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} />
       </div>
     </header>
-    <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />
     {isYas ? <section className="lq-yas-body">
+      <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="" aria-hidden="true" />
       <h2>Lipa kwa kuscan</h2>
       <div className="lq-yas-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya TIPS" /> : <span>QR CODE</span>}</div>
       <strong className="lq-yas-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
@@ -92,6 +92,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       <p>Lipa kutoka mitandao yote na Benki</p>
       <div className="lq-yas-footer"><img className="lq-yas-official-footer-logo" src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Yas" /></div>
     </section> : isAirtel ? <section className="lq-airtel-body">
+      <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" aria-hidden="true" />
       <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
       <div className="lq-airtel-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya TIPS" /> : <span>QR CODE</span>}</div>
       <div className="lq-airtel-fields">
@@ -109,6 +110,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <strong>LIPA<small>KWA SIMU</small></strong>
       </footer>
     </section> : <section className={`lq-card-red lq-card-red--${network}`}>
+      <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />
       {watermarked && <img className="lq-card-watermark-image" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />}
       <div className="lq-qr-frame"><div className="lq-qr-paper">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}</div></div>
       <div className="lq-merchant-box">
