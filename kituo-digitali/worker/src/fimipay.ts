@@ -308,7 +308,7 @@ export async function createTillPaymentOrder(request: Request) {
   const network = statusValue(applicant.network);
   const amount = network === "AIRTEL" ? 5000 : network === "VODACOM" ? 40000 : 0;
   if (!amount) throw new ApiError("failed-precondition", "Mtandao huu hauna malipo ya Till kupitia mfumo huu.");
-  if (statusValue(applicant.paymentStatus) === "PAID" || String(application.status) !== "AWAITING_PAYMENT") throw new ApiError("failed-precondition", "Ombi hili halisubiri malipo.");
+  if (statusValue(applicant.paymentStatus) === "PAID" || !["AWAITING_PAYMENT", "PENDING"].includes(String(application.status))) throw new ApiError("failed-precondition", "Ombi hili halisubiri malipo.");
   const existing = await db.collection("servicePaymentOrders").where("applicationId", "==", applicationId).limit(20).get();
   const reusable = existing.docs.find((document) => {
     const saved = document.data()!;
@@ -351,6 +351,7 @@ async function settleTillPayment(orderId: string, providerOrder: Record<string, 
     const appSnapshot = await tx.get(appRef);
     if (!appSnapshot.exists) throw new ApiError("not-found", "Ombi la Till halikupatikana.");
     const application = appSnapshot.data()!;
+    const applicationData = application.applicantData as Record<string, unknown> | undefined;
     const verified = isConfirmedLivePayment(providerOrder, orderId, expectedAmount);
     if (!verified || Number(order.amount) !== expectedAmount || String(order.currency).toUpperCase() !== "TZS"
       || String(order.userId) !== String(application.userId) || String(order.applicationId) !== String(application.applicationId)) {
@@ -360,7 +361,7 @@ async function settleTillPayment(orderId: string, providerOrder: Record<string, 
       return { paid: true, duplicate: true };
     }
     const applicant = applicationData ?? {};
-    if (String(application.status) !== "AWAITING_PAYMENT" || String(applicant.paymentStatus).toUpperCase() !== "UNPAID") {
+    if (!["AWAITING_PAYMENT", "PENDING"].includes(String(application.status)) || String(applicant.paymentStatus).toUpperCase() !== "UNPAID") {
       throw new ApiError("failed-precondition", "Ombi hili haliko kwenye hali ya kusubiri malipo.");
     }
     const now = FieldValue.serverTimestamp();
