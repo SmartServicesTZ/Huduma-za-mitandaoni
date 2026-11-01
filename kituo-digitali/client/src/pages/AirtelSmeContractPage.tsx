@@ -76,7 +76,7 @@ export default function AirtelSmeContractPage() {
   const [paid, setPaid] = useState(false);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
-  const [handwritingFont, setHandwritingFont] = useState<"cursive" | "segoe" | "comic" | "normal">("cursive");
+  const [handwritingFont, setHandwritingFont] = useState<"cursive" | "segoe" | "comic" | "normal">("normal");
   const handwritingFontFamily = handwritingFont === "cursive" ? "cursive" : handwritingFont === "segoe" ? "'Segoe Print', 'Bradley Hand', cursive" : handwritingFont === "comic" ? "'Comic Sans MS', cursive" : "Arial, Helvetica, sans-serif";
 
   // Jaza Sales Executive Name kutoka kwenye profile iliyoshirikiwa na useAuth.
@@ -127,6 +127,7 @@ export default function AirtelSmeContractPage() {
       textTransform: "uppercase",
       letterSpacing: "-0.01em",
       textAlign: "center",
+      fontFamily: handwritingFontFamily,
     };
   };
 
@@ -365,7 +366,7 @@ export default function AirtelSmeContractPage() {
             {field("Customer name", "customerName2")}
             {field("Sales executive name", "salesName", "Hujazwa kutoka jina la akaunti yako", "text", undefined, true)}
             <div className="sme-row">{field("Date", "date1")}{field("Date", "date2")}</div>
-            <div className="sme-ink"><div className="sme-ink-title">Chagua aina ya fonti ya maandishi</div><label className="sme-field"><span>Fonti ya kuandika</span><select value={handwritingFont} onChange={(event) => setHandwritingFont(event.target.value as typeof handwritingFont)} style={{width:"100%",height:42,border:"1px solid #c9c9c9",borderRadius:9,padding:"0 10px"}}><option value="cursive">Mwandiko wa mkono — Cursive</option><option value="segoe">Kalamu laini — Segoe Print</option><option value="comic">Mwandiko wa kawaida — Comic Sans</option><option value="normal">Fonti ya kawaida — Arial</option></select></label><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("jpg")}>⬇ {paid ? "Download JPG" : "LIPIA NA PAKUA JPG"}</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ {paid ? "Download PDF" : "LIPIA NA PAKUA PDF"}</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
+            <div className="sme-ink"><div className="sme-ink-title">Chagua aina ya fonti ya maandishi</div><label className="sme-field"><span>Fonti ya kuandika</span><select value={handwritingFont} onChange={(event) => setHandwritingFont(event.target.value as typeof handwritingFont)} style={{width:"100%",height:42,border:"1px solid #c9c9c9",borderRadius:9,padding:"0 10px"}}><option value="normal">Arial — Fonti ya kawaida (chaguo la mwanzo)</option><option value="cursive">Mwandiko wa mkono — Cursive</option><option value="segoe">Kalamu laini — Segoe Print</option><option value="comic">Mwandiko wa kawaida — Comic Sans</option></select></label><div className="sme-ink-title">Chagua rangi ya wino wa mkataba</div><div className="sme-ink-options">{([["black","Black — mweusi"],["blue","Blue — bluu"],["red","Red — mwekundu"]] as const).map(([value,label]) => <button key={value} type="button" className={`sme-ink-option ${inkColor===value?"active":""}`} onClick={()=>setInkColor(value)}>{label}</button>)}</div></div><div className="sme-buttons"><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("jpg")}>⬇ {paid ? "Download JPG" : "LIPIA NA PAKUA JPG"}</button><button className="sme-button sme-primary" type="button" onClick={() => downloadContract("pdf")}>⬇ {paid ? "Download PDF" : "LIPIA NA PAKUA PDF"}</button><button className="sme-button sme-dark" type="button" onClick={reset}>↺ Rudisha Default</button></div>
             <div className="sme-status">{status}</div>
           </section>
 
