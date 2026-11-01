@@ -116,7 +116,7 @@ async function invokeWorker<TResponse>(name: string, data: unknown, authUser?: U
   return result.data as TResponse;
 }
 
-export type FimipayPaymentResult = { order_id: string; payment_status: string; paid?: boolean; duplicate?: boolean; balance?: number; simulated?: boolean; amount?: number; currency?: string };
+export type FimipayPaymentResult = { order_id: string; payment_status: string; paid?: boolean; duplicate?: boolean; balance?: number; simulated?: boolean; amount?: number; currency?: string; test_mode?: boolean };
 async function fimipayRequest<T>(path: string, data: Record<string, unknown>): Promise<T> {
   await authPersistenceReady;
   const user = firebaseAuth.currentUser;
