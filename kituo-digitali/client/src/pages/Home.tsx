@@ -747,7 +747,7 @@ function MyApplicationsPage() {
     {paymentApplication && (() => {
       const data = paymentApplication.raw?.applicantData ?? {};
       const networkName = String(data.network ?? "").toUpperCase();
-      const amount = networkName === "AIRTEL" ? "TSh 5,000" : "TSh 40,000";
+      const amount = networkName === "AIRTEL" || networkName === "VODACOM" ? "TSh 200" : "TSh 0";
       const startPayment = async () => {
         if (!/^\+?\d[\d ()-]{7,18}$/.test(paymentPhone.trim())) {
           setPaymentStatusMessage("Weka namba sahihi ya simu ya kulipia.");
