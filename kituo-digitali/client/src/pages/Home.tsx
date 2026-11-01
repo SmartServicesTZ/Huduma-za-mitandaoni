@@ -252,6 +252,13 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{user?.profileImageUrl ? <img src={user.profileImageUrl} alt="" /> : (user?.name?.slice(0, 2).toUpperCase() ?? "HM")}</div><div><strong>{user?.name ?? "Mgeni"} <VerifiedTick verified={user?.verificationStatus === "approved"} /></strong><small>{user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div><nav>{items.map(({ href, label, icon: ItemIcon }) => <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav>{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <><Link href="/admin" className={`portal-nav-item admin-link ${location === "/admin" ? "active" : ""}`}><Settings2 size={19} /><span>Paneli ya Admin</span></Link></>}<div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
+const tokenNetworks = [
+  { name: "Airtel", file: "airtel-logo.png", tone: "airtel" },
+  { name: "Halotel", file: "halotel-logo.png", tone: "halotel" },
+  { name: "Vodacom", file: "vodacom-logo.png", tone: "vodacom" },
+  { name: "Yas", file: "yas-logo.png", tone: "yas" },
+];
+
 function TokenCard({ compact = false }: { compact?: boolean }) {
   const { isAuthenticated, profile } = useAuth();
   const [tokenChoiceOpen, setTokenChoiceOpen] = useState(false);
@@ -297,13 +304,16 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     {tokenChoiceOpen && typeof document !== "undefined" && createPortal(<div className="token-choice-modal" role="dialog" aria-modal="true">
       <div className="token-choice-card">
         <div className="token-choice-head"><div><span className="overline">ONGEZA TOKENI</span><h3>Chagua tokeni</h3></div><button type="button" onClick={() => setTokenChoiceOpen(false)} aria-label="Funga">×</button></div>
+        <div className="token-choice-intro"><span className="token-choice-intro-icon"><CircleDollarSign size={19} /></span><div><strong>Chagua kifurushi chako</strong><small>Weka idadi ya tokeni unazohitaji</small></div></div>
         <div className="token-choice-fields">
-          <label><strong>Tokeni za NIDA</strong><span>1 = TZS 100</span><input aria-label="Idadi ya tokeni za NIDA" type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} /></label>
-          <label><strong>Tokeni zingine</strong><span>1 = TZS 500</span><input aria-label="Idadi ya tokeni zingine" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
+          <label className="token-choice-field token-choice-field--nida"><span className="token-choice-field-icon"><ScanFace size={18} /></span><span className="token-choice-field-copy"><strong>Tokeni za NIDA</strong><small>1 tokeni = TZS 100</small></span><input aria-label="Idadi ya tokeni za NIDA" type="number" min="0" step="1" value={nidaTokens} onChange={e=>setNidaTokens(e.target.value)} /></label>
+          <label className="token-choice-field token-choice-field--other"><span className="token-choice-field-icon"><WalletCards size={18} /></span><span className="token-choice-field-copy"><strong>Tokeni za huduma</strong><small>1 tokeni = TZS 500</small></span><input aria-label="Idadi ya tokeni zingine" type="number" min="0" step="1" value={otherTokens} onChange={e=>setOtherTokens(e.target.value)} /></label>
         </div>
+        <div className="token-choice-presets"><span>Chaguo la haraka</span><button type="button" onClick={() => { setNidaTokens("10"); setOtherTokens("0"); }}>NIDA 10</button><button type="button" onClick={() => { setNidaTokens("0"); setOtherTokens("2"); }}>Huduma 2</button><button type="button" onClick={() => { setNidaTokens("10"); setOtherTokens("2"); }}>Mchanganyiko</button></div>
         <div className="token-choice-total"><span>Jumla ya kulipa</span><strong>TZS {totalAmount.toLocaleString("en-US")}</strong><small>Kiasi cha chini ni TZS 1,000; unaweza kuongeza tokeni na kulipa zaidi.</small></div>
         <label className="token-choice-phone"><strong>Namba iliyolipia</strong><input type="tel" value={paymentPhone} onChange={e=>setPaidFromPhone(e.target.value)} placeholder="07XXXXXXXX" /></label>
         <div className="token-choice-payto"><div className="token-choice-payto-row"><span>NAMBA YA LIPA</span><strong>29126823</strong></div><div className="token-choice-payto-row"><span>JINA LA MPOKEAJI</span><strong>Steward Tz</strong></div><div className="token-choice-payto-row"><span>HUDUMA</span><strong>Azam Pesa</strong></div></div>
+        <div className="token-choice-networks"><div className="token-choice-networks-head"><strong>Lipa kupitia mtandao wako</strong><span>Logo rasmi za mitandao</span></div><div className="token-network-grid">{tokenNetworks.map((network) => <div className={`token-network token-network--${network.tone}`} key={network.name}><span className="token-network-logo"><img src={`${import.meta.env.BASE_URL}${network.file}`} alt={`${network.name} logo`} /></span><span>{network.name}</span></div>)}</div></div>
         <button type="button" className="button button--green" style={{width:"100%",marginTop:14,justifyContent:"center"}} disabled={!canProceed} onClick={openWhatsAppProof}>NIMELIPA — TUMA WHATSAPP</button>
         <p className="token-choice-help">Baada ya kulipa, tuma picha ya uthibitisho WhatsApp. Tokeni zitaongezwa baada ya malipo kuhakikiwa.</p>
       </div>
