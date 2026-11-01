@@ -425,9 +425,8 @@ function ServiceGrid({ title, services, onUse }: { title: string; services: Serv
 function SpecialSection() {
   const [groupChoiceOpen, setGroupChoiceOpen] = useState(false);
   const joinGroup = (url: string) => {
-    if (/SmartServicesTZApp/i.test(navigator.userAgent)) window.location.href = url;
-    else window.open(url, "_blank", "noopener,noreferrer");
     setGroupChoiceOpen(false);
+    window.location.href = url;
   };
   const open = (item: typeof specialServices[number]) => {
     if (item.slug === "kikundi-bure") { setGroupChoiceOpen(true); return; }
@@ -439,11 +438,11 @@ function SpecialSection() {
   return <>
     <div className="special-grid">{specialServices.map((item) => { const action = (item as unknown as { action?: string }).action; const isWhatsAppGroup = item.slug === "kikundi-bure" || ("url" in item && item.url.includes("chat.whatsapp.com")); const isAppDownload = (item as unknown as { slug: string }).slug === "download-app"; return <button key={item.slug} className={`special-card special-card--${item.tone}`} onClick={() => open(item)}><div><strong>{item.name}</strong><small>{isAppDownload ? "Pakua SmartServicesTZ App (APK)" : isWhatsAppGroup ? <><MessageCircle size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, color: "#25D366" }} />Chagua group la kujiunga</> : "url" in item ? "Fungua huduma" : action === "whatsapp" ? <><MessageCircle size={14} aria-hidden="true" style={{ display: "inline", verticalAlign: "middle", marginRight: 5, color: "#25D366" }} />Fungua WhatsApp</> : "Wasiliana nasi kwa malipo"}</small></div>{isWhatsAppGroup ? <MessageCircle size={20} aria-label="WhatsApp" color="#25D366" /> : isAppDownload ? <Smartphone size={20} aria-label="Download App" /> : <ExternalLink size={18} />}</button>; })}</div>
     {groupChoiceOpen && <div role="presentation" onClick={() => setGroupChoiceOpen(false)} style={{position:"fixed",inset:0,zIndex:10000,background:"rgba(4,12,25,.72)",display:"grid",placeItems:"center",padding:18}}>
-      <section role="dialog" aria-modal="true" aria-labelledby="whatsapp-groups-title" onClick={(event) => event.stopPropagation()} style={{width:"min(420px,100%)",background:"var(--card,#fff)",color:"var(--text,#142033)",borderRadius:18,padding:22,boxShadow:"0 24px 70px rgba(0,0,0,.3)",display:"grid",gap:14}}>
+      <section role="dialog" aria-modal="true" aria-labelledby="whatsapp-groups-title" onClick={(event) => event.stopPropagation()} style={{width:"min(420px,100%)",background:"#ffffff",color:"#142033",borderRadius:18,padding:22,boxShadow:"0 24px 70px rgba(0,0,0,.3)",display:"grid",gap:14}}>
         <h2 id="whatsapp-groups-title" style={{margin:0}}>GROUP LA WHATSAPP</h2>
         <p style={{margin:0}}>Chagua group unayotaka kujiunga nalo.</p>
-        <button type="button" className="admin-primary" onClick={() => joinGroup("https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ")}>JIUNGE GROUP 1</button>
-        <button type="button" className="admin-primary" onClick={() => joinGroup("https://chat.whatsapp.com/IxgAFV9QskmAPHV2J48ksX?s=cl&p=a&iam=2")}>JIUNGE GROUP 2</button>
+        <button type="button" onClick={() => joinGroup("https://chat.whatsapp.com/CNhZ2jsVkgw0Lu0zaZHrlJ")} style={{padding:"14px 16px",border:0,borderRadius:12,background:"#087443",color:"#ffffff",fontWeight:800,fontSize:15,cursor:"pointer"}}>JIUNGE GROUP 1</button>
+        <button type="button" onClick={() => joinGroup("https://chat.whatsapp.com/IxgAFV9QskmAPHV2J48ksX?s=cl&p=a&iam=2")} style={{padding:"14px 16px",border:0,borderRadius:12,background:"#087443",color:"#ffffff",fontWeight:800,fontSize:15,cursor:"pointer"}}>JIUNGE GROUP 2</button>
         <button type="button" onClick={() => setGroupChoiceOpen(false)} style={{padding:10,borderRadius:10,border:"1px solid var(--border,#d5dce5)",background:"transparent",color:"inherit"}}>Funga</button>
       </section>
     </div>}
