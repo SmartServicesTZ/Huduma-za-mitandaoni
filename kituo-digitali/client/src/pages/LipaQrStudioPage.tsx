@@ -94,6 +94,16 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+type A4ServiceLogoKind = "lipa" | "tigo" | "mpesa" | "nmb" | "simbanking" | "other";
+
+function A4ServiceLogo({ kind }: { kind: A4ServiceLogoKind }) {
+  if (kind === "tigo") return <svg viewBox="0 0 240 62" role="img" aria-label="Tigo Pesa" className="lq-a4-vector-logo"><path d="M12 18c14-18 31-18 40-6-13-2-22 4-29 16-5 8-10 8-15 2 7-1 9-6 4-12Z" fill="#edc52b"/><text x="61" y="39" fill="#173a65" fontSize="32" fontWeight="800" fontStyle="italic">tigo</text><text x="142" y="39" fill="#173a65" fontSize="27" fontWeight="700">pesa</text></svg>;
+  if (kind === "mpesa") return <svg viewBox="0 0 240 62" role="img" aria-label="Vodacom M-Pesa" className="lq-a4-vector-logo"><path d="M29 8c-17 0-26 12-26 25 0 15 12 24 27 24 16 0 27-11 27-25 0-13-10-24-28-24Zm0 10c9 0 14 7 14 15 0 8-5 15-14 15S14 41 14 33c0-8 6-15 15-15Z" fill="#e21b2b"/><text x="68" y="40" fill="#d7192d" fontSize="34" fontWeight="800">m-pesa</text></svg>;
+  if (kind === "nmb") return <svg viewBox="0 0 240 62" role="img" aria-label="NMB Mkononi" className="lq-a4-vector-logo"><path d="M8 40 32 7l23 33H8Z" fill="none" stroke="#1681b8" strokeWidth="6"/><path d="M18 42 36 18l17 24" fill="none" stroke="#e4a52b" strokeWidth="4"/><text x="69" y="35" fill="#17608d" fontSize="34" fontWeight="900" fontStyle="italic">NMB</text><text x="72" y="54" fill="#2878a5" fontSize="14" fontWeight="700">mkononi</text></svg>;
+  if (kind === "simbanking") return <svg viewBox="0 0 240 62" role="img" aria-label="SimBanking" className="lq-a4-vector-logo"><path d="M8 44c8-25 22-33 36-25-10 1-18 9-20 18 12-10 22-11 31-3-15-2-24 6-30 15H8Z" fill="#65a64c"/><text x="54" y="40" fill="#4c9a43" fontSize="30" fontWeight="800" fontStyle="italic">SimBanking</text></svg>;
+  return <svg viewBox="0 0 240 62" role="img" aria-label="Huduma nyingine za malipo" className="lq-a4-vector-logo"><rect x="7" y="9" width="44" height="34" rx="6" fill="#263b75"/><rect x="16" y="17" width="44" height="34" rx="6" fill="#e0b832"/><rect x="25" y="25" width="44" height="28" rx="5" fill="#31875d"/><path d="M37 34h20M37 41h14" stroke="#fff" strokeWidth="3" strokeLinecap="round"/><text x="83" y="40" fill="#bd1d2c" fontSize="29" fontWeight="900">WENGINE</text></svg>;
+}
+
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean; paperSize: "A5" | "A4" }>(function CardArtboard({ values, qrDataUrl, network, watermarked, paperSize }, ref) {
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
@@ -101,18 +111,39 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">
     <header className="lq-a4-header">
       <img className="lq-a4-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-      <div className="lq-a4-airtel-brand"><img src={`${import.meta.env.BASE_URL}airtel-logo-horizontal-white.png`} alt="Airtel Money" /><span>money</span></div>
+      <img className="lq-a4-airtel-logo" src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" />
     </header>
     <div className="lq-a4-layout">
       <section className="lq-a4-payment-panel">
         <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
-        <div className="lq-a4-qr-frame">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : <span>QR CODE</span>}</div>
-        <div className="lq-a4-field"><label>LIPA NAMBA</label><strong>{values.lipaNumber || "NAMBA YA LIPA"}</strong></div>
-        <div className="lq-a4-field"><label>JINA</label><strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong></div>
-        <footer className="lq-a4-footer"><div><b>Tunapokea:</b><div className="lq-a4-network-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Mixx by Yas" /><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom M-Pesa" /><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" /></div></div><strong>LIPA<small>KWA SIMU</small></strong></footer>
+        <div className="lq-a4-qr-frame">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : <span>Jaza taarifa kuona QR</span>}</div>
+        <div className="lq-a4-fields">
+          <div className="lq-a4-field"><label>LIPA NAMBA</label><strong>{values.lipaNumber || "NAMBA YA LIPA"}</strong></div>
+          <div className="lq-a4-field"><label>JINA</label><strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong></div>
+        </div>
+        <footer className="lq-a4-footer">
+          <div className="lq-a4-accepted">
+            <b>Tunapokea:</b>
+            <div className="lq-a4-network-logos">
+              <img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Mixx by Yas" />
+              <img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom M-Pesa" />
+              <img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" />
+              <img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" />
+            </div>
+          </div>
+          <img className="lq-a4-lipa-logo" src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa Simu — mkono unaoshika simu" />
+        </footer>
       </section>
       <section className="lq-a4-guides" aria-label="Maelekezo ya kulipa">
-        {A4_GUIDES.map(([title, command, steps]) => <article className="lq-a4-guide-card" key={title}><span>{title}</span><h3>{command}</h3><ul>{steps.map((step) => <li key={step}>{step}</li>)}</ul></article>)}
+        {A4_GUIDES.map(([title, command, steps], index) => <article className={`lq-a4-guide-card lq-a4-guide-card--${index < 3 ? "yellow" : "purple"}`} key={title}>
+          <div className="lq-a4-guide-brand">
+            {index === 0
+              ? <img src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa Simu" />
+              : <A4ServiceLogo kind={(["lipa", "tigo", "mpesa", "nmb", "simbanking", "other"] as const)[index]} />}
+          </div>
+          <h3>{command}</h3>
+          <ul>{steps.map((step) => <li key={step}>{step}</li>)}</ul>
+        </article>)}
       </section>
     </div>
   </article>;
@@ -264,7 +295,7 @@ export default function LipaQrStudioPage() {
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const canvases: HTMLCanvasElement[] = [];
       for (const page of pages) canvases.push(await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX, page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined));
-      const stem = makeFileStem(values.businessName, values.lipaNumber);
+      const paperSuffix = network === "airtel" ? `-airtel-${airtelPaperSize.toLowerCase()}` : "";\n      const stem = makeFileStem(values.businessName, values.lipaNumber) + paperSuffix;
       if (format === "pdf") {
         const { PDFDocument } = await import("pdf-lib");
         const pdf = await PDFDocument.create();
@@ -317,7 +348,7 @@ export default function LipaQrStudioPage() {
       @media print {
         html, body { width: ${widthMm}mm !important; height: ${heightMm}mm !important; margin: 0 !important; padding: 0 !important; }
         .lq-print-root { width: ${widthMm}mm !important; height: ${heightMm}mm !important; }
-        .lq-print-root > .lq-artboard { width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }
+        .lq-print-root > .lq-artboard { width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }\n        .lq-print-root > .lq-card-artboard--airtel-a4 { width: 297mm !important; height: 210mm !important; }
       }
     `;
     document.head.appendChild(printStyle);
@@ -401,7 +432,7 @@ export default function LipaQrStudioPage() {
 
     <section className={`lq-preview lq-preview--${network}`}>
       <div className="lq-preview-toolbar">
-        <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa kadi</strong><small>{selectedPaperSize} · {selectedPaperSize === "A4" ? "210 × 297" : "148 × 210"} mm · 300 DPI</small></div>
+        <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa kadi</strong><small>{selectedPaperSize} · {selectedPaperSize === "A4" ? "297 × 210" : "148 × 210"} mm · 300 DPI</small></div>
         <div className="lq-toolbar-actions">
           <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Pakua ${format.toUpperCase()}`}</button>
           <button type="button" className="lq-button lq-button-outline" onClick={printCard} disabled={!readyToDownload}><Printer size={16} />Chapisha</button>
