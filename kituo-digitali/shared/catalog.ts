@@ -125,7 +125,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
       : { ...fallback, ...service });
   });
   if (initialized) {
-    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "soft-copy-nida"];
+    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "soft-copy-nida", "stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"];
     alwaysAvailableDefaults.forEach((slug) => {
       const fallback = defaults.get(slug);
       if (fallback && !configured.some((service) => service.slug === slug)) merged.set(slug, fallback);
