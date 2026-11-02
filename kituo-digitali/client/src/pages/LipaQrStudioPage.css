@@ -1719,33 +1719,12 @@
   font-weight: 900;
   line-height: 1;
 }
-.lq-airtel-lipa-brand img {
-  display: block;
-  width: 25%;
-  max-width: 72px;
-  height: 62%;
-  object-fit: contain;
-  flex: 0 0 auto;
-}
 .lq-airtel-lipa-brand > svg {
   display: block;
-  width: 24%;
-  max-width: 52px;
-  height: 72%;
-  flex: 0 0 auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
   overflow: visible;
-}
-.lq-airtel-lipa-brand span {
-  display: block;
-  font-size: clamp(8px, 1.45cqw, 22px);
-  letter-spacing: .02em;
-  white-space: nowrap;
-}
-.lq-airtel-lipa-brand small {
-  display: block;
-  font-size: clamp(5px, .72cqw, 11px);
-  letter-spacing: .12em;
-  white-space: nowrap;
 }
 .lq-a4-vector-logo.lq-airtel-lipa-brand {
   width: 100%;
@@ -1755,21 +1734,9 @@
   align-content: center;
   gap: 3px 5px;
 }
-.lq-a4-vector-logo.lq-airtel-lipa-brand img {
-  width: 25%;
-  height: 65%;
-}
 .lq-a4-vector-logo.lq-airtel-lipa-brand > svg {
-  width: 25%;
-  height: 72%;
-}
-.lq-a4-vector-logo.lq-airtel-lipa-brand span {
-  font-size: clamp(8px, 1.35cqw, 19px);
-}
-.lq-a4-vector-logo.lq-airtel-lipa-brand small {
   width: 100%;
-  margin-left: 30%;
-  font-size: clamp(5px, .7cqw, 10px);
+  height: 100%;
 }
 
 .lq-card-artboard--airtel-a4 .lq-a4-guide-card h3 {
