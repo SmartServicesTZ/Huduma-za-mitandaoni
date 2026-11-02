@@ -63,10 +63,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("soft-copy-nida", "SOFT COPY NIDA", "Tengeneza kadi binafsi ya mfano yenye alama DEMO – NOT OFFICIAL.", "id-card", "HUDUMA ZA WAKALA"),
   { ...paid("verify-tin", "VERIFY TIN", "Jaza taarifa zako za TIN na tengeneza mwonekano wa mfano usio uthibitisho rasmi wa TRA.", "image-search", "HUDUMA ZA WAKALA"), tokenCost: 2 },
   paid("mpiga-kura", "SOFT COPY YA MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "HUDUMA ZA WAKALA"),
-  paid("stika-lipa", "STIKA ZA LIPA YAS", "Tengeneza na pakua stika ya Lipa ya Yas.", "qr-code", "HUDUMA ZA WAKALA"),
-  paid("stika-vodacom", "STIKA ZA LIPA VODACOM", "Tengeneza na pakua stika ya Lipa ya Vodacom.", "qr-code", "HUDUMA ZA WAKALA"),
-  paid("stika-airtel", "STIKA ZA LIPA AIRTEL", "Tengeneza na pakua stika ya Lipa ya Airtel.", "qr-code", "HUDUMA ZA WAKALA"),
-  paid("stika-halotel", "STIKA ZA LIPA HALOTEL", "Tengeneza na pakua stika ya Lipa ya Halotel.", "qr-code", "HUDUMA ZA WAKALA"),
+  paid("stika-lipa", "STIKA ZA LIPA", "Tengeneza na pakua stika za Lipa za Airtel, Vodacom, Halotel na Yas sehemu moja.", "qr-code", "HUDUMA ZA WAKALA"),
   paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "HUDUMA ZA WAKALA"),
   free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia bila malipo.", "landmark", "HUDUMA ZA WAKALA"),
   free("access-lipa-number", "PATA ACCESS YA LIPA & USAJILI", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "HUDUMA ZA WAKALA"),
@@ -110,8 +107,9 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
   // safe fallback. Once initialization is complete, Firestore is authoritative
   // so deleted defaults must not be resurrected on the user portal.
   const merged = new Map<string, ServiceCatalogItem>(initialized ? [] : serviceCatalog.map((service) => [service.slug, service]));
+  const retiredLipaStickerSlugs = new Set(["stika-vodacom", "stika-airtel", "stika-halotel"]);
   configured.forEach((service) => {
-    if (service.slug === "tin-3") return; // retired alias; VERIFY TIN is the single active entry
+    if (service.slug === "tin-3" || retiredLipaStickerSlugs.has(service.slug)) return; // retired alias; VERIFY TIN is the single active entry
     const fallback = defaults.get(service.slug);
     // Keep newly configured Firestore services even when they do not exist in
     // the legacy local fallback catalog.
@@ -125,7 +123,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
       : { ...fallback, ...service });
   });
   if (initialized) {
-    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "soft-copy-nida", "stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"];
+    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "soft-copy-nida", "stika-lipa"];
     alwaysAvailableDefaults.forEach((slug) => {
       const fallback = defaults.get(slug);
       if (fallback && !configured.some((service) => service.slug === slug)) merged.set(slug, fallback);
@@ -144,7 +142,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
     "kitambulisho-wakala-vodacom",
     "kitambulisho-wakala-mbeya",
   ]);
-  return Array.from(merged.values()).map((service) =>
+  return Array.from(merged.values()).filter((service) => !retiredLipaStickerSlugs.has(service.slug)).map((service) =>
     agentIdNetworkSlugs.has(service.slug) ? { ...service, isVisible: false } : service
   );
 }
