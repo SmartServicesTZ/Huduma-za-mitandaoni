@@ -181,6 +181,17 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       <footer className="lq-airtel-footer"><div className="lq-airtel-accepted"><span>Tunapokea:</span><div className="lq-network-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Mixx by Yas" /><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom M-Pesa" /><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" /></div></div><strong>LIPA<small>KWA SIMU</small></strong></footer>
     </section>
   </article>;
+  if (network === "voda") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--voda-reference" data-lipa-export-page="card" data-network="voda" data-watermarked={watermarked} data-paper-size={paperSize}>
+    <img className="lq-voda-reference-background" src={`${LIPA_ASSET_BASE}vodacom-lipa-reference.png`} alt="" aria-hidden="true" />
+    <div className="lq-voda-info-clear" aria-hidden="true" />
+    <div className="lq-voda-qr-panel">
+      <i className="lq-voda-corner lq-voda-corner--tl" /><i className="lq-voda-corner lq-voda-corner--tr" />
+      <i className="lq-voda-corner lq-voda-corner--bl" /><i className="lq-voda-corner lq-voda-corner--br" />
+      {qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : null}
+    </div>
+    <div className="lq-voda-number">{values.lipaNumber}</div>
+    <div className="lq-voda-name">{values.businessName.trim().toUpperCase()}</div>
+  </article>;
   return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
     <header className="lq-sticker-header">
       <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
