@@ -79,6 +79,11 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
     const reference=await loadImage(asset("halotel-agent-reference-clean.png"));
     canvas.width=reference.naturalWidth;canvas.height=reference.naturalHeight;
     ctx.drawImage(reference,0,0,canvas.width,canvas.height);
+    // Clear the editable panels defensively so an older cached template can never
+    // reintroduce the sample code or sample agent name.
+    const codeBoxes=[[92,498,301,675],[313,498,520,675],[531,498,739,675],[751,498,958,675],[970,498,1177,675],[1189,498,1389,675]];
+    codeBoxes.forEach(([x,y,w,h])=>round(ctx,x,y,w-x,h-y,28,"#fff"));
+    round(ctx,91,764,1298,127,30,"#fff");
     const centers=[.133,.282,.431,.578,.727,.875];
     const enteredNumber=cleanNumber(number),enteredName=cleanName(name);
     enteredNumber.slice(0,6).split("").forEach((digit,index)=>textFit(ctx,digit,canvas.width*centers[index],canvas.height*.551,canvas.width*.115,canvas.height*.145,"#050505",950,false,true));
