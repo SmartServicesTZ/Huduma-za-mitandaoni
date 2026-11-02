@@ -111,7 +111,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">
     <header className="lq-a4-header">
       <img className="lq-a4-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-      <img className="lq-a4-airtel-logo" src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" />
+      <div className="lq-a4-airtel-brand"><img src={`${import.meta.env.BASE_URL}airtel-logo-horizontal-white.png`} alt="Airtel" /><span>money</span></div>
     </header>
     <div className="lq-a4-layout">
       <section className="lq-a4-payment-panel">
@@ -139,7 +139,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
           <div className="lq-a4-guide-brand">
             {index === 0
               ? <img src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa Simu" />
-              : <A4ServiceLogo kind={(["lipa", "tigo", "mpesa", "nmb", "simbanking", "other"] as const)[index]} />}
+              : <A4ServiceLogo kind={index === 1 ? "tigo" : index === 2 ? "mpesa" : index === 3 ? "nmb" : index === 4 ? "simbanking" : "other"} />}
           </div>
           <h3>{command}</h3>
           <ul>{steps.map((step) => <li key={step}>{step}</li>)}</ul>
