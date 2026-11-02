@@ -568,10 +568,10 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
     // Permanently retire the old standalone Lipa sticker service records. The
     // combined STIKA ZA LIPA page now handles all four networks in one place.
     const retiredLipaStickerSlugs = ["stika-vodacom", "stika-airtel", "stika-halotel"];
-    const retiredBySlug = await transaction.get(db.collection("services").where("slug", "in", retiredLipaStickerSlugs));
+    const retiredBySlug = await Promise.all(retiredLipaStickerSlugs.map((slug) => transaction.get(db.collection("services").where("slug", "==", slug))));
     const retiredById = await Promise.all(retiredLipaStickerSlugs.map((slug) => transaction.get(db.collection("services").doc(slug))));
     const retiredServiceRefs = new Map<string, DocumentReference>();
-    retiredBySlug.docs.forEach((doc) => retiredServiceRefs.set(doc.ref.path, doc.ref));
+    retiredBySlug.forEach((snapshot) => snapshot.docs.forEach((doc) => retiredServiceRefs.set(doc.ref.path, doc.ref)));
     retiredById.forEach((doc) => { if (doc.exists) retiredServiceRefs.set(doc.ref.path, doc.ref); });
     const refsToSeed = alreadyInitialized && skipIfInitialized
       ? refs.filter((item) => item.ref.parent.id === "services" && ["access-lipa-number", "access-lipa-airtel", "access-lipa-yas", "access-lipa-vodacom", "access-lipa-halotel", "stika-lipa", "sme-vodacom", "kitambulisho-wakala-airtel", "kitambulisho-wakala-halotel", "kitambulisho-wakala-yas", "kitambulisho-wakala-vodacom", "kitambulisho-wakala-mbeya"].includes(String((item.data as { slug?: string }).slug ?? "")))
@@ -615,8 +615,8 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
         backfill.isVisible = true;
         backfill.active = true;
         backfill.category = "HUDUMA ZA WAKALA";
-        backfill.name = item.data.name;
-        backfill.description = item.data.description;
+        backfill.name = (item.data as { name?: string }).name;
+        backfill.description = (item.data as { description?: string }).description;
       }
       if (Object.keys(backfill).length) transaction.set(targetRef, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     });
