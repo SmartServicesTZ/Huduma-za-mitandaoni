@@ -573,7 +573,6 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
     const retiredServiceRefs = new Map<string, DocumentReference>();
     retiredBySlug.docs.forEach((doc) => retiredServiceRefs.set(doc.ref.path, doc.ref));
     retiredById.forEach((doc) => { if (doc.exists) retiredServiceRefs.set(doc.ref.path, doc.ref); });
-    retiredServiceRefs.forEach((ref) => transaction.delete(ref));
     const refsToSeed = alreadyInitialized && skipIfInitialized
       ? refs.filter((item) => item.ref.parent.id === "services" && ["access-lipa-number", "access-lipa-airtel", "access-lipa-yas", "access-lipa-vodacom", "access-lipa-halotel", "stika-lipa", "sme-vodacom", "kitambulisho-wakala-airtel", "kitambulisho-wakala-halotel", "kitambulisho-wakala-yas", "kitambulisho-wakala-vodacom", "kitambulisho-wakala-mbeya"].includes(String((item.data as { slug?: string }).slug ?? "")))
       : refs;
@@ -588,6 +587,7 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
     }
     let createdServices = 0;
     let createdNetworks = 0;
+    retiredServiceRefs.forEach((ref) => transaction.delete(ref));
     existingRecords.forEach(({ item, snapshot, targetRef }) => {
       const serviceSlug = String((item.data as { slug?: string }).slug ?? "");
       const isLipaSticker = targetRef.parent.id === "services" && ["stika-lipa"].includes(serviceSlug);
