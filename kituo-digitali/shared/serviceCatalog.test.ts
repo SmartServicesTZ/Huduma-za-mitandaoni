@@ -35,7 +35,16 @@ describe("legacy service catalogue migration fallback", () => {
       serviceCatalog.find((service) => service.slug === "pata-pocket-wifi-mabando"),
       serviceCatalog.find((service) => service.slug === "pata-till-mitandao-yote"),
       serviceCatalog.find((service) => service.slug === "soft-copy-nida"),
-      ...["stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"].map((slug) => serviceCatalog.find((service) => service.slug === slug)),
+      serviceCatalog.find((service) => service.slug === "stika-lipa"),
     ]);
+  });
+
+  it("never restores retired standalone Lipa sticker services from Firestore", () => {
+    const services = mergeServiceCatalogDefaults([
+      { slug: "stika-vodacom", name: "STIKA ZA LIPA VODACOM", description: "", icon: "qr-code", category: "HUDUMA", tokenCost: 2, kind: "paid" },
+      { slug: "stika-airtel", name: "STIKA ZA LIPA AIRTEL", description: "", icon: "qr-code", category: "HUDUMA", tokenCost: 2, kind: "paid" },
+      { slug: "stika-halotel", name: "STIKA ZA LIPA HALOTEL", description: "", icon: "qr-code", category: "HUDUMA", tokenCost: 2, kind: "paid" },
+    ], true);
+    expect(services.some((service) => ["stika-vodacom", "stika-airtel", "stika-halotel"].includes(service.slug))).toBe(false);
   });
 });
