@@ -615,8 +615,8 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
         backfill.isVisible = true;
         backfill.active = true;
         backfill.category = "HUDUMA ZA WAKALA";
-        backfill.name = (item.data as { name?: string }).name;
-        backfill.description = (item.data as { description?: string }).description;
+        backfill.name = String((item.data as { name?: string }).name ?? "STIKA ZA LIPA");
+        backfill.description = String((item.data as { description?: string }).description ?? "Tengeneza na pakua stika za Lipa za Airtel, Vodacom, Halotel na Yas sehemu moja.");
       }
       if (Object.keys(backfill).length) transaction.set(targetRef, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     });
