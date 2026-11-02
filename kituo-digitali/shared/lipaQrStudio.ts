@@ -59,6 +59,18 @@ export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumbe
   return body + tipsCrc16(body);
 }
 
+/** Vodacom sticker: preserve the supplied TIPS template and vary only Lipa number and merchant name. */
+export function createVodacomTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
+  const lipa = normalizeLipaNumber(values.lipaNumber);
+  const name = values.businessName.trim().toUpperCase();
+  const merchantAccount = `0014tz.go.bot.tips0105025030208${lipa}`;
+  const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
+  const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
+  // KITETO, postal code 27500, and every other supplied TIPS field remain fixed.
+  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}6006KITETO61052750062210308001123490705110026304`;
+  return body + tipsCrc16(body);
+}
+
 export function isValidTipsPaymentPayload(value: string): boolean {
   const payload = value.trim();
   if (!/^000201[\s\\S]*6304[0-9A-Fa-f]{4}$/.test(payload)) return false;
