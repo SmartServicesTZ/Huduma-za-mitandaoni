@@ -227,15 +227,29 @@ export default function AgentStickerPage(){
       </header>
       <div className="grid items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold leading-relaxed text-amber-900">
-            <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
+          <div role="status" className="mb-4 rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm leading-relaxed text-sky-950">
+            <strong className="font-black">TAARIFA KUHUSU WATERMARK</strong>
+            <p className="mt-1 text-xs font-semibold">Watermark huonekana kwenye hakikisho ili kulinda stika. Itatoweka moja kwa moja baada ya tokeni {serviceCost===null?"":serviceCost} kukatwa. Stika utakayopakua itakuwa safi bila watermark.</p>
           </div>
           <h2 className="mb-4 text-lg font-black">Taarifa za wakala</h2>
-          <label className="mb-4 block"><span className="mb-2 block text-sm font-extrabold">Chagua mtandao</span>
-            <select value={network} onChange={e=>setNetwork(e.target.value as NetworkKey)} className="h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-3 text-base font-semibold outline-none focus:border-slate-500">
-              <option value="airtel">Airtel Money</option><option value="vodacom">Vodacom M-Pesa</option><option value="halotel">Halotel HaloPesa</option><option value="yas">Yas</option>
-            </select>
-          </label>
+          <div className="mb-5">
+            <span className="mb-2 block text-sm font-extrabold">Chagua mtandao</span>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {([
+                {id:"airtel",label:"Airtel",logo:"airtel-logo.png"},
+                {id:"vodacom",label:"Vodacom",logo:"vodacom-logo.png"},
+                {id:"halotel",label:"Halotel",logo:"halotel-logo.png"},
+                {id:"yas",label:"Yas",logo:"yas-logo.png"},
+              ] as const).map(item=>(
+                <button key={item.id} type="button" onClick={()=>setNetwork(item.id)} aria-pressed={network===item.id}
+                  className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border-2 bg-white p-2 shadow-sm transition"
+                  style={{borderColor:network===item.id?"#0284c7":"#e2e8f0",background:network===item.id?"#f0f9ff":"#fff"}}>
+                  <img src={asset(item.logo)} alt={item.label} className="h-10 w-full max-w-[105px] object-contain" />
+                  <span className="text-xs font-extrabold text-slate-800">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="mb-4 block"><span className="mb-2 block text-sm font-extrabold">Majina ya wakala</span>
             <input value={agentName} onChange={e=>setAgentName(e.target.value.slice(0,40))} maxLength={40} autoComplete="off" placeholder="Andika majina ya wakala" className="h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base font-semibold uppercase outline-none focus:border-slate-500"/>
           </label>
@@ -248,7 +262,11 @@ export default function AgentStickerPage(){
         </section>
         <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-black">Muonekano wa stika</h2><p className="text-xs text-slate-500">{p.label} · Hakikisho la moja kwa moja</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">LIVE PREVIEW</span></div>
-          <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/>{entryStatus!=="paid"&&<div aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden"><span className="-rotate-25 select-none whitespace-nowrap text-center text-3xl font-black tracking-widest text-slate-900/25 sm:text-5xl">SMARTSERVICESTZ • HAKIKISHO • SAMPLE</span></div>}</div>
+          <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/>{entryStatus!=="paid"&&<div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+            <div className="grid w-[145%] -rotate-[24deg] grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-10">
+              {Array.from({length:12},(_,i)=><span key={i} className="select-none whitespace-nowrap text-center text-[clamp(13px,2.2vw,30px)] font-black tracking-[.12em] text-white" style={{WebkitTextStroke:"1.2px rgba(15,23,42,.9)",textShadow:"0 2px 5px rgba(0,0,0,.95), 0 0 12px rgba(0,0,0,.8)"}}>SMARTSERVICESTZ • HAKIKISHO • SAMPLE</span>)}
+            </div>
+          </div>}</div>
           <p className="mt-3 text-center text-xs text-slate-500">{previewError||(!previewReady?"Inapakia muundo wa stika...":"PNG itapakuliwa kwa mwonekano huu huu.")}</p>
         </section>
       </div>
