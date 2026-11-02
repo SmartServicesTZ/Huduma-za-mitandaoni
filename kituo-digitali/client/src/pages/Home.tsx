@@ -543,7 +543,7 @@ function HistoryPage() {
 
   useEffect(() => {
     if (!firebaseUser) { setRows([]); return; }
-    return subscribeToTokenHistory(firebaseUser.uid, (items) => setRows(items.filter((item) => !isRetiredNidaRecord(item))));
+    return subscribeToTokenHistory(firebaseUser.uid, (items) => setRows(items.filter((item) => !isHiddenHistoryRecord(item))));
   }, [firebaseUser]);
 
   useEffect(() => {
@@ -650,7 +650,7 @@ function MyApplicationsPage() {
     }
     setLoading(true);
     const stopServices = subscribeUserServiceApplications(uid, (items) => {
-      setServiceApplications(items);
+      setServiceApplications(items.filter((item) => !isHiddenHistoryRecord(item)));
       setLoading(false);
     }, (error) => {
       console.error("Imeshindikana kupakia maombi ya huduma", error);
