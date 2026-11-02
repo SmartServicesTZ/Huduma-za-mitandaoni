@@ -21,7 +21,7 @@ export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   if (!/^\d{5,12}$/.test(values.lipaNumber)) errors.lipaNumber = "Namba ya Lipa iwe na tarakimu 5 hadi 12.";
   const businessName = values.businessName.trim();
   if (!businessName) errors.businessName = "Weka jina la biashara.";
-  else if (businessName.length > 25) errors.businessName = "Jina la biashara lisizidi herufi 25.";
+  else if (businessName.length > 32) errors.businessName = "Jina la biashara lisizidi herufi 32.";
   return errors;
 }
 

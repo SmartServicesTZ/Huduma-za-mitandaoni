@@ -26,9 +26,9 @@ describe("Lipa QR Studio helpers", () => {
     });
   });
 
-  it("limits business names to 25 characters", () => {
-    expect(validateLipaCard({ ...validValues, businessName: "Jina la Biashara Limezidi Herufi" }).businessName)
-      .toBe("Jina la biashara lisizidi herufi 25.");
+  it("limits business names to 32 characters", () => {
+    expect(validateLipaCard({ ...validValues, businessName: "Jina la Biashara Limezidi Herufi Sana Zaidi" }).businessName)
+      .toBe("Jina la biashara lisizidi herufi 32.");
   });
 
   it("creates a readable information QR payload and explicitly not a payment payload", () => {
