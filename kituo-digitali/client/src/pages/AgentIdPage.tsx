@@ -272,7 +272,7 @@ export default function AgentIdPage() {
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(qrText, { width: 1024, margin: 4, errorCorrectionLevel: "H", color: { dark: "#071426", light: "#ffffff" } })
+    QRCode.toDataURL(qrText, { width: 1024, margin: 4, errorCorrectionLevel: "M", color: { dark: "#000000", light: "#ffffff" } })
       .then((url) => { if (!cancelled) setQr(url); })
       .catch(() => { if (!cancelled) setQr(""); });
     return () => { cancelled = true; };
