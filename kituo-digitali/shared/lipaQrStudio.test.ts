@@ -24,16 +24,22 @@ describe("Yas Lipa sticker helpers", () => {
     });
   });
 
-  it("limits business names to 32 characters", () => {
+  it("limits business names to 25 characters", () => {
     expect(validateLipaCard({ ...validValues, businessName: "Jina la biashara limezidi herufi thelathini na mbili" }).businessName)
-      .toBe("Jina lisizidi herufi 32.");
+      .toBe("Jina lisizidi herufi 25.");
   });
 
-  it("creates a readable information-only QR payload, never a payment payload", () => {
-    expect(buildLipaInfoQrPayload(validValues)).toBe([
-      "TAARIFA TU — SI QR YA MALIPO",
-      "Namba ya Lipa: 163872884",
-      "Jina: JUMANNE HAJI FUNDI",
-    ].join("\n"));
+  it("builds the supplied TIPS payload with dynamic merchant name, Lipa number and CRC", () => {
+    expect(buildLipaInfoQrPayload({
+      lipaNumber: "15148616",
+      businessName: "Staward Jackson njiwa",
+    })).toBe("00020101021226390014tz.go.bot.tips0105025010208151486165204413153038345802TZ5921STAWARD JACKSON NJIWA6010KIBAHA CBD610561104622103082271514307051100263040240");
+  });
+
+  it("updates merchant details when form values change", () => {
+    const payload = buildLipaInfoQrPayload(validValues);
+    expect(payload).toContain("163872884");
+    expect(payload).toContain("JUMANNE HAJI FUNDI");
+    expect(payload.slice(-8, -4)).toBe("6304");
   });
 });
