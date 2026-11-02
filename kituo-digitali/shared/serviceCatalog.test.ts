@@ -35,6 +35,7 @@ describe("legacy service catalogue migration fallback", () => {
       serviceCatalog.find((service) => service.slug === "pata-pocket-wifi-mabando"),
       serviceCatalog.find((service) => service.slug === "pata-till-mitandao-yote"),
       serviceCatalog.find((service) => service.slug === "soft-copy-nida"),
+      ...["stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"].map((slug) => serviceCatalog.find((service) => service.slug === slug)),
     ]);
   });
 });
