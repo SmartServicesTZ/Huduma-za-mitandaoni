@@ -1888,3 +1888,28 @@
   z-index:2; box-sizing:border-box; padding:0 2.5%;
   max-width:89.4%; overflow:hidden; text-overflow:clip;
 }
+
+
+/* Preset merchant QR sizing: larger code with a slim, even white safety margin. */
+.lq-card-artboard--yas .lq-sticker-qr-paper {
+  width: 57% !important;
+  padding: 2.2% !important;
+  box-sizing: border-box !important;
+}
+.lq-card-artboard--yas .lq-sticker-qr-paper > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.lq-card-artboard--airtel .lq-airtel-qr {
+  width: 80% !important;
+  padding: 4.5% !important;
+  box-sizing: border-box !important;
+}
+.lq-card-artboard--airtel .lq-airtel-qr > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
