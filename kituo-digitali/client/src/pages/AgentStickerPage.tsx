@@ -76,12 +76,13 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
   canvas.width=W;canvas.height=H;
   const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
   if(network==="halotel"){
-    const reference=await loadImage(asset("halotel-agent-reference.png"));
+    const reference=await loadImage(asset("halotel-agent-reference-clean.png"));
     canvas.width=reference.naturalWidth;canvas.height=reference.naturalHeight;
     ctx.drawImage(reference,0,0,canvas.width,canvas.height);
     const centers=[.133,.282,.431,.578,.727,.875];
-    num.slice(0,6).split("").forEach((digit,index)=>textFit(ctx,digit,canvas.width*centers[index],canvas.height*.551,canvas.width*.115,canvas.height*.145,"#050505",950,false,true));
-    textFit(ctx,nm,canvas.width*.5,canvas.height*.776,canvas.width*.76,canvas.height*.105,"#050505",950,false,true);
+    const enteredNumber=cleanNumber(number),enteredName=cleanName(name);
+    enteredNumber.slice(0,6).split("").forEach((digit,index)=>textFit(ctx,digit,canvas.width*centers[index],canvas.height*.551,canvas.width*.115,canvas.height*.145,"#050505",950,false,true));
+    if(enteredName)textFit(ctx,enteredName,canvas.width*.5,canvas.height*.776,canvas.width*.76,canvas.height*.105,"#050505",950,false,true);
     return;
   }
   if(network==="yas"){
