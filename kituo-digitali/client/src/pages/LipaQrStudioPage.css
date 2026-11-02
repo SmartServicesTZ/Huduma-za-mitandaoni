@@ -1396,3 +1396,61 @@
 .lq-a4-guide-card ul { display:grid; gap:2px; margin:0; padding:0; list-style:none; font-size:clamp(7px,1.05cqw,14px); line-height:1.15; font-weight:700; }
 .lq-a4-guide-card li::before { content:"› "; font-weight:900; }
 @media print { .lq-card-artboard--airtel-a4 { width:297mm !important; height:210mm !important; aspect-ratio:auto !important; } }
+
+
+/* Airtel A4 is a true landscape artboard; A5 and all other networks retain their existing rules. */
+.lq-card-artboard--airtel-a4 {
+  width: min(100%, 520px);
+  max-width: none;
+  aspect-ratio: 297 / 210 !important;
+  flex: 0 1 520px;
+  min-width: 0;
+  height: auto;
+  box-sizing: border-box;
+}
+.lq-card-artboard--airtel-a4 .lq-a4-layout {
+  grid-template-columns: 47% 53%;
+  min-height: 0;
+  height: 84%;
+}
+.lq-card-artboard--airtel-a4 .lq-a4-guides {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 2.2% 3%;
+  min-height: 0;
+  overflow: hidden;
+}
+.lq-card-artboard--airtel-a4 .lq-a4-guide-card {
+  min-height: 0;
+  overflow: hidden;
+  padding: 8% 3% 2% 6%;
+}
+.lq-card-artboard--airtel-a4 .lq-a4-guide-card ul {
+  gap: 2px;
+  line-height: 1.18;
+}
+@media (max-width: 700px) {
+  .lq-preview-pages .lq-card-artboard--airtel-a4 {
+    width: min(100%, 520px);
+    flex: 0 1 auto;
+    aspect-ratio: 297 / 210 !important;
+  }
+}
+@media print {
+  @page { size: A4 landscape; margin: 0; }
+  .lq-print-root > .lq-card-artboard--airtel-a4 {
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: none !important;
+    aspect-ratio: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+  .lq-card-artboard--airtel-a4 .lq-a4-layout {
+    height: calc(100% - 16%) !important;
+  }
+}
