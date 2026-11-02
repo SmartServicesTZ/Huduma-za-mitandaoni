@@ -50,7 +50,7 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string }>(function CardArtboard({ values, qrDataUrl }, ref) {
-  const name = values.businessName.trim().toUpperCase() || "JINA LA BIASHARA";
+  const name = values.businessName.trim().toUpperCase();
   const nameFontSize = `${Math.max(2.8, Math.min(3.9, 96 / Math.max(name.length, 1)))}cqw`;
 
   return <article ref={ref} className="lq-artboard lq-sticker-artboard" data-lipa-export-page="sticker">
@@ -61,12 +61,11 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     <section className="lq-sticker-main">
       <h1 className="lq-sticker-title">Lipa kwa kuscan</h1>
       <div className="lq-sticker-qr-paper">
-        {qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za biashara pekee, si QR ya malipo" /> : <span>Jaza namba na jina<br />kuona QR ya taarifa</span>}
+        {qrDataUrl ? <img src={qrDataUrl} alt="QR ya Lipa" /> : <span />}
       </div>
-      <div className="lq-sticker-number">{values.lipaNumber || "NAMBA YA LIPA"}</div>
+      <div className="lq-sticker-number">{values.lipaNumber}</div>
       <div className="lq-sticker-name" style={{ fontSize: nameFontSize }}>{name}</div>
       <p className="lq-sticker-subtitle">Lipa kutoka mitandao yote na Benki</p>
-      <p className="lq-sticker-qr-notice">QR YA TAARIFA TU · SI QR YA MALIPO</p>
       <div className="lq-sticker-yellow-sweep" aria-hidden="true" />
       <img className="lq-lipa-logo" src={asset("stika-yas/lipa-kwasimu-logo.png")} alt="Lipa kwa simu" />
     </section>
@@ -162,7 +161,7 @@ export default function LipaQrStudioPage() {
         </label>
         <label className={`lq-field ${fieldError("businessName") ? "has-error" : ""}`} htmlFor="lq-business">
           <span>Jina kwenye stika <small>{values.businessName.length}/32</small></span>
-          <input id="lq-business" maxLength={32} placeholder="Mfano: JUMANNE HAJI FUNDI" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
+          <input id="lq-business" maxLength={32} placeholder="Andika jina la biashara" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
           {fieldError("businessName") && <small role="alert">{fieldError("businessName")}</small>}
         </label>
       </section>
@@ -172,16 +171,16 @@ export default function LipaQrStudioPage() {
           <button type="button" aria-pressed={format === "pdf"} className={format === "pdf" ? "is-active" : ""} onClick={() => setFormat("pdf")}>PDF · A5</button>
           <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG · A5</button>
         </div>
-        <p className="lq-print-note">Faili ni A5, takriban 300 DPI. QR ndani ya stika hubeba jina na namba tu; haiwezi kupokea malipo.</p>
+        
       </section>
-      <div className="lq-disclaimer"><ShieldCheck size={16} /><p>Stika hii si hati rasmi ya TIPS au Yas. QR yake ni ya taarifa tu, si QR rasmi ya malipo.</p></div>
+      
     </aside>
 
     <section className="lq-preview">
       <div className="lq-preview-toolbar">
         <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa stika</strong><small>A5 · 300 DPI</small></div>
         <div className="lq-toolbar-actions">
-          <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Pakua ${format.toUpperCase()}`}</button>
+          <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Download ${format.toUpperCase()}`}</button>
           <button type="button" className="lq-button lq-button-outline" onClick={printCard} disabled={!readyToDownload}><Printer size={16} />Chapisha</button>
         </div>
       </div>
