@@ -74,51 +74,26 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean }>(function CardArtboard({ values, qrDataUrl, network, watermarked }, ref) {
-  const isYas = network === "yas";
-  const isAirtel = network === "airtel";
-  return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network}>
-    <header className={`lq-card-header lq-card-header--${network}`}>
-      <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-      <div className={`lq-network-brand lq-network-brand--${network}`} aria-label={LIPA_NETWORKS[network].label}>
-        <img src={`${import.meta.env.BASE_URL}${network === "voda" ? "lipa-assets/mpesa-header-reference.png" : network === "yas" ? "https://www.zurichbilling.co.tz/images/a8-removebg-preview.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} />
-      </div>
+  const networkLogo = network === "voda"
+    ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
+    : `${import.meta.env.BASE_URL}${network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
+  return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked}>
+    <header className="lq-sticker-header">
+      <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
+      <img className="lq-mixx-logo" src={networkLogo} alt={LIPA_NETWORKS[network].label} />
     </header>
-    {isYas ? <section className="lq-yas-body">
-      <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="" aria-hidden="true" />
-      <h2>Lipa kwa kuscan</h2>
-      <div className="lq-yas-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya TIPS" /> : <span>QR CODE</span>}</div>
-      <strong className="lq-yas-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
-      <strong className="lq-yas-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
-      <p>Lipa kutoka mitandao yote na Benki</p>
-      <div className="lq-yas-footer"><img className="lq-yas-official-footer-logo" src="https://pbs.twimg.com/media/GxMhbdOWkAEKgIx.jpg" alt="Lipa kwa simu" /></div>
-    </section> : isAirtel ? <section className="lq-airtel-body">
-      <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" aria-hidden="true" />
-      <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
-      <div className="lq-airtel-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya TIPS" /> : <span>QR CODE</span>}</div>
-      <div className="lq-airtel-fields">
-        <label>LIPA NAMBA</label><strong className="lq-airtel-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
-        <label>JINA</label><strong className="lq-airtel-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
+    <section className="lq-sticker-main">
+      <h2 className="lq-sticker-title">Lipa kwa kuscan</h2>
+      <div className="lq-sticker-qr-paper">
+        {qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : <span>Jaza taarifa kuona QR</span>}
       </div>
-      <footer className="lq-airtel-footer">
-        <div className="lq-network-logos" aria-label="Mitandao na benki zinazokubaliwa">
-          <img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" />
-          <img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Yas" />
-          <img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" />
-          <img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" />
-          <span className="lq-bank-mark"><Building2 aria-hidden="true" /> BENKI</span>
-        </div>
-        <strong>LIPA<small>KWA SIMU</small></strong>
-      </footer>
-    </section> : <section className={`lq-card-red lq-card-red--${network}`}>
-      <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}${network === "voda" ? "vodacom-logo.png" : "halotel-logo.png"}`} alt="" aria-hidden="true" />
-      <div className="lq-qr-frame"><div className="lq-qr-paper">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya taarifa za Lipa namba na biashara" /> : <span className="lq-qr-placeholder">Jaza taarifa<br />kuona QR</span>}</div></div>
-      <div className="lq-merchant-box">
-        <strong className="lq-merchant-number">{values.lipaNumber || "Namba ya Lipa"}</strong>
-        <span className="lq-merchant-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span>
-      </div>
-      <div className="lq-pay-banner"><strong>{LIPA_NETWORKS[network].stickerName}</strong></div>
-      <p className="lq-card-subtitle">Lipa kutoka mitandao yote na benki</p>
-    </section>}
+      <strong className="lq-sticker-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
+      <strong className="lq-sticker-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
+      <p className="lq-sticker-subtitle">Lipa kutoka mitandao yote na Benki</p>
+      <p className="lq-sticker-qr-notice">QR YA MALIPO · TIPS</p>
+      <div className="lq-sticker-yellow-sweep" aria-hidden="true" />
+      <img className="lq-lipa-logo" src="https://pbs.twimg.com/media/GxMhbdOWkAEKgIx.jpg" alt="Lipa kwa simu" />
+    </section>
   </article>;
 });
 
@@ -200,7 +175,7 @@ export default function LipaQrStudioPage() {
   }, [paymentPayload]);
 
   const update = (field: keyof LipaCardValues, value: string) => {
-    const next = field === "lipaNumber" ? normalizeLipaNumber(value) : field === "businessName" ? value.slice(0, 25) : value;
+    const next = field === "lipaNumber" ? normalizeLipaNumber(value) : field === "businessName" ? value.slice(0, 32) : value;
     setValues((previous) => ({ ...previous, [field]: next }));
   };
 
@@ -312,8 +287,8 @@ export default function LipaQrStudioPage() {
           {fieldError("lipaNumber") ? <small role="alert">{fieldError("lipaNumber")}</small> : <small>Andika namba ya biashara uliyopewa na mtoa huduma.</small>}
         </label>
         <label className={`lq-field ${fieldError("businessName") ? "has-error" : ""}`} htmlFor="lq-business">
-          <span>Jina la biashara <small>{values.businessName.length}/25</small></span>
-          <input id="lq-business" maxLength={25} placeholder="Mfano: Duka la Amani" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
+          <span>Jina la biashara <small>{values.businessName.length}/32</small></span>
+          <input id="lq-business" maxLength={32} placeholder="Mfano: Duka la Amani" value={values.businessName} onChange={(event) => update("businessName", event.target.value)} aria-invalid={Boolean(fieldError("businessName"))} />
           {fieldError("businessName") && <small role="alert">{fieldError("businessName")}</small>}
         </label>
       </section>
