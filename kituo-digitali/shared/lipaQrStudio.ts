@@ -16,7 +16,7 @@ export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   }
   const businessName = values.businessName.trim();
   if (!businessName) errors.businessName = "Weka jina la biashara.";
-  else if (businessName.length > 32) errors.businessName = "Jina lisizidi herufi 32.";
+  else if (businessName.length > 25) errors.businessName = "Jina lisizidi herufi 25.";
   return errors;
 }
 
