@@ -77,6 +77,18 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
+  if (network === "airtel") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked}>
+    <header className="lq-card-header lq-card-header--airtel">
+      <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
+      <div className="lq-network-brand lq-network-brand--airtel"><span className="lq-airtel-wordmark"><img src={`${import.meta.env.BASE_URL}airtel-logo-horizontal-white.png`} alt="Airtel" /><small>money</small></span></div>
+    </header>
+    <section className="lq-airtel-body">
+      <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
+      <div className="lq-airtel-qr">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : <span>QR CODE</span>}</div>
+      <div className="lq-airtel-fields"><label>LIPA NAMBA</label><strong className="lq-airtel-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong><label>JINA</label><strong className="lq-airtel-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong></div>
+      <footer className="lq-airtel-footer"><div className="lq-airtel-accepted"><span>Tunapokea:</span><div className="lq-network-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Mixx by Yas" /><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom M-Pesa" /><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" /></div></div><strong>LIPA<small>KWA SIMU</small></strong></footer>
+    </section>
+  </article>;
   return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked}>
     <header className="lq-sticker-header">
       <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
