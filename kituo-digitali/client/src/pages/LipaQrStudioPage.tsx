@@ -330,6 +330,8 @@ export default function LipaQrStudioPage() {
           <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG</button>
         </div>
         <p className="lq-print-note">Ukubwa wa A5, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti.</p>
+        <button type="button" className="lq-button lq-download-cta" onClick={() => void exportFile()} disabled={!readyToDownload}><Download size={17} />{exporting ? "Inaandaa faili..." : `PAKUA STIKA ${format.toUpperCase()}`}</button>
+        <small className="lq-download-help">Jaza namba ya Lipa na jina la biashara; kisha bonyeza hapa kupakua PDF au PNG.</small>
       </section>
       <div className="lq-disclaimer"><ShieldCheck size={16} /><p>Zana hii ni huru; haihusiani wala kuidhinishwa na Vodacom Tanzania, M-Pesa au TIPS. QR hutengenezwa kwa muundo unaoonekana kwenye mifano ya TIPS iliyotolewa. Hakiki kwa mtoa huduma kuwa taarifa za biashara zimewezeshwa kupokea malipo kwa QR.</p></div>
     </aside>
