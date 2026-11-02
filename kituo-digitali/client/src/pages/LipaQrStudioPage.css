@@ -1344,3 +1344,25 @@
 .lq-card-artboard--airtel .lq-network-logos{display:flex;gap:4px;align-items:center}
 .lq-card-artboard--airtel .lq-network-logos img{display:block;width:8.5cqw;height:6.2cqw;max-width:34px;max-height:25px;object-fit:contain}
 .lq-card-artboard--airtel .lq-airtel-footer>strong{font-size:5.5cqw;line-height:.8;text-align:right}.lq-card-artboard--airtel .lq-airtel-footer>strong small{display:block;font-size:2.3cqw;letter-spacing:.1em}
+
+
+/* Airtel A4/A5 paper selection: keep the live preview's physical ratio in sync
+   with the selected output size. The card artwork itself remains unchanged. */
+.lq-card-artboard--airtel[data-paper-size="A4"] {
+  aspect-ratio: 210 / 297 !important;
+}
+.lq-card-artboard--airtel[data-paper-size="A5"] {
+  aspect-ratio: 148 / 210 !important;
+}
+@media print {
+  .lq-print-root > .lq-card-artboard--airtel[data-paper-size="A4"] {
+    width: 210mm !important;
+    height: 297mm !important;
+    aspect-ratio: auto !important;
+  }
+  .lq-print-root > .lq-card-artboard--airtel[data-paper-size="A5"] {
+    width: 148mm !important;
+    height: 210mm !important;
+    aspect-ratio: auto !important;
+  }
+}
