@@ -580,15 +580,21 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
     let createdServices = 0;
     let createdNetworks = 0;
     existingRecords.forEach(({ item, snapshot, targetRef }) => {
+      const serviceSlug = String((item.data as { slug?: string }).slug ?? "");
+      const isLipaSticker = targetRef.parent.id === "services" && ["stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"].includes(serviceSlug);
       if (!snapshot.exists) {
-        transaction.create(targetRef, { ...item.data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+        transaction.create(targetRef, {
+          ...item.data,
+          ...(isLipaSticker ? { isVisible: true, active: true, category: "HUDUMA ZA WAKALA" } : {}),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
         if (item.ref.parent.id === "services") createdServices += 1;
         else createdNetworks += 1;
         return;
       }
       const existing = snapshot.data()!;
       const backfill = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
-      const serviceSlug = String((item.data as { slug?: string }).slug ?? "");
       const isAccessService = targetRef.parent.id === "services" && /^access-lipa-(airtel|yas|vodacom|halotel)$/.test(serviceSlug);
       const isLipaSticker = targetRef.parent.id === "services" && ["stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"].includes(serviceSlug);
       if (isAccessService) {
