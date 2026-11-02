@@ -24,6 +24,21 @@ const LIPA_NETWORKS: Record<LipaNetwork, { label: string; stickerName: string }>
   halotel: { label: "Halotel", stickerName: "Lipa kwa Halotel" },
 };
 
+const LIPA_QR_PRESETS: Partial<Record<LipaNetwork, { values: LipaCardValues; payload: string }>> = {
+  voda: {
+    values: { lipaNumber: "14514145", businessName: "Steward Jackson njiwa", location: "KITETO", postalCode: "27500" },
+    payload: "00020101021126390014tz.go.bot.tips0105025030208145141455204000053038345802TZ5921STEWARD JACKSON NJIWA6006KITETO610527500622103080011234907051100263041680",
+  },
+  yas: {
+    values: { lipaNumber: "15148616", businessName: "STAWARD Jackson njiwa", location: "KIBAHA CBD", postalCode: "61104" },
+    payload: "00020101021226390014tz.go.bot.tips0105025010208151486165204413153038345802TZ5921STAWARD JACKSON NJIWA6010KIBAHA CBD610561104622103082271514307051100263040240",
+  },
+  airtel: {
+    values: { lipaNumber: "656123588", businessName: "Mariam nzumbi masele", location: "DAR ES SALAAM", postalCode: "11000" },
+    payload: "00020101021226400014tz.go.bot.tips01050250402096561235885204000053038345802TZ5920MARIAM NZUMBI MASELE6013DAR ES SALAAM610511000621303096561235886304EEF8",
+  },
+};
+
 
 
 const A5_WIDTH_PX = 1748;
@@ -251,7 +266,7 @@ export default function LipaQrStudioPage() {
   const [entryMessage, setEntryMessage] = useState("Inafungua huduma...");
   const entryRequestId = useRef(crypto.randomUUID());
   const outputUsed = useRef(false);
-  const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "53000" });
+  const [values, setValues] = useState<LipaCardValues>(LIPA_QR_PRESETS.voda!.values);
   const [network, setNetwork] = useState<LipaNetwork>("voda");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
   const [format, setFormat] = useState<FileFormat>("pdf");
@@ -267,7 +282,14 @@ export default function LipaQrStudioPage() {
   const guideRef = useRef<HTMLElement>(null);
   const errors = useMemo(() => validateLipaCard(values), [values]);
   const isValid = Object.keys(errors).length === 0;
-  const paymentPayload = useMemo(() => { if (!isValid || network === "halotel") return ""; return createTipsPaymentPayload(values); }, [isValid, values, network]);
+  const paymentPayload = useMemo(() => {
+    if (!isValid || network === "halotel") return "";
+    const preset = LIPA_QR_PRESETS[network];
+    if (preset && values.lipaNumber === preset.values.lipaNumber && values.businessName.trim().toUpperCase() === preset.values.businessName.toUpperCase()) {
+      return preset.payload;
+    }
+    return createTipsPaymentPayload(values);
+  }, [isValid, values, network]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -297,6 +319,13 @@ export default function LipaQrStudioPage() {
   const update = (field: keyof LipaCardValues, value: string) => {
     const next = field === "lipaNumber" ? normalizeLipaNumber(value) : field === "businessName" ? value.slice(0, 32) : value;
     setValues((previous) => ({ ...previous, [field]: next }));
+  };
+
+  const selectNetwork = (nextNetwork: LipaNetwork) => {
+    setNetwork(nextNetwork);
+    const preset = LIPA_QR_PRESETS[nextNetwork];
+    if (preset) setValues(preset.values);
+    setShowErrors(false);
   };
 
   const validateBeforeAction = () => {
@@ -410,16 +439,16 @@ export default function LipaQrStudioPage() {
         <div className="lq-field" role="group" aria-labelledby="lq-network-label">
           <span id="lq-network-label">Chagua mtandao wa stika</span>
           <div className="lq-network-options">
-            <button type="button" className={`lq-network-option lq-network-option--voda ${network === "voda" ? "is-selected" : ""}`} aria-pressed={network === "voda"} onClick={() => setNetwork("voda")}>
+            <button type="button" className={`lq-network-option lq-network-option--voda ${network === "voda" ? "is-selected" : ""}`} aria-pressed={network === "voda"} onClick={() => selectNetwork("voda")}>
               <span className="lq-network-logo lq-network-logo--voda"><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Vodacom</strong><small>M-Pesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
-            <button type="button" className={`lq-network-option lq-network-option--yas ${network === "yas" ? "is-selected" : ""}`} aria-pressed={network === "yas"} onClick={() => setNetwork("yas")}>
+            <button type="button" className={`lq-network-option lq-network-option--yas ${network === "yas" ? "is-selected" : ""}`} aria-pressed={network === "yas"} onClick={() => selectNetwork("yas")}>
               <span className="lq-network-logo lq-network-logo--yas"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Yas</strong><small>Mixx by Yas</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
-            <button type="button" className={`lq-network-option lq-network-option--airtel ${network === "airtel" ? "is-selected" : ""}`} aria-pressed={network === "airtel"} onClick={() => setNetwork("airtel")}>
+            <button type="button" className={`lq-network-option lq-network-option--airtel ${network === "airtel" ? "is-selected" : ""}`} aria-pressed={network === "airtel"} onClick={() => selectNetwork("airtel")}>
               <span className="lq-network-logo lq-network-logo--airtel"><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Airtel</strong><small>Money</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
-            <button type="button" className={`lq-network-option lq-network-option--halotel ${network === "halotel" ? "is-selected" : ""}`} aria-pressed={network === "halotel"} onClick={() => setNetwork("halotel")}>
+            <button type="button" className={`lq-network-option lq-network-option--halotel ${network === "halotel" ? "is-selected" : ""}`} aria-pressed={network === "halotel"} onClick={() => selectNetwork("halotel")}>
               <span className="lq-network-logo lq-network-logo--halotel"><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Halotel</strong><small>HaloPesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
           </div>
