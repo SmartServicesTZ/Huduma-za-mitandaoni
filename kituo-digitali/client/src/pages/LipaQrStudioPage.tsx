@@ -76,7 +76,7 @@ function downloadBlob(blob: Blob, filename: string) {
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean }>(function CardArtboard({ values, qrDataUrl, network, watermarked }, ref) {
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
-    : `${import.meta.env.BASE_URL}${network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
+    : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
   return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked}>
     <header className="lq-sticker-header">
       <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
@@ -92,7 +92,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       <p className="lq-sticker-subtitle">Lipa kutoka mitandao yote na Benki</p>
       <p className="lq-sticker-qr-notice">QR YA MALIPO · TIPS</p>
       <div className="lq-sticker-yellow-sweep" aria-hidden="true" />
-      <img className="lq-lipa-logo" src="https://pbs.twimg.com/media/GxMhbdOWkAEKgIx.jpg" alt="Lipa kwa simu" />
+      <img className="lq-lipa-logo" src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa simu" />
     </section>
   </article>;
 });
