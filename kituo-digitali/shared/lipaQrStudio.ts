@@ -38,7 +38,7 @@ function crc16(value: string): string {
 export function createTipsPaymentPayload(values: LipaCardValues): string {
   const number = normalizeLipaNumber(values.lipaNumber);
   const name = values.businessName.trim().toUpperCase();
-  if (!/^\\d{5,12}$/.test(number)) throw new Error("Namba ya Lipa si sahihi.");
+  if (!/^\d{5,12}$/.test(number)) throw new Error("Namba ya Lipa si sahihi.");
   if (!name || name.length > 25) throw new Error("Jina la biashara liwe na herufi 1 hadi 25.");
 
   const merchantAccount = field("00", "tz.go.bot.tips") +
