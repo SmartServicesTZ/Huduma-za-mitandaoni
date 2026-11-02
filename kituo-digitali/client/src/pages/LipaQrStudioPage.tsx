@@ -313,7 +313,7 @@ export default function LipaQrStudioPage() {
         kind: config.isFree || config.tokenCost === 0 ? "free" : "paid", tokenType: "huduma",
       }, entryRequestId.current);
       setEntryStatus("paid");
-      // Subiri watermark ionekane kwenye preview kabla ya kutengeneza faili la mwisho.
+      // Subiri watermark iondoke kwenye preview baada ya tokeni kuthibitishwa.
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const canvases: HTMLCanvasElement[] = [];
       for (const page of pages) canvases.push(await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX, page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined));
@@ -381,7 +381,6 @@ export default function LipaQrStudioPage() {
     };
     window.addEventListener("afterprint", cleanup);
     window.print();
-    setLocation("/services");
   };
 
   const fieldError = (field: keyof LipaCardValues) => showErrors ? errors[field] : undefined;
@@ -392,7 +391,7 @@ export default function LipaQrStudioPage() {
   return <main className="lq-app">
     <aside className="lq-sidebar">
       <div className="lq-sidebar-top">
-        <Link href="/services" className="lq-back-link"><ArrowLeft size={16} /> Rudi kwenye huduma</Link>
+        
         <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>STIKA ZA LIPA</strong><small>Tengeneza kadi ya Lipa</small></span></span>
       </div>
       <section className="lq-editor-panel">
@@ -462,7 +461,7 @@ export default function LipaQrStudioPage() {
         </div>
       </div>
       <div className="lq-preview-pages lq-print-root" data-paper-size={selectedPaperSize}>
-        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} watermarked={entryStatus === "paid"} paperSize={selectedPaperSize} />
+        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} watermarked={entryStatus !== "paid"} paperSize={selectedPaperSize} />
         {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} watermarked={entryStatus === "paid"} />}
       </div>
       <div className="lq-preview-footnote"><Info size={14} />Hakikisha QR inasomwa na inaonyesha jina na namba sahihi kabla ya kuchapisha.</div>
