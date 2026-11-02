@@ -311,7 +311,7 @@ export default function LipaQrStudioPage() {
       <div className="lq-disclaimer"><ShieldCheck size={16} /><p>Zana hii ni huru; haihusiani wala kuidhinishwa na Vodacom Tanzania, M-Pesa au TIPS. QR hutengenezwa kwa muundo unaoonekana kwenye mifano ya TIPS iliyotolewa. Hakiki kwa mtoa huduma kuwa taarifa za biashara zimewezeshwa kupokea malipo kwa QR.</p></div>
     </aside>
 
-    <section className="lq-preview">
+    <section className={`lq-preview lq-preview--${network}`}>
       <div className="lq-preview-toolbar">
         <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa kadi</strong><small>A5 · 300 DPI</small></div>
         <div className="lq-toolbar-actions">

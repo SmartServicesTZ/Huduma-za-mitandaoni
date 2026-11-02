@@ -1255,3 +1255,52 @@
 
 /* Yas Lipa kwa simu artwork is exclusive to Yas, not Vodacom/Airtel/Halotel. */
 .lq-card-artboard:not(.lq-card-artboard--yas) .lq-lipa-logo { display:none !important; }
+
+
+/* Operator colors belong to the OUTER preview area surrounding the sticker.
+   Keep the sticker artboard itself unchanged. */
+.lq-preview.lq-preview--voda {
+  color:#fff;
+  background:#e60000;
+  background-image:linear-gradient(145deg,#f01424 0%,#d90016 58%,#a90012 100%);
+}
+.lq-preview.lq-preview--airtel {
+  color:#252525;
+  background:#fff;
+  background-image:none;
+}
+.lq-preview.lq-preview--yas {
+  color:#06377a;
+  background:#fcd109;
+  background-image:none;
+}
+.lq-preview.lq-preview--halotel {
+  color:#087b45;
+  background:#fff;
+  background-image:none;
+}
+.lq-preview--airtel .lq-preview-overline,
+.lq-preview--airtel .lq-preview-toolbar small,
+.lq-preview--airtel .lq-preview-footnote,
+.lq-preview--halotel .lq-preview-overline,
+.lq-preview--halotel .lq-preview-toolbar small,
+.lq-preview--halotel .lq-preview-footnote { color:#59636f; }
+.lq-preview--yas .lq-preview-overline,
+.lq-preview--yas .lq-preview-toolbar small,
+.lq-preview--yas .lq-preview-footnote { color:#06377a; }
+.lq-preview--airtel .lq-button-outline,
+.lq-preview--halotel .lq-button-outline,
+.lq-preview--yas .lq-button-outline {
+  color:inherit;
+  border-color:currentColor;
+  background:transparent;
+}
+.lq-preview--airtel .lq-preview-footnote svg,
+.lq-preview--halotel .lq-preview-footnote svg,
+.lq-preview--yas .lq-preview-footnote svg { color:inherit; }
+.lq-preview--airtel .lq-mobile-actions,
+.lq-preview--halotel .lq-mobile-actions { background:#fff; border-top-color:#dfe3e8; }
+.lq-preview--yas .lq-mobile-actions { background:#fcd109; border-top-color:#d9b900; }
+.lq-preview--airtel .lq-mobile-actions .lq-button-outline,
+.lq-preview--halotel .lq-mobile-actions .lq-button-outline,
+.lq-preview--yas .lq-mobile-actions .lq-button-outline { color:inherit; border-color:currentColor; }
