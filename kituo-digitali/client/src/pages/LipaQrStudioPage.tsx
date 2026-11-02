@@ -96,6 +96,22 @@ function downloadBlob(blob: Blob, filename: string) {
 
 type A4ServiceLogoKind = "lipa" | "tigo" | "mpesa" | "nmb" | "simbanking" | "other";
 
+function AirtelLipaByPhoneLogo({ className }: { className: string }) {
+  return <svg viewBox="0 0 300 112" role="img" aria-label="Airtel Lipa kwa Simu — mkono unaoshika simu" className={className}>
+    <g fill="none" stroke="#e31b35" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="20" y="8" width="48" height="82" rx="9" fill="#fff" />
+      <path d="M34 19h20M39 78h10" />
+      <path d="M12 75c8-9 17-12 27-10l17 4c8 2 13 8 10 15-2 6-8 8-15 7l-15-3 13 8c8 5 17 4 24-2l20-18c6-5 13-5 17 0 4 5 2 11-3 16l-25 23c-11 10-27 12-40 5L9 100c-8-5-7-18 3-25Z" fill="#fff"/>
+    </g>
+    <g fill="#e31b35">
+      <text x="103" y="45" fontSize="27" fontWeight="900" letterSpacing=".5">LIPA KWA</text>
+      <text x="103" y="78" fontSize="31" fontWeight="900" letterSpacing="1">SIMU</text>
+      <path d="M105 88h151" stroke="#e31b35" strokeWidth="5" strokeLinecap="round"/>
+    </g>
+    <text x="105" y="106" fill="#555" fontSize="11" fontWeight="800" letterSpacing="2">AIRTEL MONEY</text>
+  </svg>;
+}
+
 function A4ServiceLogo({ kind }: { kind: A4ServiceLogoKind }) {
   if (kind === "tigo") return <svg viewBox="0 0 240 62" role="img" aria-label="Tigo Pesa" className="lq-a4-vector-logo"><path d="M12 18c14-18 31-18 40-6-13-2-22 4-29 16-5 8-10 8-15 2 7-1 9-6 4-12Z" fill="#edc52b"/><text x="61" y="39" fill="#173a65" fontSize="32" fontWeight="800" fontStyle="italic">tigo</text><text x="142" y="39" fill="#173a65" fontSize="27" fontWeight="700">pesa</text></svg>;
   if (kind === "mpesa") return <svg viewBox="0 0 240 62" role="img" aria-label="Vodacom M-Pesa" className="lq-a4-vector-logo"><path d="M29 8c-17 0-26 12-26 25 0 15 12 24 27 24 16 0 27-11 27-25 0-13-10-24-28-24Zm0 10c9 0 14 7 14 15 0 8-5 15-14 15S14 41 14 33c0-8 6-15 15-15Z" fill="#e21b2b"/><text x="68" y="40" fill="#d7192d" fontSize="34" fontWeight="800">m-pesa</text></svg>;
@@ -131,14 +147,14 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
               <img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" />
             </div>
           </div>
-          <img className="lq-a4-lipa-logo" src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa Simu — mkono unaoshika simu" />
+          <AirtelLipaByPhoneLogo className="lq-a4-lipa-logo" />
         </footer>
       </section>
       <section className="lq-a4-guides" aria-label="Maelekezo ya kulipa">
         {A4_GUIDES.map(([title, command, steps], index) => <article className={`lq-a4-guide-card lq-a4-guide-card--${index < 3 ? "yellow" : "purple"}`} key={title}>
           <div className="lq-a4-guide-brand">
             {index === 0
-              ? <img src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa Simu" />
+              ? <AirtelLipaByPhoneLogo className="lq-a4-vector-logo" />
               : <A4ServiceLogo kind={index === 1 ? "tigo" : index === 2 ? "mpesa" : index === 3 ? "nmb" : index === 4 ? "simbanking" : "other"} />}
           </div>
           <h3>{command}</h3>
