@@ -75,30 +75,28 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
   const ctx=canvas.getContext("2d");if(!ctx)return;
   canvas.width=W;canvas.height=H;
   const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
-  if(network==="halotel" || network==="yas"){
+  if(network==="halotel"){
+    const reference=await loadImage(asset("halotel-agent-reference.png"));
+    canvas.width=reference.naturalWidth;canvas.height=reference.naturalHeight;
+    ctx.drawImage(reference,0,0,canvas.width,canvas.height);
+    const centers=[.133,.282,.431,.578,.727,.875];
+    num.slice(0,6).split("").forEach((digit,index)=>textFit(ctx,digit,canvas.width*centers[index],canvas.height*.551,canvas.width*.115,canvas.height*.145,"#050505",950,false,true));
+    textFit(ctx,nm,canvas.width*.5,canvas.height*.776,canvas.width*.76,canvas.height*.105,"#050505",950,false,true);
+    return;
+  }
+  if(network==="yas"){
     canvas.width=W;canvas.height=H;
-    const bg=ctx.createLinearGradient(0,0,W,H);
-    if(network==="halotel"){bg.addColorStop(0,"#fff3a3");bg.addColorStop(.48,"#facc15");bg.addColorStop(1,"#dca300");}
-    else{bg.addColorStop(0,"#0d6bb8");bg.addColorStop(.52,"#064b91");bg.addColorStop(1,"#061e4a");}
+    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,"#0d6bb8");bg.addColorStop(.52,"#064b91");bg.addColorStop(1,"#061e4a");
     ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-    ctx.save();ctx.globalAlpha=.13;ctx.strokeStyle=network==="halotel"?"#854d0e":"#ffffff";ctx.lineWidth=5;
+    ctx.save();ctx.globalAlpha=.13;ctx.strokeStyle="#ffffff";ctx.lineWidth=5;
     for(let x=-H;x<W;x+=110){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+H,H);ctx.stroke();}
     ctx.restore();
-    const logo=await loadImage(asset(network==="halotel"?"halotel-logo.png":"yas-logo.png"));
-    const logoW=network==="halotel"?520:410, logoH=network==="halotel"?210:230;
-    ctx.save();ctx.fillStyle="#fff";ctx.globalAlpha=.96;ctx.beginPath();ctx.roundRect((W-logoW-36)/2,45,logoW+36,logoH+26,34);ctx.fill();ctx.restore();
-    ctx.drawImage(logo,(W-logoW)/2,58,logoW,logoH);
-    drawStickerFrame(ctx,W,H);
-    const numberColor=network==="halotel"?"#3b2500":"#ffffff";
-    const nameColor=network==="halotel"?"#241700":"#ffffff";
-    textFit(ctx,num,W/2,565,W*.78,150,numberColor,950,true,true);
-    textFit(ctx,nm,W/2,790,W*.82,88,nameColor,950,true,true);
-    if(network==="halotel"){
-      textFit(ctx,"LIPA KWA HALOPESA",W/2,930,W*.75,44,"#4a2c00",900,false);
-      textFit(ctx,"*150*88#",W/2,990,W*.5,36,"#4a2c00",900,false);
-    }else{
-      textFit(ctx,"YAS WAKALA",W/2,930,W*.75,48,"#ffdf00",900,false);
-    }
+    const logo=await loadImage(asset("yas-logo.png"));
+    ctx.save();ctx.fillStyle="#fff";ctx.globalAlpha=.96;ctx.beginPath();ctx.roundRect((W-446)/2,45,446,256,34);ctx.fill();ctx.restore();
+    ctx.drawImage(logo,(W-410)/2,58,410,230);drawStickerFrame(ctx,W,H);
+    textFit(ctx,num,W/2,565,W*.78,150,"#ffffff",950,true,true);
+    textFit(ctx,nm,W/2,790,W*.82,88,"#ffffff",950,true,true);
+    textFit(ctx,"YAS WAKALA",W/2,930,W*.75,48,"#ffdf00",900,false);
     return;
   }
   if(network!=="airtel"){
