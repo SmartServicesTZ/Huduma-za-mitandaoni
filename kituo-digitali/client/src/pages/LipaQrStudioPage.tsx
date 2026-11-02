@@ -32,6 +32,7 @@ const A5_WIDTH_MM = 148;
 const A5_HEIGHT_MM = 210;
 const A4_WIDTH_MM = 297;
 const A4_HEIGHT_MM = 210;
+const A4_HEIGHT_PX = 2480;
 const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
 const A4_GUIDES: ReadonlyArray<readonly [string, string, readonly string[]]> = [
   ["LIPA KWA SIMU", "Piga *150*60#", ["Chagua 5 Lipa Bili", "Chagua 1 Lipa kwa Simu", "Chagua 1 Airtel", "Weka Lipa Namba", "Weka Kiasi", "Weka PIN"]],
@@ -47,7 +48,7 @@ function makeFileStem(name: string, number: string) {
   return `${safeName || "lipa-kadi"}-${number}`;
 }
 
-async function captureArtboard(element: HTMLElement, outputWidthPx = A5_WIDTH_PX) {
+async function captureArtboard(element: HTMLElement, outputWidthPx = A5_WIDTH_PX, outputHeightPx?: number) {
   await document.fonts?.ready;
   const width = element.getBoundingClientRect().width;
   if (!width) throw new Error("Hakikisho halijawa tayari.");
@@ -69,10 +70,19 @@ async function captureArtboard(element: HTMLElement, outputWidthPx = A5_WIDTH_PX
   // than html2canvas's partial CSS renderer. This preserves gradients,
   // pseudo-elements, container units and the responsive preview styling.
   const { domToCanvas } = await import("modern-screenshot");
-  return domToCanvas(element, {
+  const rendered = await domToCanvas(element, {
     backgroundColor: "#ffffff",
     scale: outputWidthPx / width,
   });
+  if (!outputHeightPx || (rendered.width === outputWidthPx && rendered.height === outputHeightPx)) return rendered;
+  // Normalize export dimensions so A4 PNG is exactly 3508 × 2480 px at 300 DPI.
+  const normalized = document.createElement("canvas");
+  normalized.width = outputWidthPx;
+  normalized.height = outputHeightPx;
+  const context = normalized.getContext("2d");
+  if (!context) throw new Error("Imeshindikana kuandaa vipimo vya picha.");
+  context.drawImage(rendered, 0, 0, outputWidthPx, outputHeightPx);
+  return normalized;
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -242,7 +252,7 @@ export default function LipaQrStudioPage() {
     setExporting(true);
     try {
       // Hakikisha faili linaweza kutengenezwa kabla ya kukata tokeni.
-      for (const page of pages) await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX);
+      for (const page of pages) await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX, page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined);
       if (!firebaseUser) throw new Error("Ingia kwenye akaunti yako ili kupakua.");
       const config = await getServiceTokenConfig("stika-lipa");
       await consumeFirebaseTokens(firebaseUser.uid, {
@@ -253,7 +263,7 @@ export default function LipaQrStudioPage() {
       // Subiri watermark ionekane kwenye preview kabla ya kutengeneza faili la mwisho.
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const canvases: HTMLCanvasElement[] = [];
-      for (const page of pages) canvases.push(await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX));
+      for (const page of pages) canvases.push(await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX, page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined));
       const stem = makeFileStem(values.businessName, values.lipaNumber);
       if (format === "pdf") {
         const { PDFDocument } = await import("pdf-lib");
@@ -303,11 +313,11 @@ export default function LipaQrStudioPage() {
     const printStyle = document.createElement("style");
     printStyle.id = "lq-dynamic-print-size";
     printStyle.textContent = `
-      @page { size: ${paperSize} portrait; margin: 0; }
+      @page { size: ${paperSize === "A4" ? "A4 landscape" : "A5 portrait"}; margin: 0; }
       @media print {
-        html, body { width: ${widthMm}mm !important; height: ${heightMm}mm !important; }
-        .lq-print-root { width: ${widthMm}mm !important; }
-        .lq-print-root > .lq-artboard { width: ${widthMm}mm !important; height: ${heightMm}mm !important; }
+        html, body { width: ${widthMm}mm !important; height: ${heightMm}mm !important; margin: 0 !important; padding: 0 !important; }
+        .lq-print-root { width: ${widthMm}mm !important; height: ${heightMm}mm !important; }
+        .lq-print-root > .lq-artboard { width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }
       }
     `;
     document.head.appendChild(printStyle);
@@ -370,7 +380,7 @@ export default function LipaQrStudioPage() {
             <button type="button" aria-pressed={airtelPaperSize === "A5"} className={airtelPaperSize === "A5" ? "is-active" : ""} onClick={() => setAirtelPaperSize("A5")}>A5</button>
             <button type="button" aria-pressed={airtelPaperSize === "A4"} className={airtelPaperSize === "A4" ? "is-active" : ""} onClick={() => setAirtelPaperSize("A4")}>A4</button>
           </div>
-          <small>{airtelPaperSize === "A4" ? "A4 — 210 × 297 mm · 300 DPI" : "A5 — 148 × 210 mm · 300 DPI"}</small>
+          <small>{airtelPaperSize === "A4" ? "A4 landscape — 297 × 210 mm · 300 DPI" : "A5 portrait — 148 × 210 mm · 300 DPI"}</small>
         </div>}
         <div className="lq-section-heading"><span>MATOKEO</span></div>
         <div className="lq-choice-group" role="group" aria-label="Chagua kurasa za kadi">
