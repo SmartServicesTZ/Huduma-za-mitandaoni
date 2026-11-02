@@ -41,6 +41,10 @@
 .lq-choice-group button:hover { color: #a6001b; }
 .lq-choice-group button.is-active { color: var(--lq-red); background: #fff; box-shadow: 0 1px 4px #48131c16; }
 .lq-print-note { margin: 0; color: #929ba7; font-size: 9px; line-height: 1.5; }
+.lq-download-cta { width: 100%; min-height: 46px; margin-top: 3px; color: #fff; background: linear-gradient(135deg, #c90020, #8d0019); box-shadow: 0 7px 18px #c9002026; font-size: 12px; letter-spacing: .02em; }
+.lq-download-cta:hover:not(:disabled) { background: linear-gradient(135deg, #e01937, #a4001d); }
+.lq-download-cta:disabled { opacity: .48; }
+.lq-download-help { color: #788394; font-size: 9px; line-height: 1.45; text-align: center; }
 .lq-disclaimer { display: flex; align-items: flex-start; gap: 8px; margin-top: auto; padding: 12px 11px; border: 1px solid #f1d5d9; border-radius: 10px; color: #792130; background: #fff7f8; }
 .lq-disclaimer svg { flex: 0 0 auto; margin-top: 1px; color: #b51c32; }
 .lq-disclaimer p { margin: 0; font-size: 9px; line-height: 1.5; }
