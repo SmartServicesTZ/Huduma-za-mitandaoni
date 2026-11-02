@@ -22,7 +22,6 @@ const AirtelSmeContractPage = lazy(() => import("./AirtelSmeContractPage"));
 const ContractMakerPage = lazy(() => import("./ContractMakerPage"));
 const AgentStickerPage = lazy(() => import("./AgentStickerPage"));
 const LipaQrStudioPage = lazy(() => import("./LipaQrStudioPage"));
-const LipaStickerPage = lazy(() => import("./LipaStickerPage"));
 const AgentIdPage = lazy(() => import("./AgentIdPage"));
 const AccessLipaNumberPage = lazy(() => import("./AccessLipaNumberPage"));
 const PataTillNetworksPage = lazy(() => import("./PataTillNetworksPage"));
