@@ -261,9 +261,7 @@ export default function AgentStickerPage(){
         <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-black">Muonekano wa stika</h2><p className="text-xs text-slate-500">{p.label} · Hakikisho la moja kwa moja</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">LIVE PREVIEW</span></div>
           <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/>{entryStatus!=="paid"&&<div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-            <div className="grid w-[145%] -rotate-[24deg] grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-10">
-              {Array.from({length:12},(_,i)=><span key={i} className="select-none whitespace-nowrap text-center text-[clamp(13px,2.2vw,30px)] font-black tracking-[.12em] text-white" style={{WebkitTextStroke:"1.2px rgba(15,23,42,.9)",textShadow:"0 2px 5px rgba(0,0,0,.95), 0 0 12px rgba(0,0,0,.8)"}}>SMARTSERVICESTZ • HAKIKISHO • SAMPLE</span>)}
-            </div>
+            <span className="-rotate-[22deg] select-none whitespace-nowrap text-center text-[clamp(22px,4vw,52px)] font-black tracking-[.14em] text-white/65" style={{WebkitTextStroke:"1.5px rgba(15,23,42,.72)",textShadow:"0 2px 5px rgba(0,0,0,.55)"}}>SMARTSERVICESTZ</span>
           </div>}</div>
           <p className="mt-3 text-center text-xs text-slate-500">{previewError||(!previewReady?"Inapakia muundo wa stika...":"PNG itapakuliwa kwa mwonekano huu huu.")}</p>
         </section>
