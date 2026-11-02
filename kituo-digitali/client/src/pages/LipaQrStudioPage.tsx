@@ -268,6 +268,28 @@ export default function LipaQrStudioPage() {
     if (entryStatus !== "ready" || outputUsed.current) { toast.error("Pakua stika kwanza ili kukamilisha huduma na makato ya tokeni."); return; }
     if (!validateBeforeAction()) return;
     outputUsed.current = true;
+
+    // Print size follows the selected Airtel paper; every other network stays A5.
+    const paperSize = network === "airtel" ? airtelPaperSize : "A5";
+    const widthMm = paperSize === "A4" ? A4_WIDTH_MM : A5_WIDTH_MM;
+    const heightMm = paperSize === "A4" ? A4_HEIGHT_MM : A5_HEIGHT_MM;
+    document.getElementById("lq-dynamic-print-size")?.remove();
+    const printStyle = document.createElement("style");
+    printStyle.id = "lq-dynamic-print-size";
+    printStyle.textContent = `
+      @page { size: ${paperSize} portrait; margin: 0; }
+      @media print {
+        html, body { width: ${widthMm}mm !important; height: ${heightMm}mm !important; }
+        .lq-print-root { width: ${widthMm}mm !important; }
+        .lq-print-root > .lq-artboard { width: ${widthMm}mm !important; height: ${heightMm}mm !important; }
+      }
+    `;
+    document.head.appendChild(printStyle);
+    const cleanup = () => {
+      document.getElementById("lq-dynamic-print-size")?.remove();
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
     window.print();
     setLocation("/services");
   };
