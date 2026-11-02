@@ -27,8 +27,11 @@ const LIPA_NETWORKS: Record<LipaNetwork, { label: string; stickerName: string }>
 
 
 const A5_WIDTH_PX = 1748;
+const A4_WIDTH_PX = 2480;
 const A5_WIDTH_MM = 148;
 const A5_HEIGHT_MM = 210;
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
 const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
 
 function makeFileStem(name: string, number: string) {
@@ -36,7 +39,7 @@ function makeFileStem(name: string, number: string) {
   return `${safeName || "lipa-kadi"}-${number}`;
 }
 
-async function captureArtboard(element: HTMLElement) {
+async function captureArtboard(element: HTMLElement, outputWidthPx = A5_WIDTH_PX) {
   await document.fonts?.ready;
   const width = element.getBoundingClientRect().width;
   if (!width) throw new Error("Hakikisho halijawa tayari.");
@@ -60,7 +63,7 @@ async function captureArtboard(element: HTMLElement) {
   const { domToCanvas } = await import("modern-screenshot");
   return domToCanvas(element, {
     backgroundColor: "#ffffff",
-    scale: A5_WIDTH_PX / width,
+    scale: outputWidthPx / width,
   });
 }
 
@@ -73,11 +76,11 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean }>(function CardArtboard({ values, qrDataUrl, network, watermarked }, ref) {
+const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean; paperSize: "A5" | "A4" }>(function CardArtboard({ values, qrDataUrl, network, watermarked }, ref) {
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
-  if (network === "airtel") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked}>
+  if (network === "airtel") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size={paperSize}>
     <header className="lq-card-header lq-card-header--airtel">
       <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
       <div className="lq-network-brand lq-network-brand--airtel"><span className="lq-airtel-wordmark"><img src={`${import.meta.env.BASE_URL}airtel-logo-horizontal-white.png`} alt="Airtel" /><small>money</small></span></div>
@@ -89,7 +92,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       <footer className="lq-airtel-footer"><div className="lq-airtel-accepted"><span>Tunapokea:</span><div className="lq-network-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Mixx by Yas" /><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom M-Pesa" /><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" /></div></div><strong>LIPA<small>KWA SIMU</small></strong></footer>
     </section>
   </article>;
-  return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked}>
+  return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
     <header className="lq-sticker-header">
       <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
       <img className="lq-mixx-logo" src={networkLogo} alt={LIPA_NETWORKS[network].label} />
@@ -152,6 +155,11 @@ export default function LipaQrStudioPage() {
   const [network, setNetwork] = useState<LipaNetwork>("voda");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
   const [format, setFormat] = useState<FileFormat>("pdf");
+  const [airtelPaperSize, setAirtelPaperSize] = useState<"A5" | "A4">("A5");
+  const selectedPaperSize = network === "airtel" ? airtelPaperSize : "A5";
+  const outputWidthMm = selectedPaperSize === "A4" ? A4_WIDTH_MM : A5_WIDTH_MM;
+  const outputHeightMm = selectedPaperSize === "A4" ? A4_HEIGHT_MM : A5_HEIGHT_MM;
+  const outputWidthPx = selectedPaperSize === "A4" ? A4_WIDTH_PX : A5_WIDTH_PX;
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [showErrors, setShowErrors] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -208,7 +216,7 @@ export default function LipaQrStudioPage() {
     setExporting(true);
     try {
       // Hakikisha faili linaweza kutengenezwa kabla ya kukata tokeni.
-      for (const page of pages) await captureArtboard(page);
+      for (const page of pages) await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX);
       if (!firebaseUser) throw new Error("Ingia kwenye akaunti yako ili kupakua.");
       const config = await getServiceTokenConfig("stika-lipa");
       await consumeFirebaseTokens(firebaseUser.uid, {
@@ -219,14 +227,16 @@ export default function LipaQrStudioPage() {
       // Subiri watermark ionekane kwenye preview kabla ya kutengeneza faili la mwisho.
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const canvases: HTMLCanvasElement[] = [];
-      for (const page of pages) canvases.push(await captureArtboard(page));
+      for (const page of pages) canvases.push(await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX));
       const stem = makeFileStem(values.businessName, values.lipaNumber);
       if (format === "pdf") {
         const { PDFDocument } = await import("pdf-lib");
         const pdf = await PDFDocument.create();
-        const pageWidth = 148 * 72 / 25.4;
-        const pageHeight = 210 * 72 / 25.4;
-        for (const canvas of canvases) {
+        for (let index = 0; index < canvases.length; index += 1) {
+          const canvas = canvases[index];
+          const isAirtelCard = pages[index]?.dataset.network === "airtel";
+          const pageWidth = (isAirtelCard ? outputWidthMm : A5_WIDTH_MM) * 72 / 25.4;
+          const pageHeight = (isAirtelCard ? outputHeightMm : A5_HEIGHT_MM) * 72 / 25.4;
           const image = await pdf.embedPng(canvas.toDataURL("image/png"));
           const page = pdf.addPage([pageWidth, pageHeight]);
           page.drawImage(image, { x: 0, y: 0, width: pageWidth, height: pageHeight });
@@ -306,6 +316,14 @@ export default function LipaQrStudioPage() {
       </section>
 
       <section className="lq-editor-panel lq-output-panel">
+        {network === "airtel" && <div className="lq-field" role="group" aria-label="Ukubwa wa karatasi ya stika ya Airtel">
+          <span>Ukubwa wa karatasi — Airtel</span>
+          <div className="lq-choice-group">
+            <button type="button" aria-pressed={airtelPaperSize === "A5"} className={airtelPaperSize === "A5" ? "is-active" : ""} onClick={() => setAirtelPaperSize("A5")}>A5</button>
+            <button type="button" aria-pressed={airtelPaperSize === "A4"} className={airtelPaperSize === "A4" ? "is-active" : ""} onClick={() => setAirtelPaperSize("A4")}>A4</button>
+          </div>
+          <small>{airtelPaperSize === "A4" ? "A4 — 210 × 297 mm · 300 DPI" : "A5 — 148 × 210 mm · 300 DPI"}</small>
+        </div>}
         <div className="lq-section-heading"><span>MATOKEO</span></div>
         <div className="lq-choice-group" role="group" aria-label="Chagua kurasa za kadi">
           <button type="button" aria-pressed={pageMode === "card-only"} className={pageMode === "card-only" ? "is-active" : ""} onClick={() => setPageMode("card-only")}>Kadi pekee</button>
@@ -316,7 +334,7 @@ export default function LipaQrStudioPage() {
           <button type="button" aria-pressed={format === "pdf"} className={format === "pdf" ? "is-active" : ""} onClick={() => setFormat("pdf")}>PDF</button>
           <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG</button>
         </div>
-        <p className="lq-print-note">Ukubwa wa A5, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti.</p>
+        <p className="lq-print-note">Ukubwa wa {selectedPaperSize} {selectedPaperSize === "A4" ? "(210 × 297 mm)" : "(148 × 210 mm)"}, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti; maelekezo yatabaki A5.</p>
         <button type="button" className="lq-button lq-download-cta" onClick={() => void exportFile()} disabled={!readyToDownload}><Download size={17} />{exporting ? "Inaandaa faili..." : `PAKUA STIKA ${format.toUpperCase()}`}</button>
         <small className="lq-download-help">Jaza namba ya Lipa na jina la biashara; kisha bonyeza hapa kupakua PDF au PNG.</small>
       </section>
@@ -325,14 +343,14 @@ export default function LipaQrStudioPage() {
 
     <section className={`lq-preview lq-preview--${network}`}>
       <div className="lq-preview-toolbar">
-        <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa kadi</strong><small>A5 · 300 DPI</small></div>
+        <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa kadi</strong><small>{selectedPaperSize} · {selectedPaperSize === "A4" ? "210 × 297" : "148 × 210"} mm · 300 DPI</small></div>
         <div className="lq-toolbar-actions">
           <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Pakua ${format.toUpperCase()}`}</button>
           <button type="button" className="lq-button lq-button-outline" onClick={printCard} disabled={!readyToDownload}><Printer size={16} />Chapisha</button>
         </div>
       </div>
-      <div className="lq-preview-pages lq-print-root">
-        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} watermarked={entryStatus === "paid"} />
+      <div className="lq-preview-pages lq-print-root" data-paper-size={selectedPaperSize}>
+        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} watermarked={entryStatus === "paid"} paperSize={selectedPaperSize} />
         {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} watermarked={entryStatus === "paid"} />}
       </div>
       <div className="lq-preview-footnote"><Info size={14} />Hakikisha QR inasomwa na inaonyesha jina na namba sahihi kabla ya kuchapisha.</div>
