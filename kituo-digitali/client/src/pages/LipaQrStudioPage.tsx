@@ -97,7 +97,15 @@ function downloadBlob(blob: Blob, filename: string) {
 type A4ServiceLogoKind = "lipa" | "tigo" | "mpesa" | "nmb" | "simbanking" | "other";
 
 function AirtelLipaByPhoneLogo({ className }: { className: string }) {
-  return <div className={`lq-airtel-lipa-brand ${className}`} role="img" aria-label="Airtel Money — Lipa kwa Simu">
+  return <div className={`lq-airtel-lipa-brand ${className}`} role="img" aria-label="Airtel Money — Lipa kwa Simu, mkono ukishika simu">
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <rect x="31" y="5" width="23" height="42" rx="4.5" fill="#fff" stroke="#e31b35" strokeWidth="3.5" />
+      <rect x="35" y="11" width="15" height="27" rx="1.5" fill="#fff1f2" />
+      <circle cx="42.5" cy="42" r="1.8" fill="#e31b35" />
+      <path d="M8 34.5c2.8-3.4 5.8-4.1 8.5-1.9l6.3 5.1 4.8-3.4c2.7-1.9 6.3-1.1 7.8 1.5 1.4 2.4.5 5.1-1.7 6.8l-8.2 6.5c-2.5 2-5.8 2.1-8.5.3l-7.5-5.1c-3-2-3.6-6.9-1.5-9.8Z" fill="#e31b35"/>
+      <path d="M19 32.7 26 24c1.4-1.7 4-2 5.7-.6 1.7 1.4 2 3.9.6 5.7l-4.2 5.1" fill="#fff" stroke="#e31b35" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M23 38.5 30 33c2-1.5 4.8-1.2 6.3.8 1.5 2 1.1 4.7-.8 6.2l-7.2 5.8" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round"/>
+    </svg>
     <img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" />
     <span>LIPA KWA SIMU</span>
     <small>AIRTEL MONEY</small>
