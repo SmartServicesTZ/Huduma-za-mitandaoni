@@ -1411,7 +1411,6 @@
 .lq-card-artboard--airtel-a4 .lq-a4-layout {
   grid-template-columns: 47% 53%;
   min-height: 0;
-  height: 84%;
 }
 .lq-card-artboard--airtel-a4 .lq-a4-guides {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1449,8 +1448,5 @@
     box-shadow: none !important;
     break-after: auto !important;
     page-break-after: auto !important;
-  }
-  .lq-card-artboard--airtel-a4 .lq-a4-layout {
-    height: calc(100% - 16%) !important;
   }
 }
