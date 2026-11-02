@@ -130,14 +130,14 @@ export default function LipaStickerPage() {
             <div><p className="font-black" style={{color:theme.dark}}>{theme.label}</p><p className="text-xs text-slate-500">{requiredNames} majina yanahitajika</p></div>
           </div>
           <label className="mb-2 block text-sm font-bold">Majina kamili
-            <input value={names} onChange={e => setNames(e.target.value.slice(0, 64))} maxLength={64} autoComplete="organization" placeholder={network==="AIRTEL"||network==="YAS"?"Mfano: JINA LA BIASHARA":"Mfano: JINA LA BIASHARA"} className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 text-base focus:border-slate-500 focus:outline-none"/>
+            <input value={names} onChange={e => setNames(e.target.value.slice(0, 64))} maxLength={64} autoComplete="organization" placeholder="Andika jina la biashara" className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 text-base focus:border-slate-500 focus:outline-none"/>
           </label>
           <p className="mb-4 text-xs leading-relaxed text-slate-500">{network==="YAS"?"QR itakuwa na majina yote 3; stika itaonyesha majina 2 ya kwanza.":network==="AIRTEL"?"QR na stika vitatumia majina 3.":"QR itakuwa na majina uliyoweka; stika itaonyesha majina 2 ya kwanza."}</p>
           <label className="mb-2 block text-sm font-bold">Namba ya Lipa Namba
             <input value={lipaNumber} onChange={e => setLipaNumber(digits(e.target.value))} inputMode="numeric" maxLength={14} placeholder="Weka namba ya Lipa" className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 text-base focus:border-slate-500 focus:outline-none"/>
           </label>
           <p className="mb-5 mt-2 text-xs text-slate-500">Angalau {requiredNames} majina na namba halali vinahitajika.</p>
-          <button disabled={!valid || !qr || busy} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white shadow-sm disabled:opacity-50" style={{background:theme.main}}><Download size={19}/>{busy ? "Inatengeneza..." : "PAKUA STIKA PNG"}</button>
+          <button disabled={!valid || !qr || busy} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white shadow-sm disabled:opacity-50" style={{background:theme.main}}><Download size={19}/>{busy ? "Inatengeneza..." : "DOWNLOAD STIKA PNG"}</button>
           <button onClick={reset} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700"><RotateCcw size={16}/> Futa taarifa</button>
           {error && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
         </section>
@@ -152,8 +152,8 @@ export default function LipaStickerPage() {
               <div className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-center sm:p-6">
                 <div className="min-w-0">
                   <p className="mb-2 text-xs font-black tracking-widest text-slate-500">JINA LA MTEJA / BIASHARA</p>
-                  <h4 className="break-words text-2xl font-black sm:text-3xl" style={{color:theme.dark}}>{stickerNames(network,names).toUpperCase()||"JINA LA BIASHARA"}</h4>
-                  <div className="mt-5 rounded-xl p-4" style={{background:theme.main+"12",borderLeft:"6px solid "+theme.main}}><p className="text-xs font-bold text-slate-500">NAMBA YA LIPA</p><p className="mt-1 break-all text-2xl font-black sm:text-3xl" style={{color:theme.dark}}>{digits(lipaNumber)||"000000000"}</p></div>
+                  <h4 className="break-words text-2xl font-black sm:text-3xl" style={{color:theme.dark}}>{stickerNames(network,names).toUpperCase()}</h4>
+                  <div className="mt-5 rounded-xl p-4" style={{background:theme.main+"12",borderLeft:"6px solid "+theme.main}}><p className="text-xs font-bold text-slate-500">NAMBA YA LIPA</p><p className="mt-1 break-all text-2xl font-black sm:text-3xl" style={{color:theme.dark}}>{digits(lipaNumber)}</p></div>
                   <p className="mt-4 text-sm font-black" style={{color:theme.main}}>LIPA KWA URAHISI</p>
                 </div>
                 <div className="mx-auto w-fit rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-sm">{qr?<img src={qr} alt="QR code ya taarifa za Lipa Namba" className="h-36 w-36"/>:<div className="flex h-36 w-36 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">QR CODE</div>}<p className="mt-2 text-xs font-black text-slate-600">SCAN QR CODE</p></div>
@@ -161,7 +161,6 @@ export default function LipaStickerPage() {
               <div className="h-2" style={{background:theme.main}}/>
             </div>
           </div>
-          <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">Muhimu: kwa sasa QR ina taarifa za jina, mtandao na namba tu; si QR rasmi ya malipo iliyothibitishwa. QR za mfano ulizotuma zinahitaji muundo rasmi wa mtandao na hesabu sahihi ya CRC kabla ya kuzalisha QR za malipo zinazobadilika.</p>
         </section>
       </div>
     </div>
