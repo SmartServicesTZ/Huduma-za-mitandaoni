@@ -423,7 +423,7 @@ export default function LipaQrStudioPage() {
           <button type="button" aria-pressed={format === "pdf"} className={format === "pdf" ? "is-active" : ""} onClick={() => setFormat("pdf")}>PDF</button>
           <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG</button>
         </div>
-        <p className="lq-print-note">Ukubwa wa {selectedPaperSize} {selectedPaperSize === "A4" ? "(210 × 297 mm)" : "(148 × 210 mm)"}, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti; maelekezo yatabaki A5.</p>
+        <p className="lq-print-note">Ukubwa wa {selectedPaperSize} {selectedPaperSize === "A4" ? "(297 × 210 mm, landscape)" : "(148 × 210 mm, portrait)"}, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti; maelekezo yatabaki A5.</p>
         <button type="button" className="lq-button lq-download-cta" onClick={() => void exportFile()} disabled={!readyToDownload}><Download size={17} />{exporting ? "Inaandaa faili..." : `PAKUA STIKA ${format.toUpperCase()}`}</button>
         <small className="lq-download-help">Jaza namba ya Lipa na jina la biashara; kisha bonyeza hapa kupakua PDF au PNG.</small>
       </section>
