@@ -1727,6 +1727,14 @@
   object-fit: contain;
   flex: 0 0 auto;
 }
+.lq-airtel-lipa-brand > svg {
+  display: block;
+  width: 24%;
+  max-width: 52px;
+  height: 72%;
+  flex: 0 0 auto;
+  overflow: visible;
+}
 .lq-airtel-lipa-brand span {
   display: block;
   font-size: clamp(8px, 1.45cqw, 22px);
@@ -1750,6 +1758,10 @@
 .lq-a4-vector-logo.lq-airtel-lipa-brand img {
   width: 25%;
   height: 65%;
+}
+.lq-a4-vector-logo.lq-airtel-lipa-brand > svg {
+  width: 25%;
+  height: 72%;
 }
 .lq-a4-vector-logo.lq-airtel-lipa-brand span {
   font-size: clamp(8px, 1.35cqw, 19px);
