@@ -1300,3 +1300,24 @@
 .lq-card-artboard--voda .lq-lipa-logo,
 .lq-card-artboard--airtel .lq-lipa-logo,
 .lq-card-artboard--halotel .lq-lipa-logo { display:none !important; }
+
+
+/* Yas lower-right Lipa mark: give the complete image its own fitting box. */
+.lq-card-artboard--yas .lq-sticker-main .lq-lipa-logo {
+  display: block !important;
+  position: absolute !important;
+  z-index: 5 !important;
+  right: 2% !important;
+  bottom: 1.5% !important;
+  width: 50% !important;
+  height: 20% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: right bottom !important;
+  clip-path: none !important;
+  transform: none !important;
+}
+.lq-card-artboard--yas .lq-sticker-main {
+  overflow: hidden !important;
+}
