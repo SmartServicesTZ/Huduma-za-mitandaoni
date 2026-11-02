@@ -588,10 +588,19 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
       }
       const existing = snapshot.data()!;
       const backfill = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
-      const isAccessService = targetRef.parent.id === "services" && /^access-lipa-(airtel|yas|vodacom|halotel)$/.test(String((item.data as { slug?: string }).slug ?? ""));
+      const serviceSlug = String((item.data as { slug?: string }).slug ?? "");
+      const isAccessService = targetRef.parent.id === "services" && /^access-lipa-(airtel|yas|vodacom|halotel)$/.test(serviceSlug);
+      const isLipaSticker = targetRef.parent.id === "services" && ["stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"].includes(serviceSlug);
       if (isAccessService) {
         backfill.isVisible = true;
         backfill.active = true;
+      }
+      // Restore the four Lipa sticker cards even when older Firestore records
+      // contain stale hidden flags or the legacy "Huduma kuu" category.
+      if (isLipaSticker) {
+        backfill.isVisible = true;
+        backfill.active = true;
+        backfill.category = "HUDUMA ZA WAKALA";
       }
       if (Object.keys(backfill).length) transaction.set(targetRef, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     });
