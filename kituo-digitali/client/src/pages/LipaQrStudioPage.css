@@ -1759,3 +1759,24 @@
     page-break-after: auto !important;
   }
 }
+
+/* Reference geometry: the white brand header belongs only to the left QR panel. */
+.lq-card-artboard--airtel-a4 .lq-a4-layout {
+  flex: 1 1 100%;
+  height: 100%;
+  grid-template-columns: 50% 50%;
+}
+.lq-card-artboard--airtel-a4 .lq-a4-payment-panel {
+  padding: 0 5.3% 0;
+  gap: 1.2%;
+}
+.lq-card-artboard--airtel-a4 .lq-a4-header {
+  width: calc(100% + 10.6%);
+  flex: 0 0 16%;
+  margin: 0 -5.3%;
+  padding: 1.2% 10.4%;
+}
+.lq-card-artboard--airtel-a4 .lq-a4-footer {
+  width: calc(100% + 10.6%);
+  margin: 0 -5.3% 0;
+}
