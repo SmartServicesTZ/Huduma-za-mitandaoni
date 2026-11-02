@@ -80,7 +80,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked}>
     <header className="lq-sticker-header">
       <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-      <img className="lq-mixx-logo" src={networkLogo} alt={network === "yas" ? "Mixx by Yas" : LIPA_NETWORKS[network].label} />
+      <img className="lq-mixx-logo" src={networkLogo} alt={LIPA_NETWORKS[network].label} />
     </header>
     <section className="lq-sticker-main">
       <h2 className="lq-sticker-title">Lipa kwa kuscan</h2>
