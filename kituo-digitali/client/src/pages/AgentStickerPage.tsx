@@ -178,29 +178,24 @@ export default function AgentStickerPage(){
     void getServiceTokenConfig("stika-mawakala").then(config=>{
       if(!active)return;
       setServiceCost(config.tokenCost);setServiceName(config.name);
-      setEntryStatus("pending");
-      setEntryMessage(config.isFree
-        ? "Huduma hii imewekwa BURE na Admin. Hakuna tokeni zitakazokatwa. Utaruhusiwa kupakua stika MOJA ya mtandao wowote."
-        : `Gharama ni tokeni ${config.tokenCost} kulingana na Dashboard ya Admin. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA ya mtandao wowote. Hata usipopakua, tokeni hazitarejeshwa.`);
+      setEntryStatus("charging");
+      setEntryMessage("Inathibitisha malipo ya tokeni...");
+      try {
+        await consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:config.name,tokenCost:config.tokenCost,kind:config.isFree || config.tokenCost===0?"free":"paid",tokenType:"huduma"},entryRequestId.current);
+        if(!active)return;
+        setEntryStatus("paid");
+        setEntryMessage("");
+      } catch (chargeError) {
+        if(!active)return;
+        setEntryStatus("failed");
+        setEntryMessage(chargeError instanceof Error?chargeError.message:"Imeshindikana kuthibitisha makato ya tokeni.");
+      }
     }).catch(error=>{
       if(!active)return;
       setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kusoma gharama ya huduma.");
     });
     return ()=>{active=false;};
   },[authLoading,firebaseUser,profile]);
-  const confirmTokenCharge=async()=>{
-    if(!firebaseUser||entryStatus!=="pending"||serviceCost===null)return;
-    setEntryStatus("charging");setEntryMessage("Tunasubiri uthibitisho wa makato...");
-    try{
-      await consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:serviceName,tokenCost:serviceCost,kind:serviceCost===0?"free":"paid",tokenType:"huduma"},entryRequestId.current);
-      setEntryStatus("paid");
-      setEntryMessage(serviceCost===0
-        ? "Huduma ni BURE. Unaweza kupakua stika MOJA ya mtandao wowote."
-        : `Tokeni ${serviceCost} zimekatwa kulingana na bei ya Admin. Unaweza kupakua stika MOJA ya mtandao wowote. Baada ya kupakua utarudishwa kwenye huduma.`);
-    }catch(error){
-      setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kukata tokeni. Jaribu tena.");
-    }
-  };
   useEffect(()=>{
     let active=true;
     setPreviewReady(false);setPreviewError("");
@@ -217,14 +212,14 @@ export default function AgentStickerPage(){
       if(blob){
         const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();
         triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");
-        outputUsed.current=true;toast.success("Stika limepakuliwa. Unarudishwa kwenye huduma.");setLocation("/services");
+        outputUsed.current=true;toast.success("Stika limepakuliwa kikamilifu.");
       }else toast.error("Imeshindikana kuandaa stika. Jaribu tena.");
       setBusy(false);
     },"image/png",1);
   }
   function reset(){setAgentName("");setAgentNumber("");}
   const p=NETWORKS[network];
-  if(entryStatus!=="paid") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-amber-300 bg-white p-6 shadow-xl"><div className="mb-4 text-center text-4xl">🔐</div><h1 className="text-center text-2xl font-black">STIKA ZA WAKALA</h1><div role="status" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-950"><strong>TAARIFA YA MAKATO YA TOKENI</strong><p className="mt-2">{entryMessage}</p></div>{entryStatus==="pending"&&<div className="mt-5 grid gap-3"><button type="button" onClick={()=>void confirmTokenCharge()} className="w-full rounded-xl bg-amber-700 px-4 py-4 font-black text-white">{serviceCost===0?"NAKUBALI, ENDELEA BILA MAKATO":`NAKUBALI, KATA TOKENI ${serviceCost}`}</button><button type="button" onClick={()=>setLocation("/services")} className="w-full rounded-xl border border-slate-300 px-4 py-3 font-bold">SITAKI, RUDI NYUMA</button></div>}{entryStatus==="checking"||entryStatus==="charging"?<p className="mt-4 text-center text-sm font-bold text-slate-600">Tafadhali subiri...</p>:null}<button type="button" onClick={()=>setLocation("/services")} className="mt-4 w-full text-sm text-slate-500 underline">Rudi kwenye huduma</button></section></main>;
+  if(entryStatus!=="paid") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-amber-300 bg-white p-6 shadow-xl"><div className="mb-4 text-center text-4xl">🔐</div><h1 className="text-center text-2xl font-black">STIKA ZA WAKALA</h1><p role="alert" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-950">{entryMessage || "Huduma haijafunguliwa."}</p>{entryStatus==="checking"||entryStatus==="charging"?<p className="mt-4 text-center text-sm font-bold text-slate-600">Tafadhali subiri...</p>:<button type="button" onClick={()=>setLocation("/services")} className="mt-5 w-full rounded-xl border border-slate-300 px-4 py-3 font-bold">Rudi kwenye huduma</button>}</section></main>;
   return <main className="min-h-screen bg-slate-50 px-3 py-5 text-slate-900 sm:px-6">
     <div className="mx-auto max-w-6xl">
       <header className="mb-6 flex items-center justify-between gap-3 rounded-2xl px-4 py-4 text-white shadow-sm sm:px-6" style={{background:p.deep}}>
@@ -253,7 +248,7 @@ export default function AgentStickerPage(){
         </section>
         <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-black">Muonekano wa stika</h2><p className="text-xs text-slate-500">{p.label} · Hakikisho la moja kwa moja</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">LIVE PREVIEW</span></div>
-          <div className="flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/></div>
+          <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/>{entryStatus!=="paid"&&<div aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden"><span className="-rotate-25 select-none whitespace-nowrap text-center text-3xl font-black tracking-widest text-slate-900/25 sm:text-5xl">SMARTSERVICESTZ • HAKIKISHO • SAMPLE</span></div>}</div>
           <p className="mt-3 text-center text-xs text-slate-500">{previewError||(!previewReady?"Inapakia muundo wa stika...":"PNG itapakuliwa kwa mwonekano huu huu.")}</p>
         </section>
       </div>
