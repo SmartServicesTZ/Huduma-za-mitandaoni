@@ -1225,3 +1225,33 @@
 .lq-network-option--airtel.is-selected .lq-network-check { border-color:#ed1c24; background:#ed1c24; }
 .lq-network-option--halotel.is-selected { border-color:#f58220; background:#fff8f0; box-shadow:0 0 0 3px #f5822010; }
 .lq-network-option--halotel.is-selected .lq-network-check { border-color:#f58220; background:#f58220; }
+
+
+/* Exact operator backgrounds: Vodacom red, Airtel white, Yas yellow, Halotel white. */
+.lq-card-artboard--voda .lq-sticker-main { background:#e60000 !important; color:#fff !important; }
+.lq-card-artboard--airtel .lq-sticker-main { background:#fff !important; color:#ed1c24 !important; }
+.lq-card-artboard--yas .lq-sticker-main { background:#fcd109 !important; color:#06377a !important; }
+.lq-card-artboard--halotel .lq-sticker-main { background:#fff !important; color:#087b45 !important; }
+
+.lq-card-artboard--voda .lq-sticker-title,
+.lq-card-artboard--voda .lq-sticker-subtitle { color:#fff !important; }
+.lq-card-artboard--airtel .lq-sticker-title,
+.lq-card-artboard--airtel .lq-sticker-qr-notice { color:#ed1c24 !important; }
+.lq-card-artboard--airtel .lq-sticker-subtitle { color:#333 !important; }
+.lq-card-artboard--yas .lq-sticker-title,
+.lq-card-artboard--yas .lq-sticker-subtitle,
+.lq-card-artboard--yas .lq-sticker-qr-notice { color:#06377a !important; }
+.lq-card-artboard--halotel .lq-sticker-title,
+.lq-card-artboard--halotel .lq-sticker-qr-notice { color:#087b45 !important; }
+.lq-card-artboard--halotel .lq-sticker-subtitle { color:#333 !important; }
+
+.lq-card-artboard--voda .lq-sticker-qr-notice { color:#fff !important; background:transparent !important; }
+.lq-card-artboard--airtel .lq-sticker-qr-notice,
+.lq-card-artboard--yas .lq-sticker-qr-notice,
+.lq-card-artboard--halotel .lq-sticker-qr-notice { background:transparent !important; }
+
+/* Remove the yellow corner sweep on all sticker networks. */
+.lq-sticker-yellow-sweep { display:none !important; }
+
+/* Yas Lipa kwa simu artwork is exclusive to Yas, not Vodacom/Airtel/Halotel. */
+.lq-card-artboard:not(.lq-card-artboard--yas) .lq-lipa-logo { display:none !important; }
