@@ -615,6 +615,8 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
         backfill.isVisible = true;
         backfill.active = true;
         backfill.category = "HUDUMA ZA WAKALA";
+        backfill.name = item.data.name;
+        backfill.description = item.data.description;
       }
       if (Object.keys(backfill).length) transaction.set(targetRef, { ...backfill, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     });
