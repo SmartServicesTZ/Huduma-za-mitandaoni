@@ -1366,3 +1366,33 @@
     aspect-ratio: auto !important;
   }
 }
+
+/* Airtel A4 reference layout: a distinct landscape composition, not a stretched A5 card. */
+.lq-card-artboard--airtel-a4 { container-type:inline-size; display:flex; flex-direction:column; overflow:hidden; aspect-ratio:297 / 210 !important; background:#ed202d; color:#fff; }
+.lq-a4-header { display:flex; align-items:center; justify-content:space-between; height:16%; padding:2% 4%; box-sizing:border-box; background:#fff; }
+.lq-a4-tips-logo { width:25%; max-height:90%; object-fit:contain; }
+.lq-a4-airtel-brand { display:flex; align-items:center; gap:1%; color:#d7192a; font-size:clamp(12px,3cqw,34px); font-weight:700; }
+.lq-a4-airtel-brand img { width:clamp(100px,19cqw,260px); filter:brightness(0) saturate(100%) invert(18%) sepia(97%) saturate(4545%) hue-rotate(345deg) brightness(91%) contrast(96%); }
+.lq-a4-layout { display:grid; grid-template-columns:47% 53%; min-height:0; flex:1; background-color:#ed202d; background-image:radial-gradient(ellipse at 65% 35%,#a50e1b22 0 1.2%,transparent 1.5%); background-size:45px 34px; }
+.lq-a4-payment-panel { display:flex; min-width:0; flex-direction:column; align-items:center; gap:1.6%; padding:2.8% 5% 0; box-sizing:border-box; border-right:2px solid #ffffff35; }
+.lq-a4-payment-panel h2 { margin:0; font-size:clamp(13px,2.4cqw,31px); line-height:1.1; text-align:center; }
+.lq-a4-qr-frame { display:grid; place-items:center; width:55%; aspect-ratio:1; padding:3%; box-sizing:content-box; border:5px solid #f4d36b; border-radius:8%; background:#fff; }
+.lq-a4-qr-frame img { width:100%; height:100%; object-fit:contain; }
+.lq-a4-field { display:flex; width:91%; flex-direction:column; gap:2px; }
+.lq-a4-field label { font-size:clamp(9px,1.45cqw,20px); font-weight:900; }
+.lq-a4-field strong { display:flex; min-height:8%; align-items:center; padding:1.1% 2.5%; box-sizing:border-box; overflow:hidden; border:4px solid #f4d36b; border-radius:8px; background:#fff; color:#111; font-size:clamp(14px,2.7cqw,34px); line-height:1; white-space:nowrap; }
+.lq-a4-field + .lq-a4-field strong { font-size:clamp(11px,2cqw,25px); }
+.lq-a4-footer { display:flex; width:calc(100% + 10%); min-height:13%; align-items:center; justify-content:space-between; gap:4%; margin-top:auto; padding:1.5% 5%; box-sizing:border-box; background:#fff; color:#bd1629; }
+.lq-a4-footer b { display:block; color:#a91a2a; font-size:clamp(9px,1.4cqw,19px); }
+.lq-a4-network-logos { display:flex; align-items:center; gap:4px; margin-top:3px; }
+.lq-a4-network-logos img { width:clamp(20px,4.4cqw,48px); height:clamp(16px,3.2cqw,35px); object-fit:contain; }
+.lq-a4-footer > strong { font-size:clamp(17px,3.8cqw,44px); line-height:.8; text-align:right; }
+.lq-a4-footer > strong small { display:block; font-size:.42em; letter-spacing:.08em; }
+.lq-a4-guides { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3.2% 4%; min-width:0; padding:3% 5% 2.5%; box-sizing:border-box; }
+.lq-a4-guide-card { position:relative; min-width:0; padding:7% 4% 3% 8%; border-bottom:3px solid #f4d36b; border-left:4px solid #f4d36b; border-radius:12px 0 0 0; }
+.lq-a4-guide-card:nth-child(4n), .lq-a4-guide-card:nth-child(5n) { border-color:#b6c1ff; }
+.lq-a4-guide-card > span { position:absolute; top:0; left:0; max-width:78%; padding:2.5% 7%; border-radius:999px; background:#fff; color:#cc1a2d; font-size:clamp(8px,1.45cqw,18px); font-weight:900; white-space:nowrap; }
+.lq-a4-guide-card h3 { margin:0 0 3%; font-size:clamp(11px,2cqw,25px); line-height:1; }
+.lq-a4-guide-card ul { display:grid; gap:2px; margin:0; padding:0; list-style:none; font-size:clamp(7px,1.05cqw,14px); line-height:1.15; font-weight:700; }
+.lq-a4-guide-card li::before { content:"› "; font-weight:900; }
+@media print { .lq-card-artboard--airtel-a4 { width:297mm !important; height:210mm !important; aspect-ratio:auto !important; } }

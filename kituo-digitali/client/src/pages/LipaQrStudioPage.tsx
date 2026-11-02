@@ -27,12 +27,20 @@ const LIPA_NETWORKS: Record<LipaNetwork, { label: string; stickerName: string }>
 
 
 const A5_WIDTH_PX = 1748;
-const A4_WIDTH_PX = 2480;
+const A4_WIDTH_PX = 3508;
 const A5_WIDTH_MM = 148;
 const A5_HEIGHT_MM = 210;
-const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
+const A4_WIDTH_MM = 297;
+const A4_HEIGHT_MM = 210;
 const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
+const A4_GUIDES: ReadonlyArray<readonly [string, string, readonly string[]]> = [
+  ["LIPA KWA SIMU", "Piga *150*60#", ["Chagua 5 Lipa Bili", "Chagua 1 Lipa kwa Simu", "Chagua 1 Airtel", "Weka Lipa Namba", "Weka Kiasi", "Weka PIN"]],
+  ["TIGO PESA", "Piga *150*01#", ["Chagua 5 Lipa kwa Simu", "Chagua 2 TANQR", "Weka Lipa Namba", "Weka Kiasi", "Hakiki jina kisha weka PIN"]],
+  ["M-PESA", "Piga *150*00#", ["Chagua 5 Lipa kwa Simu", "Chagua 1 Lipa kwa Simu", "Weka Lipa Namba", "Weka Kiasi", "Weka PIN"]],
+  ["NMB MKONONI", "Piga *150*66#", ["Chagua 4 Lipa Mkononi", "Chagua 1 Lipa kwa TIPS", "Weka Lipa Namba", "Weka Kiasi", "Weka PIN"]],
+  ["SIMBANKING", "Piga *150*03#", ["Chagua 6 Lipa Hapa", "Chagua 3 TANQR", "Weka Lipa Namba", "Weka Kiasi", "Weka PIN"]],
+  ["WENGINE", "Piga *150*XX#", ["Chagua Lipa Kwa Simu/TANQR", "Weka Lipa Namba", "Weka Kiasi", "Weka PIN"]],
+];
 
 function makeFileStem(name: string, number: string) {
   const safeName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -80,6 +88,24 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
+  if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">
+    <header className="lq-a4-header">
+      <img className="lq-a4-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
+      <div className="lq-a4-airtel-brand"><img src={`${import.meta.env.BASE_URL}airtel-logo-horizontal-white.png`} alt="Airtel Money" /><span>money</span></div>
+    </header>
+    <div className="lq-a4-layout">
+      <section className="lq-a4-payment-panel">
+        <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
+        <div className="lq-a4-qr-frame">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : <span>QR CODE</span>}</div>
+        <div className="lq-a4-field"><label>LIPA NAMBA</label><strong>{values.lipaNumber || "NAMBA YA LIPA"}</strong></div>
+        <div className="lq-a4-field"><label>JINA</label><strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong></div>
+        <footer className="lq-a4-footer"><div><b>Tunapokea:</b><div className="lq-a4-network-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Mixx by Yas" /><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom M-Pesa" /><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel Money" /></div></div><strong>LIPA<small>KWA SIMU</small></strong></footer>
+      </section>
+      <section className="lq-a4-guides" aria-label="Maelekezo ya kulipa">
+        {A4_GUIDES.map(([title, command, steps]) => <article className="lq-a4-guide-card" key={title}><span>{title}</span><h3>{command}</h3><ul>{steps.map((step) => <li key={step}>{step}</li>)}</ul></article>)}
+      </section>
+    </div>
+  </article>;
   if (network === "airtel") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size={paperSize}>
     <header className="lq-card-header lq-card-header--airtel">
       <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
