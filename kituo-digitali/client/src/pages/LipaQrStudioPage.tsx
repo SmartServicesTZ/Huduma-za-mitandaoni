@@ -80,7 +80,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     <header className={`lq-card-header lq-card-header--${network}`}>
       <img className="lq-tips-logo-image" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
       <div className={`lq-network-brand lq-network-brand--${network}`} aria-label={LIPA_NETWORKS[network].label}>
-        <img src={`${import.meta.env.BASE_URL}${network === "voda" ? "lipa-assets/mpesa-header-reference.png" : network === "yas" ? "https://www.zurichbilling.co.tz/images/a8-removebg-preview.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} />
+        <img src={`${import.meta.env.BASE_URL}${network === "voda" ? "lipa-assets/mpesa-header-reference.png" : network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} />
       </div>
     </header>
     {isYas ? <section className="lq-yas-body">
@@ -90,7 +90,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       <strong className="lq-yas-number">{values.lipaNumber || "NAMBA YA LIPA"}</strong>
       <strong className="lq-yas-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
       <p>Lipa kutoka mitandao yote na Benki</p>
-      <div className="lq-yas-footer"><img className="lq-yas-official-footer-logo" src="https://pbs.twimg.com/media/GxMhbdOWkAEKgIx.jpg" alt="Lipa kwa simu" /></div>
+      <div className="lq-yas-footer"><img className="lq-yas-official-footer-logo" src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa simu" /></div>
     </section> : isAirtel ? <section className="lq-airtel-body">
       <img className="lq-network-watermark" src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" aria-hidden="true" />
       <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
