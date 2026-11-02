@@ -30,7 +30,7 @@ export default function LipaStickerPage({ defaultNetwork = "AIRTEL" }: { default
   useEffect(() => { setNetwork(defaultNetwork); }, [defaultNetwork]);
   const requiredNames = network === "AIRTEL" || network === "YAS" ? 3 : 2;
   const valid = useMemo(() => wordCount(names) >= requiredNames && /^\d{5,14}$/.test(digits(lipaNumber)), [names, lipaNumber, requiredNames]);
-  const qrPayload = useMemo(() => \`LIPA NAMBA\nMtandao: \${network}\nNamba: \${digits(lipaNumber)}\nJina: \${clean(names).toUpperCase()}\`, [network, lipaNumber, names]);
+  const qrPayload = useMemo(() => `LIPA NAMBA\nMtandao: ${network}\nNamba: ${digits(lipaNumber)}\nJina: ${clean(names).toUpperCase()}`, [network, lipaNumber, names]);
   useEffect(() => {
     let cancelled = false;
     if (!valid) { setQr(""); return; }
