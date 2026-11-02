@@ -295,7 +295,8 @@ export default function LipaQrStudioPage() {
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const canvases: HTMLCanvasElement[] = [];
       for (const page of pages) canvases.push(await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX, page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined));
-      const paperSuffix = network === "airtel" ? `-airtel-${airtelPaperSize.toLowerCase()}` : "";\n      const stem = makeFileStem(values.businessName, values.lipaNumber) + paperSuffix;
+      const paperSuffix = network === "airtel" ? `-airtel-${airtelPaperSize.toLowerCase()}` : "";
+      const stem = makeFileStem(values.businessName, values.lipaNumber) + paperSuffix;
       if (format === "pdf") {
         const { PDFDocument } = await import("pdf-lib");
         const pdf = await PDFDocument.create();
