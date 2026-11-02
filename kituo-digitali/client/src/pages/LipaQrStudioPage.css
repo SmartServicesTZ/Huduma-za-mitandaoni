@@ -1812,3 +1812,26 @@
   width: calc(100% + 10.6%);
   margin: 0 -5.3% 0;
 }
+
+
+/* Anti-screenshot preview watermark: visible before payment, excluded from paid exports. */
+.lq-artboard[data-watermarked="true"]::after {
+  content: "SMARTSERVICESTZ • HAKIKISHO • SAMPLE";
+  position: absolute;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 4%;
+  color: rgba(20, 28, 45, .30);
+  font-size: clamp(18px, 4.5cqw, 58px);
+  font-weight: 950;
+  letter-spacing: .12em;
+  text-align: center;
+  line-height: 1.5;
+  transform: rotate(-28deg);
+  pointer-events: none;
+  user-select: none;
+  background: repeating-linear-gradient(135deg, transparent 0 120px, rgba(20,28,45,.035) 120px 124px);
+}
+.lq-artboard[data-watermarked="false"]::after { display: none !important; }
