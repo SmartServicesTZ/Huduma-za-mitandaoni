@@ -11,25 +11,26 @@ const palettes: Record<Network, { main: string; dark: string; accent: string; te
   YAS: { main: "#6b2c91", dark: "#42145f", accent: "#fff", text: "#fff", logo: "/yas-logo.png", label: "YAS PESA" },
   HALOTEL: { main: "#f58220", dark: "#b64d00", accent: "#fff", text: "#fff", logo: "/halotel-logo.png", label: "HALOPESA" },
 };
-const clean = (v: string) => v.replace(/\\s+/g, " ").trim();
-const digits = (v: string) => v.replace(/\\D/g, "").slice(0, 14);
+const clean = (v: string) => v.replace(/\s+/g, " ").trim();
+const digits = (v: string) => v.replace(/\D/g, "").slice(0, 14);
 const wordCount = (v: string) => clean(v).split(" ").filter(Boolean).length;
 const stickerNames = (network: Network, names: string) => {
   const words = clean(names).split(" ").filter(Boolean);
   return (network === "YAS" ? words.slice(0, 2) : network === "AIRTEL" ? words.slice(0, 3) : words.slice(0, 2)).join(" ");
 };
 
-export default function LipaStickerPage() {
-  const [network, setNetwork] = useState<Network>("AIRTEL");
+export default function LipaStickerPage({ defaultNetwork = "AIRTEL" }: { defaultNetwork?: Network }) {
+  const [network, setNetwork] = useState<Network>(defaultNetwork);
   const [names, setNames] = useState("");
   const [lipaNumber, setLipaNumber] = useState("");
   const [qr, setQr] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const theme = palettes[network];
+  useEffect(() => { setNetwork(defaultNetwork); }, [defaultNetwork]);
   const requiredNames = network === "AIRTEL" || network === "YAS" ? 3 : 2;
-  const valid = useMemo(() => wordCount(names) >= requiredNames && /^\\d{5,14}$/.test(digits(lipaNumber)), [names, lipaNumber, requiredNames]);
-  const qrPayload = useMemo(() => `LIPA NAMBA\\nMtandao: ${network}\\nNamba: ${digits(lipaNumber)}\\nJina: ${clean(names).toUpperCase()}`, [network, lipaNumber, names]);
+  const valid = useMemo(() => wordCount(names) >= requiredNames && /^\d{5,14}$/.test(digits(lipaNumber)), [names, lipaNumber, requiredNames]);
+  const qrPayload = useMemo(() => \`LIPA NAMBA\nMtandao: \${network}\nNamba: \${digits(lipaNumber)}\nJina: \${clean(names).toUpperCase()}\`, [network, lipaNumber, names]);
   useEffect(() => {
     let cancelled = false;
     if (!valid) { setQr(""); return; }
