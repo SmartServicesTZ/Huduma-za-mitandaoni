@@ -1856,7 +1856,7 @@
 /* Vodacom M-Pesa: prevent QR overflow and keep the details area clean. */
 .lq-card-artboard--voda-reference { isolation:isolate; container-type:inline-size; }
 .lq-card-artboard--voda-reference .lq-voda-qr-panel {
-  box-sizing:border-box; overflow:hidden; padding:5.2%;
+  box-sizing:border-box; overflow:hidden; padding:0;
   display:grid; place-items:center;
 }
 .lq-card-artboard--voda-reference .lq-voda-qr-panel > img {
