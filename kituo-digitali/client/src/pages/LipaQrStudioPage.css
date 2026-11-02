@@ -1670,7 +1670,7 @@
   min-height: 0;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 14% 3% 2% 7%;
+  padding: 23% 3% 2% 7%;
   overflow: hidden;
   box-sizing: border-box;
   border: 0;
@@ -1772,7 +1772,7 @@
 }
 .lq-card-artboard--airtel-a4 .lq-a4-header {
   width: calc(100% + 10.6%);
-  flex: 0 0 16%;
+  flex: 0 0 13%;
   margin: 0 -5.3%;
   padding: 1.2% 10.4%;
 }
