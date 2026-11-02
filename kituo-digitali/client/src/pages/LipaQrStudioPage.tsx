@@ -25,6 +25,13 @@ const LIPA_NETWORKS: Record<LipaNetwork, { label: string; stickerName: string }>
   halotel: { label: "Halotel", stickerName: "Lipa kwa Halotel" },
 };
 
+const GUIDE_CONTENT: Record<LipaNetwork, { title: string; command: string; steps: string[]; accent: string; note: string }> = {
+  voda: { title: "Watumiaji wa Vodacom M-Pesa", command: "Piga *150*00#", steps: ["Chagua 4 — LIPA kwa M-Pesa", "Chagua 1 — LIPA kwa simu", "Weka Lipa Namba", "Weka kiasi, hakiki jina kisha thibitisha"], accent: "voda", note: "Vodacom M-Pesa" },
+  yas: { title: "Watumiaji wa Yas", command: "Piga *150*01#", steps: ["Chagua 5 — Lipa kwa simu", "Chagua 3 — Mitandao mingine", "Chagua M-Pesa / Lipa kwa biashara", "Weka Lipa Namba, kiasi na PIN"], accent: "yas", note: "Mixx by Yas" },
+  airtel: { title: "Watumiaji wa Airtel Money", command: "Piga *150*60#", steps: ["Chagua 5 — Lipia bili", "Chagua 1 — Lipa kwa simu", "Chagua 2 — Voda Lipa", "Weka namba, kiasi na PIN"], accent: "airtel", note: "Airtel Money" },
+  halotel: { title: "Watumiaji wa Halotel HaloPesa", command: "Piga *150*88#", steps: ["Chagua Lipa kwa simu", "Chagua Lipa kwa biashara", "Weka Lipa Namba na kiasi", "Hakiki jina kisha thibitisha kwa PIN"], accent: "halotel", note: "HaloPesa" },
+};
+
 
 const A5_WIDTH_PX = 1748;
 const A4_WIDTH_PX = 3508;
@@ -212,35 +219,36 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   </article>;
 });
 
-const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues; watermarked: boolean }>(function HowToPayArtboard({ values, watermarked }, ref) {
-  return <article ref={ref} className="lq-artboard lq-guide-artboard" data-lipa-export-page="guide">
+const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues; network: LipaNetwork; watermarked: boolean }>(function HowToPayArtboard({ values, network, watermarked }, ref) {
+  const selected = GUIDE_CONTENT[network];
+  const guideLogo = network === "voda" ? `${LIPA_ASSET_BASE}mpesa-header-reference.png` : `${import.meta.env.BASE_URL}${network === "yas" ? "yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
+  const alternatives = (Object.keys(GUIDE_CONTENT) as LipaNetwork[]).filter((item) => item !== network);
+  return <article ref={ref} className={`lq-artboard lq-guide-artboard lq-guide-artboard--${selected.accent}`} data-lipa-export-page="guide" data-network={network}>
     <header className="lq-guide-header">
       {watermarked && <div className="lq-guide-watermark" aria-hidden="true" />}
-      <span className="lq-guide-eyebrow">MWONGOZO HURU · LIPA NAMBA</span>
-      <h2>Jinsi ya kufanya malipo<br />kwa Lipa Namba</h2>
+      <div className="lq-guide-brand-row"><span className="lq-guide-eyebrow">MWONGOZO WA MALIPO · TAN QR</span><img src={guideLogo} alt={selected.note} /></div>
+      <h2>Jinsi ya kufanya malipo<br />kwa Tan QR Code</h2>
       <div className="lq-guide-merchant-pill"><span>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</span><b>{values.lipaNumber || "NAMBA YA LIPA"}</b></div>
     </header>
     <section className="lq-guide-main">
       <div className="lq-guide-top-grid">
-        <article className="lq-guide-card lq-guide-card--mpesa">
+        <article className="lq-guide-card lq-guide-card--selected">
           <span className="lq-guide-number">1</span>
-          <div className="lq-network-heading"><strong>Vodacom M-Pesa</strong><span>Piga <b>*150*00#</b></span></div>
-          <ol><li>Chagua <b>4</b> — LIPA kwa M-Pesa</li><li>Chagua <b>1</b> — LIPA kwa simu</li><li>Weka namba ya biashara na kiasi</li><li>Hakiki jina, kisha thibitisha</li></ol>
+          <div className="lq-network-heading"><strong>{selected.title}</strong><span>{selected.command}</span></div>
+          <ol>{selected.steps.map((step) => <li key={step}>{step}</li>)}</ol>
         </article>
         <div className="lq-guide-app-steps">
-          <h3>Au tumia app rasmi ya mtandao wako</h3>
-          <div className="lq-app-step"><b>A</b><span><strong>Fungua app</strong><small>Chagua huduma ya Lipa kwa biashara.</small></span></div>
-          <div className="lq-app-step"><b>B</b><span><strong>Weka namba ya Lipa</strong><small>Hakiki jina na kiasi kabla ya kuthibitisha.</small></span></div>
-          <p>QR kwenye kadi hii hutengenezwa moja kwa moja kutokana na taarifa za biashara ulizojaza.</p>
+          <h3>Au tumia app ya {selected.note}</h3>
+          <div className="lq-app-step"><b>A</b><span><strong>Fungua app ya {selected.note}</strong><small>Chagua huduma ya Lipa kwa biashara au Tan QR.</small></span></div>
+          <div className="lq-app-step"><b>B</b><span><strong>Scan QR Code</strong><small>Hakiki jina na kiasi kabla ya kuthibitisha.</small></span></div>
+          <p>QR kwenye kadi hii inatokana na taarifa za biashara ulizojaza.</p>
         </div>
       </div>
       <div className="lq-guide-network-grid">
-        <article className="lq-guide-card"><span className="lq-guide-number">2</span><div className="lq-network-heading"><strong>Tigo Pesa</strong><span>Piga <b>*150*01#</b></span></div><ol><li>Chagua <b>5</b> — Lipa kwa simu</li><li>Chagua <b>3</b> — Mitandao mingine</li><li>Chagua M-Pesa, weka namba na kiasi</li><li>Hakiki taarifa, kisha weka PIN</li></ol></article>
-        <article className="lq-guide-card"><span className="lq-guide-number">3</span><div className="lq-network-heading"><strong>Airtel Money</strong><span>Piga <b>*150*60#</b></span></div><ol><li>Chagua <b>5</b> — Lipia bili</li><li>Chagua <b>1</b> — Lipa kwa simu</li><li>Chagua <b>2</b> — Voda Lipa</li><li>Weka kiasi na namba ya kumbukumbu</li><li>Hakiki, kisha weka PIN</li></ol></article>
-        <article className="lq-guide-card"><span className="lq-guide-number">4</span><div className="lq-network-heading"><strong>Mitandao mingine</strong><span>Lipa kwa biashara</span></div><ol><li>Fungua menyu ya huduma ya simu</li><li>Chagua Lipa kwa simu/biashara</li><li>Weka namba ya biashara na kiasi</li><li>Hakiki jina na uthibitishe</li></ol></article>
+        {alternatives.map((item, index) => { const guide = GUIDE_CONTENT[item]; return <article className={`lq-guide-card lq-guide-card--${guide.accent}`} key={item}><span className="lq-guide-number">{index + 2}</span><div className="lq-network-heading"><strong>{guide.note}</strong><span>{guide.command}</span></div><ol>{guide.steps.slice(0, 4).map((step) => <li key={step}>{step}</li>)}</ol></article>; })}
       </div>
     </section>
-    <footer className="lq-guide-footer"><strong>Usimpe mtu PIN yako.</strong><span>Menyu na misimbo zinaweza kubadilika — hakiki na mtoa huduma wako kabla ya kuchapisha.</span></footer>
+    <footer className="lq-guide-footer"><strong>Usimpe mtu PIN yako.</strong><span>Chagua mtandao wako, fuata hatua zake, hakiki jina na kiasi kabla ya kuthibitisha.</span></footer>
   </article>;
 });
 
@@ -483,7 +491,7 @@ export default function LipaQrStudioPage() {
       </div>
       <div className="lq-preview-pages lq-print-root" data-paper-size={selectedPaperSize}>
         <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} watermarked={entryStatus !== "paid"} paperSize={selectedPaperSize} />
-        {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} watermarked={entryStatus === "paid"} />}
+        {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} network={network} watermarked={entryStatus === "paid"} />}
       </div>
       <div className="lq-preview-footnote"><Info size={14} />Hakikisha QR inasomwa na inaonyesha jina na namba sahihi kabla ya kuchapisha.</div>
     </section>
