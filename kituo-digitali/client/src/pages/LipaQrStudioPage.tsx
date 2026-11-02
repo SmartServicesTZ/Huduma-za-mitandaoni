@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download, Printer, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, Printer } from "lucide-react";
 import * as QRCode from "qrcode";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -180,18 +180,17 @@ export default function LipaQrStudioPage() {
       <div className="lq-preview-toolbar">
         <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa stika</strong><small>A5 · 300 DPI</small></div>
         <div className="lq-toolbar-actions">
-          <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Download ${format.toUpperCase()}`}</button>
+          <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Download ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Download ${format.toUpperCase()}`}</button>
           <button type="button" className="lq-button lq-button-outline" onClick={printCard} disabled={!readyToDownload}><Printer size={16} />Chapisha</button>
         </div>
       </div>
       <div className="lq-preview-pages lq-print-root">
         <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} />
       </div>
-      <div className="lq-preview-footnote"><ShieldCheck size={14} />QR ni ya taarifa tu, si ya malipo. Thibitisha malipo kwenye menyu rasmi ya Yas.</div>
     </section>
 
     <div className="lq-mobile-actions">
-      <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload}><Download size={16} />{exporting ? "Inaandaa…" : `Pakua ${format.toUpperCase()}`}</button>
+      <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload}><Download size={16} />{exporting ? "Inaandaa…" : `Download ${format.toUpperCase()}`}</button>
       <button type="button" className="lq-button lq-button-outline" onClick={printCard} disabled={!readyToDownload}><Printer size={16} />Chapisha</button>
     </div>
   </main>;
