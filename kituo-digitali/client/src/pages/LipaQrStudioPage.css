@@ -1161,3 +1161,67 @@
   * { -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
   .lq-preview-toolbar,.lq-preview-footnote,.lq-mobile-actions { display:none!important; }
 }
+
+
+/* Network-specific sticker colors: Yas keeps the supplied blue/yellow reference.
+   Other operators use their own brand palette instead of inheriting Yas colors. */
+.lq-card-artboard--yas .lq-sticker-main {
+  --sticker-primary: #06377a;
+  --sticker-accent: #fcd109;
+  background: var(--sticker-primary);
+}
+.lq-card-artboard--voda .lq-sticker-main {
+  --sticker-primary: #e60000;
+  --sticker-accent: #ffffff;
+  background: linear-gradient(145deg, #f01424 0%, #d90016 58%, #a90012 100%);
+}
+.lq-card-artboard--airtel .lq-sticker-main {
+  --sticker-primary: #ed1c24;
+  --sticker-accent: #ffffff;
+  background: linear-gradient(145deg, #f52c36 0%, #df1024 58%, #b9001c 100%);
+}
+.lq-card-artboard--halotel .lq-sticker-main {
+  --sticker-primary: #f58220;
+  --sticker-accent: #087b45;
+  background: linear-gradient(145deg, #ff9b32 0%, #f58220 58%, #d96512 100%);
+}
+.lq-card-artboard--voda .lq-sticker-title,
+.lq-card-artboard--airtel .lq-sticker-title {
+  color: #fff;
+}
+.lq-card-artboard--halotel .lq-sticker-title {
+  color: #fff;
+}
+.lq-card-artboard--voda .lq-sticker-qr-notice,
+.lq-card-artboard--airtel .lq-sticker-qr-notice {
+  color: #fff;
+  background: transparent;
+}
+.lq-card-artboard--halotel .lq-sticker-qr-notice {
+  color: #fff;
+  background: #087b45;
+}
+.lq-card-artboard--voda .lq-sticker-yellow-sweep,
+.lq-card-artboard--airtel .lq-sticker-yellow-sweep {
+  background: #fff;
+}
+.lq-card-artboard--halotel .lq-sticker-yellow-sweep {
+  background: #087b45;
+}
+.lq-card-artboard--yas .lq-sticker-title,
+.lq-card-artboard--yas .lq-sticker-qr-notice {
+  color: #fcd109;
+}
+.lq-card-artboard--yas .lq-sticker-yellow-sweep {
+  background: #fcd109;
+}
+
+/* The selected network control follows the same brand color as its sticker. */
+.lq-network-option--voda.is-selected { border-color:#e60000; background:#fff5f5; box-shadow:0 0 0 3px #e6000010; }
+.lq-network-option--voda.is-selected .lq-network-check { border-color:#e60000; background:#e60000; }
+.lq-network-option--yas.is-selected { border-color:#06377a; background:#f3f7ff; box-shadow:0 0 0 3px #06377a10; }
+.lq-network-option--yas.is-selected .lq-network-check { border-color:#06377a; background:#06377a; }
+.lq-network-option--airtel.is-selected { border-color:#ed1c24; background:#fff5f5; box-shadow:0 0 0 3px #ed1c2410; }
+.lq-network-option--airtel.is-selected .lq-network-check { border-color:#ed1c24; background:#ed1c24; }
+.lq-network-option--halotel.is-selected { border-color:#f58220; background:#fff8f0; box-shadow:0 0 0 3px #f5822010; }
+.lq-network-option--halotel.is-selected .lq-network-check { border-color:#f58220; background:#f58220; }
