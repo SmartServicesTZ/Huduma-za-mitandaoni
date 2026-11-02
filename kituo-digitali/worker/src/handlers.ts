@@ -596,7 +596,6 @@ async function initializeServiceCatalog(uid: string, actorRole: string, skipIfIn
       const existing = snapshot.data()!;
       const backfill = Object.fromEntries(Object.entries(item.data).filter(([key]) => existing[key] === undefined));
       const isAccessService = targetRef.parent.id === "services" && /^access-lipa-(airtel|yas|vodacom|halotel)$/.test(serviceSlug);
-      const isLipaSticker = targetRef.parent.id === "services" && ["stika-lipa", "stika-vodacom", "stika-airtel", "stika-halotel"].includes(serviceSlug);
       if (isAccessService) {
         backfill.isVisible = true;
         backfill.active = true;
