@@ -1163,58 +1163,7 @@
 }
 
 
-/* Network-specific sticker colors: Yas keeps the supplied blue/yellow reference.
-   Other operators use their own brand palette instead of inheriting Yas colors. */
-.lq-card-artboard--yas .lq-sticker-main {
-  --sticker-primary: #06377a;
-  --sticker-accent: #fcd109;
-  background: var(--sticker-primary);
-}
-.lq-card-artboard--voda .lq-sticker-main {
-  --sticker-primary: #e60000;
-  --sticker-accent: #ffffff;
-  background: linear-gradient(145deg, #f01424 0%, #d90016 58%, #a90012 100%);
-}
-.lq-card-artboard--airtel .lq-sticker-main {
-  --sticker-primary: #ed1c24;
-  --sticker-accent: #ffffff;
-  background: linear-gradient(145deg, #f52c36 0%, #df1024 58%, #b9001c 100%);
-}
-.lq-card-artboard--halotel .lq-sticker-main {
-  --sticker-primary: #f58220;
-  --sticker-accent: #087b45;
-  background: linear-gradient(145deg, #ff9b32 0%, #f58220 58%, #d96512 100%);
-}
-.lq-card-artboard--voda .lq-sticker-title,
-.lq-card-artboard--airtel .lq-sticker-title {
-  color: #fff;
-}
-.lq-card-artboard--halotel .lq-sticker-title {
-  color: #fff;
-}
-.lq-card-artboard--voda .lq-sticker-qr-notice,
-.lq-card-artboard--airtel .lq-sticker-qr-notice {
-  color: #fff;
-  background: transparent;
-}
-.lq-card-artboard--halotel .lq-sticker-qr-notice {
-  color: #fff;
-  background: #087b45;
-}
-.lq-card-artboard--voda .lq-sticker-yellow-sweep,
-.lq-card-artboard--airtel .lq-sticker-yellow-sweep {
-  background: #fff;
-}
-.lq-card-artboard--halotel .lq-sticker-yellow-sweep {
-  background: #087b45;
-}
-.lq-card-artboard--yas .lq-sticker-title,
-.lq-card-artboard--yas .lq-sticker-qr-notice {
-  color: #fcd109;
-}
-.lq-card-artboard--yas .lq-sticker-yellow-sweep {
-  background: #fcd109;
-}
+/* Sticker interiors retain their original network artwork. Preview colors are set outside the sticker. */
 
 /* The selected network control follows the same brand color as its sticker. */
 .lq-network-option--voda.is-selected { border-color:#e60000; background:#fff5f5; box-shadow:0 0 0 3px #e6000010; }
@@ -1294,8 +1243,8 @@
 .lq-preview--halotel .lq-preview-toolbar small,
 .lq-preview--halotel .lq-preview-footnote { color: #343b46 !important; }
 
-/* Restore Yas yellow sweep and its supplied Lipa kwa simu corner artwork. */
-.lq-sticker-yellow-sweep { display:block !important; }
+/* The yellow sweep and lower-right Lipa artwork belong to Yas only. */
+.lq-card-artboard--yas .lq-sticker-yellow-sweep { display:block !important; }
 .lq-card-artboard--yas .lq-lipa-logo { display:block !important; }
 .lq-card-artboard--voda .lq-lipa-logo,
 .lq-card-artboard--airtel .lq-lipa-logo,
@@ -1307,10 +1256,10 @@
   display: block !important;
   position: absolute !important;
   z-index: 5 !important;
-  right: 2% !important;
-  bottom: 1.5% !important;
-  width: 50% !important;
-  height: 20% !important;
+  right: 1% !important;
+  bottom: 1% !important;
+  width: 56% !important;
+  height: 23% !important;
   max-width: none !important;
   max-height: none !important;
   object-fit: contain !important;
