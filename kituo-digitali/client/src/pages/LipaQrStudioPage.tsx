@@ -97,18 +97,24 @@ function downloadBlob(blob: Blob, filename: string) {
 type A4ServiceLogoKind = "lipa" | "tigo" | "mpesa" | "nmb" | "simbanking" | "other";
 
 function AirtelLipaByPhoneLogo({ className }: { className: string }) {
-  return <div className={`lq-airtel-lipa-brand ${className}`} role="img" aria-label="Airtel Money — Lipa kwa Simu, mkono ukishika simu">
-    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      <rect x="31" y="5" width="23" height="42" rx="4.5" fill="#fff" stroke="#e31b35" strokeWidth="3.5" />
-      <rect x="35" y="11" width="15" height="27" rx="1.5" fill="#fff1f2" />
-      <circle cx="42.5" cy="42" r="1.8" fill="#e31b35" />
-      <path d="M8 34.5c2.8-3.4 5.8-4.1 8.5-1.9l6.3 5.1 4.8-3.4c2.7-1.9 6.3-1.1 7.8 1.5 1.4 2.4.5 5.1-1.7 6.8l-8.2 6.5c-2.5 2-5.8 2.1-8.5.3l-7.5-5.1c-3-2-3.6-6.9-1.5-9.8Z" fill="#e31b35"/>
-      <path d="M19 32.7 26 24c1.4-1.7 4-2 5.7-.6 1.7 1.4 2 3.9.6 5.7l-4.2 5.1" fill="#fff" stroke="#e31b35" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M23 38.5 30 33c2-1.5 4.8-1.2 6.3.8 1.5 2 1.1 4.7-.8 6.2l-7.2 5.8" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round"/>
+  return <div className={`lq-airtel-lipa-brand ${className}`} role="img" aria-label="Lipa kwa simu — mkono wa njano ukishika simu">
+    <svg viewBox="0 0 400 170" aria-hidden="true" focusable="false">
+      <g fill="#d9272e" fontFamily="Arial, Helvetica, sans-serif" fontWeight="900">
+        <text x="4" y="91" fontSize="103" letterSpacing="1">LIPA</text>
+        <text x="7" y="151" fontSize="49" letterSpacing="-1">KWA SIMU</text>
+      </g>
+      <g fill="none" stroke="#e5c84d" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M274 22 365 39 340 151 250 132Z"/>
+        <path d="M303 42 328 47"/>
+        <path d="M294 30 286 27"/>
+        <path d="M264 79 231 92 224 104 239 111 274 95"/>
+        <path d="M254 117 245 127 255 137 280 143 318 151"/>
+        <path d="M350 67 362 72 359 83 348 88"/>
+        <path d="M345 92 357 98 353 109 342 113"/>
+        <path d="M339 118 350 124 345 135 335 138"/>
+      </g>
+      <circle cx="300" cy="140" r="3.5" fill="#e5c84d"/>
     </svg>
-    <img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="" />
-    <span>LIPA KWA SIMU</span>
-    <small>AIRTEL MONEY</small>
   </div>;
 }
 
