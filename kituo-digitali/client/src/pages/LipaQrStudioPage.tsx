@@ -109,12 +109,12 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
   if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">
-    <header className="lq-a4-header">
-      <img className="lq-a4-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-      <div className="lq-a4-airtel-brand"><img src={`${import.meta.env.BASE_URL}airtel-logo-horizontal-white.png`} alt="Airtel" /><span>money</span></div>
-    </header>
     <div className="lq-a4-layout">
       <section className="lq-a4-payment-panel">
+        <header className="lq-a4-header">
+          <img className="lq-a4-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
+          <div className="lq-a4-airtel-brand"><img src={`${import.meta.env.BASE_URL}airtel-logo-horizontal-white.png`} alt="Airtel" /><span>money</span></div>
+        </header>
         <h2>LIPA KUPITIA MTANDAO AU BENKI YOYOTE</h2>
         <div className="lq-a4-qr-frame">{qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : <span>Jaza taarifa kuona QR</span>}</div>
         <div className="lq-a4-fields">
