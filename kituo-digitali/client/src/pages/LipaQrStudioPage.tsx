@@ -74,15 +74,29 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean }>(function CardArtboard({ values, qrDataUrl, network, watermarked }, ref) {
+  const isHalotel = network === "halotel";
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
-    : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
+    : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halopesa-logo.png"}`;
+  const numberDigits = values.lipaNumber.slice(0, 8).padEnd(8, "");
   return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked}>
     <header className="lq-sticker-header">
       <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
       <img className="lq-mixx-logo" src={networkLogo} alt={LIPA_NETWORKS[network].label} />
     </header>
-    <section className="lq-sticker-main">
+    {isHalotel ? <section className="lq-sticker-main lq-halotel-sticker-main">
+      <div className="lq-halotel-curve" aria-hidden="true" />
+      <h2 className="lq-halotel-title">SCAN TO PAY</h2>
+      <div className="lq-sticker-qr-paper lq-halotel-qr-paper">
+        {qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya HaloPesa" /> : <span>Jaza taarifa kuona QR</span>}
+      </div>
+      <div className="lq-halotel-number-grid" aria-label="Namba ya Lipa">
+        {Array.from(numberDigits).map((digit, index) => <span key={`${digit}-${index}`}>{digit}</span>)}
+      </div>
+      <div className="lq-halotel-business">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</div>
+      <div className="lq-halotel-footer-copy"><strong>Nilipo</strong><span>kwa mitandao yote na Benki</span></div>
+      <p className="lq-halotel-support">Lipa kwa mitandao yote na Benki</p>
+    </section> : <section className="lq-sticker-main">
       <h2 className="lq-sticker-title">Lipa kwa kuscan</h2>
       <div className="lq-sticker-qr-paper">
         {qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya TIPS" /> : <span>Jaza taarifa kuona QR</span>}
@@ -93,7 +107,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       <p className="lq-sticker-qr-notice">QR YA MALIPO · TIPS</p>
       <div className="lq-sticker-yellow-sweep" aria-hidden="true" />
       <img className="lq-lipa-logo" src={`${import.meta.env.BASE_URL}stika-yas/lipa-kwasimu-logo.png`} alt="Lipa kwa simu" />
-    </section>
+    </section>}
   </article>;
 });
 
@@ -147,7 +161,7 @@ export default function LipaQrStudioPage() {
   const guideRef = useRef<HTMLElement>(null);
   const errors = useMemo(() => validateLipaCard(values), [values]);
   const isValid = Object.keys(errors).length === 0;
-  const paymentPayload = useMemo(() => { if (!isValid || network === "halotel") return ""; return createTipsPaymentPayload(values); }, [isValid, values, network]);
+  const paymentPayload = useMemo(() => { if (!isValid) return ""; return createTipsPaymentPayload(values); }, [isValid, values]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -279,7 +293,7 @@ export default function LipaQrStudioPage() {
               <span className="lq-network-logo lq-network-logo--halotel"><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Halotel</strong><small>HaloPesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
           </div>
-          <small>{network === "halotel" ? "QR ya malipo ya Halotel bado haijawezeshwa." : "Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini."}</small>
+          <small>Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini.</small>
         </div>
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
