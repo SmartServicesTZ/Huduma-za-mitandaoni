@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
@@ -60,6 +60,106 @@ const app = initializeApp(firebaseConfig);
 export const firebaseAuth = initializeAuth(app, { persistence: browserLocalPersistence });
 export const firestore = getFirestore(app);
 export const firebaseStorage = getStorage(app);
+
+export type SavedUserDocument = {
+  id: string;
+  ownerUid: string;
+  name: string;
+  type: string;
+  mimeType: string;
+  storagePath: string;
+  size: number;
+  expiresAt: number;
+  createdAt?: unknown;
+  source?: string;
+  sourceRef?: string;
+};
+
+/** Hifadhi hati iliyokwisha tengenezwa kwenye akaunti ya mmiliki kwa saa 24. */
+export async function saveUserDocument(
+  blob: Blob,
+  name: string,
+  type: string,
+  metadata: { source?: string; sourceRef?: string } = {},
+): Promise<SavedUserDocument> {
+  await authPersistenceReady;
+  const user = firebaseAuth.currentUser;
+  if (!user) throw Object.assign(new Error("Ingia kwanza ili kuhifadhi hati zako."), { code: "unauthenticated" });
+  if (!(blob instanceof Blob) || blob.size <= 0) throw new Error("Hati tupu haiwezi kuhifadhiwa.");
+  if (blob.size > 10 * 1024 * 1024) throw new Error("Hati imezidi ukubwa wa MB 10.");
+
+  const safeName = name.normalize("NFKD").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(-110) || "smartservicestz-document";
+  const mimeType = blob.type || (type.toUpperCase() === "PDF" ? "application/pdf" : "application/octet-stream");
+  const recordRef = doc(collection(firestore, "userDocuments"));
+  const storagePath = `users/${user.uid}/documents/${recordRef.id}/${safeName}`;
+  const fileRef = storageRef(firebaseStorage, storagePath);
+
+  await uploadBytes(fileRef, blob, { contentType: mimeType, cacheControl: "private,no-store,max-age=0" });
+  try {
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+    await setDoc(recordRef, {
+      ownerUid: user.uid,
+      name: safeName,
+      type: type.slice(0, 30),
+      mimeType,
+      storagePath,
+      size: blob.size,
+      createdAt: serverTimestamp(),
+      expiresAt,
+      source: (metadata.source ?? "service").slice(0, 80),
+      ...(metadata.sourceRef ? { sourceRef: metadata.sourceRef.slice(0, 160) } : {}),
+    });
+    const verified = await getDocFromServer(recordRef);
+    const saved = verified.data();
+    if (!verified.exists() || saved?.ownerUid !== user.uid || saved?.storagePath !== storagePath || Number(saved?.size) !== blob.size) {
+      throw new Error("Hati imepakiwa lakini haikuthibitishwa kwenye akaunti yako. Jaribu tena.");
+    }
+    return { id: recordRef.id, ...saved } as SavedUserDocument;
+  } catch (error) {
+    await deleteObject(fileRef).catch(() => undefined);
+    throw error;
+  }
+}
+
+/** Orodhesha hati za mtumiaji aliyeingia pekee; upatikanaji wake ni saa 24. */
+export function subscribeUserDocuments(
+  uid: string,
+  callback: (items: SavedUserDocument[]) => void,
+  onError?: (error: unknown) => void,
+) {
+  if (!firebaseAuth.currentUser || firebaseAuth.currentUser.uid !== uid) {
+    callback([]);
+    return () => undefined;
+  }
+  const documentsQuery = query(collection(firestore, "userDocuments"), where("ownerUid", "==", uid), limit(100));
+  return onSnapshot(documentsQuery, (snapshot) => {
+    const now = Date.now();
+    const items = snapshot.docs
+      .map((item) => ({ id: item.id, ...item.data() } as SavedUserDocument))
+      .filter((item) => Number(item.expiresAt) > now)
+      .sort((a, b) => {
+        const millis = (value: unknown) => value && typeof value === "object" && "toMillis" in value && typeof (value as { toMillis?: unknown }).toMillis === "function"
+          ? (value as { toMillis: () => number }).toMillis()
+          : new Date(String(value ?? 0)).getTime();
+        return millis(b.createdAt) - millis(a.createdAt);
+      });
+    callback(items);
+  }, onError);
+}
+
+/** Soma hati kutoka Firebase Storage kwa uthibitisho wa UID na muda wa upatikanaji. */
+export async function getUserDocumentBlob(item: SavedUserDocument): Promise<Blob> {
+  await authPersistenceReady;
+  const uid = firebaseAuth.currentUser?.uid;
+  if (!uid || item.ownerUid !== uid || !item.storagePath.startsWith(`users/${uid}/documents/`)) {
+    throw Object.assign(new Error("Huna ruhusa ya kufungua hati hii."), { code: "permission-denied" });
+  }
+  if (Number(item.expiresAt) <= Date.now()) throw new Error("Muda wa hati hii umeisha. Tengeneza hati upya ikiwa huduma inaruhusu.");
+  const bytes = await getBytes(storageRef(firebaseStorage, item.storagePath), 10 * 1024 * 1024);
+  const buffer = bytes.slice().buffer as ArrayBuffer;
+  return new Blob([buffer], { type: item.mimeType || "application/octet-stream" });
+}
+
 export const usingFirebaseEmulators = import.meta.env.VITE_FIREBASE_EMULATOR === "true";
 if (usingFirebaseEmulators) {
   connectAuthEmulator(firebaseAuth, "http://127.0.0.1:9099", { disableWarnings: true });
