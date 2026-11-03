@@ -2164,3 +2164,168 @@
 .lq-no-qr-artboard--halotel .lq-no-qr-name-row { width:88% !important; min-height:18% !important; }
 .lq-no-qr-artboard--halotel .lq-no-qr-body > p { color:#fff !important; }
 @media (max-width:700px) { .lq-artboard.lq-no-qr-artboard { flex:0 1 auto !important; width:min(100%,620px) !important; max-width:620px !important; } .lq-no-qr-artboard .lq-no-qr-header { padding-right:5% !important; padding-left:5% !important; } .lq-no-qr-artboard .lq-no-qr-body { padding-right:5% !important; padding-left:5% !important; } }
+
+/* Lipa Studio UX refinement: compact horizontal network picker, stronger form contrast,
+   and keep export controls inside the form instead of over the app's bottom navigation. */
+.lq-sidebar {
+  background: #f1f4f8 !important;
+  border-right-color: #d7dee8 !important;
+  gap: 12px !important;
+  padding: 16px 14px 22px !important;
+}
+.lq-editor-panel {
+  gap: 10px !important;
+  padding: 12px !important;
+  border: 1px solid #d9e0e9 !important;
+  border-radius: 12px !important;
+  background: #e9eef5 !important;
+  box-shadow: 0 2px 8px #17202c0b !important;
+}
+.lq-section-heading,
+.lq-file-heading {
+  color: #263548 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+.lq-section-heading small,
+.lq-field > span small {
+  color: #526174 !important;
+}
+.lq-field {
+  color: #1d2a3a !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+.lq-field > small,
+.lq-download-help,
+.lq-print-note {
+  color: #435267 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+.lq-field input,
+.lq-field select {
+  color: #101c2b !important;
+  background: #fff !important;
+  border: 1.5px solid #aebac9 !important;
+  box-shadow: 0 1px 2px #17202c0d !important;
+}
+.lq-field input::placeholder { color: #657386 !important; opacity: 1 !important; }
+.lq-choice-group {
+  border-color: #c6d0dc !important;
+  background: #dce4ee !important;
+}
+.lq-choice-group button { color: #334155 !important; font-weight: 850 !important; }
+.lq-choice-group button.is-active {
+  color: #8d0019 !important;
+  background: #fff !important;
+  box-shadow: 0 1px 4px #17202c24 !important;
+}
+.lq-network-options {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  align-items: stretch !important;
+}
+.lq-network-option {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+  min-height: 82px !important;
+  padding: 7px 3px 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  text-align: center !important;
+}
+.lq-network-option.is-selected {
+  border-color: #b50927 !important;
+  background: #fff3f5 !important;
+  box-shadow: 0 0 0 2px #c9002018 !important;
+}
+.lq-network-logo {
+  flex: 0 0 34px !important;
+  width: 42px !important;
+  height: 34px !important;
+  padding: 2px !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+}
+.lq-network-logo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+.lq-network-option-copy {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.lq-network-option-copy strong {
+  display: block !important;
+  color: #172536 !important;
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+.lq-network-option-copy small { display: none !important; }
+.lq-network-check {
+  position: absolute !important;
+  top: 4px !important;
+  right: 4px !important;
+  width: 15px !important;
+  height: 15px !important;
+  font-size: 9px !important;
+}
+.lq-sticker-variant-choice { margin-top: 1px !important; }
+.lq-download-cta {
+  position: static !important;
+  display: inline-flex !important;
+  width: 100% !important;
+  min-height: 50px !important;
+  margin: 4px 0 0 !important;
+  border-radius: 11px !important;
+  color: #fff !important;
+  background: linear-gradient(135deg,#c90020,#850018) !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+}
+.lq-download-help { display: block !important; text-align: center !important; }
+.lq-disclaimer {
+  margin-top: 0 !important;
+  color: #54202a !important;
+  background: #fff1f3 !important;
+  border-color: #e7bdc5 !important;
+}
+.lq-disclaimer p { color: #54202a !important; font-size: 10px !important; }
+@media (max-width: 700px) {
+  .lq-app {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+  }
+  .lq-sidebar {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 12px 12px 18px !important;
+  }
+  .lq-sidebar-top { gap: 8px !important; }
+  .lq-editor-panel { padding: 11px !important; gap: 9px !important; }
+  .lq-network-options { grid-template-columns: repeat(4,minmax(0,1fr)) !important; gap: 5px !important; }
+  .lq-network-option { min-height: 76px !important; padding: 6px 2px !important; }
+  .lq-network-logo { flex-basis: 32px !important; width: 38px !important; height: 32px !important; }
+  .lq-network-option-copy strong { font-size: 9px !important; }
+  .lq-mobile-actions {
+    display: none !important;
+    position: static !important;
+    z-index: auto !important;
+    pointer-events: none !important;
+  }
+  .lq-preview { padding-top: 14px !important; }
+}
+@media (max-width: 360px) {
+  .lq-network-option-copy strong { font-size: 8px !important; }
+  .lq-network-logo { width: 34px !important; }
+  .lq-editor-panel { padding: 9px !important; }
+}
