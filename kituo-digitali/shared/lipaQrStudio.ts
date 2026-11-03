@@ -15,6 +15,12 @@ export function normalizeLipaNumber(value: string): string {
   return value.replace(/\D/g, "").slice(0, 12);
 }
 
+/** Return one display cell per Halotel Lipa digit; show five empty cells before entry. */
+export function getHalotelStickerDigits(value: string): string[] {
+  const digits = value.replace(/\D/g, "").slice(0, 9);
+  return digits ? Array.from(digits) : Array.from({ length: 5 }, () => "");
+}
+
 export function validateLipaCard(values: LipaCardValues): LipaCardErrors {
   const errors: LipaCardErrors = {};
   // Eneo na posta si sehemu za fomu hii; zisizuie QR kuzalishwa.
