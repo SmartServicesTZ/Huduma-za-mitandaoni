@@ -507,7 +507,7 @@ export default function LipaNumberPage() {
         if (!/^255\d{9}$/.test(digits)) nextErrors[fieldName] = "Weka namba kamili kwa muundo wa 255XXXXXXXXX.";
       }
     }
-    if (hasConditionalTin && values.hasTinNumber === "Ndiyo" && !String(values.tinNumber ?? "").trim()) {
+    if (selectedNetwork.id === "vodacom" && hasConditionalTin && values.hasTinNumber === "Ndiyo" && !String(values.tinNumber ?? "").trim()) {
       nextErrors.tinNumber = "Umechagua Ndiyo; tafadhali andika namba yako ya TIN.";
     }
     if (isYasNetwork && !String(values.businessLicensePhoto ?? "").startsWith("lipaUploads/")) {
@@ -596,7 +596,7 @@ export default function LipaNumberPage() {
 
   const renderField = (field: ServiceFormField) => {
     const value = field.fieldName === "idType" && /halotel/i.test(selectedNetwork?.id ?? "") ? "NIDA" : valueForField(values, field);
-    if (field.fieldName === "tinNumber" && /vodacom|yas|tigo/i.test(selectedNetwork?.id ?? "") && values.hasTinNumber !== "Ndiyo") return null;
+    if (field.fieldName === "tinNumber" && /vodacom/i.test(selectedNetwork?.id ?? "") && values.hasTinNumber !== "Ndiyo") return null;
     
     const inputId = `lipa-${field.fieldName}`;
     const common = { id: inputId, name: field.fieldName, placeholder: field.placeholder, value, required: field.required, "aria-invalid": Boolean(errors[field.fieldName]), "aria-describedby": `${inputId}-help` };
