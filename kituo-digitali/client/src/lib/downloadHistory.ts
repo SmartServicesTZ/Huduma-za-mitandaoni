@@ -152,23 +152,11 @@ async function deliverBlob(blob: Blob, name: string) {
     }
   }
 
-  const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-  if (installedApp && typeof navigator.share === "function") {
-    try {
-      const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
-      if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: name });
-        window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
-        return;
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Imeshindikana kufungua sehemu ya kushare.";
-      window.dispatchEvent(new CustomEvent("smartservicestz-download-error", { detail: { name, message } }));
-      throw error;
-    }
-  }
-
+  // Usitumie navigator.share hapa: deliverBlob hufika baada ya await ya Firebase,
+  // hivyo browser haitambui tena kuwa share imeanzishwa na kitendo cha kubonyeza.
+  // Pakua moja kwa moja kupitia download attribute badala yake.
   startBrowserDownload(blob, name);
+  window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
   // Browser haithibitishi kuwa mtumiaji amechagua kuhifadhi faili; hati salama ipo HATI ZANGU.
   window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
 }
