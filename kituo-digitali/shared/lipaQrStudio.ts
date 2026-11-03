@@ -63,7 +63,7 @@ export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumbe
 export function createVodacomTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
   const lipa = normalizeLipaNumber(values.lipaNumber);
   const name = values.businessName.trim().toUpperCase();
-  const merchantAccount = `0014tz.go.bot.tips0105025030208${lipa}`;
+  const merchantAccount = `0014tz.go.bot.tips01050250302${String(lipa.length).padStart(2, "0")}${lipa}`;
   const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
   const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
   // KITETO, postal code 27500, and every other supplied TIPS field remain fixed.
