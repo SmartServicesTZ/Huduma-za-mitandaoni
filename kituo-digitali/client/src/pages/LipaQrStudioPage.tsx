@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
 import {
+  createAirtelTipsPaymentPayload,
   createTipsPaymentPayload,
   createVodacomTipsPaymentPayload,
   createYasTipsPaymentPayload,
@@ -280,6 +281,7 @@ export default function LipaQrStudioPage() {
     if (!isValid || network === "halotel") return "";
     if (network === "voda") return createVodacomTipsPaymentPayload(values);
     if (network === "yas") return createYasTipsPaymentPayload(values);
+    if (network === "airtel") return createAirtelTipsPaymentPayload(values);
     return createTipsPaymentPayload(values);
   }, [isValid, values, network]);
 
