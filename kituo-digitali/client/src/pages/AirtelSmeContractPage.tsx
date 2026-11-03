@@ -264,7 +264,7 @@ export default function AirtelSmeContractPage() {
           await consumeFirebaseTokens(uid, service, requestId);
           setPaid(true);
         }
-        await triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase());
+        await triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase(), { source: "sme-airtel-mkataba", sourceRef: requestId });
         const sizeKB = Math.round(outputBlob.size / 1024);
         setStatus(`✓ Mkataba umehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
       } finally {
