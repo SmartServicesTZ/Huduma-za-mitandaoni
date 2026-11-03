@@ -734,12 +734,12 @@ export const submitLipaApplication = callable(async (request) => {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
       if (["businessLicense", "hasBusinessLicense"].includes(name)) fields.splice(index, 1);
-      else if (name === "tinNumber") fields[index] = { ...fields[index], required: false };
+      else if (name === "tinNumber") fields[index] = { ...fields[index], required: true };
       else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
-    if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
-    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
+
+    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 3 });
     if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
   }
   if (networkId.toLowerCase().includes("vodacom")) {
@@ -748,8 +748,8 @@ export const submitLipaApplication = callable(async (request) => {
   }
   const rawValues = objectValue(data.values, "Fomu");
   if (/yas|tigo/i.test(networkId)) {
-    if (rawValues.hasTinNumber === "Ndiyo" && !String(rawValues.tinNumber ?? "").trim()) {
-      throw new ApiError("failed-precondition", "Umechagua Ndiyo kwenye swali la TIN; weka namba ya TIN.");
+    if (!/^\d{3}-\d{3}-\d{3}$/.test(String(rawValues.tinNumber ?? "").trim())) {
+      throw new ApiError("invalid-argument", "Weka namba ya TIN kwa muundo 123-123-123.");
     }
   }
 
@@ -864,12 +864,12 @@ export const updateLipaApplication = callable(async (request) => {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
       if (["businessLicense", "hasBusinessLicense"].includes(name)) fields.splice(index, 1);
-      else if (name === "tinNumber") fields[index] = { ...fields[index], required: false };
+      else if (name === "tinNumber") fields[index] = { ...fields[index], required: true };
       else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
-    if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
-    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
+
+    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 3 });
     if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
   }
   if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "additionalNotes")) fields.push({ fieldName: "additionalNotes", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, order: 999 });
@@ -916,15 +916,15 @@ export const updateLipaApplication = callable(async (request) => {
       else throw new ApiError("invalid-argument", "Taarifa za fomu si sahihi.");
     }
     if (/yas|tigo/i.test(networkId)) {
-      const hasTin = String(next.hasTinNumber ?? "");
-      if (!["Ndiyo", "Hapana"].includes(hasTin)) throw new ApiError("invalid-argument", "Jibu swali la Je, una namba ya TIN?");
-      if (hasTin === "Ndiyo" && !/^\\d{3}-\\d{3}-\\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Umechagua Ndiyo; weka TIN kwa muundo 123-123-123.");
+
+
+      if (!/^\d{3}-\d{3}-\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Weka TIN kwa muundo 123-123-123.");
       if (!String(next.businessLicensePhoto ?? "").startsWith("lipaApplications/")) throw new ApiError("invalid-argument", "Picha ya leseni ya biashara inahitajika kwa ombi la Lipa Namba Yas.");
     }
     if (/halotel/i.test(networkId)) {
       if (String(next.idType ?? "") !== "NIDA") throw new ApiError("invalid-argument", "Aina ya kitambulisho cha Halotel ni NIDA pekee.");
-      if (!/^(?:\\d{20}|\\d{8}-\\d{5}-\\d{5}-\\d{2})$/.test(String(next.idNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20.");
-      if (!/^\\d{3}-\\d{3}-\\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
+      if (!/^(?:\d{20}|\\d{8}-\\d{5}-\\d{5}-\\d{2})$/.test(String(next.idNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20.");
+      if (!/^\d{3}-\\d{3}-\\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
     }
     const duplicateFingerprint = applicationDuplicateFingerprint(`lipa:${networkId}`, next);
     await db.runTransaction(async (transaction) => {
