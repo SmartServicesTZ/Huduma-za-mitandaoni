@@ -274,7 +274,7 @@ export default function SmeVodacomPage() {
               {message && <p className="mt-2 text-sm">{message}</p>}
               <p className="mt-2 text-sm">Unaweza kufuatilia hali ya ombi lako kwenye sehemu ya Maombi yangu hapa chini.</p>
               <button type="button" onClick={() => { setReference(""); setMessage(""); setErrors({}); setForm(INITIAL); setEditingApplicationId(null); setApplicationId(newApplicationId()); }} className="mt-5 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-black text-white hover:bg-emerald-800">TUMA OMBI JINGINE</button>
-            </div> : <form onSubmit={submit} noValidate className="mt-6 space-y-5">
+            </div> : <form id="sme-vodacom-form" onSubmit={submit} noValidate className="mt-6 space-y-5">
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="group">
                   <label htmlFor="sme-full-name" className="text-sm font-extrabold">Majina kamili <span className="text-red-600">*</span></label>
@@ -419,6 +419,7 @@ export default function SmeVodacomPage() {
             })}
           </div>
           <FieldError field="selectedPlan" />
+        {firebaseUser && <button type="submit" form="sme-vodacom-form" disabled={submitting} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-700 via-red-600 to-rose-700 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"><Send size={17}/> TUMA OMBI LA SME VODACOM</button>}
 
           <div className="mt-5 flex flex-col gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div>
