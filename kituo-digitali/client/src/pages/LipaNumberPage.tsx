@@ -96,12 +96,10 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
       if (/yas|tigo/i.test(id)) {
         fields = fields.filter((field) => !["businessLicense", "hasBusinessLicense"].includes(field.fieldName));
         const tinOrder = fields.find((field) => field.fieldName === "tinNumber")?.order ?? 3;
-        const questionOrder = fields.find((field) => field.fieldName === "hasTinNumber")?.order ?? tinOrder - 0.1;
         const licenseOrder = fields.find((field) => field.fieldName === "businessLicensePhoto")?.order ?? 5;
         fields = fields.filter((field) => !["tinNumber", "hasTinNumber", "businessLicensePhoto"].includes(field.fieldName));
         fields.push(
-          { fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "TIN inahitajika. Ukichagua Ndiyo, jaza namba yako ya TIN.", order: questionOrder },
-          { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: false, helpText: "Inahitajika ikiwa umechagua Ndiyo.", order: tinOrder },
+          { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: true, helpText: "Weka TIN kwa muundo 123-123-123.", order: tinOrder },
           { fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya leseni ya biashara kwa ombi la Lipa Namba.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: licenseOrder },
         );
       }
