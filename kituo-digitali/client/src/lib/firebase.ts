@@ -567,12 +567,12 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
     const row = snapshot.docs[0]?.data();
     if (row) {
       currentName = String(row.name ?? service.name);
-      const configuredCost = Number(row.tokenCost);
+      const configuredCost = Number(row.tokenCost ?? (service.slug === "stika-mawakala" ? 3 : 0));
       if (!Number.isSafeInteger(configuredCost) || configuredCost < 0 || configuredCost > 100000) {
         throw new Error("Gharama ya huduma haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
       }
-      currentCost = service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : configuredCost;
-      currentIsFree = !service.agentType && row.isFree === true && configuredCost === 0;
+      currentCost = service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : service.slug === "stika-mawakala" ? Math.max(3, configuredCost) : configuredCost;
+      currentIsFree = service.slug !== "stika-mawakala" && !service.agentType && row.isFree === true && configuredCost === 0;
     }
   } catch (error) {
     // Do not silently fall back to an old price when the live catalog could
@@ -755,7 +755,8 @@ export async function adminListUsers() {
 }
 
 export async function adminListServices() {
-  return getCollectionOnce("services");
+  const rows = await getCollectionOnce("services");
+  return rows.map((item) => item.slug === "stika-mawakala" ? { ...item, tokenCost: Math.max(3, Number(item.tokenCost) || 0), isFree: false } : item);
 }
 
 /** Read the live token price configured by Admin for a service. */
@@ -763,14 +764,14 @@ export async function getServiceTokenConfig(slug: string): Promise<{ name: strin
   const snapshot = await getDocsFromServer(query(collection(firestore, "services"), where("slug", "==", slug), limit(1)));
   const row = snapshot.docs[0]?.data();
   if (!row) throw new Error("Bei ya huduma haijapatikana kwenye Dashboard ya Admin. Wasiliana na admin.");
-  const tokenCost = Number(row.tokenCost);
+  const tokenCost = Number(row.tokenCost ?? (slug === "stika-mawakala" ? 3 : 0));
   if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) {
     throw new Error("Gharama ya tokeni haijawekwa sawa kwenye Dashboard ya Admin.");
   }
   return {
     name: String(row.name ?? slug),
-    tokenCost,
-    isFree: row.isFree === true || tokenCost === 0,
+    tokenCost: slug === "stika-mawakala" ? Math.max(3, tokenCost) : tokenCost,
+    isFree: slug === "stika-mawakala" ? false : row.isFree === true || tokenCost === 0,
     agentTypeTokenCosts: row.agentTypeTokenCosts && typeof row.agentTypeTokenCosts === "object" ? row.agentTypeTokenCosts as Record<string, number> : undefined,
   };
 }

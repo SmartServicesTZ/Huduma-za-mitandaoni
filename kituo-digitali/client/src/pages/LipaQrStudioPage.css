@@ -2406,3 +2406,47 @@
 
 /* Wallet side balances keep the decorative orbit behind the three readable balances. */
 .wallet-fashion-balance > .wallet-fashion-orbit { position:absolute; right:12px; bottom:-20px; z-index:0; opacity:.24; pointer-events:none; }
+
+
+/* Large diagonal trial watermark across the whole Lipa sticker preview. */
+.lq-artboard[data-watermarked="true"] {
+  position: relative !important;
+  isolation: isolate !important;
+}
+.lq-artboard[data-watermarked="true"]::after {
+  content: "SMARTSERVICESTZ";
+  position: absolute;
+  z-index: 50;
+  left: -18%;
+  top: 39%;
+  width: 136%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: rgba(255,255,255,.32);
+  font-size: clamp(24px, 7.2cqw, 86px);
+  font-weight: 1000;
+  letter-spacing: .12em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: rotate(-24deg);
+  -webkit-text-stroke: 1.5px rgba(65,0,12,.48);
+  text-shadow: 0 2px 4px rgba(0,0,0,.32);
+}
+.lq-artboard[data-watermarked="true"] .lq-sticker-name::before,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::before,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::before,
+.lq-artboard[data-watermarked="true"] .lq-airtel-name::before,
+.lq-artboard[data-watermarked="true"] .lq-voda-name::before,
+.lq-artboard[data-watermarked="true"] .lq-halotel-business::before,
+.lq-artboard[data-watermarked="true"] .lq-merchant-name::before,
+.lq-artboard[data-watermarked="true"] .lq-sticker-name::after,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-airtel-name::after,
+.lq-artboard[data-watermarked="true"] .lq-voda-name::after,
+.lq-artboard[data-watermarked="true"] .lq-halotel-business::after,
+.lq-artboard[data-watermarked="true"] .lq-merchant-name::after {
+  content: none !important;
+}

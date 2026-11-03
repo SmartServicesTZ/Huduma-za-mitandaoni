@@ -171,7 +171,7 @@ export default function AgentStickerPage(){
     try { sessionStorage.setItem("smartservicestz:agent-sticker-request",next); } catch { /* keep it in memory */ }
     return next;
   })());
-  const outputUsed=useRef(false);
+  const [outputUsed,setOutputUsed]=useState(()=>{try{return sessionStorage.getItem("smartservicestz:agent-sticker-used")==="1";}catch{return false;}});
   const [network,setNetwork]=useState<NetworkKey>("airtel");
   const [agentName,setAgentName]=useState("");
   const [agentNumber,setAgentNumber]=useState("");
@@ -188,7 +188,7 @@ export default function AgentStickerPage(){
     setEntryStatus("checking");setEntryMessage("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
     void getServiceTokenConfig("stika-mawakala").then(config=>{
       if(!active)return;
-      setServiceCost(config.tokenCost);setServiceName(config.name);
+      setServiceCost(Math.max(3, Number(config.tokenCost) || 3));setServiceName(config.name);
       setEntryStatus("pending");
       setEntryMessage("");
     }).catch(error=>{
@@ -209,7 +209,7 @@ export default function AgentStickerPage(){
   },[network,agentName,agentNumber]);
   async function downloadSticker(){
     const canvas=canvasRef.current;
-    if(!canvas||!valid||busy||!previewReady||entryStatus!=="pending"||outputUsed.current)return;
+    if(!canvas||!valid||busy||!previewReady||entryStatus!=="pending"||outputUsed)return;
     if(!firebaseUser||serviceCost===null)return;
     setBusy(true);
     setEntryStatus("charging");
@@ -219,17 +219,26 @@ export default function AgentStickerPage(){
       await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
       const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png",1));
       if(!blob)throw new Error("Imeshindikana kuandaa stika. Jaribu tena.");
-      const safe=cleanName(agentName).replace(/\\s+/g,"-").toLowerCase();
+      const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();
       await triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG",{source:"stika-wakala",sourceRef:entryRequestId.current});
-      outputUsed.current=true;
-      try { sessionStorage.removeItem("smartservicestz:agent-sticker-request"); } catch { /* storage may be unavailable */ }
+      setOutputUsed(true);
+      try { sessionStorage.setItem("smartservicestz:agent-sticker-used","1"); } catch { /* keep the one-download lock in memory */ }
       toast.success("Stika limehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa.");
     } catch(error) {
       setEntryStatus("pending");
       toast.error(error instanceof Error?error.message:"Imeshindikana kupakua stika.");
     } finally { setBusy(false); }
   }
-  function reset(){setAgentName("");setAgentNumber("");}
+  function reset(){
+    if(outputUsed){
+      const next=crypto.randomUUID();
+      entryRequestId.current=next;
+      try{sessionStorage.setItem("smartservicestz:agent-sticker-request",next);sessionStorage.removeItem("smartservicestz:agent-sticker-used");}catch{/* keep the new request id in memory */}
+      setOutputUsed(false);
+      setEntryStatus("pending");
+    }
+    setAgentName("");setAgentNumber("");
+  }
   const p=NETWORKS[network];
   if(entryStatus==="checking"||entryStatus==="failed") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-amber-300 bg-white p-6 shadow-xl"><div className="mb-4 text-center text-4xl">🔐</div><h1 className="text-center text-2xl font-black">STIKA ZA WAKALA</h1><p role="alert" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-950">{entryMessage || "Huduma haijafunguliwa."}</p>{entryStatus==="checking"?<p className="mt-4 text-center text-sm font-bold text-slate-600">Tafadhali subiri...</p>:<button type="button" onClick={()=>setLocation("/services")} className="mt-5 w-full rounded-xl border border-slate-300 px-4 py-3 font-bold">Rudi kwenye huduma</button>}</section></main>;
   return <main className="min-h-screen bg-slate-50 px-3 py-5 text-slate-900 sm:px-6">
@@ -268,8 +277,8 @@ export default function AgentStickerPage(){
           <label className="mb-5 block"><span className="mb-2 block text-sm font-extrabold">Namba ya wakala</span>
             <input value={agentNumber} onChange={e=>setAgentNumber(cleanNumber(e.target.value))} inputMode="numeric" maxLength={12} autoComplete="off" placeholder="Andika namba ya wakala" className="h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base font-semibold outline-none focus:border-slate-500"/>
           </label>
-          <button type="button" disabled={!valid||busy||!previewReady||entryStatus!=="pending"||outputUsed.current} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{entryStatus==="charging"?"Inathibitisha tokeni...":busy?"Inaandaa...":!previewReady?"Subiri preview...":"PAKUA STIKA PNG"}</button>
-          <button type="button" onClick={reset} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700"><RotateCcw className="h-4 w-4"/>Futa taarifa</button>
+          <button type="button" disabled={!valid||busy||!previewReady||entryStatus!=="pending"||outputUsed} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{entryStatus==="charging"?"Inathibitisha tokeni...":busy?"Inaandaa...":!previewReady?"Subiri preview...":outputUsed?"UMETUMIA TOKENI — ANZA UPYA":"PAKUA STIKA PNG"}</button>
+          <button type="button" onClick={reset} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700"><RotateCcw className="h-4 w-4"/>{outputUsed?"TENGENEZA STIKA NYINGINE (TOKENI ZITAKATWA TENA)":"Futa taarifa"}</button>
           {!valid&&(agentName||agentNumber)&&<p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-semibold text-amber-800">Weka angalau majina mawili na namba yenye tarakimu 5 hadi 12.</p>}
         </section>
         <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">

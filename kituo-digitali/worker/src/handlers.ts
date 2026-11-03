@@ -420,7 +420,7 @@ export const consumeTokens = callable(async (request) => {
     // Kitambulisho cha wakala ni huduma ya kulipia hata kama rekodi ya zamani ina isFree=true/tokenCost=0.
     // Tumia bei ya admin ikiwa ni chanya; vinginevyo tokeni 2 ndizo gharama ya msingi.
     const isAgentId = serviceId === "kitambulisho-wakala" || serviceId.startsWith("kitambulisho-wakala-");
-    const configuredCost = Number(service.tokenCost);
+    const configuredCost = serviceId === "stika-mawakala" ? Math.max(3, Number(service.tokenCost ?? 3)) : Number(service.tokenCost);
     if (service.isFree === true && configuredCost <= 0 && !isAgentId) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     // Bei ya kitambulisho cha wakala huamuliwa upande wa server kwa aina iliyochaguliwa.
     const agentType = typeof data.agentType === "string" ? data.agentType.trim().slice(0, 40) : "";
@@ -686,7 +686,7 @@ function cleanApplicationValues(values: Record<string, unknown>, fields: Array<R
     if (type === "NUMBER" && !Number.isFinite(Number(raw))) throw new ApiError("invalid-argument", `${label} iwe namba sahihi.`);
     if (type === "PHONE" && !/^\+?[0-9][0-9 ()-]{6,18}$/.test(raw)) throw new ApiError("invalid-argument", `${label} si namba sahihi ya simu.`);
     if (type === "TIN" && !/^\d{3}-\d{3}-\d{3}$/.test(raw)) throw new ApiError("invalid-argument", `${label} itumie muundo 123-123-123.`);
-    if (type === "NIDA" && !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(raw)) throw new ApiError("invalid-argument", `${label} itumie muundo 20068517-27520-00001-22.`);
+    if (type === "NIDA" && !/^(?:\d{20}|\d{8}-\d{5}-\d{5}-\d{2})$/.test(raw)) throw new ApiError("invalid-argument", `${label} itumie muundo 20068517-27520-00001-22.`);
     if (type === "DROPDOWN" && !(Array.isArray(field.options) && field.options.includes(raw))) throw new ApiError("invalid-argument", `Chagua ${label.toLowerCase()} kwenye orodha.`);
     if (type === "DATE" && (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(`${raw}T00:00:00Z`)))) throw new ApiError("invalid-argument", `${label} si tarehe sahihi.`);
     if (typeof field.validation === "string" && field.validation.length <= 200) {
@@ -716,23 +716,32 @@ export const submitLipaApplication = callable(async (request) => {
   let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
   if (/halotel/i.test(networkId)) {
     fields = [
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", required: true, order: 1 },
-      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
-      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
-      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+      { fieldName: "businessType", label: "Aina ya Maombi", type: "DROPDOWN", options: ["Machinga", "Binafsi", "Company Limited"], required: true, order: 1 },
+      { fieldName: "fullName", label: "Majina Kamili ya Mteja", type: "TEXT", required: true, order: 2 },
+      { fieldName: "lipaNumber", label: "Namba ya simu ya Lipa Namba", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 3 },
+      { fieldName: "contactNumber", label: "Namba ya simu ya mawasiliano", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 4 },
+      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 5 },
+      { fieldName: "idType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["NIDA"], required: true, order: 6 },
+      { fieldName: "idNumber", label: "Namba ya Kitambulisho", type: "NIDA", required: true, order: 7 },
+      { fieldName: "businessName", label: "Jina la Biashara (Hiari)", type: "TEXT", required: false, order: 8 },
+      { fieldName: "idFile", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 20 },
+      { fieldName: "tinFile", label: "Cheti cha TIN", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 21 },
+      { fieldName: "licenseFile", label: "Leseni ya Biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 22 },
+      { fieldName: "registrationCertificate", label: "Certificate of Registration / Incorporation", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 23 },
     ];
   }
   if (/yas|tigo/i.test(networkId)) {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
-      if (name === "businessLicense") fields.splice(index, 1);
-      else if (name === "tinNumber" || name === "businessLicensePhoto") fields[index] = { ...fields[index], required: false };
+      if (["businessLicense", "hasBusinessLicense"].includes(name)) fields.splice(index, 1);
+      else if (name === "tinNumber") fields[index] = { ...fields[index], required: true };
+      else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
+    fields = fields.filter((field) => String(field.fieldName ?? "") !== "hasTinNumber");
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
-    if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
-    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
-    if (!hasField("hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 4 });
-    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+
+    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 3 });
+    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
   }
   if (networkId.toLowerCase().includes("vodacom")) {
     fields = fields.filter((field) => !["businessName", "businessNameEvidence"].includes(String(field.fieldName ?? "")));
@@ -740,11 +749,8 @@ export const submitLipaApplication = callable(async (request) => {
   }
   const rawValues = objectValue(data.values, "Fomu");
   if (/yas|tigo/i.test(networkId)) {
-    if (rawValues.hasTinNumber === "Ndiyo" && !String(rawValues.tinNumber ?? "").trim()) {
-      throw new ApiError("failed-precondition", "Umechagua Ndiyo kwenye swali la TIN; weka namba ya TIN.");
-    }
-    if (rawValues.hasBusinessLicense === "Ndiyo" && !String(rawValues.businessLicensePhoto ?? "").startsWith(`lipaUploads/${uid}/${applicationId}/businessLicensePhoto-`)) {
-      throw new ApiError("failed-precondition", "Umechagua Ndiyo kwenye swali la leseni; pakia picha ya leseni ya biashara iliyo wazi.");
+    if (!/^\d{3}-\d{3}-\d{3}$/.test(String(rawValues.tinNumber ?? "").trim())) {
+      throw new ApiError("invalid-argument", "Weka namba ya TIN kwa muundo 123-123-123.");
     }
   }
 
@@ -778,7 +784,7 @@ export const submitLipaApplication = callable(async (request) => {
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const previousLipaApplications = await transaction.get(db.collection("lipaApplications").where("userId", "==", uid).where("networkId", "==", networkId).limit(100));
     const normalizeLipaPhone = (value: unknown) => {
-      let digits = String(value ?? "").replace(/\\D/g, "");
+      let digits = String(value ?? "").replace(/\D/g, "");
       if (digits.startsWith("0")) digits = `255${digits.slice(1)}`;
       else if (digits.length === 9) digits = `255${digits}`;
       return digits;
@@ -841,23 +847,32 @@ export const updateLipaApplication = callable(async (request) => {
   let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
   if (/halotel/i.test(networkId)) {
     fields = [
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", required: true, order: 1 },
-      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
-      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
-      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+      { fieldName: "businessType", label: "Aina ya Maombi", type: "DROPDOWN", options: ["Machinga", "Binafsi", "Company Limited"], required: true, order: 1 },
+      { fieldName: "fullName", label: "Majina Kamili ya Mteja", type: "TEXT", required: true, order: 2 },
+      { fieldName: "lipaNumber", label: "Namba ya simu ya Lipa Namba", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 3 },
+      { fieldName: "contactNumber", label: "Namba ya simu ya mawasiliano", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 4 },
+      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 5 },
+      { fieldName: "idType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["NIDA"], required: true, order: 6 },
+      { fieldName: "idNumber", label: "Namba ya Kitambulisho", type: "NIDA", required: true, order: 7 },
+      { fieldName: "businessName", label: "Jina la Biashara (Hiari)", type: "TEXT", required: false, order: 8 },
+      { fieldName: "idFile", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 20 },
+      { fieldName: "tinFile", label: "Cheti cha TIN", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 21 },
+      { fieldName: "licenseFile", label: "Leseni ya Biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 22 },
+      { fieldName: "registrationCertificate", label: "Certificate of Registration / Incorporation", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 23 },
     ];
   }
   if (/yas|tigo/i.test(networkId)) {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
-      if (name === "businessLicense") fields.splice(index, 1);
-      else if (name === "tinNumber" || name === "businessLicensePhoto") fields[index] = { ...fields[index], required: false };
+      if (["businessLicense", "hasBusinessLicense"].includes(name)) fields.splice(index, 1);
+      else if (name === "tinNumber") fields[index] = { ...fields[index], required: true };
+      else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
+    fields = fields.filter((field) => String(field.fieldName ?? "") !== "hasTinNumber");
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
-    if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
-    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
-    if (!hasField("hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 4 });
-    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+
+    if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 3 });
+    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
   }
   if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "additionalNotes")) fields.push({ fieldName: "additionalNotes", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, order: 999 });
   const previous = recordValues(current.applicantData);
@@ -901,6 +916,17 @@ export const updateLipaApplication = callable(async (request) => {
       } else if (typeof value === "number" && Number.isFinite(value)) next[key] = value;
       else if (typeof value === "boolean") next[key] = value;
       else throw new ApiError("invalid-argument", "Taarifa za fomu si sahihi.");
+    }
+    if (/yas|tigo/i.test(networkId)) {
+
+
+      if (!/^\d{3}-\d{3}-\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Weka TIN kwa muundo 123-123-123.");
+      if (!String(next.businessLicensePhoto ?? "").startsWith("lipaApplications/")) throw new ApiError("invalid-argument", "Picha ya leseni ya biashara inahitajika kwa ombi la Lipa Namba Yas.");
+    }
+    if (/halotel/i.test(networkId)) {
+      if (String(next.idType ?? "") !== "NIDA") throw new ApiError("invalid-argument", "Aina ya kitambulisho cha Halotel ni NIDA pekee.");
+      if (!/^(?:\d{20}|\d{8}-\d{5}-\d{5}-\d{2})$/.test(String(next.idNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20.");
+      if (!/^\d{3}-\d{3}-\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
     }
     const duplicateFingerprint = applicationDuplicateFingerprint(`lipa:${networkId}`, next);
     await db.runTransaction(async (transaction) => {
@@ -1235,23 +1261,49 @@ export const createServiceApplication = callable(async (request) => {
   if (serviceSlug === "pata-lipa-namba" || serviceSlug === "leseni-biashara") throw new ApiError("failed-precondition", "Tumia fomu maalum ya huduma hii.");
   let fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
   const rawValues = objectValue(data.values, "Fomu");
+  if (serviceSlug === "access-lipa-airtel") {
+    fields = fields.filter((field) => ["network", "phone", "fullName", "contact"].includes(String(field.fieldName ?? "")));
+    const fullName = String(rawValues.fullName ?? "").trim().replace(/\s+/g, " ");
+    const nameCount = fullName.split(" ").filter(Boolean).length;
+    if (nameCount < 2 || nameCount > 3) throw new ApiError("invalid-argument", "Majina 2 au 3 yanahitajika kama yalivyo kwenye kitambulisho.");
+    rawValues.fullName = fullName;
+    const existingName = fields.find((field) => String(field.fieldName ?? "") === "fullName");
+    if (existingName) existingName.required = true;
+    else fields.push({ fieldName: "fullName", label: "Majina 2 au 3 kama yalivyo kwenye kitambulisho", type: "TEXT", required: true, order: 2 });
+  }
+  if (serviceSlug === "access-lipa-yas") {
+    fields = fields.filter((field) => ["network", "phone", "nidaNumber", "passportPhoto", "tinNumber", "contact"].includes(String(field.fieldName ?? "")));
+    const photo = fields.find((field) => String(field.fieldName ?? "") === "passportPhoto");
+    if (photo) { photo.required = true; photo.label = "Picha ya Kitambulisho"; }
+    else fields.push({ fieldName: "passportPhoto", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 3 });
+    const tin = fields.find((field) => String(field.fieldName ?? "") === "tinNumber");
+    if (tin) { tin.required = true; tin.type = "TIN"; }
+    else fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 4 });
+  }
+  if (serviceSlug === "access-lipa-vodacom") {
+    const nidaField = fields.find((field) => String(field.fieldName ?? "") === "nidaNumber");
+    if (nidaField) { nidaField.required = true; nidaField.type = "NIDA"; }
+  }
   const tillNetwork = serviceSlug === "pata-till-mitandao-yote" ? String(rawValues.network ?? "").toUpperCase() : "";
   if (serviceSlug === "pata-till-mitandao-yote" && tillNetwork === "AIRTEL") {
     fields = [
       { fieldName: "airtelPhone", label: "Namba", type: "PHONE", required: true, order: 1 },
       { fieldName: "nidaNumber", label: "NIDA", type: "NIDA", required: true, order: 2 },
     ];
-    const phone = String(rawValues.airtelPhone ?? "").replace(/\\D/g, "");
-    const nida = String(rawValues.nidaNumber ?? "").replace(/\\D/g, "");
-    if (!/^0[67]\\d{8}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya Airtel si sahihi.");
-    if (!/^\\d{20}$/.test(nida)) throw new ApiError("invalid-argument", "NIDA lazima iwe na tarakimu 20.");
+    let phone = String(rawValues.airtelPhone ?? "").replace(/\D/g, "");
+    if (phone.startsWith("255") && phone.length === 12) phone = "0" + phone.slice(3);
+    rawValues.airtelPhone = phone;
+    const nida = String(rawValues.nidaNumber ?? "").replace(/\D/g, "");
+    if (!/^0[67]\d{8}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya Airtel si sahihi.");
+    if (!/^\d{20}$/.test(nida)) throw new ApiError("invalid-argument", "NIDA lazima iwe na tarakimu 20.");
   }
   const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId, "serviceUploads");
   if (serviceSlug === "pata-till-mitandao-yote") {
     const network = tillNetwork;
+    if (network === "HALOTEL" && !/^\d{3}-\d{3}-\d{3}$/.test(String(applicantData.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
     if (!["HALOTEL", "AIRTEL", "VODACOM"].includes(network)) throw new ApiError("invalid-argument", "Mtandao wa Till si sahihi.");
     applicantData.network = network;
-    applicantData.price = network === "AIRTEL" || network === "VODACOM" ? "TSh 200" : "BURE";
+    applicantData.price = network === "AIRTEL" ? "TSh 5,000" : network === "VODACOM" ? "TSh 35,000" : "BURE";
     applicantData.paymentStatus = network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID";
   }
   const finalPaths: string[] = [];
@@ -1273,7 +1325,7 @@ export const createServiceApplication = callable(async (request) => {
   const applicationRef = db.collection("serviceApplications").doc(applicationId);
   const duplicateFingerprint = applicationDuplicateFingerprint(`service:${serviceSlug}`, applicantData);
   const openRef = db.collection("serviceOpenApplications").doc(`${uid}_${serviceSlug}_${applicationId}`);
-  const tokenCost = Number(service.isFree === true ? 0 : service.tokenCost);
+  const tokenCost = Number(service.isFree === true ? 0 : (serviceSlug === "stika-mawakala" ? Math.max(3, Number(service.tokenCost)) : service.tokenCost));
   if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) throw new ApiError("failed-precondition", "Gharama ya huduma haijawekwa sawa.");
   try {
   const result = await db.runTransaction(async (transaction) => {
@@ -1311,10 +1363,20 @@ export const createServiceApplication = callable(async (request) => {
       if (!Number.isSafeInteger(before) || before < tokenCost) throw new ApiError("failed-precondition", "Tokeni za aina hii hazitoshi kutumia huduma hii.");
       balanceAfter = before - tokenCost;
       const tokenUpdate: Record<string, unknown> = { [tokenField]: balanceAfter, updatedAt: FieldValue.serverTimestamp() };
-      if (effectiveTokenType === "huduma") tokenUpdate.tokenBalance = balanceAfter;
+      let bonusUsed = 0;
+      let paymentUsed = 0;
+      if (effectiveTokenType === "huduma") {
+        const bonusBefore = Math.min(legacyOther, Math.max(0, Number(user.tokenBalanceBonus ?? 0)));
+        const paymentBefore = Math.max(0, legacyOther - bonusBefore);
+        bonusUsed = Math.min(bonusBefore, tokenCost);
+        paymentUsed = tokenCost - bonusUsed;
+        tokenUpdate.tokenBalance = balanceAfter;
+        tokenUpdate.tokenBalanceBonus = bonusBefore - bonusUsed;
+        tokenUpdate.tokenBalancePayment = paymentBefore - paymentUsed;
+      }
       transaction.update(userRef, tokenUpdate);
       ledgerRef = db.collection("tokenTransactions").doc(applicationId);
-      transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
+      transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", walletType: "mixed", bonusUsed, paymentUsed, amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
     }
     const awaitingTillPayment = serviceSlug === "pata-till-mitandao-yote" && ["AIRTEL", "VODACOM"].includes(String(applicantData.network ?? "").toUpperCase());
     const initialStatus = awaitingTillPayment ? "AWAITING_PAYMENT" : "PENDING";
@@ -1948,7 +2010,7 @@ function normalizeLicenseRequest(data: LicenseRequest) {
     // Kata is optional; some business locations do not use a ward value in the submitted address.
     ward: titleCaseLocation(typeof data.ward === "string" ? data.ward.trim().slice(0, 100) : ""),
     // Kijiji / mtaa is descriptive only: accept any user-entered value and do not block license generation.
-    street: typeof data.street === "string" ? titleCaseLocation(data.street.trim().replace(/\\s+/g, " ").slice(0, 140)) : "",
+    street: typeof data.street === "string" ? titleCaseLocation(data.street.trim().replace(/\s+/g, " ").slice(0, 140)) : "",
     tin: cleanText(data.tin, "TIN", 40).toUpperCase(),
     licenseFee: Number(data.licenseFee),
   };
@@ -2137,8 +2199,12 @@ export const completeBusinessLicense = callable(async (request) => {
     const before = profile.tokenBalanceOther === undefined ? Number(profile.tokenBalance ?? 0) : Number(profile.tokenBalanceOther);
     if (!Number.isSafeInteger(before) || before < tokenCost) throw new ApiError("failed-precondition", `Huna tokeni za huduma za kutosha kupakua hati hii. Unahitaji tokeni ${tokenCost}.`);
     const after = before - tokenCost;
-    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "huduma", type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
+    const bonusBefore = Math.min(before, Math.max(0, Number(profile.tokenBalanceBonus ?? 0)));
+    const paymentBefore = Math.max(0, before - bonusBefore);
+    const bonusUsed = Math.min(bonusBefore, tokenCost);
+    const paymentUsed = tokenCost - bonusUsed;
+    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, tokenBalanceBonus: bonusBefore - bonusUsed, tokenBalancePayment: paymentBefore - paymentUsed, updatedAt: FieldValue.serverTimestamp() });
+    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "huduma", type: "service_usage", walletType: "mixed", bonusUsed, paymentUsed, amount: -tokenCost, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
     transaction.create(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId: application.applicationId, tokensUsed: tokenCost, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: FieldValue.serverTimestamp(), reference: ledgerRef.id });
     transaction.update(applicationRef, { status: "COMPLETED", documentGenerated: true, reference: ledgerRef.id, updatedAt: FieldValue.serverTimestamp() });
     recordAudit(transaction, uid, String(profile.role ?? "user"), "GENERATE_BUSINESS_LICENSE_PDF", "licenseApplication", String(application.applicationId), { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: tokenCost, reference: ledgerRef.id });
