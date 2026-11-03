@@ -315,7 +315,7 @@ export async function createTillPaymentOrder(request: Request) {
   const existing = await db.collection("servicePaymentOrders").where("applicationId", "==", applicationId).limit(20).get();
   const reusable = existing.docs.find((document) => {
     const saved = document.data()!;
-    return String(saved.userId ?? "") === auth.uid && statusValue(saved.status) === "PENDING" && String(saved.environment ?? "").toUpperCase() === "LIVE";
+    return String(saved.userId ?? "") === auth.uid && statusValue(saved.status) === "PENDING" && String(saved.environment ?? "").toUpperCase() === "LIVE" && Number(saved.amount) === amount && String(saved.network ?? "") === network;
   });
   if (reusable) return json({ data: { order_id: reusable.id, payment_status: "PENDING", amount, currency: "TZS", reused: true } });
   const profileSnapshot = await db.collection("users").doc(auth.uid).get();
@@ -341,6 +341,7 @@ export async function createTillPaymentOrder(request: Request) {
     environment: credentials.environment, simulated: data.simulated === true,
     createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
   });
+  await applicationRef.set({ applicantData: { ...applicant, price: `TSh ${amount.toLocaleString("en-US")}` }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return json({ data: { order_id: orderId, payment_status: statusValue(data.payment_status) || "PENDING", amount, currency: "TZS", simulated: data.simulated === true } });
 }
 
@@ -364,6 +365,9 @@ async function settleTillPayment(orderId: string, providerOrder: Record<string, 
       return { paid: true, duplicate: true };
     }
     const applicant = applicationData ?? {};
+    const network = statusValue(applicant.network ?? order.network);
+    const currentAmount = network === "AIRTEL" ? 5000 : network === "VODACOM" ? 35000 : 0;
+    if (!currentAmount || expectedAmount !== currentAmount || Number(order.amount) !== currentAmount) throw new ApiError("failed-precondition", "Oda hii imetengenezwa kwa gharama ya zamani au isiyo sahihi. Anzisha malipo mapya kwa kiasi cha sasa.");
     if (!["AWAITING_PAYMENT", "PENDING"].includes(String(application.status)) || String(applicant.paymentStatus).toUpperCase() !== "UNPAID") {
       throw new ApiError("failed-precondition", "Ombi hili haliko kwenye hali ya kusubiri malipo.");
     }
@@ -397,7 +401,10 @@ export async function checkTillPaymentOrder(request: Request) {
   const order = orderSnapshot.data()!;
   if (String(order.environment ?? "").toUpperCase() !== "LIVE") throw new ApiError("failed-precondition", "Oda hii si ya mazingira ya LIVE.");
   if (String(order.status) === "COMPLETED") return json({ data: { order_id: orderId, payment_status: "COMPLETED", paid: true, duplicate: true } });
-  const expectedAmount = Number(order.amount);
+  const network = statusValue(order.network);
+  const currentAmount = network === "AIRTEL" ? 5000 : network === "VODACOM" ? 35000 : 0;
+  if (!currentAmount || Number(order.amount) !== currentAmount) throw new ApiError("failed-precondition", "Oda hii ina gharama ya zamani. Rudi kwenye ombi uanzishe malipo mapya kwa bei ya sasa.");
+  const expectedAmount = currentAmount;
   const verification = await verifyProviderOrder(orderId, expectedAmount);
   if (!verification.confirmed) {
     if (["FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(verification.status)) {
