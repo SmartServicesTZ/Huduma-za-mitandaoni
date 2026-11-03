@@ -19,6 +19,7 @@ function Router() {
         <Route path="/workbench" component={Home} />
         <Route path="/service/:slug" component={Home} />
         <Route path="/history" component={Home} />
+        <Route path="/my-documents" component={Home} />
         <Route path="/my-applications" component={Home} />
         <Route path={"/tokens"} component={Home} />
         <Route path={"/account"} component={Home} />
