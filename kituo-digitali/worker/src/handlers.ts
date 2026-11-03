@@ -1350,10 +1350,20 @@ export const createServiceApplication = callable(async (request) => {
       if (!Number.isSafeInteger(before) || before < tokenCost) throw new ApiError("failed-precondition", "Tokeni za aina hii hazitoshi kutumia huduma hii.");
       balanceAfter = before - tokenCost;
       const tokenUpdate: Record<string, unknown> = { [tokenField]: balanceAfter, updatedAt: FieldValue.serverTimestamp() };
-      if (effectiveTokenType === "huduma") tokenUpdate.tokenBalance = balanceAfter;
+      let bonusUsed = 0;
+      let paymentUsed = 0;
+      if (effectiveTokenType === "huduma") {
+        const bonusBefore = Math.min(legacyOther, Math.max(0, Number(user.tokenBalanceBonus ?? 0)));
+        const paymentBefore = Math.max(0, legacyOther - bonusBefore);
+        bonusUsed = Math.min(bonusBefore, tokenCost);
+        paymentUsed = tokenCost - bonusUsed;
+        tokenUpdate.tokenBalance = balanceAfter;
+        tokenUpdate.tokenBalanceBonus = bonusBefore - bonusUsed;
+        tokenUpdate.tokenBalancePayment = paymentBefore - paymentUsed;
+      }
       transaction.update(userRef, tokenUpdate);
       ledgerRef = db.collection("tokenTransactions").doc(applicationId);
-      transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
+      transaction.create(ledgerRef, { transactionId: applicationId, reference: applicationId, userId: uid, actorId: uid, tokenType: effectiveTokenType, type: "service_usage", walletType: "mixed", bonusUsed, paymentUsed, amount: -tokenCost, balanceBefore: before, balanceAfter, reason: `Ombi la ${String(service.name ?? serviceSlug)}`, serviceId: serviceSlug, serviceName: String(service.name ?? serviceSlug), createdAt: FieldValue.serverTimestamp(), status: "completed" });
     }
     const awaitingTillPayment = serviceSlug === "pata-till-mitandao-yote" && ["AIRTEL", "VODACOM"].includes(String(applicantData.network ?? "").toUpperCase());
     const initialStatus = awaitingTillPayment ? "AWAITING_PAYMENT" : "PENDING";
