@@ -59,6 +59,19 @@ export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumbe
   return body + tipsCrc16(body);
 }
 
+
+/** Yas/Mixx QR: preserve the exact accepted merchant TIPS template; vary only Lipa and merchant name. */
+export function createYasTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
+  const lipa = normalizeLipaNumber(values.lipaNumber);
+  const name = values.businessName.trim().toUpperCase();
+  const merchantAccount = `0014tz.go.bot.tips01050250102${String(lipa.length).padStart(2, "0")}${lipa}`;
+  const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
+  const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
+  // Fixed fields copied from the user-confirmed Yas QR that scans successfully.
+  const body = `000201010212${merchantAccountField}5204413153038345802TZ${nameField}6010KIBAHA CBD6105611046221030822715143070511006304`;
+  return body + tipsCrc16(body);
+}
+
 /** Vodacom sticker: preserve the supplied TIPS template and vary only Lipa number and merchant name. */
 export function createVodacomTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
   const lipa = normalizeLipaNumber(values.lipaNumber);
