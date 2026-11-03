@@ -41,3 +41,13 @@ describe("Lipa QR Studio helpers", () => {
     ].join("\n"));
   });
 });
+
+
+describe("Halotel sticker digit and footer requirements", () => {
+  it.each([5, 6, 7, 8, 9])("supports a %i-digit Halotel Lipa number without changing generic validation", (length) => {
+    const lipaNumber = "123456789".slice(0, length);
+    expect(normalizeLipaNumber(lipaNumber)).toBe(lipaNumber);
+    expect(validateLipaCard({ ...validValues, lipaNumber })).toEqual({});
+    expect(lipaNumber.length).toBe(length);
+  });
+});
