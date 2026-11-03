@@ -536,20 +536,21 @@ function TokensPanel({ users, form, setForm, onRun, adminId, busy, bonusConfig, 
   const [userSearch, setUserSearch] = useState("");
   const filteredUsers = users.filter((item: any) => `${item.name ?? ""} ${item.phone ?? ""} ${item.id ?? ""}`.toLowerCase().includes(userSearch.trim().toLowerCase()));
   const requestIds = useRef(new Map<string, string>());
+  const bulkRequestIds = useRef(new Map<string, string>());
   const walletType: "bonus" | "payment" = form.walletType === "payment" ? "payment" : "bonus";
   const selected = users.find((item: any) => item.id === form.userId);
   const amountValue = Math.floor(Math.abs(Number(form.amount)));
   const invalidAmount = !Number.isInteger(Number(form.amount)) || amountValue <= 0 || amountValue > 100000;
-  const adjustOne = async (targetId: string, amount: number, category: "bonus" | "payment", reason: string) => {
-    const key = JSON.stringify([adminId, targetId, amount, category, reason]);
+  const adjustOne = async (targetId: string, amount: number, category: "bonus" | "payment", reason: string, bulkId?: string) => {
+    const key = bulkId ? JSON.stringify([bulkId, targetId]) : JSON.stringify([adminId, targetId, amount, category, reason]);
     let requestId = requestIds.current.get(key);
     if (!requestId) {
       requestId = crypto.randomUUID();
       requestIds.current.set(key, requestId);
-      if (requestIds.current.size > 100) requestIds.current.delete(requestIds.current.keys().next().value!);
+      if (!bulkId && requestIds.current.size > 100) requestIds.current.delete(requestIds.current.keys().next().value!);
     }
     const result = await adminAdjustTokens(adminId, targetId, amount, reason, requestId, "huduma", category);
-    requestIds.current.delete(key);
+    if (!bulkId) requestIds.current.delete(key);
     return result;
   };
   const submitAdjustment = (direction: 1 | -1) => {
@@ -564,18 +565,24 @@ function TokensPanel({ users, form, setForm, onRun, adminId, busy, bonusConfig, 
     if (!targets.length) { toast.error("Hakuna akaunti za watumiaji zilizopatikana."); return; }
     const amount = amountValue * direction;
     const description = String(form.reason || "").trim() || (walletType === "bonus" ? "Bonus ya Admin kwa watumiaji wote" : "Payment ya Admin kwa watumiaji wote");
+    const bulkKey = JSON.stringify([adminId, amount, walletType, description, targets.map((target: any) => target.id).sort()]);
+    let bulkId = bulkRequestIds.current.get(bulkKey);
+    if (!bulkId) { bulkId = crypto.randomUUID(); bulkRequestIds.current.set(bulkKey, bulkId); }
+    if (!window.confirm(`${direction > 0 ? "ONGEZA" : "PUNGUZA"} tokeni ${amountValue} za ${walletType.toUpperCase()} kwa akaunti ${targets.length} za watumiaji?`)) return;
     onRun(async () => {
       let succeeded = 0;
       const failed: string[] = [];
       for (let offset = 0; offset < targets.length; offset += 5) {
         const batch = targets.slice(offset, offset + 5);
-        const results = await Promise.allSettled(batch.map((target: any) => adjustOne(target.id, amount, walletType, description)));
+        const results = await Promise.allSettled(batch.map((target: any) => adjustOne(target.id, amount, walletType, description, bulkId)));
         results.forEach((result, index) => {
           if (result.status === "fulfilled") succeeded++;
           else failed.push(String(batch[index].name || batch[index].phone || batch[index].id));
         });
       }
-      if (failed.length) throw new Error(`Imefanikiwa kwa akaunti ${succeeded}; imeshindikana kwa ${failed.length}. Akaunti zilizoshindikana: ${failed.slice(0, 8).join(", ")}`);
+      if (failed.length) throw new Error(`Imefanikiwa kwa akaunti ${succeeded}; imeshindikana kwa ${failed.length}. Ukijaribu tena kwa kiasi na aina hiyohiyo, akaunti zilizofanikiwa hazitaongezewa mara ya pili. Zilizoshindikana: ${failed.slice(0, 8).join(", ")}`);
+      bulkRequestIds.current.delete(bulkKey);
+      targets.forEach((target: any) => requestIds.current.delete(JSON.stringify([bulkId, target.id])));
       return { succeeded };
     }, direction > 0 ? `Tokeni za ${walletType.toUpperCase()} zimeongezwa kwa watumiaji ${targets.length}.` : `Tokeni za ${walletType.toUpperCase()} zimepunguzwa kwa watumiaji ${targets.length}.`);
   };
