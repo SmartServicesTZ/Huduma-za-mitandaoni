@@ -323,7 +323,7 @@ export default function LipaQrStudioPage() {
   const [network, setNetwork] = useState<LipaNetwork>("voda");
   const [stickerVariant, setStickerVariant] = useState<StickerVariant>("qr");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
-  const [format, setFormat] = useState<FileFormat>("pdf");
+  const [format, setFormat] = useState<FileFormat>("png");
   const [airtelPaperSize, setAirtelPaperSize] = useState<"A5" | "A4">("A5");
   const selectedPaperSize = network === "airtel" ? airtelPaperSize : "A5";
   const outputWidthMm = selectedPaperSize === "A4" ? A4_WIDTH_MM : A5_WIDTH_MM;
@@ -548,7 +548,7 @@ export default function LipaQrStudioPage() {
           <button type="button" aria-pressed={pageMode === "card-only"} className={`lq-output-type-option lq-output-type-option--single ${pageMode === "card-only" ? "is-active" : ""}`} onClick={() => setPageMode("card-only")}>STIKA PEKEE</button>
           <button type="button" aria-pressed={pageMode === "card-and-guide"} className={`lq-output-type-option lq-output-type-option--guide ${pageMode === "card-and-guide" ? "is-active" : ""}`} onClick={() => setPageMode("card-and-guide")}>STIKA + MAELEKEZO</button>
         </div>
-        <div className="lq-file-heading"><span>Aina ya faili</span></div>
+        <div className="lq-file-heading"><span>Aina ya faili <small className="lq-format-recommendation">PNG INAPENDEKEZWA</small></span></div>
         <div className="lq-choice-group" role="group" aria-label="Chagua aina ya faili">
           <button type="button" aria-pressed={format === "pdf"} className={format === "pdf" ? "is-active" : ""} onClick={() => setFormat("pdf")}>PDF</button>
           <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG</button>
