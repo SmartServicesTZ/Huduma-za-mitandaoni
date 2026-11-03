@@ -216,14 +216,15 @@ export async function downloadSavedDocument(item: SavedUserDocument) {
 }
 
 /** Share hati iliyohifadhiwa; ikikosekana Web Share API, tumia download ya kawaida. */
-export async function shareSavedDocument(item: SavedUserDocument) {
+export async function shareSavedDocument(item: SavedUserDocument): Promise<boolean> {
   const blob = await getUserDocumentBlob(item);
   const file = new File([blob], item.name, { type: item.mimeType || blob.type });
   if (typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] }))) {
     await navigator.share({ files: [file], title: item.name });
-    return;
+    return true;
   }
   await deliverBlob(blob, item.name);
+  return false;
 };
 
 const startBrowserDownload = (blob: Blob, name: string) => {
