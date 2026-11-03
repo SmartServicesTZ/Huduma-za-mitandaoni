@@ -327,8 +327,9 @@ async function handleUserDocumentUpload(request: Request, cors: Headers, env: En
   const safeName = safeUserDocumentName(file.name);
   const requestedName = safeUserDocumentName(String(form.get("name") ?? file.name));
   if (requestedName !== safeName) throw new ApiError("invalid-argument", "Jina la faili halilingani.");
-  const mimeType = file.type.toLowerCase() || "application/octet-stream";
-  if (!["image/png", "image/jpeg", "image/webp", "application/pdf", "application/octet-stream"].includes(mimeType)) {
+  const extensionMime: Record<string, string> = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", svg: "image/svg+xml" };
+  const mimeType = file.type.toLowerCase() || extensionMime[safeName.split(".").pop()?.toLowerCase() ?? ""] || "application/octet-stream";
+  if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml", "application/pdf", "application/octet-stream"].includes(mimeType)) {
     throw new ApiError("invalid-argument", "Aina ya hati hairuhusiwi.");
   }
 
@@ -639,7 +640,7 @@ const worker = {
         return jsonResponse({ error: { code: "internal", message: "Hati haikuhifadhiwa au kupakiwa kwa sasa. Jaribu tena." } }, 500, cors);
       }));
     }
-    const userDocumentMatch = /^\\/user-documents\\/([A-Za-z0-9_-]{16,80})$/.exec(url.pathname);
+    const userDocumentMatch = /^\/user-documents\/([A-Za-z0-9_-]{16,80})$/.exec(url.pathname);
     if (userDocumentMatch) {
       return withWorkerEnv(env, () => handleUserDocumentDownload(request, cors, env, userDocumentMatch[1]).catch((error) => {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
