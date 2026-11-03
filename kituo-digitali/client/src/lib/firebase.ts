@@ -571,7 +571,7 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
       if (!Number.isSafeInteger(configuredCost) || configuredCost < 0 || configuredCost > 100000) {
         throw new Error("Gharama ya huduma haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
       }
-      currentCost = service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : configuredCost;
+      currentCost = service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : service.slug === "stika-mawakala" ? Math.max(3, configuredCost) : configuredCost;
       currentIsFree = !service.agentType && row.isFree === true && configuredCost === 0;
     }
   } catch (error) {
@@ -769,7 +769,7 @@ export async function getServiceTokenConfig(slug: string): Promise<{ name: strin
   }
   return {
     name: String(row.name ?? slug),
-    tokenCost,
+    tokenCost: slug === "stika-mawakala" ? Math.max(3, tokenCost) : tokenCost,
     isFree: row.isFree === true || tokenCost === 0,
     agentTypeTokenCosts: row.agentTypeTokenCosts && typeof row.agentTypeTokenCosts === "object" ? row.agentTypeTokenCosts as Record<string, number> : undefined,
   };
