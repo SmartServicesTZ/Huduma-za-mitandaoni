@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft, CheckCircle2, CircleCheck, CreditCard, LoaderCircle, Phone, Send,
-  ShieldCheck, Smartphone, Sparkles, User, Wifi, Gift,
+  ArrowLeft, CheckCircle2, CreditCard, LoaderCircle, Phone, Send,
+  ShieldCheck, Sparkles, User, Gift,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -10,25 +10,8 @@ import { createServiceApplication, updateServiceApplication, subscribeUserServic
 import { formatNida } from "../../../shared/serviceForms";
 import type { ServiceFormValues } from "../../../shared/serviceForms";
 
-const DATA_PLANS = [
-  { price: 10000, data: "7 GB" }, { price: 15000, data: "10 GB" },
-  { price: 20000, data: "22 GB" }, { price: 30000, data: "30 GB" },
-  { price: 50000, data: "60 GB" }, { price: 60000, data: "75 GB" },
-  { price: 75000, data: "100 GB" }, { price: 100000, data: "150 GB" },
-];
-const COMBO_PLANS = [
-  { price: 15000, data: "7 GB", calls: "DAK 500", sms: "SMS 100" },
-  { price: 20000, data: "10 GB", calls: "DAK 1,000", sms: "SMS 100" },
-  { price: 30000, data: "20 GB", calls: "DAK 1,500", sms: "SMS 100" },
-  { price: 50000, data: "50 GB", calls: "DAK 2,000", sms: "SMS 100" },
-  { price: 60000, data: "60 GB", calls: "DAK 3,000", sms: "SMS 100" },
-  { price: 75000, data: "80 GB", calls: "DAK 5,000", sms: "SMS 100" },
-  { price: 100000, data: "120 GB", calls: "DAK 8,000", sms: "SMS 100" },
-];
-type PlanOption = { price: number; data: string; calls?: string; sms?: string };
-type PlanType = "data" | "combo";
-type FormState = { phone: string; fullName: string; nidaNumber: string; contactPhone: string; hasTin: "" | "ndio" | "hana"; tinNumber: string; voucherConfirmed: boolean; planType: PlanType; selectedPlan: string };
-const INITIAL: FormState = { phone: "", fullName: "", nidaNumber: "", contactPhone: "", hasTin: "", tinNumber: "", voucherConfirmed: false, planType: "data", selectedPlan: "" };
+type FormState = { phone: string; fullName: string; nidaNumber: string; contactPhone: string; hasTin: "" | "ndio" | "hana"; tinNumber: string; voucherConfirmed: boolean };
+const INITIAL: FormState = { phone: "", fullName: "", nidaNumber: "", contactPhone: "", hasTin: "", tinNumber: "", voucherConfirmed: false };
 const normalizePhone = (value: string) => { const d = value.replace(/\D/g, ""); return d.startsWith("255") ? d : d.startsWith("0") ? "255" + d.slice(1) : d; };
 const validPhone = (value: string) => /^255[67]\d{8}$/.test(normalizePhone(value));
 const money = (value: number) => value.toLocaleString("en-TZ");
@@ -81,9 +64,6 @@ export default function SmeAirtelPage() {
     return subscribeUserServiceApplications(firebaseUser.uid, (rows) => setMyApplications(rows.filter((row) => row.serviceSlug === "sme-airtel")));
   }, [firebaseUser?.uid]);
 
-  const plans: PlanOption[] = form.planType === "data" ? DATA_PLANS : COMBO_PLANS;
-  const chosenPlan = useMemo(() => plans.find((p) => String(p.price) === form.selectedPlan), [plans, form.selectedPlan]);
-
   const progress = useMemo(() => {
     const steps = [
       validPhone(form.phone),
@@ -92,14 +72,13 @@ export default function SmeAirtelPage() {
       validPhone(form.contactPhone),
       form.hasTin === "hana" || (form.hasTin === "ndio" && /^\d{9}$/.test(form.tinNumber)),
       form.voucherConfirmed,
-      !!form.selectedPlan,
     ];
     const done = steps.filter(Boolean).length;
     return { done, total: steps.length, pct: Math.round((done / steps.length) * 100) };
   }, [form]);
 
   const update = (field: keyof FormState, value: string | boolean) => {
-    setForm((old) => ({ ...old, [field]: value, ...(field === "planType" ? { selectedPlan: "" } : {}) }));
+    setForm((old) => ({ ...old, [field]: value }));
     setErrors((old) => ({ ...old, [field]: "" })); setMessage("");
   };
 
@@ -112,7 +91,6 @@ export default function SmeAirtelPage() {
     if (!form.hasTin) next.hasTin = "Chagua kama una TIN au huna.";
     if (form.hasTin === "ndio" && !/^\d{9}$/.test(form.tinNumber.replace(/\D/g, ""))) next.tinNumber = "Weka namba sahihi ya TIN yenye tarakimu 9.";
     if (!form.voucherConfirmed) next.voucherConfirmed = "Thibitisha kuwa laini imewekewa vocha ya TSh 10,000 au zaidi.";
-    if (!form.selectedPlan) next.selectedPlan = "Chagua kifurushi cha Airtel Business.";
     setErrors(next);
     if (Object.keys(next).length) setShakeKey((k) => k + 1);
     return Object.keys(next).length === 0;
@@ -130,8 +108,9 @@ export default function SmeAirtelPage() {
         fullName: form.fullName.trim().replace(/\s+/g, " "), nidaNumber: formatNida(form.nidaNumber),
         contactPhone: normalizePhone(form.contactPhone), hasTin: form.hasTin,
         tinNumber: form.hasTin === "ndio" ? form.tinNumber.replace(/\D/g, "") : "HANA", voucherAmount: 10000,
-        voucherConfirmed: "NDIYO", planType: form.planType, selectedPlan: form.selectedPlan,
-        selectedPlanName: (form.planType === "data" ? "DATA BANDO" : "COMBO BANDO") + " — TSh " + money(Number(form.selectedPlan)),
+        voucherConfirmed: "NDIYO",
+        planSelection: "ADMIN_TO_ASSIGN",
+        selectedPlanName: "Kifurushi kitaamuliwa na admin baada ya kupokea ombi.",
         reward: 2000, rewardCurrency: "TZS", rewardRule: "TSh 2,000 kwa kila SME itakayokubaliwa na kuthibitishwa na admin",
       };
       if (editingApplicationId) {
@@ -190,7 +169,7 @@ export default function SmeAirtelPage() {
               <span className="sa-ring h-2 w-2 rounded-full bg-white" /> AIRTEL BUSINESS
             </span>
             <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-6xl">SME <span className="bg-gradient-to-r from-white to-red-200 bg-clip-text text-transparent">AIRTEL</span></h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">Sajili laini mpya au ya zamani kwenye SME Airtel. Jaza taarifa sahihi kama zilivyo kwenye kitambulisho na chagua kifurushi cha biashara.</p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">Sajili laini mpya au ya zamani kwenye SME Airtel. Tuma ombi; admin atakagua taarifa na kukupangia kifurushi kinachofaa.</p>
             <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold text-white">
               {["Laini mpya au ya zamani", "Vocha kuanzia TSh 10,000", "Zawadi TSh 2,000 kwa SME iliyothibitishwa"].map((t, i) => (
                 <span key={t} className="sa-in inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/15 px-3 py-2 backdrop-blur transition hover:bg-white/25" style={{ animationDelay: `${300 + i * 120}ms` }}>
@@ -337,7 +316,7 @@ export default function SmeAirtelPage() {
                   const data = app.applicantData ?? {};
                   setEditingApplicationId(app.applicationId || app.id);
                   setApplicationId(app.applicationId || app.id);
-                  setForm({ phone: String(data.smePhone ?? data.phone ?? ""), fullName: String(data.fullName ?? ""), nidaNumber: String(data.nidaNumber ?? "").replace(/\\D/g, ""), contactPhone: String(data.contactPhone ?? ""), hasTin: data.hasTin === "ndio" ? "ndio" : data.hasTin === "hana" || data.tinNumber === "HANA" ? "hana" : "", tinNumber: String(data.tinNumber ?? "").replace(/\\D/g, ""), voucherConfirmed: true, planType: data.planType === "combo" ? "combo" : "data", selectedPlan: String(data.selectedPlan ?? "") });
+                  setForm({ phone: String(data.smePhone ?? data.phone ?? ""), fullName: String(data.fullName ?? ""), nidaNumber: String(data.nidaNumber ?? "").replace(/\\D/g, ""), contactPhone: String(data.contactPhone ?? ""), hasTin: data.hasTin === "ndio" ? "ndio" : data.hasTin === "hana" || data.tinNumber === "HANA" ? "hana" : "", tinNumber: String(data.tinNumber ?? "").replace(/\\D/g, ""), voucherConfirmed: true });
                   setMessage("Unahariri ombi ambalo bado halijaanza kushughulikiwa. Hakiki taarifa kisha hifadhi.");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100">Hariri ombi</button>}
@@ -345,51 +324,8 @@ export default function SmeAirtelPage() {
               </article>)}</div>}
       </section>
 
-      {/* VIFURUSHI */}
-      <section className="sa-in mt-6 rounded-3xl border border-white bg-white/80 p-4 shadow-[0_10px_40px_-15px_rgba(15,23,42,.15)] backdrop-blur-xl sm:p-6" style={{ animationDelay: "120ms" }}>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <span className="text-xs font-black tracking-[.18em] text-red-700">VIFURUSHI VYA BIASHARA</span>
-            <h2 className="mt-1 text-xl font-black sm:text-2xl">Chagua kifurushi</h2>
-            <p className="mt-1 text-sm text-slate-500">Bei ni TSh kwa mwezi.</p>
-          </div>
-          <div className="relative inline-grid grid-cols-2 rounded-2xl bg-slate-100 p-1" role="tablist" aria-label="Aina ya kifurushi">
-            <span aria-hidden className="absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-xl bg-gradient-to-r from-red-600 to-red-700 shadow-lg shadow-red-500/30 transition-all duration-500 ease-[cubic-bezier(.34,1.56,.64,1)]" style={{ left: form.planType === "data" ? "4px" : "calc(50%)" }} />
-            <button type="button" role="tab" aria-selected={form.planType === "data"} onClick={() => update("planType", "data")} className={"relative z-10 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors duration-300 " + (form.planType === "data" ? "text-white" : "text-slate-600 hover:text-red-700")}><Wifi size={15} className="mr-1 inline" /> Data bando</button>
-            <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={"relative z-10 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors duration-300 " + (form.planType === "combo" ? "text-white" : "text-slate-600 hover:text-red-700")}><Smartphone size={15} className="mr-1 inline" /> Combo bando</button>
-          </div>
-        </div>
-
-        <div key={form.planType} className="mt-5 grid grid-cols-3 gap-1.5 sm:gap-3 lg:grid-cols-4">
-          {plans.map((plan, i) => {
-            const selected = form.selectedPlan === String(plan.price);
-            const combo = "calls" in plan;
-            return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))}
-              style={{ animationDelay: `${i * 60}ms` }}
-              className={"sa-in group relative overflow-hidden rounded-xl border-2 p-2 text-left transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-xl active:scale-[0.97] sm:rounded-2xl sm:p-3.5 " +
-                (selected ? "border-red-600 bg-gradient-to-br from-red-50 to-white shadow-lg shadow-red-500/15 ring-4 ring-red-600/10" : "border-slate-200 bg-white hover:border-red-300 hover:shadow-red-500/10")}>
-              <span aria-hidden className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-red-500/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-              {selected && <span className="sa-pop absolute right-2 top-2 text-red-600 sm:right-3 sm:top-3"><CircleCheck size={20} fill="currentColor" className="text-red-600 [&>path]:stroke-white" /></span>}
-              <span className="inline-flex rounded-full bg-slate-100 px-1.5 py-1 text-[8px] font-black tracking-wide text-slate-600 sm:px-2.5 sm:text-[10px]">KILA MWEZI</span>
-              <p className="mt-2 text-base font-black text-slate-900 sm:text-2xl">{plan.data}</p>
-              <p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
-              {combo
-                ? <div className="mt-1 flex flex-col gap-0.5 border-t border-slate-200 pt-1 text-[9px] font-semibold text-slate-600 sm:mt-2 sm:flex-row sm:gap-x-2 sm:gap-y-1 sm:pt-2 sm:text-[11px]"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div>
-                : <p className="mt-1 border-t border-slate-100 pt-1 text-[9px] text-slate-500 sm:mt-2 sm:pt-2 sm:text-[11px]">Data pekee</p>}
-              <span className={"mt-1 inline-flex items-center gap-1 text-[9px] font-extrabold transition-colors sm:mt-2 sm:text-[11px] " + (selected ? "text-red-700" : "text-slate-500 group-hover:text-red-600")}>{selected ? "Kimechaguliwa ✓" : "Chagua kifurushi →"}</span>
-            </button>;
-          })}
-        </div>
-        <FieldError field="selectedPlan" />
-        {firebaseUser && <button type="submit" form="sme-airtel-form" disabled={submitting} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-700 via-red-600 to-rose-700 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"><Send size={17}/> TUMA OMBI LA SME AIRTEL</button>}
-
-        <div className="mt-5 flex flex-col gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-white/60">Kifurushi ulichochagua</p>
-            <p key={chosenPlan?.price ?? "none"} className="sa-swap mt-1 text-lg font-black">{chosenPlan ? chosenPlan.data + " · TSh " + money(chosenPlan.price) : "Bado hujachagua kifurushi"}</p>
-          </div>
-          <span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3 py-2 text-xs font-bold backdrop-blur"><CheckCircle2 size={15} /> Airtel Business</span>
-        </div>
+      <section className="sa-in mt-6 rounded-3xl border border-red-100 bg-white/90 p-5 shadow-sm sm:p-6">
+        <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700"><ShieldCheck size={20}/></span><div><h2 className="font-black text-slate-900">Kifurushi cha SME Airtel</h2><p className="mt-1 text-sm leading-6 text-slate-600">Huhitaji kuchagua kifurushi. Tuma ombi lako tu; timu yetu itakagua taarifa na kukupangia kifurushi kinachofaa, kisha itakujulisha gharama na hatua zinazofuata.</p></div></div>
       </section>
 
     </div>
