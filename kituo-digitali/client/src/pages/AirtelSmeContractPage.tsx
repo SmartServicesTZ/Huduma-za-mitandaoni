@@ -74,7 +74,12 @@ export default function AirtelSmeContractPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [status, setStatus] = useState("");
   const [paid, setPaid] = useState(false);
-  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+  const [requestId, setRequestId] = useState(() => {
+    try { const existing = sessionStorage.getItem("smartservicestz:airtel-sme-request"); if (existing) return existing; } catch { /* storage may be unavailable */ }
+    const next = crypto.randomUUID();
+    try { sessionStorage.setItem("smartservicestz:airtel-sme-request", next); } catch { /* keep it in memory */ }
+    return next;
+  });
   const [inkColor, setInkColor] = useState<"black" | "blue" | "red">("blue");
   const [handwritingFont, setHandwritingFont] = useState<"cursive" | "segoe" | "comic" | "normal">("normal");
   const handwritingFontFamily = handwritingFont === "cursive" ? "cursive" : handwritingFont === "segoe" ? "'Segoe Print', 'Bradley Hand', cursive" : handwritingFont === "comic" ? "'Comic Sans MS', cursive" : "Arial, Helvetica, sans-serif";
@@ -89,7 +94,9 @@ export default function AirtelSmeContractPage() {
 
   useEffect(() => {
     setPaid(false);
-    setRequestId(crypto.randomUUID());
+    const nextRequestId = crypto.randomUUID();
+    setRequestId(nextRequestId);
+    try { sessionStorage.setItem("smartservicestz:airtel-sme-request", nextRequestId); } catch { /* storage may be unavailable */ }
   }, [inkColor, handwritingFont]);
 
   const [layout, setLayout] = useState<Record<string, number>>(() => ({ ...AIRTEL_SME_LAYOUT_DEFAULTS }));
@@ -264,9 +271,10 @@ export default function AirtelSmeContractPage() {
           await consumeFirebaseTokens(uid, service, requestId);
           setPaid(true);
         }
-        triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase());
+        await triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase(), { source: "sme-airtel-mkataba", sourceRef: requestId });
+        try { sessionStorage.removeItem("smartservicestz:airtel-sme-request"); } catch { /* storage may be unavailable */ }
         const sizeKB = Math.round(outputBlob.size / 1024);
-        setStatus(`✓ Mkataba umepakuliwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
+        setStatus(`✓ Mkataba umehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
       } finally {
         URL.revokeObjectURL(svgUrl);
       }

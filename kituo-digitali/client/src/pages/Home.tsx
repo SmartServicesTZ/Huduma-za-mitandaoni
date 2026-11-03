@@ -7,12 +7,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders, createTillFimipayOrder, checkTillFimipayOrder } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders, createTillFimipayOrder, checkTillFimipayOrder, subscribeUserDocuments, type SavedUserDocument } from "@/lib/firebase";
 import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
 import { completeOrder, defaultHomepageSectionOrder, isServiceLocked, orderByIds, preferredHomepageServiceSlugs, prioritizeHomepageServices, type HomepageSectionId } from "../../../shared/serviceOrdering";
-import { clearDownloadHistory, downloadFromHistory, getDownloadHistory, removeDownload, type DownloadHistoryItem } from "@/lib/downloadHistory";
+import { downloadSavedDocument, shareSavedDocument } from "@/lib/downloadHistory";
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
 const BusinessLicensePage = lazy(() => import("./BusinessLicensePage"));
 const LipaNumberPage = lazy(() => import("./LipaNumberPage"));
@@ -537,9 +537,10 @@ function HistoryPage() {
   const { firebaseUser } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
   const [serviceApplications, setServiceApplications] = useState<any[]>([]);
-  const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
-
-  const refreshDownloads = () => setDownloads(getDownloadHistory().filter((item: any) => !isHiddenHistoryRecord(item)));
+  const [savedDocuments, setSavedDocuments] = useState<SavedUserDocument[]>([]);
+  const [documentLoading, setDocumentLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState("");
+  const [sharingId, setSharingId] = useState("");
 
   useEffect(() => {
     if (!firebaseUser) { setRows([]); return; }
@@ -547,52 +548,91 @@ function HistoryPage() {
   }, [firebaseUser]);
 
   useEffect(() => {
-    if (!firebaseUser?.uid) { setServiceApplications([]); return; }
-    return subscribeUserServiceApplications(firebaseUser.uid, (items) => setServiceApplications(items.filter((item) => !isRetiredNidaRecord(item))), (error) => {
+    if (!firebaseUser?.uid) {
+      setServiceApplications([]);
+      setSavedDocuments([]);
+      setDocumentLoading(false);
+      return undefined;
+    }
+    setDocumentLoading(true);
+    const stopDocuments = subscribeUserDocuments(firebaseUser.uid, (items) => {
+      setSavedDocuments(items);
+      setDocumentLoading(false);
+    }, (error) => {
+      console.error("Imeshindikana kupakia HATI ZANGU", error);
+      setDocumentLoading(false);
+      toast.error("Hati zako hazijapakiwa. Angalia intaneti kisha jaribu tena.");
+    });
+    const stopApplications = subscribeUserServiceApplications(firebaseUser.uid, (items) => setServiceApplications(items.filter((item) => !isRetiredNidaRecord(item))), (error) => {
       console.error("Imeshindikana kupakia historia ya maombi ya huduma", error);
       toast.error("Historia ya maombi haijapakiwa. Jaribu kuingia tena.");
     });
+    return () => { stopDocuments(); stopApplications(); };
   }, [firebaseUser?.uid]);
 
-  useEffect(() => {
-    refreshDownloads();
-    const onChange = () => refreshDownloads();
-    window.addEventListener("smartservicestz-download-added", onChange);
-    window.addEventListener("smartservicestz-download-changed", onChange);
-    const timer = window.setInterval(refreshDownloads, 60 * 1000);
-    return () => {
-      window.removeEventListener("smartservicestz-download-added", onChange);
-      window.removeEventListener("smartservicestz-download-changed", onChange);
-      window.clearInterval(timer);
-    };
-  }, []);
-
+  const documentDate = (value: unknown) => {
+    try {
+      const date = value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function"
+        ? (value as { toDate: () => Date }).toDate()
+        : new Date(String(value ?? ""));
+      return Number.isNaN(date.getTime()) ? "Tarehe haipo" : date.toLocaleString("sw-TZ");
+    } catch { return "Tarehe haipo"; }
+  };
   const timeLeft = (expiresAt: number) => {
-    const minutes = Math.max(0, Math.ceil((expiresAt - Date.now()) / (60 * 1000)));
-    return minutes <= 1 ? "Inaisha ndani ya dakika 1" : `Inaisha ndani ya dakika ${minutes}`;
+    const minutes = Math.max(0, Math.ceil((expiresAt - Date.now()) / 60000));
+    if (minutes <= 0) return "Muda umeisha";
+    if (minutes < 60) return `Inaisha ndani ya dakika ${minutes}`;
+    return `Inaisha ndani ya saa ${Math.ceil(minutes / 60)}`;
+  };
+  const downloadAgain = async (item: SavedUserDocument) => {
+    if (downloadingId) return;
+    setDownloadingId(item.id);
+    try {
+      await downloadSavedDocument(item);
+      toast.success("Hati imeletwa tena kutoka HATI ZANGU bila kukata token nyingine.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Imeshindikana kupakua hati. Jaribu tena.");
+    } finally { setDownloadingId(""); }
+  };
+  const shareAgain = async (item: SavedUserDocument) => {
+    if (sharingId) return;
+    setSharingId(item.id);
+    try {
+      const shared = await shareSavedDocument(item);
+      toast.success(shared ? "Hati imepelekwa kwenye sehemu ya kushare." : "Kushare hakupatikana kwenye kifaa hiki; upakuaji umeanzishwa.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Imeshindikana kushare hati.");
+    } finally { setSharingId(""); }
   };
 
   return <main className="portal-main">
     <div className="page-heading">
-      <div><span className="overline">Rekodi zako</span><h1>HISTORIA</h1><p>Tokeni zako na vitu ulivyopakua vinaonekana hapa.</p></div>
+      <div><span className="overline">Hati na rekodi zako</span><h1>HATI ZANGU NA HISTORIA</h1><p>Hati ulizotengeneza zinahifadhiwa kwenye akaunti yako ili uweze kuzipata tena.</p></div>
     </div>
 
-    <section className="account-panel" style={{marginBottom:18}}>
+    <section className="account-panel" style={{marginBottom:24}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-        <div><span className="overline">DOWNLOADS</span><h2 style={{margin:"4px 0"}}>VITU NILIVYOPAKUA</h2><p style={{margin:0,color:"#64748b"}}>Rekodi za vipakuliwa huonekana kwa dakika 30 tu, kisha huondolewa moja kwa moja.</p></div>
-        {downloads.length > 0 && <button type="button" className="button button--small" onClick={() => { clearDownloadHistory(); refreshDownloads(); }}>Futa zote</button>}
+        <div><span className="overline">HIFADHI YA AKAUNTI</span><h2 style={{margin:"4px 0"}}>HATI ZANGU</h2><p style={{margin:0,color:"#64748b"}}>Hati zinapatikana kwa saa 24. Pakua tena au share bila kukatwa token nyingine.</p></div>
+        <span className="verification verification--approved">{savedDocuments.length} HATI</span>
       </div>
       <div style={{display:"grid",gap:10,marginTop:16}}>
-        {downloads.length === 0 ? <div className="notice notice--info"><FileBadge size={17}/><span>Hakuna hati iliyopakuliwa ndani ya dakika 30 zilizopita.</span></div> :
-          downloads.map((item) => <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"12px 14px",border:"1px solid #e2e8f0",borderRadius:12,background:"#f8fafc"}}>
-            <div style={{minWidth:0}}><strong style={{display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.name}</strong><small style={{color:"#64748b"}}>{item.type} • {item.dataUrl ? (() => { const bytes = Math.max(0, Math.floor((item.dataUrl!.length - (item.dataUrl!.indexOf(",") + 1)) * 3 / 4)); return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`; })() : "Ukubwa haujulikani"} • {new Date(item.downloadedAt).toLocaleString("sw-TZ")} • {timeLeft(item.expiresAt)}</small></div>
-            <div style={{display:"flex",gap:6,flexShrink:0}}>
-              {item.dataUrl && <button type="button" className="button button--green button--small" onClick={() => downloadFromHistory(item)}>Download tena</button>}
-              <button type="button" className="button button--small" onClick={() => { removeDownload(item.id); refreshDownloads(); }}>×</button>
+        {!firebaseUser ? <Notice tone="info">Ingia kwenye akaunti yako ili kuona hati zako.</Notice> :
+          documentLoading ? <Notice tone="info">Inapakia hati zako kutoka kwenye akaunti...</Notice> :
+          savedDocuments.length === 0 ? <Notice tone="info">Bado hakuna hati zilizohifadhiwa. Hati utakazotengeneza zitaonekana hapa baada ya kuhifadhiwa.</Notice> :
+          savedDocuments.map((item) => <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",padding:"13px 14px",border:"1px solid #dbe5ef",borderRadius:13,background:"#f8fafc"}}>
+            <div style={{minWidth:0,flex:"1 1 220px"}}>
+              <strong style={{display:"block",overflowWrap:"anywhere",color:"#0f172a"}}>{item.name}</strong>
+              <small style={{display:"block",marginTop:5,color:"#64748b"}}>{item.type} • {Math.max(1,Math.round(item.size/1024))} KB • {documentDate(item.createdAt)}</small>
+              <small style={{display:"block",marginTop:3,color:"#b45309"}}>{timeLeft(Number(item.expiresAt))}</small>
+            </div>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+              <button type="button" className="button button--green button--small" disabled={Boolean(downloadingId || sharingId)} onClick={() => void downloadAgain(item)}>{downloadingId === item.id ? "Inapakua..." : "Pakua tena"}</button>
+              <button type="button" className="button button--small" disabled={Boolean(downloadingId || sharingId)} onClick={() => void shareAgain(item)}>{sharingId === item.id ? "Inashare..." : "Share"}</button>
             </div>
           </div>)
         }
       </div>
+      <p style={{margin:"14px 0 0",fontSize:12,color:"#64748b"}}>Hati zilizohifadhiwa hapa ni za akaunti yako tu. Kupakua tena au kushare hati iliyopo hakutumii token nyingine.</p>
     </section>
 
     <section style={{marginBottom:24}}>

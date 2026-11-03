@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas";
+import { PDFDocument } from "pdf-lib";
 import { Download, Upload, RotateCcw, LoaderCircle } from "lucide-react";
 import { triggerDownload } from "@/lib/downloadHistory";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -131,27 +132,13 @@ async function toSameOriginDataUrl(src: string) {
  */
 
 /** Subiri kila faili limalize kuhifadhiwa kabla ya kuanzisha la pili (hasa Android native bridge). */
-async function downloadBlobAndWait(blob: Blob, name: string, type: string) {
-  await new Promise<void>((resolve, reject) => {
-    const finish = (event: Event) => {
-      const detail = (event as CustomEvent<{ name?: string }>).detail;
-      if (detail?.name !== name) return;
-      cleanup();
-      resolve();
-    };
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error("Upakuaji umechukua muda mrefu. Angalia Downloads kabla ya kujaribu tena."));
-    }, 90000);
-    const cleanup = () => {
-      window.clearTimeout(timeout);
-      window.removeEventListener("smartservicestz-download-complete", finish);
-      window.removeEventListener("smartservicestz-download-fallback", finish);
-    };
-    window.addEventListener("smartservicestz-download-complete", finish);
-    window.addEventListener("smartservicestz-download-fallback", finish);
-    triggerDownload(blob, name, type);
-  });
+async function downloadBlobAndWait(
+  blob: Blob,
+  name: string,
+  type: string,
+  metadata: { source?: string; sourceRef?: string } = {},
+) {
+  await triggerDownload(blob, name, type, metadata);
 }
 
 async function exportCard(source: HTMLElement, size: { w: number; h: number }, filename: string) {
@@ -289,56 +276,92 @@ export default function AgentIdPage() {
     event.target.value = "";
   };
 
+  const ensureAgentRecordAndPayment = async () => {
+    if (!firebaseUser?.uid) throw new Error("Ingia kwanza ili kulipia na kupakua kitambulisho.");
+    let recordId = savedRecordId;
+    if (!recordId) {
+      const saved = await createAgentRecord({
+        userId: firebaseUser.uid, name: name.trim(), phone: phone.trim(), network, type,
+        region: region.trim(), district: district.trim(), area: area.trim(), issueDate,
+        expiryDate: expiry(issueDate)
+      });
+      recordId = saved.id;
+      setSavedRecordId(saved.id);
+      setAgentId(saved.agentId);
+      toast.success(`Taarifa zimehifadhiwa: ${saved.agentId}`);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    }
+    if (!paid) {
+      const slug = "kitambulisho-wakala";
+      const config = await getServiceTokenConfig(slug);
+      const liveRoleCost = Number(config.agentTypeTokenCosts?.[type]);
+      const roleCost = Number.isSafeInteger(liveRoleCost) && liveRoleCost > 0 ? liveRoleCost : agentIdTokenCost(type);
+      if (!Number.isSafeInteger(roleCost) || roleCost <= 0) throw new Error("Aina ya wakala haijatambuliwa. Chagua aina sahihi.");
+      await consumeFirebaseTokens(firebaseUser.uid, { slug, name: config.name, tokenCost: roleCost, kind: "paid", tokenType: "huduma", agentType: type }, requestId);
+      setTokenCost(roleCost);
+      setPaid(true);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}.`);
+    }
+    return recordId;
+  };
+
+  const validateAgentForm = () => {
+    if (!firebaseUser?.uid) throw new Error("Ingia kwanza ili kulipia na kupakua kitambulisho.");
+    if (!photo.trim() || !name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim() || !issueDate.trim() || !type.trim()) {
+      throw new Error("Jaza taarifa zote na pakia picha ya wakala kabla ya kupakua kitambulisho.");
+    }
+    if (!locationData.regions[region] || !locationData.regions[region].districts[district]) {
+      throw new Error("Chagua mkoa na wilaya sahihi kutoka kwenye orodha.");
+    }
+  };
+
   const downloadCards = async (side: "front" | "back") => {
     const selected = orientation === "landscape"
       ? { size: LAND, label: "mlalo", front: landFrontRef.current, back: landBackRef.current }
       : { size: PORT, label: "wima", front: portFrontRef.current, back: portBackRef.current };
     const source = side === "front" ? selected.front : selected.back;
     if (!source) { window.alert("Upande wa kitambulisho bado haujajiandaa. Subiri kidogo kisha jaribu tena."); return; }
-    const job = { el: source, size: selected.size, filename: `kitambulisho-${selected.label}-${side === "front" ? "mbele" : "nyuma"}.png` };
-    if (!firebaseUser?.uid) { window.alert("Ingia kwanza ili kulipia na kupakua kitambulisho."); return; }
-    if (!photo.trim() || !name.trim() || !phone.trim() || !region.trim() || !district.trim() || !area.trim() || !issueDate.trim() || !type.trim()) {
-      window.alert("Jaza taarifa zote na pakia picha ya wakala kabla ya kupakua kitambulisho.");
-      return;
-    }
-    if (!locationData.regions[region] || !locationData.regions[region].districts[district]) {
-      window.alert("Chagua mkoa na wilaya sahihi kutoka kwenye orodha.");
-      return;
-    }
+    const filename = `kitambulisho-${selected.label}-${side === "front" ? "mbele" : "nyuma"}.png`;
     setBusy(true);
     try {
-      if (!savedRecordId) {
-        const saved = await createAgentRecord({
-          userId: firebaseUser.uid, name: name.trim(), phone: phone.trim(), network, type,
-          region: region.trim(), district: district.trim(), area: area.trim(), issueDate,
-          expiryDate: expiry(issueDate)
-        });
-        setSavedRecordId(saved.id);
-        setAgentId(saved.agentId);
-        toast.success(`Taarifa zimehifadhiwa: ${saved.agentId}`);
-        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      }
-      if (!paid) {
-        const slug = "kitambulisho-wakala";
-        const config = await getServiceTokenConfig(slug);
-        const liveRoleCost = Number(config.agentTypeTokenCosts?.[type]);
-        const roleCost = Number.isSafeInteger(liveRoleCost) && liveRoleCost > 0 ? liveRoleCost : agentIdTokenCost(type);
-        if (!Number.isSafeInteger(roleCost) || roleCost <= 0) throw new Error("Aina ya wakala haijatambuliwa. Chagua aina sahihi.");
-        await consumeFirebaseTokens(firebaseUser.uid, { slug, name: config.name, tokenCost: roleCost, kind: "paid", tokenType: "huduma", agentType: type }, requestId);
-        setTokenCost(roleCost);
-        setPaid(true);
-        // Subiri React iondoe watermark kwenye preview kabla ya kutengeneza PNG.
-        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-        toast.success(`Tokeni ${roleCost} zimekatwa kwa ${type}.`);
-      }
-      // Pakua upande uliochaguliwa kama PNG tofauti; hakuna downloads mbili
-      // zinazoshindana ndani ya click moja ya simu.
-      const blob = await exportCard(job.el, job.size, job.filename);
-      await downloadBlobAndWait(blob, job.filename, "PNG");
+      validateAgentForm();
+      const recordId = await ensureAgentRecordAndPayment();
+      const blob = await exportCard(source, selected.size, filename);
+      await downloadBlobAndWait(blob, filename, "PNG", { source: "kitambulisho-wakala", sourceRef: recordId });
       setDownloadedSides((current) => current.includes(side) ? current : [...current, side]);
-      toast.success(side === "front" ? "Picha ya mbele imepakuliwa." : "Picha ya nyuma imepakuliwa.");
+      toast.success("Hati imehifadhiwa kwenye HATI ZANGU. Upakuaji umeanzishwa.");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Imeshindikana kupakua kitambulisho.");
+    } finally { setBusy(false); }
+  };
+
+  const downloadBothAsPdf = async () => {
+    const selected = orientation === "landscape"
+      ? { size: LAND, label: "mlalo", front: landFrontRef.current, back: landBackRef.current }
+      : { size: PORT, label: "wima", front: portFrontRef.current, back: portBackRef.current };
+    if (!selected.front || !selected.back) { window.alert("Pande zote mbili bado hazijajiandaa. Subiri kidogo kisha jaribu tena."); return; }
+    setBusy(true);
+    try {
+      validateAgentForm();
+      const recordId = await ensureAgentRecordAndPayment();
+      const frontBlob = await exportCard(selected.front, selected.size, `kitambulisho-${selected.label}-mbele.png`);
+      const backBlob = await exportCard(selected.back, selected.size, `kitambulisho-${selected.label}-nyuma.png`);
+      const pdf = await PDFDocument.create();
+      for (const imageBlob of [frontBlob, backBlob]) {
+        const imageBytes = new Uint8Array(await imageBlob.arrayBuffer());
+        const image = await pdf.embedPng(imageBytes);
+        const page = pdf.addPage([selected.size.w, selected.size.h]);
+        page.drawImage(image, { x: 0, y: 0, width: selected.size.w, height: selected.size.h });
+      }
+      const pdfBytes = await pdf.save({ useObjectStreams: true });
+      const pdfBlob = new Blob([new Uint8Array(pdfBytes).buffer as ArrayBuffer], { type: "application/pdf" });
+      const filename = `kitambulisho-${selected.label}-mbele-na-nyuma.pdf`;
+      await downloadBlobAndWait(pdfBlob, filename, "PDF", { source: "kitambulisho-wakala-pdf", sourceRef: recordId });
+      setDownloadedSides(["front", "back"]);
+      toast.success("PDF ya kurasa mbili imehifadhiwa kwenye HATI ZANGU.");
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Imeshindikana kutengeneza PDF ya kitambulisho.");
     } finally { setBusy(false); }
   };
 
@@ -367,8 +390,9 @@ export default function AgentIdPage() {
         <label className="aid-field"><span>Tarehe ya Kutolewa</span><input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></label>
         <div className="aid-buttons"><button type="button" className="button button--green" onClick={() => fileRef.current?.click()}><Upload size={16} /> Picha</button><button type="button" className="button" onClick={reset}><RotateCcw size={16} /> Anza upya</button></div>
         <div className="aid-download-sections" aria-label="Pakua kitambulisho">
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} onClick={() => void downloadCards("front")}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "PAKUA MBELE"}</b><small>{downloadedSides.includes("front") ? "Imepakuliwa" : "PNG tofauti"}</small></span></button>
-          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} onClick={() => void downloadCards("back")}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "PAKUA NYUMA"}</b><small>{downloadedSides.includes("back") ? "Imepakuliwa" : "PNG tofauti"}</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} onClick={() => void downloadCards("front")}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "PAKUA MBELE"}</b><small>{downloadedSides.includes("front") ? "HATI ZANGU" : "PNG tofauti"}</small></span></button>
+          <button type="button" className="aid-download-front" disabled={busy || !formComplete || tokenCost === null} onClick={() => void downloadCards("back")}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "PAKUA NYUMA"}</b><small>{downloadedSides.includes("back") ? "HATI ZANGU" : "PNG tofauti"}</small></span></button>
+          <button type="button" className="aid-download-pdf" disabled={busy || !formComplete || tokenCost === null} onClick={() => void downloadBothAsPdf()}><Download size={18} /> <span><b>{busy ? "INAANDAA..." : "PAKUA MBELE + NYUMA"}</b><small>PDF ya kurasa mbili</small></span></button>
         </div>
         <div className="aid-note"><b>NOTES</b><p>Baada ya kupakua kitambulisho, usiende kukichapisha mpaka kisainiwe na kiongozi wako.</p></div>
       </section>
@@ -567,6 +591,7 @@ const AGENT_ID_CSS = `
 .aid-field input,.aid-field select{width:100%;box-sizing:border-box;border-radius:10px;padding:10px 11px;background:#f8fbff;color:#172443;font-size:13px}
 .aid-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .aid-download-sections{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.aid-download-sections button{display:flex;align-items:center;justify-content:center;gap:9px;min-height:64px;padding:10px;border:0;border-radius:12px;color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 14px rgba(15,23,42,.12)}.aid-download-sections button:disabled{opacity:.65;cursor:wait}.aid-download-sections span{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.aid-download-sections b{font-size:12px}.aid-download-sections small{font-size:10px;opacity:.85}.aid-download-front{background:linear-gradient(135deg,#087f5b,#16a36a)}.aid-download-back{background:linear-gradient(135deg,#5b35b5,#8b5cf6)}
+.aid-download-pdf{grid-column:1/-1;background:linear-gradient(135deg,#1d4ed8,#2563eb)}
 .aid-choice{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
 .aid-choice button{border:1px solid #d6e0ec;border-radius:10px;background:#f4f7fb;color:#334155;padding:10px 7px;font-size:10px;font-weight:900;cursor:pointer;transition:background .18s,color .18s,border-color .18s}
 .aid-choice button.active{background:#18b969;border-color:#18b969;color:#fff}

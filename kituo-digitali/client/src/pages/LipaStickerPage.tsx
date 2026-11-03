@@ -102,7 +102,7 @@ export default function LipaStickerPage({ defaultNetwork = "AIRTEL" }: { default
       ctx.font = "900 35px Arial"; ctx.fillText("K W A  S I M U", 1510, 2245);
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
       if (!blob) throw new Error("Stika haikuweza kutengenezwa.");
-      triggerDownload(blob, `stika-lipa-${network.toLowerCase()}-${digits(lipaNumber)}.png`, "PNG");
+      await triggerDownload(blob, `stika-lipa-${network.toLowerCase()}-${digits(lipaNumber)}.png`, "PNG");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Imeshindikana kutengeneza stika.");
     } finally { setBusy(false); }

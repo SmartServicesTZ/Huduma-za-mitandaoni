@@ -1,3 +1,5 @@
+import { getUserDocumentBlob, saveUserDocument, type SavedUserDocument } from "@/lib/firebase";
+
 export type DownloadHistoryItem = {
   id: string;
   name: string;
@@ -80,9 +82,9 @@ export const downloadFromHistory = (item: DownloadHistoryItem) => {
         let chunkBinary = "";
         const chunk = bytes.subarray(offset, Math.min(offset + 96 * 1024, bytes.length));
         for (let index = 0; index < chunk.length; index += 0x8000) chunkBinary += bytesToBinary(chunk.subarray(index, index + 0x8000));
-        nativeDownload.appendFileChunk(btoa(chunkBinary));
+        if (!nativeDownload.appendFileChunk(btoa(chunkBinary))) throw new Error("Android imeshindwa kuandika sehemu ya faili.");
       }
-      nativeDownload.finishFile();
+      if (!nativeDownload.finishFile()) throw new Error("Android imeshindwa kukamilisha kuhifadhi faili.");
       return true;
     } catch {
       nativeDownload.cancelFile?.();
@@ -122,14 +124,14 @@ export const downloadFromHistory = (item: DownloadHistoryItem) => {
 };
 
 
-/** Anzisha download kwa njia inayofanya kazi kwenye browser ya kawaida na app ya simu, kisha weka rekodi ya hati kwa dakika 30. */
-export const triggerDownload = (blob: Blob, name: string, type: string) => {
-  recordDownload({ name, type });
+/** Hifadhi hati kwenye akaunti kwanza, kisha ipeleke kwenye kifaa. */
+async function deliverBlob(blob: Blob, name: string) {
   const nativeDownload = typeof window !== "undefined" ? window.AndroidDownload : undefined;
+  window.dispatchEvent(new CustomEvent("smartservicestz-download-start", { detail: { name, progress: 0 } }));
+
   if (nativeDownload) {
-    window.dispatchEvent(new CustomEvent("smartservicestz-download-start", { detail: { name, progress: 0 } }));
-    void blob.arrayBuffer().then(async (buffer) => {
-      const bytes = new Uint8Array(buffer);
+    try {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
       if (!nativeDownload.beginFile(name, blob.type || "application/octet-stream")) throw new Error("Android imeshindwa kuanzisha faili kwenye Downloads.");
       const chunkSize = 24 * 1024;
       const totalChunks = Math.max(1, Math.ceil(bytes.length / chunkSize));
@@ -138,74 +140,91 @@ export const triggerDownload = (blob: Blob, name: string, type: string) => {
         const chunk = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
         for (let index = 0; index < chunk.length; index += 0x4000) binary += bytesToBinary(chunk.subarray(index, index + 0x4000));
         if (!nativeDownload.appendFileChunk(btoa(binary))) throw new Error("Android imeshindwa kuandika sehemu ya faili.");
-        const progress = Math.min(95, Math.round(((chunkIndex + 1) / totalChunks) * 95));
-        window.dispatchEvent(new CustomEvent("smartservicestz-download-progress", { detail: { name, progress } }));
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        window.dispatchEvent(new CustomEvent("smartservicestz-download-progress", { detail: { name, progress: Math.min(95, Math.round(((chunkIndex + 1) / totalChunks) * 95)) } }));
       }
-      if (!nativeDownload.finishFile()) throw new Error("Android imeshindwa kuhifadhi faili. Jaribu tena.");
+      if (!nativeDownload.finishFile()) throw new Error("Android imeshindwa kukamilisha kuhifadhi faili.");
       window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
-    }).catch(async (_error: unknown) => {
-      // Native Android bridge ikishindwa kuandika chunk, jaribu njia mbadala ya kuhifadhi.
-      try { nativeDownload.cancelFile?.(); } catch { /* faili la muda linaweza kuwa tayari limefungwa */ }
-      try {
-        if (typeof navigator.share === "function") {
-          const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
-          if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: name });
-            window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
-            return;
-          }
-        }
-      } catch { /* Share sheet haikupatikana; tumia browser download. */ }
-      startBrowserDownload(blob, name);
-      window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
-    });
-    return;
+      return;
+    } catch (error) {
+      try { nativeDownload.cancelFile?.(); } catch { /* faili lisilokamilika linaweza kuwa tayari limefungwa */ }
+      window.dispatchEvent(new CustomEvent("smartservicestz-download-error", { detail: { name, message: error instanceof Error ? error.message : "Android imeshindwa kuhifadhi faili." } }));
+      throw error;
+    }
   }
-  window.dispatchEvent(new CustomEvent("smartservicestz-download-start", { detail: { name, progress: 10 } }));
-  const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-  // Katika app iliyosakinishwa, share sheet ya Android huruhusu mtumiaji kuhifadhi hati kwenye Files/Downloads.
+  const installedApp = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
   if (installedApp && typeof navigator.share === "function") {
     try {
       const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
       if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
-        // Subiri share sheet irudiwe/imalizike; usionyeshe "imepakuliwa" kabla ya Android kurudisha matokeo.
-        void navigator.share({ files: [file], title: name })
-          .then(() => window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } })))
-          .catch(() => {
-            startBrowserDownload(blob, name);
-            window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
-          });
-      } else {
-        startBrowserDownload(blob, name);
-        window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
+        await navigator.share({ files: [file], title: name });
+        window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name } }));
+        return;
       }
-    } catch {
-      startBrowserDownload(blob, name);
-      window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Imeshindikana kufungua sehemu ya kushare.";
+      window.dispatchEvent(new CustomEvent("smartservicestz-download-error", { detail: { name, message } }));
+      throw error;
     }
-  } else {
-    startBrowserDownload(blob, name);
-    window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
   }
 
-  // Hifadhi hati ndogo ili iweze kupakuliwa tena kutoka Historia kwa dakika 30.
-  if (blob.size > 0 && blob.size <= 600 * 1024) {
-    void blob.arrayBuffer().then((buffer) => {
-      const bytes = new Uint8Array(buffer);
+  startBrowserDownload(blob, name);
+  // Browser haithibitishi kuwa mtumiaji amechagua kuhifadhi faili; hati salama ipo HATI ZANGU.
+  window.dispatchEvent(new CustomEvent("smartservicestz-download-fallback", { detail: { name } }));
+}
+
+/** Hifadhi hati kwenye Firebase Storage/Firestore kwa saa 24 kabla ya download ya kifaa. */
+export const triggerDownload = async (
+  blob: Blob,
+  name: string,
+  type: string,
+  metadata: { source?: string; sourceRef?: string } = {},
+) => {
+  try {
+    window.dispatchEvent(new CustomEvent("smartservicestz-download-start", { detail: { name, progress: 3 } }));
+    let saved: SavedUserDocument | null = null;
+    try {
+      saved = await saveUserDocument(blob, name, type, metadata);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      // Huduma zisizohitaji kuingia bado zinaruhusiwa kupakuliwa; hazitaonekana
+      // kwenye HATI ZANGU mpaka mtumiaji aingie kwenye akaunti.
+      if (code !== "unauthenticated") throw error;
+    }
+    let dataUrl: string | undefined;
+    if (blob.size > 0 && blob.size <= 600 * 1024) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
       let binary = "";
-      for (let i = 0; i < bytes.length; i += 0x8000) binary += bytesToBinary(bytes.subarray(i, i + 0x8000));
-      const dataUrl = `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
-      const items = read();
-      const match = items.find((item) => item.name === name && item.type === type);
-      if (match && dataUrl.length <= 1_000_000) {
-        match.dataUrl = dataUrl;
-        write(items);
-        window.dispatchEvent(new CustomEvent("smartservicestz-download-changed"));
-      }
-    }).catch(() => undefined);
+      for (let index = 0; index < bytes.length; index += 0x8000) binary += bytesToBinary(bytes.subarray(index, index + 0x8000));
+      dataUrl = `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
+    }
+    recordDownload({ name, type, dataUrl });
+    if (saved) window.dispatchEvent(new CustomEvent("smartservicestz-document-saved", { detail: { id: saved.id, name: saved.name } }));
+    await deliverBlob(blob, name);
+  } catch (error) {
+    window.dispatchEvent(new CustomEvent("smartservicestz-download-error", {
+      detail: { name, message: error instanceof Error ? error.message : "Imeshindikana kuhifadhi au kupakua hati." },
+    }));
+    throw error;
   }
+};
+
+/** Pakua tena hati iliyokwisha hifadhiwa bila kuunda rekodi mpya au kukata token. */
+export async function downloadSavedDocument(item: SavedUserDocument) {
+  const blob = await getUserDocumentBlob(item);
+  await deliverBlob(blob, item.name);
+}
+
+/** Share hati iliyohifadhiwa; ikikosekana Web Share API, tumia download ya kawaida. */
+export async function shareSavedDocument(item: SavedUserDocument): Promise<boolean> {
+  const blob = await getUserDocumentBlob(item);
+  const file = new File([blob], item.name, { type: item.mimeType || blob.type });
+  if (typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] }))) {
+    await navigator.share({ files: [file], title: item.name });
+    return true;
+  }
+  await deliverBlob(blob, item.name);
+  return false;
 };
 
 const startBrowserDownload = (blob: Blob, name: string) => {

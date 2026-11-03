@@ -23,4 +23,4 @@ jobs:
       - name: Deploy Firestore rules
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: firebase deploy --project huduma-za-mtandaoni-b1c0c --only firestore:rules --token "$FIREBASE_TOKEN"
+        run: firebase deploy --project huduma-za-mtandaoni-b1c0c --only firestore:rules,storage --token "$FIREBASE_TOKEN"

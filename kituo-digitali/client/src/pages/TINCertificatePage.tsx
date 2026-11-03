@@ -85,8 +85,8 @@ export default function TINCertificatePage() {
       const cropped = await prepareDownloadCanvas();
       await ensurePaid();
       const blob = await new Promise<Blob>((resolve, reject) => cropped.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kutengeneza PNG.")), "image/png"));
-      triggerDownload(blob, "tin-certificate.png", "PNG");
-      toast.success("PNG imeandaliwa kupakuliwa. Angalia Downloads au Historia ndani ya dakika 30.");
+      await triggerDownload(blob, "tin-certificate.png", "PNG");
+      toast.success("PNG imehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PNG.");
     } finally {
@@ -109,8 +109,8 @@ export default function TINCertificatePage() {
       const pdfBytes = new Uint8Array(bytes.byteLength);
       pdfBytes.set(bytes);
       const blob = new Blob([pdfBytes.buffer], { type: "application/pdf" });
-      triggerDownload(blob, "tin-certificate.pdf", "PDF");
-      toast.success("PDF imeandaliwa kupakuliwa. Angalia Downloads au Historia ndani ya dakika 30.");
+      await triggerDownload(blob, "tin-certificate.pdf", "PDF");
+      toast.success("PDF imehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PDF.");
     } finally {

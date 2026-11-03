@@ -506,6 +506,10 @@ jobs:
                       int updated = getContentResolver().update(nativeUri, values, null, null);
                       if (updated <= 0) throw new Exception("Android haikuweza kukamilisha kuhifadhi faili.");
                   }
+                  // Muhimu: usiache URI ya faili lililokamilika. beginNativeFile()
+                  // huanza kwa cancelNativeFile(); URI ya zamani ikibaki hapa,
+                  // download ya pili (mfano upande wa nyuma) hufuta faili la kwanza.
+                  nativeUri = null;
                   runOnUiThread(() -> Toast.makeText(MainActivity.this, "Faili limehifadhiwa kwenye Downloads/SmartServicesTZ", Toast.LENGTH_LONG).show());
               }
 

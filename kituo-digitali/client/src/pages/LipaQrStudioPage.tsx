@@ -4,6 +4,7 @@ import * as QRCode from "qrcode";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { triggerDownload } from "@/lib/downloadHistory";
 import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
 import {
   createAirtelTipsPaymentPayload,
@@ -103,13 +104,13 @@ async function captureArtboard(element: HTMLElement, outputWidthPx = A5_WIDTH_PX
   return normalized;
 }
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+async function downloadBlob(
+  blob: Blob,
+  filename: string,
+  metadata: { source?: string; sourceRef?: string } = {},
+) {
+  const type = filename.toLowerCase().endsWith(".pdf") ? "PDF" : "PNG";
+  await triggerDownload(blob, filename, type, metadata);
 }
 
 type A4ServiceLogoKind = "lipa" | "tigo" | "mpesa" | "nmb" | "simbanking" | "other";
@@ -323,7 +324,15 @@ export default function LipaQrStudioPage() {
   const [, setLocation] = useLocation();
   const [entryStatus, setEntryStatus] = useState<"checking" | "ready" | "paid" | "failed">("checking");
   const [entryMessage, setEntryMessage] = useState("Inafungua huduma...");
-  const entryRequestId = useRef(crypto.randomUUID());
+  const entryRequestId = useRef((() => {
+    try {
+      const existing = sessionStorage.getItem("smartservicestz:lipa-qr-entry-request");
+      if (existing) return existing;
+    } catch { /* session storage may be unavailable */ }
+    const next = crypto.randomUUID();
+    try { sessionStorage.setItem("smartservicestz:lipa-qr-entry-request", next); } catch { /* keep it in memory */ }
+    return next;
+  })());
   const outputUsed = useRef(false);
   const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "" });
   const [network, setNetwork] = useState<LipaNetwork>("voda");
@@ -440,18 +449,19 @@ export default function LipaQrStudioPage() {
         const bytes = await pdf.save();
         const pdfBuffer = new ArrayBuffer(bytes.byteLength);
         new Uint8Array(pdfBuffer).set(bytes);
-        downloadBlob(new Blob([pdfBuffer], { type: "application/pdf" }), `${stem}.pdf`);
+        await downloadBlob(new Blob([pdfBuffer], { type: "application/pdf" }), `${stem}.pdf`, { source: "lipa-qr-studio", sourceRef: entryRequestId.current });
       } else {
         for (let index = 0; index < canvases.length; index += 1) {
           const canvas = canvases[index];
           const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Imeshindikana kutengeneza faili la PNG.")), "image/png"));
           const suffix = pageMode === "card-and-guide" ? (index === 0 ? "stika" : "maelekezo") : "stika";
-          downloadBlob(blob, `${stem}-${suffix}.png`);
+          await downloadBlob(blob, `${stem}-${suffix}.png`, { source: "lipa-qr-studio", sourceRef: entryRequestId.current });
           if (index < canvases.length - 1) await new Promise((resolve) => window.setTimeout(resolve, 450));
         }
       }
       outputUsed.current = true;
-      toast.success(config.isFree || config.tokenCost === 0 ? "Faili limepakuliwa. Huduma hii ni bure." : `Faili limepakuliwa na tokeni ${config.tokenCost} zimekatwa.`);
+      try { sessionStorage.removeItem("smartservicestz:lipa-qr-entry-request"); } catch { /* storage may be unavailable */ }
+      toast.success(config.isFree || config.tokenCost === 0 ? "Faili limehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa. Huduma hii ni bure." : `Faili limehifadhiwa kwenye HATI ZANGU; tokeni ${config.tokenCost} zimekatwa kama kawaida.`);
       setLocation("/services");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kupakua faili. Jaribu tena.");

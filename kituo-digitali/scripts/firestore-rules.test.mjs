@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 
 const projectId = "demo-firestore-rules";
 let env;
@@ -47,4 +47,53 @@ test("public service catalogue is readable but remains client read-only", async 
   const anonymousDb = env.unauthenticatedContext().firestore();
   await assertSucceeds(getDoc(doc(anonymousDb, "services/public-service")));
   await assertFails(setDoc(doc(anonymousDb, "services/forbidden"), { name: "Injected" }));
+});
+
+
+test("a user can save a private generated document for 24 hours and only its owner can read it", async () => {
+  const aliceDb = env.authenticatedContext("alice").firestore();
+  const documentId = "doc-alice-1234567890";
+  const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+  await assertSucceeds(setDoc(doc(aliceDb, "userDocuments", documentId), {
+    ownerUid: "alice",
+    name: "kitambulisho-mbele.png",
+    type: "PNG",
+    mimeType: "image/png",
+    storagePath: `users/alice/documents/${documentId}/kitambulisho-mbele.png`,
+    size: 2048,
+    createdAt: serverTimestamp(),
+    expiresAt,
+    source: "kitambulisho-wakala",
+  }));
+
+  await assertSucceeds(getDoc(doc(aliceDb, "userDocuments", documentId)));
+  const bobDb = env.authenticatedContext("bob").firestore();
+  await assertFails(getDoc(doc(bobDb, "userDocuments", documentId)));
+});
+
+test("a user cannot create a saved document owned by another account or with an invalid storage path", async () => {
+  const aliceDb = env.authenticatedContext("alice").firestore();
+  const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+  await assertFails(setDoc(doc(aliceDb, "userDocuments", "doc-forged-owner-123456"), {
+    ownerUid: "bob",
+    name: "forged.png",
+    type: "PNG",
+    mimeType: "image/png",
+    storagePath: "users/bob/documents/doc-forged-owner-123456/forged.png",
+    size: 1024,
+    createdAt: serverTimestamp(),
+    expiresAt,
+    source: "service",
+  }));
+  await assertFails(setDoc(doc(aliceDb, "userDocuments", "doc-forged-path-123456"), {
+    ownerUid: "alice",
+    name: "forged.png",
+    type: "PNG",
+    mimeType: "image/png",
+    storagePath: "users/bob/documents/doc-forged-path-123456/forged.png",
+    size: 1024,
+    createdAt: serverTimestamp(),
+    expiresAt,
+    source: "service",
+  }));
 });

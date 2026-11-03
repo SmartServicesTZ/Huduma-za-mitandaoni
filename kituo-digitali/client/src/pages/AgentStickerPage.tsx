@@ -163,7 +163,12 @@ export default function AgentStickerPage(){
   const [entryMessage,setEntryMessage]=useState("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
   const [serviceCost,setServiceCost]=useState<number|null>(null);
   const [serviceName,setServiceName]=useState("STIKA ZA WAKALA");
-  const entryRequestId=useRef(crypto.randomUUID());
+  const entryRequestId=useRef((()=>{
+    try { const existing=sessionStorage.getItem("smartservicestz:agent-sticker-request"); if(existing)return existing; } catch { /* storage may be unavailable */ }
+    const next=crypto.randomUUID();
+    try { sessionStorage.setItem("smartservicestz:agent-sticker-request",next); } catch { /* keep it in memory */ }
+    return next;
+  })());
   const outputUsed=useRef(false);
   const [network,setNetwork]=useState<NetworkKey>("airtel");
   const [agentName,setAgentName]=useState("");
@@ -213,9 +218,10 @@ export default function AgentStickerPage(){
       const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png",1));
       if(!blob)throw new Error("Imeshindikana kuandaa stika. Jaribu tena.");
       const safe=cleanName(agentName).replace(/\\s+/g,"-").toLowerCase();
-      triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");
+      await triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG",{source:"stika-wakala",sourceRef:entryRequestId.current});
       outputUsed.current=true;
-      toast.success("Stika limepakuliwa kikamilifu.");
+      try { sessionStorage.removeItem("smartservicestz:agent-sticker-request"); } catch { /* storage may be unavailable */ }
+      toast.success("Stika limehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa.");
     } catch(error) {
       setEntryStatus("pending");
       toast.error(error instanceof Error?error.message:"Imeshindikana kupakua stika.");
