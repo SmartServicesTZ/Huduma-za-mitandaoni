@@ -60,6 +60,21 @@ export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumbe
 }
 
 
+/** Airtel Money TIPS QR: exact accepted template supplied by the user. */
+export function createAirtelTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
+  const lipa = normalizeLipaNumber(values.lipaNumber);
+  const name = values.businessName.trim().toUpperCase();
+  const merchantAccount = `0014tz.go.bot.tips01050250402${String(lipa.length).padStart(2, "0")}${lipa}`;
+  const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
+  const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
+  const additionalValue = `03${String(lipa.length).padStart(2, "0")}${lipa}`;
+  const additionalField = `62${String(additionalValue.length).padStart(2, "0")}${additionalValue}`;
+  // Airtel's accepted template uses country/city and postal fields plus a
+  // repeated Lipa identifier in additional data; these are not user inputs.
+  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}6008TANZANIA6105141106${additionalField}6304`;
+  return body + tipsCrc16(body);
+}
+
 /** Yas/Mixx QR: preserve the exact accepted merchant TIPS template; vary only Lipa and merchant name. */
 export function createYasTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
   const lipa = normalizeLipaNumber(values.lipaNumber);
