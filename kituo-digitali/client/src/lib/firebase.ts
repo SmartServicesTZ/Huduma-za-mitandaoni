@@ -85,22 +85,14 @@ async function userDocumentWorkerRequest(path: string, init: RequestInit = {}) {
     headers.set("Authorization", `Bearer ${token}`);
     headers.set("Accept", "application/json");
     const response = await fetch(`${workerBaseUrl()}${path}`, { ...init, headers });
-    if (response.status === 401 && attempt === 0) {
-      token = await user.getIdToken(true);
-      continue;
-    }
+    if (response.status === 401 && attempt === 0) { token = await user.getIdToken(true); continue; }
     return response;
   }
   throw new Error("Imeshindikana kuthibitisha akaunti. Ingia tena.");
 }
 
-/** Hifadhi hati kwenye Cloudflare R2 na metadata kwenye Firestore kwa saa 24. */
-export async function saveUserDocument(
-  blob: Blob,
-  name: string,
-  type: string,
-  metadata: { source?: string; sourceRef?: string } = {},
-): Promise<SavedUserDocument> {
+/** Hifadhi hati kwenye Cloudflare R2 na metadata ya Firestore kwa saa 24. */
+export async function saveUserDocument(blob: Blob, name: string, type: string, metadata: { source?: string; sourceRef?: string } = {}): Promise<SavedUserDocument> {
   if (!(blob instanceof Blob) || blob.size <= 0) throw new Error("Hati tupu haiwezi kuhifadhiwa.");
   if (blob.size > 10 * 1024 * 1024) throw new Error("Hati imezidi ukubwa wa MB 10.");
   const safeName = name.normalize("NFKD").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(-110) || "smartservicestz-document";
@@ -126,12 +118,8 @@ export async function saveUserDocument(
   return result.data;
 }
 
-/** Orodhesha hati za mmiliki aliyeingia pekee; orodha hii hupakiwa kila unapofungua HATI ZANGU. */
-export function subscribeUserDocuments(
-  uid: string,
-  callback: (items: SavedUserDocument[]) => void,
-  onError?: (error: unknown) => void,
-) {
+/** Pakia orodha ya hati za mtumiaji aliyeingia; kila kufungua ukurasa hufanya refresh. */
+export function subscribeUserDocuments(uid: string, callback: (items: SavedUserDocument[]) => void, onError?: (error: unknown) => void) {
   let cancelled = false;
   void (async () => {
     try {
@@ -146,7 +134,7 @@ export function subscribeUserDocuments(
   return () => { cancelled = true; };
 }
 
-/** Pakua hati kutoka R2 kwa uthibitisho wa UID na muda wa upatikanaji. */
+/** Pakua hati kutoka R2 baada ya Worker kuthibitisha mmiliki na muda wa saa 24. */
 export async function getUserDocumentBlob(item: SavedUserDocument): Promise<Blob> {
   await authPersistenceReady;
   const uid = firebaseAuth.currentUser?.uid;
