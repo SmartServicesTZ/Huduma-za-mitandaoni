@@ -86,7 +86,7 @@ export default function TINCertificatePage() {
       await ensurePaid();
       const blob = await new Promise<Blob>((resolve, reject) => cropped.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kutengeneza PNG.")), "image/png"));
       await triggerDownload(blob, "tin-certificate.png", "PNG");
-      toast.success("PNG imeandaliwa kupakuliwa. Angalia Downloads au Historia ndani ya dakika 30.");
+      toast.success("PNG imehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PNG.");
     } finally {
