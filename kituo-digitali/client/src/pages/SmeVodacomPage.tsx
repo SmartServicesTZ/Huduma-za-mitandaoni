@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, CheckCircle2, CreditCard, FileText, LoaderCircle, Phone, Send,
-  ShieldCheck, User, Wallet, Wifi,
+  ShieldCheck, Smartphone, User, Wallet, Wifi,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
