@@ -51,7 +51,7 @@ export const defaultServices: DefaultService[] = [
   {
     slug: "sme-vodacom",
     name: "SME VODACOM",
-    description: "Omba kuunganishwa SME Vodacom na uchague Data Plan au Combo Plan.",
+    description: "Tuma ombi la SME Vodacom; admin atakupangia kifurushi kinachofaa.",
     category: "Huduma kuu",
     icon: "smartphone",
     isVisible: true,
@@ -72,8 +72,7 @@ export const defaultServices: DefaultService[] = [
       { fieldName: "hasTin", label: "Je, una TIN?", type: "TEXT", required: true, order: 5 },
       { fieldName: "tinNumber", label: "Namba ya TIN (133-231-251)", type: "TEXT", required: false, order: 6 },
       { fieldName: "voucherAmount", label: "Kiasi cha vocha", type: "NUMBER", required: true, order: 7 },
-      { fieldName: "planType", label: "Aina ya kifurushi", type: "TEXT", required: true, order: 8 },
-      { fieldName: "selectedPlan", label: "Kifurushi kilichochaguliwa", type: "TEXT", required: true, order: 9 },
+      { fieldName: "planSelection", label: "Mpangilio wa kifurushi", type: "TEXT", required: false, order: 8 },
     ],
   },
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "Huduma kuu", 11),
