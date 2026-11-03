@@ -52,6 +52,10 @@ function makeScreenshot(tinValue: string, nameValue: string, tabCount: number) {
   '<rect x="24" y="1200" width="1074" height="138" fill="#050505"/><text x="64" y="1282" font-family="Arial,sans-serif" font-size="33" fill="#fff">Together We Build Our Nation</text>' +
   '<rect x="710" y="1218" width="180" height="92" rx="10" fill="#555"/><text x="800" y="1277" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" fill="#ddd">Select</text>' +
   '<rect x="902" y="1218" width="166" height="92" rx="10" fill="#555"/><text x="985" y="1277" text-anchor="middle" font-family="Arial,sans-serif" font-size="32" fill="#ddd">Close</text>' +
+  '<g transform="rotate(-24 560 680)" opacity="0.24" pointer-events="none">' +
+  '<text x="560" y="650" text-anchor="middle" font-family="Arial,sans-serif" font-size="86" font-weight="900" letter-spacing="5" fill="#c00020" stroke="#ffffff" stroke-width="3" paint-order="stroke">SMARTSERVICESTZ</text>' +
+  '<text x="560" y="740" text-anchor="middle" font-family="Arial,sans-serif" font-size="44" font-weight="800" letter-spacing="3" fill="#c00020" stroke="#ffffff" stroke-width="2" paint-order="stroke">HUDUMA ZA MTANDAONI</text>' +
+  '</g>' +
   '</svg>';
 }
 

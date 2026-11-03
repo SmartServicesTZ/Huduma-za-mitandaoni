@@ -343,6 +343,9 @@ export type FirebaseProfile = {
   tokenBalance: number;
   tokenBalanceNida?: number;
   tokenBalanceOther?: number;
+  tokenBalanceBonus?: number;
+  tokenBalancePayment?: number;
+  dailyBonusDaysGranted?: number;
   lastDailyTokenBonusDate?: string;
   verificationStatus: "pending" | "approved" | "rejected";
   role: "user" | "admin" | "moderator" | "support" | "super_admin";
@@ -827,9 +830,9 @@ export async function adminListCollection(name: "announcements" | "auditLogs" | 
   return rows.map((item) => ({ ...item, createdAt: timestampValue(item.createdAt) }));
 }
 
-export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string, tokenType: "nida" | "huduma" = "huduma") {
-  const callable = createWorkerCall<{ userId: string; amount: number; description: string; requestId: string; tokenType: "nida" | "huduma" }, { balanceAfter: number; reference: string; duplicate: boolean }>("adjustTokens");
-  return (await callable({ userId, amount, description, requestId, tokenType })).data;
+export async function adminAdjustTokens(adminId: string, userId: string, amount: number, description: string, requestId: string, tokenType: "nida" | "huduma" = "huduma", walletType: "bonus" | "payment" = "payment") {
+  const callable = createWorkerCall<{ userId: string; amount: number; description: string; requestId: string; tokenType: "nida" | "huduma"; walletType: "bonus" | "payment" }, { balanceAfter: number; walletBalanceAfter?: number; reference: string; duplicate: boolean }>("adjustTokens");
+  return (await callable({ userId, amount, description, requestId, tokenType, walletType })).data;
 }
 
 export async function updatePassword(user: User, newPassword: string) {
