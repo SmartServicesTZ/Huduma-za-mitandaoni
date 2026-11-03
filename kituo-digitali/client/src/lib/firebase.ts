@@ -90,9 +90,31 @@ export async function saveUserDocument(
 
   const safeName = name.normalize("NFKD").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(-110) || "smartservicestz-document";
   const mimeType = blob.type || (type.toUpperCase() === "PDF" ? "application/pdf" : "application/octet-stream");
-  const recordRef = doc(collection(firestore, "userDocuments"));
-  const storagePath = `users/${user.uid}/documents/${recordRef.id}/${safeName}`;
-  const fileRef = storageRef(firebaseStorage, storagePath);
+  const stableId = metadata.sourceRef
+    ? `${metadata.sourceRef}-${safeName}`.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/-+/g, "-").slice(0, 80)
+    : "";
+  let recordRef = stableId.length >= 16
+    ? doc(firestore, "userDocuments", stableId)
+    : doc(collection(firestore, "userDocuments"));
+  let storagePath = `users/${user.uid}/documents/${recordRef.id}/${safeName}`;
+  let fileRef = storageRef(firebaseStorage, storagePath);
+
+  // Re-tries of the same generated file reuse its saved record instead of
+  // creating duplicate entries or uploading a second copy.
+  if (stableId.length >= 16) {
+    const existing = await getDocFromServer(recordRef);
+    const data = existing.data();
+    if (existing.exists() && data?.ownerUid === user.uid && data?.storagePath === storagePath
+      && Number(data?.size) === blob.size && data?.mimeType === mimeType
+      && Number(data?.expiresAt) > Date.now()) {
+      return { id: recordRef.id, ...data } as SavedUserDocument;
+    }
+    if (existing.exists()) {
+      recordRef = doc(collection(firestore, "userDocuments"));
+      storagePath = `users/${user.uid}/documents/${recordRef.id}/${safeName}`;
+      fileRef = storageRef(firebaseStorage, storagePath);
+    }
+  }
 
   await uploadBytes(fileRef, blob, { contentType: mimeType, cacheControl: "private,no-store,max-age=0" });
   try {
