@@ -50,4 +50,24 @@ test("public service catalogue is readable but remains client read-only", async 
 });
 
 
-test("user document archive metadata is Worker-only; browser clients cannot read or write it directly", async () => {\n  const aliceDb = env.authenticatedContext("alice").firestore();\n  const bobDb = env.authenticatedContext("bob").firestore();\n  const record = {\n    ownerUid: "alice",\n    documentId: "doc-alice-1234567890",\n    name: "kitambulisho-mbele.png",\n    type: "PNG",\n    mimeType: "image/png",\n    storagePath: "userDocuments/alice/doc-alice-1234567890/kitambulisho-mbele.png",\n    size: 2048,\n    expiresAt: Date.now() + 24 * 60 * 60 * 1000,\n    source: "kitambulisho-wakala",\n  };\n\n  // HATI ZANGU is stored through the authenticated Worker using the Admin SDK.\n  // Direct browser access must remain denied for every user, including the owner.\n  await assertFails(setDoc(doc(aliceDb, "userDocuments", "alice_doc-alice-1234567890"), record));\n  await assertFails(getDoc(doc(aliceDb, "userDocuments", "alice_doc-alice-1234567890")));\n  await assertFails(getDoc(doc(bobDb, "userDocuments", "alice_doc-alice-1234567890")));\n});\n
+test("user document archive metadata is Worker-only; browser clients cannot read or write it directly", async () => {
+  const aliceDb = env.authenticatedContext("alice").firestore();
+  const bobDb = env.authenticatedContext("bob").firestore();
+  const record = {
+    ownerUid: "alice",
+    documentId: "doc-alice-1234567890",
+    name: "kitambulisho-mbele.png",
+    type: "PNG",
+    mimeType: "image/png",
+    storagePath: "userDocuments/alice/doc-alice-1234567890/kitambulisho-mbele.png",
+    size: 2048,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    source: "kitambulisho-wakala",
+  };
+
+  // HATI ZANGU is stored through the authenticated Worker using the Admin SDK.
+  // Direct browser access must remain denied for every user, including the owner.
+  await assertFails(setDoc(doc(aliceDb, "userDocuments", "alice_doc-alice-1234567890"), record));
+  await assertFails(getDoc(doc(aliceDb, "userDocuments", "alice_doc-alice-1234567890")));
+  await assertFails(getDoc(doc(bobDb, "userDocuments", "alice_doc-alice-1234567890")));
+});
