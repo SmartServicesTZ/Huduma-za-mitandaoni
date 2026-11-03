@@ -1069,6 +1069,7 @@ export type LipaApplication = {
   updatedAt?: unknown;
 };
 export type ServiceApplication = { id: string; applicationId: string; userId: string; userName?: string; serviceSlug: string; serviceName: string; serviceFields?: ServiceFormField[]; statusOptions?: string[]; applicantData: ServiceFormValues; status: string; rejectionReason?: string; allowResubmission?: boolean; assignedAdmin?: string; submittedAt?: unknown; updatedAt?: unknown };
+export type AdminApplicationPage<T> = { rows: T[]; nextCursor: string | null; hasMore: boolean };
 export async function seedServiceCatalog() {
   const callable = createWorkerCall("seedServiceCatalog");
   return (await callable({})).data as { createdServices: number; createdNetworks: number };
@@ -1215,6 +1216,18 @@ export async function adminListLipaApplications() {
   } as LipaApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
 }
 
+export async function adminListLipaApplicationsPage(cursor?: string, pageSize = 50): Promise<AdminApplicationPage<LipaApplication>> {
+  const callable = createWorkerCall("listLipaApplicationsPage");
+  const result = (await callable({ cursor, pageSize })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null; hasMore?: boolean };
+  const rows = (result.applications ?? []).map((item) => ({ id: String(item.id ?? item.applicationId ?? ""), ...item, submittedAt: timestampValue(item.submittedAt), updatedAt: timestampValue(item.updatedAt) } as LipaApplication));
+  return { rows, nextCursor: result.nextCursor ?? null, hasMore: result.hasMore === true };
+}
+
+export async function adminGetApplicationCounts() {
+  const callable = createWorkerCall("getAdminApplicationCounts");
+  return (await callable({})).data as { servicePending: number; lipaPending: number };
+}
+
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
   // Keep the user's history live so a newly submitted application appears without refreshing.
   const applicationsQuery = query(collection(firestore, "lipaApplications"), where("userId", "==", uid), limit(100));
@@ -1329,6 +1342,13 @@ export async function adminListServiceApplications() {
     submittedAt: timestampValue(item.submittedAt),
     updatedAt: timestampValue(item.updatedAt),
   } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
+}
+
+export async function adminListServiceApplicationsPage(cursor?: string, pageSize = 50): Promise<AdminApplicationPage<ServiceApplication>> {
+  const callable = createWorkerCall("listServiceApplicationsPage");
+  const result = (await callable({ cursor, pageSize })).data as { applications?: Array<Record<string, unknown>>; nextCursor?: string | null; hasMore?: boolean };
+  const rows = (result.applications ?? []).map((item) => ({ id: String(item.id ?? item.applicationId ?? ""), ...item, submittedAt: timestampValue(item.submittedAt), updatedAt: timestampValue(item.updatedAt) } as ServiceApplication));
+  return { rows, nextCursor: result.nextCursor ?? null, hasMore: result.hasMore === true };
 }
 
 export async function replyToServiceApplication(applicationId: string, subject: string, body: string, messageType: "reply" | "request-info" = "reply") {

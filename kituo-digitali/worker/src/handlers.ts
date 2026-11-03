@@ -57,6 +57,23 @@ async function getAllCollectionDocs(collectionName: string, pageSize = ADMIN_LIS
   }
 }
 
+type AdminCollectionPage = { documents: DocumentSnapshot[]; nextCursor: string | null; hasMore: boolean };
+async function getCollectionPage(collectionName: string, input: { cursor?: string; pageSize?: number; equalityFilter?: { field: string; value: unknown } } = {}): Promise<AdminCollectionPage> {
+  const pageSize = Math.min(Math.max(Number(input.pageSize ?? ADMIN_LIST_LIMIT) || ADMIN_LIST_LIMIT, 1), 100);
+  let pageQuery: Query = db.collection(collectionName);
+  if (input.equalityFilter) pageQuery = pageQuery.where(input.equalityFilter.field, "==", input.equalityFilter.value);
+  pageQuery = pageQuery.orderByDocumentId();
+  if (input.cursor) pageQuery = pageQuery.startAfterDocumentId(text(input.cursor, 200));
+  const page = await pageQuery.limit(pageSize + 1).get();
+  const hasMore = page.docs.length > pageSize;
+  const documents = hasMore ? page.docs.slice(0, pageSize) : page.docs;
+  return { documents, nextCursor: hasMore ? documents.at(-1)?.id ?? null : null, hasMore };
+}
+function adminPageInput(request: ApiRequest<unknown>) {
+  const data = recordValues(request.data);
+  return { cursor: typeof data.cursor === "string" ? data.cursor : undefined, pageSize: Number(data.pageSize ?? ADMIN_LIST_LIMIT) };
+}
+
 async function profileFor(uid: string, prefetched?: Profile) {
   let profile = prefetched;
   if (!profile) {
@@ -77,8 +94,8 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "appli
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
   changeOwnPassword: "profile", claimRegistrationPhone: "profile", claimDailyTokenBonus: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createPocketWifiOrder: "applications", createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
-  submitLipaApplication: "applications", updateLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin",
-  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin",
+  submitLipaApplication: "applications", updateLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin", listLipaApplicationsPage: "admin", getAdminApplicationCounts: "admin",
+  getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", listServiceApplicationsPage: "admin",
   markUserMessageRead: "read", registerFcmToken: "profile", sendPushNotification: "admin", syncAuthClaims: "auth",
 };
 
@@ -1123,6 +1140,13 @@ export const listLipaApplications = callable(async (request) => {
   });
   return { applications: rows };
 });
+export const listLipaApplicationsPage = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
+  requirePermission(actor, "manageLipaApplications");
+  const page = await getCollectionPage("lipaApplications", adminPageInput(request));
+  return { applications: page.documents.map((item) => ({ id: item.id, ...item.data() })), nextCursor: page.nextCursor, hasMore: page.hasMore };
+});
 
 export const markLipaApplicationViewed = callable(async (request) => {
   const uid = authUid(request);
@@ -1545,6 +1569,25 @@ export const listServiceApplications = callable(async (request) => {
   const rows: Array<Record<string, unknown> & { id: string }> = documents.map((item) => ({ id: item.id, ...item.data() }));
   rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
   return { applications: rows };
+});
+export const listServiceApplicationsPage = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
+  requirePermission(actor, "manageServices");
+  const page = await getCollectionPage("serviceApplications", adminPageInput(request));
+  return { applications: page.documents.map((item) => ({ id: item.id, ...item.data() })), nextCursor: page.nextCursor, hasMore: page.hasMore };
+});
+export const getAdminApplicationCounts = callable(async (request) => {
+  const uid = authUid(request);
+  const actor = await profileFor(uid, request.profile as Profile | undefined);
+  const canServices = can(actor, "manageServices");
+  const canLipa = can(actor, "manageLipaApplications");
+  const [pendingServices, pendingLipa, processingLipa] = await Promise.all([
+    canServices ? getAllCollectionDocs("serviceApplications", ADMIN_LIST_LIMIT, { field: "status", value: "PENDING" }) : Promise.resolve([]),
+    canLipa ? getAllCollectionDocs("lipaApplications", ADMIN_LIST_LIMIT, { field: "status", value: "PENDING" }) : Promise.resolve([]),
+    canLipa ? getAllCollectionDocs("lipaApplications", ADMIN_LIST_LIMIT, { field: "status", value: "PROCESSING" }) : Promise.resolve([]),
+  ]);
+  return { servicePending: pendingServices.length, lipaPending: pendingLipa.length + processingLipa.length };
 });
 
 export const replyToServiceApplication = callable(async (request) => {
@@ -2214,4 +2257,3 @@ export const completeBusinessLicense = callable(async (request) => {
   const application = completed.data()!;
   return { status: "COMPLETED", requestId, applicationId: application.applicationId, licenseNumber: String((application.licenseData as Record<string, unknown> | undefined)?.licenseNumber ?? ""), reference: result.reference, duplicate: result.duplicate };
 });
-
