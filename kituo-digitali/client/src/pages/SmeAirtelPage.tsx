@@ -202,7 +202,7 @@ export default function SmeAirtelPage() {
           <div className="sa-float flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white text-4xl font-black italic text-red-600 shadow-[0_25px_60px_-10px_rgba(0,0,0,.45)] sm:h-36 sm:w-36">airtel</div>
         </div>
       </header>
-    
+
 
       <section className="mt-6 grid items-start gap-6 lg:grid-cols-[.7fr_1.3fr]">
         {/* ZAWADI */}
