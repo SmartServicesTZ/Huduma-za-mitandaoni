@@ -2359,3 +2359,49 @@
 .lq-artboard[data-watermarked="true"] .lq-sticker-name::after,
 .lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::after,
 .lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::after { content:"SMARTSERVICESTZ"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:rgba(150,0,28,.26); font-size:.48em; font-weight:1000; letter-spacing:.08em; white-space:nowrap; pointer-events:none; transform:rotate(-8deg); text-shadow:0 1px 0 rgba(255,255,255,.45); }
+
+
+/* High-contrast watermark stamped directly across merchant-name fields in exported stickers. */
+.lq-artboard[data-watermarked="true"] .lq-sticker-name,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong,
+.lq-artboard[data-watermarked="true"] .lq-airtel-name,
+.lq-artboard[data-watermarked="true"] .lq-voda-name,
+.lq-artboard[data-watermarked="true"] .lq-halotel-business,
+.lq-artboard[data-watermarked="true"] .lq-merchant-name,
+.lq-artboard[data-watermarked="true"] .lq-merchant-box {
+  position: relative !important;
+  isolation: isolate !important;
+}
+.lq-artboard[data-watermarked="true"] .lq-sticker-name::after,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-airtel-name::after,
+.lq-artboard[data-watermarked="true"] .lq-voda-name::after,
+.lq-artboard[data-watermarked="true"] .lq-halotel-business::after,
+.lq-artboard[data-watermarked="true"] .lq-merchant-name::after,
+.lq-artboard[data-watermarked="true"] .lq-merchant-box::after {
+  content: "SMARTSERVICESTZ";
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: rgba(225, 0, 20, .78);
+  font-size: clamp(9px, 1.65cqw, 19px);
+  line-height: 1;
+  font-weight: 1000;
+  letter-spacing: .07em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: rotate(-7deg);
+  text-shadow: 0 1px 0 rgba(255,255,255,.8), 0 -1px 0 rgba(255,255,255,.5);
+}
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-sticker-name::after,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::after {
+  color: rgba(225, 0, 20, .86);
+  font-size: clamp(9px, 1.9cqw, 20px);
+}
