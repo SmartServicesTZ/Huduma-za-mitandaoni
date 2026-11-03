@@ -2350,3 +2350,12 @@
 .lq-choice-group .lq-sticker-variant-button--no-qr { background:#f3c600; color:#2e2500; }
 .lq-choice-group .lq-sticker-variant-button--qr.is-active { background:#087c3b; border-color:#064d27; box-shadow:0 0 0 3px #18a95755; }
 .lq-choice-group .lq-sticker-variant-button--no-qr.is-active { background:#d6a900; border-color:#856800; box-shadow:0 0 0 3px #f3c60066; }
+
+
+/* Watermark is printed across the merchant-name area on every Lipa sticker export. */
+.lq-artboard[data-watermarked="true"] .lq-sticker-name,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong { position:relative !important; isolation:isolate; }
+.lq-artboard[data-watermarked="true"] .lq-sticker-name::after,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::after { content:"SMARTSERVICESTZ"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:rgba(150,0,28,.26); font-size:.48em; font-weight:1000; letter-spacing:.08em; white-space:nowrap; pointer-events:none; transform:rotate(-8deg); text-shadow:0 1px 0 rgba(255,255,255,.45); }
