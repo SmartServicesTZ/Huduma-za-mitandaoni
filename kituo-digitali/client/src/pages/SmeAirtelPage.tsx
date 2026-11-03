@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, CheckCircle2, CreditCard, LoaderCircle, Phone, Send,
-  ShieldCheck, Sparkles, User, Gift,
+  ShieldCheck, Smartphone, Sparkles, User, Gift,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
