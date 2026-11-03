@@ -124,7 +124,6 @@ export default function AccessLipaNumberPage() {
     setContact(String(data.contact ?? ""));
     setNida(String(data.nidaNumber ?? ""));
     setTinNumber(String(data.tinNumber ?? ""));
-    setLicenseName(""); setLicensePreview("");
     setEmail(String(data.email ?? ""));
     setPassportPath(String(data.passportPhoto ?? ""));
     setPassportName("");
