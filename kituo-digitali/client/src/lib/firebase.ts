@@ -567,7 +567,7 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
     const row = snapshot.docs[0]?.data();
     if (row) {
       currentName = String(row.name ?? service.name);
-      const configuredCost = Number(row.tokenCost);
+      const configuredCost = Number(row.tokenCost ?? (service.slug === "stika-mawakala" ? 3 : 0));
       if (!Number.isSafeInteger(configuredCost) || configuredCost < 0 || configuredCost > 100000) {
         throw new Error("Gharama ya huduma haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
       }
@@ -764,7 +764,7 @@ export async function getServiceTokenConfig(slug: string): Promise<{ name: strin
   const snapshot = await getDocsFromServer(query(collection(firestore, "services"), where("slug", "==", slug), limit(1)));
   const row = snapshot.docs[0]?.data();
   if (!row) throw new Error("Bei ya huduma haijapatikana kwenye Dashboard ya Admin. Wasiliana na admin.");
-  const tokenCost = Number(row.tokenCost);
+  const tokenCost = Number(row.tokenCost ?? (slug === "stika-mawakala" ? 3 : 0));
   if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) {
     throw new Error("Gharama ya tokeni haijawekwa sawa kwenye Dashboard ya Admin.");
   }
