@@ -213,7 +213,7 @@ export default function AgentStickerPage(){
       const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png",1));
       if(!blob)throw new Error("Imeshindikana kuandaa stika. Jaribu tena.");
       const safe=cleanName(agentName).replace(/\\s+/g,"-").toLowerCase();
-      await triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");
+      await triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG",{source:"stika-wakala",sourceRef:entryRequestId.current});
       outputUsed.current=true;
       toast.success("Stika limehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa.");
     } catch(error) {
