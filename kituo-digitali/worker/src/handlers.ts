@@ -1260,6 +1260,7 @@ export const createServiceApplication = callable(async (request) => {
   let fields = Array.isArray(service.fields) ? service.fields as Array<Record<string, unknown>> : [];
   const rawValues = objectValue(data.values, "Fomu");
   if (serviceSlug === "access-lipa-airtel") {
+    fields = fields.filter((field) => ["network", "phone", "fullName", "contact"].includes(String(field.fieldName ?? "")));
     const fullName = String(rawValues.fullName ?? "").trim().replace(/\s+/g, " ");
     const nameCount = fullName.split(" ").filter(Boolean).length;
     if (nameCount < 2 || nameCount > 3) throw new ApiError("invalid-argument", "Majina 2 au 3 yanahitajika kama yalivyo kwenye kitambulisho.");
@@ -1269,7 +1270,7 @@ export const createServiceApplication = callable(async (request) => {
     else fields.push({ fieldName: "fullName", label: "Majina 2 au 3 kama yalivyo kwenye kitambulisho", type: "TEXT", required: true, order: 2 });
   }
   if (serviceSlug === "access-lipa-yas") {
-    fields = fields.filter((field) => !["businessLicense", "businessLicensePhoto", "licenseFile"].includes(String(field.fieldName ?? "")));
+    fields = fields.filter((field) => ["network", "phone", "nidaNumber", "passportPhoto", "tinNumber", "contact"].includes(String(field.fieldName ?? "")));
     const photo = fields.find((field) => String(field.fieldName ?? "") === "passportPhoto");
     if (photo) { photo.required = true; photo.label = "Picha ya Kitambulisho"; }
     else fields.push({ fieldName: "passportPhoto", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 3 });
