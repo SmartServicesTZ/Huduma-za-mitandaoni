@@ -60,7 +60,7 @@ export default function Tin3Page() {
   const [tinInput, setTinInput] = useState("");
   const [name, setName] = useState("");
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "done">("idle");
-  const requestIdRef = useRef(crypto.randomUUID());
+  const requestIdRef = useRef<string>(crypto.randomUUID());
   const requestKeyRef = useRef("");
   const previousSuccessRef = useRef(false);
   const tabCount = 16;
