@@ -920,7 +920,7 @@ function AboutSmartServicesPage() {
       <ol><li><b>01</b><span><strong>Jisajili au ingia</strong><small>Tumia taarifa za akaunti yako kuingia.</small></span></li><li><b>02</b><span><strong>Chagua huduma</strong><small>Angalia maelezo na masharti ya huduma husika.</small></span></li><li><b>03</b><span><strong>Endelea kwa maelekezo</strong><small>Wasilisha taarifa zinazohitajika na fuatilia ombi lako.</small></span></li></ol>
     </section>
     <section className="about-contact">
-      <div><span className="about-section-kicker">TUNGEpenda KUKUSAIDIA</span><h2>Unahitaji msaada?</h2><p>Wasiliana na timu ya msaada kupitia WhatsApp kwa maswali kuhusu matumizi ya mfumo.</p></div>
+      <div><span className="about-section-kicker">TUNAPENDA KUKUSAIDIA</span><h2>Unahitaji msaada?</h2><p>Wasiliana na timu ya msaada kupitia WhatsApp kwa maswali kuhusu matumizi ya mfumo.</p></div>
       <a href="https://wa.me/255692287767?text=Habari%20SmartServicesTZ%2C%20nahitaji%20msaada." target="_blank" rel="noreferrer"><MessageCircle size={18}/> WASILIANA NASI</a>
     </section>
   </main>;
