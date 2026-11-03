@@ -100,7 +100,7 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
         const licenseOrder = fields.find((field) => field.fieldName === "businessLicensePhoto")?.order ?? 5;
         fields = fields.filter((field) => !["tinNumber", "hasTinNumber", "businessLicensePhoto"].includes(field.fieldName));
         fields.push(
-          { fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "Jibu swali hili. Ukichagua Ndiyo, jaza namba yako ya TIN.", order: questionOrder },
+          { fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, helpText: "TIN inahitajika. Ukichagua Ndiyo, jaza namba yako ya TIN.", order: questionOrder },
           { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "123-123-123", required: false, helpText: "Inahitajika ikiwa umechagua Ndiyo.", order: tinOrder },
           { fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya leseni ya biashara kwa ombi la Lipa Namba.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: licenseOrder },
         );
@@ -112,8 +112,8 @@ function normalizeConfig(row: Record<string, unknown>): LipaNetworkConfig | null
           { fieldName: "lipaNumber", label: "Namba ya simu ya Lipa Namba", type: "TEXT", placeholder: "06XXXXXXXX au 07XXXXXXXX", required: true, validation: "^(06|07)\\d{8}$", helpText: "Tarakimu 10; lazima ianze na 06 au 07.", order: 3 },
           { fieldName: "contactNumber", label: "Namba ya simu ya mawasiliano", type: "TEXT", placeholder: "06XXXXXXXX au 07XXXXXXXX", required: true, validation: "^(06|07)\\d{8}$", helpText: "Tarakimu 10; lazima ianze na 06 au 07.", order: 4 },
           { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", placeholder: "180-145-245", required: true, helpText: "Muundo: 123-123-123.", order: 5 },
-          { fieldName: "idType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["NIDA", "Mpiga Kura", "Pasi ya Kusafiria", "Leseni ya Udereva"], required: true, order: 6 },
-          { fieldName: "idNumber", label: "Namba ya Kitambulisho", type: "TEXT", placeholder: "Weka namba ya kitambulisho", required: true, helpText: "Ikiwa umechagua NIDA, tumia muundo 00000000-00000-00000-00.", order: 7 },
+          { fieldName: "idType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["NIDA"], required: true, order: 6 },
+          { fieldName: "idNumber", label: "Namba ya Kitambulisho", type: "NIDA", placeholder: "00000000-00000-00000-00", required: true, helpText: "Ikiwa umechagua NIDA, tumia muundo 00000000-00000-00000-00.", order: 7 },
           { fieldName: "businessName", label: "Jina la Biashara (Hiari)", type: "TEXT", placeholder: "Jina la biashara kama lipo", required: false, helpText: "Jaza ikiwa mteja ana biashara na ana vigezo vinavyohitajika.", order: 8 },
           { fieldName: "idFile", label: "Pakia Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya kitambulisho ulichochagua. Picha iwe nzima na maandishi yasomeke. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 20 },
           { fieldName: "tinFile", label: "Pakia Cheti cha TIN", type: "IMAGE_UPLOAD", required: false, helpText: "Kwa Machinga ni hiari; kwa Binafsi na Company Limited ni lazima.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 21 },
@@ -492,7 +492,8 @@ export default function LipaNumberPage() {
     const isYasNetwork = /yas|tigo/i.test(selectedNetwork.id);
     const hasConditionalTin = selectedNetwork.id === "vodacom" || isYasNetwork;
     const visibleFields = visibleLipaFields(selectedNetwork, values);
-    const nextErrors = validateServiceForm(visibleFields, values);
+    const validationValues: ServiceFormValues = /halotel/i.test(selectedNetwork.id) ? { ...values, idType: "NIDA" } : values;
+    const nextErrors = validateServiceForm(visibleFields, validationValues);
     if (/halotel/i.test(selectedNetwork.id)) {
       for (const fieldName of ["lipaNumber", "contactNumber"]) {
         const digits = String(values[fieldName] ?? "").replace(/\D/g, "");
