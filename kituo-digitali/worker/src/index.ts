@@ -41,7 +41,7 @@ import {
 import { ApiError, ApiHttpResponse, type CallableRoute } from "./api-adapter.js";
 import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 import { getStorage, uploadStorageObject } from "./storage-rest.js";
-import { getFirestore } from "./firestore-rest.js";
+import { FieldValue, getFirestore } from "./firestore-rest.js";
 import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";
 import { checkFimipayOrder, createFimipayOrder, listFimipayOrders, handleFimipayWebhook, createTillPaymentOrder, checkTillPaymentOrder } from "./fimipay.js";
 
@@ -284,6 +284,144 @@ async function handleLipaDocumentDownload(request: Request, cors: Headers, env: 
   }
 }
 
+
+function safeUserDocumentName(value: string) {
+  return value.normalize("NFKD").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(-110) || "smartservicestz-document";
+}
+
+function userDocumentPayload(documentId: string, data: Record<string, unknown>) {
+  return {
+    id: documentId,
+    ownerUid: String(data.ownerUid ?? ""),
+    name: String(data.name ?? "document"),
+    type: String(data.type ?? "FILE"),
+    mimeType: String(data.mimeType ?? "application/octet-stream"),
+    storagePath: String(data.storagePath ?? ""),
+    size: Number(data.size ?? 0),
+    expiresAt: Number(data.expiresAt ?? 0),
+    createdAt: data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt,
+    source: String(data.source ?? "service"),
+    ...(typeof data.sourceRef === "string" ? { sourceRef: data.sourceRef } : {}),
+  };
+}
+
+async function handleUserDocumentUpload(request: Request, cors: Headers, env: Env) {
+  if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+  const contentLength = Number(request.headers.get("Content-Length") ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > 11 * 1024 * 1024) {
+    return jsonResponse({ error: { code: "invalid-argument", message: "Hati imezidi MB 10." } }, 413, cors);
+  }
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
+  await enforceAccountRestriction(auth.uid, "consumeTokens");
+  if (!env.LIPA_DOCUMENTS) throw new ApiError("unavailable", "Hifadhi ya hati haijasanidiwa.");
+  let form: FormData;
+  try { form = await request.formData(); } catch { throw new ApiError("invalid-argument", "Muundo wa hati si sahihi."); }
+  const documentId = String(form.get("documentId") ?? "").trim();
+  const type = String(form.get("type") ?? "FILE").trim().slice(0, 30);
+  const source = String(form.get("source") ?? "service").trim().slice(0, 80) || "service";
+  const sourceRef = String(form.get("sourceRef") ?? "").trim().slice(0, 160);
+  const file = form.get("file");
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(documentId)) throw new ApiError("invalid-argument", "Kitambulisho cha hati si sahihi.");
+  if (!(file instanceof File)) throw new ApiError("invalid-argument", "Chagua hati kwanza.");
+  if (file.size < 1 || file.size > 10 * 1024 * 1024) throw new ApiError("invalid-argument", "Hati lazima iwe kati ya byte 1 na MB 10.");
+  const safeName = safeUserDocumentName(file.name);
+  const requestedName = safeUserDocumentName(String(form.get("name") ?? file.name));
+  if (requestedName !== safeName) throw new ApiError("invalid-argument", "Jina la faili halilingani.");
+  const mimeType = file.type.toLowerCase() || "application/octet-stream";
+  if (!["image/png", "image/jpeg", "image/webp", "application/pdf", "application/octet-stream"].includes(mimeType)) {
+    throw new ApiError("invalid-argument", "Aina ya hati hairuhusiwi.");
+  }
+
+  const storagePath = `userDocuments/${auth.uid}/${documentId}/${safeName}`;
+  const recordRef = getFirestore().collection("userDocuments").doc(`${auth.uid}_${documentId}`);
+  const existingSnapshot = await recordRef.get();
+  const existing = existingSnapshot.data() ?? {};
+  const now = Date.now();
+  if (existingSnapshot.exists && existing.ownerUid === auth.uid && existing.storagePath === storagePath
+    && Number(existing.expiresAt) > now && Number(existing.size) === file.size && existing.mimeType === mimeType) {
+    const existingObject = await env.LIPA_DOCUMENTS.head(storagePath);
+    if (existingObject && existingObject.size === file.size) {
+      return jsonResponse({ data: userDocumentPayload(documentId, existing) }, 200, cors);
+    }
+  }
+
+  const expiresAt = now + 24 * 60 * 60 * 1000;
+  const uploaded = await env.LIPA_DOCUMENTS.put(storagePath, file.stream(), {
+    httpMetadata: { contentType: mimeType, cacheControl: "private, no-store" },
+    customMetadata: { ownerUid: auth.uid, documentId, expiresAt: String(expiresAt), source },
+  });
+  if (!uploaded) throw new ApiError("unavailable", "Hati haikuhifadhiwa kwenye hifadhi. Jaribu tena.");
+  const verifiedObject = await env.LIPA_DOCUMENTS.head(storagePath);
+  if (!verifiedObject || verifiedObject.size !== file.size) {
+    await env.LIPA_DOCUMENTS.delete(storagePath).catch(() => undefined);
+    throw new ApiError("unavailable", "Hati haikuthibitishwa baada ya kuhifadhiwa. Jaribu tena.");
+  }
+
+  const record = {
+    ownerUid: auth.uid,
+    documentId,
+    name: safeName,
+    type,
+    mimeType,
+    storagePath,
+    size: file.size,
+    createdAt: FieldValue.serverTimestamp(),
+    expiresAt,
+    source,
+    ...(sourceRef ? { sourceRef } : {}),
+  };
+  try {
+    await recordRef.set(record);
+  } catch (error) {
+    await env.LIPA_DOCUMENTS.delete(storagePath).catch(() => undefined);
+    throw error;
+  }
+  return jsonResponse({
+    data: userDocumentPayload(documentId, {
+      ...record,
+      createdAt: new Date().toISOString(),
+    }),
+  }, 201, cors);
+}
+
+async function handleUserDocumentsList(request: Request, cors: Headers, env: Env) {
+  if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
+  await enforceAccountRestriction(auth.uid, "getServiceApplicationDocument");
+  const snapshot = await getFirestore().collection("userDocuments").where("ownerUid", "==", auth.uid).limit(500).get();
+  const now = Date.now();
+  const items = snapshot.docs
+    .map((document) => userDocumentPayload(String(document.data()?.documentId ?? ""), document.data() ?? {}))
+    .filter((item) => item.id && item.ownerUid === auth.uid && item.expiresAt > now)
+    .sort((a, b) => new Date(String(b.createdAt ?? 0)).getTime() - new Date(String(a.createdAt ?? 0)).getTime());
+  return jsonResponse({ data: items }, 200, cors);
+}
+
+async function handleUserDocumentDownload(request: Request, cors: Headers, env: Env, documentId: string) {
+  if (request.method !== "GET") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia GET." } }, 405, cors);
+  const auth = await verifyFirebaseIdToken(request, env.FIREBASE_PROJECT_ID);
+  await enforceAccountRestriction(auth.uid, "getServiceApplicationDocument");
+  if (!env.LIPA_DOCUMENTS) throw new ApiError("unavailable", "Hifadhi ya hati haijasanidiwa.");
+  if (!/^[A-Za-z0-9_-]{16,80}$/.test(documentId)) throw new ApiError("invalid-argument", "Kitambulisho cha hati si sahihi.");
+  const snapshot = await getFirestore().collection("userDocuments").doc(`${auth.uid}_${documentId}`).get();
+  if (!snapshot.exists) throw new ApiError("not-found", "Hati haikupatikana.");
+  const data = snapshot.data() ?? {};
+  if (data.ownerUid !== auth.uid) throw new ApiError("permission-denied", "Huna ruhusa ya kufungua hati hii.");
+  if (Number(data.expiresAt) <= Date.now()) throw new ApiError("not-found", "Muda wa hati hii umeisha.");
+  const safeName = safeUserDocumentName(String(data.name ?? "document"));
+  const expectedPath = `userDocuments/${auth.uid}/${documentId}/${safeName}`;
+  if (data.storagePath !== expectedPath) throw new ApiError("permission-denied", "Njia ya hati si sahihi.");
+  const object = await env.LIPA_DOCUMENTS.get(expectedPath);
+  if (!object) throw new ApiError("not-found", "Hati haikupatikana kwenye hifadhi.");
+  const headers = new Headers(cors);
+  headers.set("Content-Type", object.httpMetadata?.contentType ?? String(data.mimeType ?? "application/octet-stream"));
+  headers.set("Content-Disposition", `attachment; filename="${safeName}"`);
+  headers.set("Content-Length", String(object.size));
+  headers.set("Cache-Control", "private, no-store");
+  headers.set("X-Content-Type-Options", "nosniff");
+  return new Response(object.body, { status: 200, headers });
+}
+
 async function handleGeminiChat(request: Request, cors: Headers, env: Env): Promise<Response> {
   if (request.method !== "POST") return jsonResponse({ error: { message: "Tumia POST." } }, 405, cors);
   const contentLength = Number(request.headers.get("Content-Length") ?? 0);
@@ -491,6 +629,22 @@ const worker = {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
         console.error("Lipa download proxy failed", { code: error instanceof Error ? error.name : "unknown" });
         return jsonResponse({ error: { code: "internal", message: "Picha haikupatikana kwa sasa." } }, 500, cors);
+      }));
+    }
+
+    if (url.pathname === "/user-documents") {
+      return withWorkerEnv(env, () => (request.method === "POST" ? handleUserDocumentUpload(request, cors, env) : handleUserDocumentsList(request, cors, env)).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("User document archive failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Hati haikuhifadhiwa au kupakiwa kwa sasa. Jaribu tena." } }, 500, cors);
+      }));
+    }
+    const userDocumentMatch = /^\\/user-documents\\/([A-Za-z0-9_-]{16,80})$/.exec(url.pathname);
+    if (userDocumentMatch) {
+      return withWorkerEnv(env, () => handleUserDocumentDownload(request, cors, env, userDocumentMatch[1]).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("User document download failed", { code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Hati haikupatikana kwa sasa. Jaribu tena." } }, 500, cors);
       }));
     }
     if (url.pathname === "/turn/credentials") return jsonResponse({ error: { code: "unavailable", message: "Simu za sauti/video zimezimwa kwa muda." } }, 503, cors);
