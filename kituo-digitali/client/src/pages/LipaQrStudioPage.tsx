@@ -138,7 +138,7 @@ function A4ServiceLogo({ kind }: { kind: A4ServiceLogoKind }) {
 const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean; paperSize: "A5" | "A4" }>(function CardArtboard({ values, qrDataUrl, network, watermarked, paperSize }, ref) {
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
-    : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halotel-logo.png"}`;
+    : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halopesa-logo.png"}`;
   if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">
     <div className="lq-a4-layout">
       <section className="lq-a4-payment-panel">
@@ -201,6 +201,28 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     <div className="lq-voda-number">{values.lipaNumber}</div>
     <div className="lq-voda-name">{values.businessName.trim().toUpperCase()}</div>
   </article>;
+  if (network === "halotel") {
+    const numberDigits = values.lipaNumber.slice(0, 8).padEnd(8, "");
+    return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--halotel" data-lipa-export-page="card" data-network="halotel" data-watermarked={watermarked} data-paper-size={paperSize}>
+      <header className="lq-sticker-header">
+        <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
+        <img className="lq-mixx-logo" src={`${import.meta.env.BASE_URL}halopesa-logo.png`} alt="HaloPesa" />
+      </header>
+      <section className="lq-sticker-main lq-halotel-sticker-main">
+        <div className="lq-halotel-curve" aria-hidden="true" />
+        <h2 className="lq-halotel-title">SCAN TO PAY</h2>
+        <div className="lq-sticker-qr-paper lq-halotel-qr-paper">
+          {qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya HaloPesa" /> : <span>Jaza taarifa kuona QR</span>}
+        </div>
+        <div className="lq-halotel-number-grid" aria-label="Namba ya Lipa">
+          {Array.from(numberDigits).map((digit, index) => <span key={`${digit}-${index}`}>{digit}</span>)}
+        </div>
+        <div className="lq-halotel-business">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</div>
+        <div className="lq-halotel-footer-copy"><strong>Nilipo</strong><span>kwa mitandao yote na Benki</span></div>
+        <p className="lq-halotel-support">Lipa kwa mitandao yote na Benki</p>
+      </section>
+    </article>;
+  }
   return <article ref={ref} className={`lq-artboard lq-card-artboard lq-card-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
     <header className="lq-sticker-header">
       <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
@@ -278,7 +300,7 @@ export default function LipaQrStudioPage() {
   const errors = useMemo(() => validateLipaCard(values), [values]);
   const isValid = Object.keys(errors).length === 0;
   const paymentPayload = useMemo(() => {
-    if (!isValid || network === "halotel") return "";
+    if (!isValid) return "";
     if (network === "voda") return createVodacomTipsPaymentPayload(values);
     if (network === "yas") return createYasTipsPaymentPayload(values);
     if (network === "airtel") return createAirtelTipsPaymentPayload(values);
@@ -423,7 +445,6 @@ export default function LipaQrStudioPage() {
   return <main className="lq-app">
     <aside className="lq-sidebar">
       <div className="lq-sidebar-top">
-        
         <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>STIKA ZA LIPA</strong><small>Tengeneza kadi ya Lipa</small></span></span>
       </div>
       <section className="lq-editor-panel">
@@ -444,7 +465,7 @@ export default function LipaQrStudioPage() {
               <span className="lq-network-logo lq-network-logo--halotel"><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="" /></span><span className="lq-network-option-copy"><strong>Halotel</strong><small>HaloPesa</small></span><span className="lq-network-check" aria-hidden="true">✓</span>
             </button>
           </div>
-          <small>{network === "halotel" ? "QR ya malipo ya Halotel bado haijawezeshwa." : "Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini."}</small>
+          <small>Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini.</small>
         </div>
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
