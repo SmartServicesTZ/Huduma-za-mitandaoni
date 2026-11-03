@@ -755,7 +755,8 @@ export async function adminListUsers() {
 }
 
 export async function adminListServices() {
-  return getCollectionOnce("services");
+  const rows = await getCollectionOnce("services");
+  return rows.map((item) => item.slug === "stika-mawakala" ? { ...item, tokenCost: Math.max(3, Number(item.tokenCost) || 0) } : item);
 }
 
 /** Read the live token price configured by Admin for a service. */
