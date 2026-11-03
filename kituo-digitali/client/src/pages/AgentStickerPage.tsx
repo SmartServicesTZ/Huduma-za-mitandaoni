@@ -188,7 +188,7 @@ export default function AgentStickerPage(){
     setEntryStatus("checking");setEntryMessage("Inasoma gharama ya huduma kutoka Dashboard ya Admin...");
     void getServiceTokenConfig("stika-mawakala").then(config=>{
       if(!active)return;
-      setServiceCost(config.tokenCost);setServiceName(config.name);
+      setServiceCost(Math.max(3, Number(config.tokenCost) || 3));setServiceName(config.name);
       setEntryStatus("pending");
       setEntryMessage("");
     }).catch(error=>{
