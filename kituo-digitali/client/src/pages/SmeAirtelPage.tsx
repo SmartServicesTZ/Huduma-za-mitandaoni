@@ -14,7 +14,6 @@ type FormState = { phone: string; fullName: string; nidaNumber: string; contactP
 const INITIAL: FormState = { phone: "", fullName: "", nidaNumber: "", contactPhone: "", hasTin: "", tinNumber: "", voucherConfirmed: false };
 const normalizePhone = (value: string) => { const d = value.replace(/\D/g, ""); return d.startsWith("255") ? d : d.startsWith("0") ? "255" + d.slice(1) : d; };
 const validPhone = (value: string) => /^255[67]\d{8}$/.test(normalizePhone(value));
-const money = (value: number) => value.toLocaleString("en-TZ");
 function newApplicationId() { return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "sme-airtel-" + Date.now() + "-" + Math.random().toString(36).slice(2); }
 
 /* Animations — zimewekwa hapa ili ukurasa ujitegemee (hakuna haja ya kuhariri tailwind.config) */
