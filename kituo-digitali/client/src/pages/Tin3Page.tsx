@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, X, LoaderCircle, Check } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { consumeFirebaseTokens } from "@/lib/firebase";
+import { triggerDownload } from "@/lib/downloadHistory";
 
 function formatTIN(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 9);
@@ -59,6 +60,9 @@ export default function Tin3Page() {
   const [tinInput, setTinInput] = useState("");
   const [name, setName] = useState("");
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "done">("idle");
+  const requestIdRef = useRef(crypto.randomUUID());
+  const requestKeyRef = useRef("");
+  const previousSuccessRef = useRef(false);
   const tabCount = 16;
   const tin = formatTIN(tinInput);
   const svg = useMemo(() => makeScreenshot(tin, name.trim().toUpperCase(), tabCount), [tin, name, tabCount]);
@@ -79,21 +83,27 @@ export default function Tin3Page() {
         return;
       }
       try {
+        const requestKey = `${tin}|${name.trim()}|${extension}`;
+        if (requestKeyRef.current !== requestKey || previousSuccessRef.current) {
+          requestIdRef.current = crypto.randomUUID();
+          requestKeyRef.current = requestKey;
+          previousSuccessRef.current = false;
+        }
         await consumeFirebaseTokens(firebaseUser.uid, {
           slug: "verify-tin",
           name: "VERIFY TIN",
           tokenCost: 2,
           kind: "paid",
           tokenType: "huduma",
-        }, crypto.randomUUID());
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = `${tin || "VERIFY-TIN"}.${extension}`;
-        link.rel = "noopener";
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        }, requestIdRef.current);
+        const response = await fetch(dataUrl);
+        if (!response.ok) throw new Error("Imeshindikana kuandaa faili la TIN.");
+        const blob = await response.blob();
+        await triggerDownload(blob, `${tin || "VERIFY-TIN"}.${extension}`, extension.toUpperCase(), {
+          source: "verify-tin",
+          sourceRef: requestIdRef.current,
+        });
+        previousSuccessRef.current = true;
         finish("done");
       } catch (error) {
         finish("idle");
