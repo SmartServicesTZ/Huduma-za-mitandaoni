@@ -187,7 +187,7 @@ export default function SmeVodacomPage() {
                 <span className="flex items-center gap-2 rounded-full bg-emerald-300/15 px-3 py-1.5 text-xs font-bold text-emerald-100 backdrop-blur"><span className="sv-ring h-2 w-2 rounded-full bg-emerald-300" /> Huduma inapatikana</span>
               </div>
               <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-6xl">SME <span className="bg-gradient-to-r from-white to-red-200 bg-clip-text text-transparent">VODACOM</span></h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">Omba kuunganishwa kwenye vifurushi vya biashara vya siku 30. Linganisha Data Plan na Combo Plan, chagua kifurushi, kisha weka taarifa zako kwa usahihi.</p>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">Omba kuunganishwa kwenye SME Vodacom. Weka taarifa zako kwa usahihi; admin atakupangia kifurushi baada ya kupokea ombi.</p>
               <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold text-white/90">
                 {["Vifurushi vya siku 30", "Taarifa za TIN huulizwa", "Vocha kuanzia TSh 15,000"].map((t, i) => (
                   <span key={t} className="sv-in inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-2 backdrop-blur transition hover:bg-white/20" style={{ animationDelay: `${300 + i * 120}ms` }}>
