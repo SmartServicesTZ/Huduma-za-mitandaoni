@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 const projectId = "demo-firestore-rules";
 let env;
@@ -50,50 +50,4 @@ test("public service catalogue is readable but remains client read-only", async 
 });
 
 
-test("a user can save a private generated document for 24 hours and only its owner can read it", async () => {
-  const aliceDb = env.authenticatedContext("alice").firestore();
-  const documentId = "doc-alice-1234567890";
-  const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-  await assertSucceeds(setDoc(doc(aliceDb, "userDocuments", documentId), {
-    ownerUid: "alice",
-    name: "kitambulisho-mbele.png",
-    type: "PNG",
-    mimeType: "image/png",
-    storagePath: `users/alice/documents/${documentId}/kitambulisho-mbele.png`,
-    size: 2048,
-    createdAt: serverTimestamp(),
-    expiresAt,
-    source: "kitambulisho-wakala",
-  }));
-
-  await assertSucceeds(getDoc(doc(aliceDb, "userDocuments", documentId)));
-  const bobDb = env.authenticatedContext("bob").firestore();
-  await assertFails(getDoc(doc(bobDb, "userDocuments", documentId)));
-});
-
-test("a user cannot create a saved document owned by another account or with an invalid storage path", async () => {
-  const aliceDb = env.authenticatedContext("alice").firestore();
-  const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-  await assertFails(setDoc(doc(aliceDb, "userDocuments", "doc-forged-owner-123456"), {
-    ownerUid: "bob",
-    name: "forged.png",
-    type: "PNG",
-    mimeType: "image/png",
-    storagePath: "users/bob/documents/doc-forged-owner-123456/forged.png",
-    size: 1024,
-    createdAt: serverTimestamp(),
-    expiresAt,
-    source: "service",
-  }));
-  await assertFails(setDoc(doc(aliceDb, "userDocuments", "doc-forged-path-123456"), {
-    ownerUid: "alice",
-    name: "forged.png",
-    type: "PNG",
-    mimeType: "image/png",
-    storagePath: "users/bob/documents/doc-forged-path-123456/forged.png",
-    size: 1024,
-    createdAt: serverTimestamp(),
-    expiresAt,
-    source: "service",
-  }));
-});
+test("user document archive metadata is Worker-only; browser clients cannot read or write it directly", async () => {\n  const aliceDb = env.authenticatedContext("alice").firestore();\n  const bobDb = env.authenticatedContext("bob").firestore();\n  const record = {\n    ownerUid: "alice",\n    documentId: "doc-alice-1234567890",\n    name: "kitambulisho-mbele.png",\n    type: "PNG",\n    mimeType: "image/png",\n    storagePath: "userDocuments/alice/doc-alice-1234567890/kitambulisho-mbele.png",\n    size: 2048,\n    expiresAt: Date.now() + 24 * 60 * 60 * 1000,\n    source: "kitambulisho-wakala",\n  };\n\n  // HATI ZANGU is stored through the authenticated Worker using the Admin SDK.\n  // Direct browser access must remain denied for every user, including the owner.\n  await assertFails(setDoc(doc(aliceDb, "userDocuments", "alice_doc-alice-1234567890"), record));\n  await assertFails(getDoc(doc(aliceDb, "userDocuments", "alice_doc-alice-1234567890")));\n  await assertFails(getDoc(doc(bobDb, "userDocuments", "alice_doc-alice-1234567890")));\n});\n
