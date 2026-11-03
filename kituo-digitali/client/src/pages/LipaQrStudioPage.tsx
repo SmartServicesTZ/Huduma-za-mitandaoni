@@ -63,7 +63,7 @@ const A4_GUIDES: ReadonlyArray<readonly [string, string, readonly string[]]> = [
 
 function makeFileStem(name: string, number: string) {
   const safeName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return `${safeName || "lipa-kadi"}-${number}`;
+  return `${safeName || "lipa-stika"}-${number}`;
 }
 
 async function captureArtboard(element: HTMLElement, outputWidthPx = A5_WIDTH_PX, outputHeightPx?: number) {
@@ -301,7 +301,7 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues; netwo
           <h3>Au tumia app ya {selected.note}</h3>
           <div className="lq-app-step"><b>A</b><span><strong>Fungua app ya {selected.note}</strong><small>Chagua huduma ya Lipa kwa biashara au Tan QR.</small></span></div>
           <div className="lq-app-step"><b>B</b><span><strong>Scan QR Code</strong><small>Hakiki jina na kiasi kabla ya kuthibitisha.</small></span></div>
-          <p>QR kwenye kadi hii inatokana na taarifa za biashara ulizojaza.</p>
+          <p>QR kwenye stika hii inatokana na taarifa za biashara ulizojaza.</p>
         </div>
       </div>
       <div className="lq-guide-network-grid">
@@ -323,7 +323,7 @@ export default function LipaQrStudioPage() {
   const [network, setNetwork] = useState<LipaNetwork>("voda");
   const [stickerVariant, setStickerVariant] = useState<StickerVariant>("qr");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
-  const [format, setFormat] = useState<FileFormat>("pdf");
+  const [format, setFormat] = useState<FileFormat>("png");
   const [airtelPaperSize, setAirtelPaperSize] = useState<"A5" | "A4">("A5");
   const selectedPaperSize = network === "airtel" ? airtelPaperSize : "A5";
   const outputWidthMm = selectedPaperSize === "A4" ? A4_WIDTH_MM : A5_WIDTH_MM;
@@ -393,7 +393,7 @@ export default function LipaQrStudioPage() {
     if (entryStatus !== "ready" || outputUsed.current) { toast.error("Huduma hii imeshatumika. Fungua tena kutengeneza stika nyingine."); return; }
     if (!validateBeforeAction()) return;
     const pages = [cardRef.current, ...(pageMode === "card-and-guide" ? [guideRef.current] : [])].filter((item): item is HTMLElement => Boolean(item));
-    if (!pages.length) { toast.error("Hakikisho la kadi halijawa tayari. Jaribu tena."); return; }
+    if (!pages.length) { toast.error("Hakikisho la stika halijawa tayari. Jaribu tena."); return; }
     setExporting(true);
     try {
       // Hakikisha faili linaweza kutengenezwa kabla ya kukata tokeni.
@@ -496,7 +496,7 @@ export default function LipaQrStudioPage() {
   return <main className="lq-app">
     <aside className="lq-sidebar">
       <div className="lq-sidebar-top">
-        <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>STIKA ZA LIPA</strong><small>Tengeneza kadi ya Lipa</small></span></span>
+        <span className="lq-brand-lockup"><span className="lq-brand-icon">L</span><span><strong>STIKA ZA LIPA</strong><small>Tengeneza stika ya Lipa</small></span></span>
       </div>
       <section className="lq-editor-panel">
         <div className="lq-section-heading"><span>TAARIFA ZA DUKA</span><small>JAZA HAPA</small></div>
@@ -519,8 +519,8 @@ export default function LipaQrStudioPage() {
           <small>Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini.</small>
         </div>
         {network !== "airtel" && <div className="lq-choice-group lq-sticker-variant-choice" role="group" aria-label="Chagua aina ya stika">
-          <button type="button" aria-pressed={stickerVariant === "qr"} className={stickerVariant === "qr" ? "is-active" : ""} onClick={() => setStickerVariant("qr")}>Stika yenye QR</button>
-          <button type="button" aria-pressed={stickerVariant === "no-qr"} className={stickerVariant === "no-qr" ? "is-active" : ""} onClick={() => setStickerVariant("no-qr")}>Stika bila QR</button>
+          <button type="button" aria-pressed={stickerVariant === "qr"} className={`lq-sticker-type-option lq-sticker-type-option--qr ${stickerVariant === "qr" ? "is-active" : ""}`} onClick={() => setStickerVariant("qr")}>STIKA QR</button>
+          <button type="button" aria-pressed={stickerVariant === "no-qr"} className={`lq-sticker-type-option lq-sticker-type-option--no-qr ${stickerVariant === "no-qr" ? "is-active" : ""}`} onClick={() => setStickerVariant("no-qr")}>STIKA BILA QR</button>
         </div>}
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
@@ -544,25 +544,24 @@ export default function LipaQrStudioPage() {
           <small>{airtelPaperSize === "A4" ? "A4 landscape — 297 × 210 mm · 300 DPI" : "A5 portrait — 148 × 210 mm · 300 DPI"}</small>
         </div>}
         <div className="lq-section-heading"><span>MATOKEO</span></div>
-        <div className="lq-choice-group" role="group" aria-label="Chagua kurasa za kadi">
-          <button type="button" aria-pressed={pageMode === "card-only"} className={pageMode === "card-only" ? "is-active" : ""} onClick={() => setPageMode("card-only")}>Kadi pekee</button>
-          <button type="button" aria-pressed={pageMode === "card-and-guide"} className={pageMode === "card-and-guide" ? "is-active" : ""} onClick={() => setPageMode("card-and-guide")}>Kadi + maelekezo</button>
+        <div className="lq-choice-group" role="group" aria-label="Chagua aina ya stika ya matokeo">
+          <button type="button" aria-pressed={pageMode === "card-only"} className={`lq-output-type-option lq-output-type-option--single ${pageMode === "card-only" ? "is-active" : ""}`} onClick={() => setPageMode("card-only")}>STIKA PEKEE</button>
+          <button type="button" aria-pressed={pageMode === "card-and-guide"} className={`lq-output-type-option lq-output-type-option--guide ${pageMode === "card-and-guide" ? "is-active" : ""}`} onClick={() => setPageMode("card-and-guide")}>STIKA + MAELEKEZO</button>
         </div>
-        <div className="lq-file-heading"><span>Aina ya faili</span></div>
+        <div className="lq-file-heading"><span>Aina ya faili <small className="lq-format-recommendation">PNG INAPENDEKEZWA</small></span></div>
         <div className="lq-choice-group" role="group" aria-label="Chagua aina ya faili">
           <button type="button" aria-pressed={format === "pdf"} className={format === "pdf" ? "is-active" : ""} onClick={() => setFormat("pdf")}>PDF</button>
           <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG</button>
         </div>
-        <p className="lq-print-note">Ukubwa wa {selectedPaperSize} {selectedPaperSize === "A4" ? "(297 × 210 mm, landscape)" : "(148 × 210 mm, portrait)"}, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti; maelekezo yatabaki A5.</p>
+        <p className="lq-print-note">Ukubwa wa {selectedPaperSize} {selectedPaperSize === "A4" ? "(297 × 210 mm, landscape)" : "(148 × 210 mm, portrait)"}, ubora wa 300 DPI. Ukichagua stika + maelekezo, PNG zitapakuliwa kama picha mbili tofauti; maelekezo yatabaki A5.</p>
         <button type="button" className="lq-button lq-download-cta" onClick={() => void exportFile()} disabled={!readyToDownload}><Download size={17} />{exporting ? "Inaandaa faili..." : `PAKUA STIKA ${format.toUpperCase()}`}</button>
         <small className="lq-download-help">Jaza namba ya Lipa na jina la biashara; kisha bonyeza hapa kupakua PDF au PNG.</small>
       </section>
-      <div className="lq-disclaimer"><ShieldCheck size={16} /><p>Zana hii ni huru; haihusiani wala kuidhinishwa na Vodacom Tanzania, M-Pesa au TIPS. QR hutengenezwa kwa muundo unaoonekana kwenye mifano ya TIPS iliyotolewa. Hakiki kwa mtoa huduma kuwa taarifa za biashara zimewezeshwa kupokea malipo kwa QR.</p></div>
     </aside>
 
     <section className={`lq-preview lq-preview--${network}`}>
       <div className="lq-preview-toolbar">
-        <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa kadi</strong><small>{selectedPaperSize} · {selectedPaperSize === "A4" ? "297 × 210" : "148 × 210"} mm · 300 DPI</small></div>
+        <div><span className="lq-preview-overline">HAKIKISHO LA MOJA KWA MOJA</span><strong>Muonekano wa stika</strong><small>{selectedPaperSize} · {selectedPaperSize === "A4" ? "297 × 210" : "148 × 210"} mm · 300 DPI</small></div>
         <div className="lq-toolbar-actions">
           <button type="button" className="lq-button lq-button-light" onClick={() => void exportFile()} disabled={!readyToDownload} aria-label={`Pakua ${format.toUpperCase()}`}><Download size={16} />{exporting ? "Inaandaa…" : `Pakua ${format.toUpperCase()}`}</button>
           <button type="button" className="lq-button lq-button-outline" onClick={printCard} disabled={!readyToDownload}><Printer size={16} />Chapisha</button>
