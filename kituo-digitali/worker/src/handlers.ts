@@ -747,6 +747,28 @@ export const submitLipaApplication = callable(async (request) => {
     if (!fields.some((field) => String(field.fieldName ?? "") === "additionalNotes")) fields.push({ fieldName: "additionalNotes", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, order: 999 });
   }
   const rawValues = objectValue(data.values, "Fomu");
+  if (serviceSlug === "access-lipa-airtel") {
+    const fullName = String(rawValues.fullName ?? "").trim().replace(/\s+/g, " ");
+    const nameCount = fullName.split(" ").filter(Boolean).length;
+    if (nameCount < 2 || nameCount > 3) throw new ApiError("invalid-argument", "Majina 2 au 3 yanahitajika kama yalivyo kwenye kitambulisho.");
+    rawValues.fullName = fullName;
+    const existingName = fields.find((field) => String(field.fieldName ?? "") === "fullName");
+    if (existingName) existingName.required = true;
+    else fields.push({ fieldName: "fullName", label: "Majina 2 au 3 kama yalivyo kwenye kitambulisho", type: "TEXT", required: true, order: 2 });
+  }
+  if (serviceSlug === "access-lipa-yas") {
+    fields = fields.filter((field) => !["businessLicense", "businessLicensePhoto", "licenseFile"].includes(String(field.fieldName ?? "")));
+    const photo = fields.find((field) => String(field.fieldName ?? "") === "passportPhoto");
+    if (photo) { photo.required = true; photo.label = "Picha ya Kitambulisho"; }
+    else fields.push({ fieldName: "passportPhoto", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 3 });
+    const tin = fields.find((field) => String(field.fieldName ?? "") === "tinNumber");
+    if (tin) { tin.required = true; tin.type = "TIN"; }
+    else fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 4 });
+  }
+  if (serviceSlug === "access-lipa-vodacom") {
+    const nidaField = fields.find((field) => String(field.fieldName ?? "") === "nidaNumber");
+    if (nidaField) { nidaField.required = true; nidaField.type = "NIDA"; }
+  }
   if (/yas|tigo/i.test(networkId)) {
     if (rawValues.hasTinNumber === "Ndiyo" && !String(rawValues.tinNumber ?? "").trim()) {
       throw new ApiError("failed-precondition", "Umechagua Ndiyo kwenye swali la TIN; weka namba ya TIN.");
@@ -1265,7 +1287,7 @@ export const createServiceApplication = callable(async (request) => {
   const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId, "serviceUploads");
   if (serviceSlug === "pata-till-mitandao-yote") {
     const network = tillNetwork;
-    if (network === "HALOTEL" && !/^\\d{3}-\\d{3}-\\d{3}$/.test(String(applicantData.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
+    if (network === "HALOTEL" && !/^\d{3}-\d{3}-\d{3}$/.test(String(applicantData.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
     if (!["HALOTEL", "AIRTEL", "VODACOM"].includes(network)) throw new ApiError("invalid-argument", "Mtandao wa Till si sahihi.");
     applicantData.network = network;
     applicantData.price = network === "AIRTEL" ? "TSh 5,000" : network === "VODACOM" ? "TSh 35,000" : "BURE";
