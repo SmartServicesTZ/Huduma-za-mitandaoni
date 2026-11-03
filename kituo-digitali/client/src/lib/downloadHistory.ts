@@ -182,9 +182,24 @@ export const triggerDownload = async (
 ) => {
   try {
     window.dispatchEvent(new CustomEvent("smartservicestz-download-start", { detail: { name, progress: 3 } }));
-    const saved = await saveUserDocument(blob, name, type, metadata);
-    recordDownload({ name, type });
-    window.dispatchEvent(new CustomEvent("smartservicestz-document-saved", { detail: { id: saved.id, name: saved.name } }));
+    let saved: SavedUserDocument | null = null;
+    try {
+      saved = await saveUserDocument(blob, name, type, metadata);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      // Huduma zisizohitaji kuingia bado zinaruhusiwa kupakuliwa; hazitaonekana
+      // kwenye HATI ZANGU mpaka mtumiaji aingie kwenye akaunti.
+      if (code !== "unauthenticated") throw error;
+    }
+    let dataUrl: string | undefined;
+    if (blob.size > 0 && blob.size <= 600 * 1024) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = "";
+      for (let index = 0; index < bytes.length; index += 0x8000) binary += bytesToBinary(bytes.subarray(index, index + 0x8000));
+      dataUrl = `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
+    }
+    recordDownload({ name, type, dataUrl });
+    if (saved) window.dispatchEvent(new CustomEvent("smartservicestz-document-saved", { detail: { id: saved.id, name: saved.name } }));
     await deliverBlob(blob, name);
   } catch (error) {
     window.dispatchEvent(new CustomEvent("smartservicestz-download-error", {
