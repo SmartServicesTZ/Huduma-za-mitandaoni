@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Link, useLocation } from "wouter";
 import "./HomeRefresh.css";
 import {
-  BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
+  BadgeCheck, Baby, BriefcaseBusiness, Eye, FilePen, EyeOff, ArrowLeft, Bell, CarFront, ChevronDown, ChevronRight, ChevronUp, CircleAlert, CircleDollarSign, Contact, Info, Copy, CreditCard, ExternalLink, FileBadge, FileWarning, HeartHandshake, History, Image, Landmark, LayoutGrid, LoaderCircle, LockKeyhole, LogIn, Menu, MessageCircle, Music2, Palette, Plane, QrCode, Radio, Search, ScanFace, Settings2, ShieldCheck, Smartphone, Sparkles, Star, Store, Ticket, Trophy, Tv, UserRound, UserRoundPen, Users, Vote, WalletCards, Wifi, X, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -284,7 +284,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { user, loading: authLoading } = useAuth();
-  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/my-documents", label: "Hati zangu", icon: FileBadge }, { href: "/my-applications", label: "Maombi yangu", icon: FileBadge }, { href: "/service/access-lipa-number", label: "Access", icon: WalletCards }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }, { href: "#support", label: "Saport", icon: HeartHandshake }];
+  const items = [{ href: "/", label: "Mwanzo", icon: LayoutGrid }, { href: "/services", label: "Huduma zote", icon: Zap }, { href: "/about", label: "Kuhusu SmartServicesTZ", icon: Info }, { href: "/my-documents", label: "Hati zangu", icon: FileBadge }, { href: "/my-applications", label: "Maombi yangu", icon: FileBadge }, { href: "/service/access-lipa-number", label: "Access", icon: WalletCards }, { href: "/history", label: "Historia", icon: History }, { href: "/account", label: "Settings", icon: Settings2 }, { href: "#support", label: "Saport", icon: HeartHandshake }];
   return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{(user?.name?.trim()?.slice(0, 1).toUpperCase() ?? "S")}</div><div><strong>{authLoading ? "Inathibitisha akaunti..." : user?.name ?? "Mgeni"} <VerifiedTick balance={user?.tokenBalanceOther ?? user?.tokenBalance ?? 0} /></strong><small>{authLoading ? "Inathibitisha akaunti..." : user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div>{!authLoading && !user && <button type="button" className="sidebar-auth-cta" onClick={() => { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); onClose?.(); }}><LogIn size={17} /><span>INGIA / JISAJILI</span></button>}{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <><Link href="/admin" onClick={onClose} className={`portal-nav-item admin-link ${location === "/admin" ? "active" : ""}`} style={{margin:"8px 10px",borderRadius:12,border:"1px solid #c4b5fd",background:"linear-gradient(135deg,#f5f3ff,#eef2ff)",color:"#4c1d95",fontWeight:800}}><Settings2 size={19} /><span>Paneli ya Admin</span><ChevronRight size={16}/></Link></>}<nav>{items.map(({ href, label, icon: ItemIcon }) => href === "#support" ? <button key={href} type="button" onClick={() => { window.dispatchEvent(new CustomEvent("smartservicestz-open-ai-support")); onClose?.(); }} className="portal-nav-item" style={{ width: "100%", border: 0, background: "transparent", cursor: "pointer", textAlign: "left", font: "inherit" }}><ItemIcon size={19} /><span>{label} · AI</span></button> : <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav><a href="https://wa.me/255692287767?text=Habari%20SmartServicesTZ%2C%20nahitaji%20msaada." target="_blank" rel="noreferrer" className="sidebar-support-contact" style={{display:"flex",alignItems:"center",gap:10,margin:"8px 10px",padding:10,borderRadius:12,background:"#e7f9ef",color:"#075e36",textDecoration:"none",fontSize:12,fontWeight:700,flexShrink:0}}><MessageCircle size={18}/><span>WhatsApp: 0692287767<small style={{display:"block",fontWeight:500,marginTop:3}}>WhatsApp tu · si simu ya kawaida</small></span></a><div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
@@ -877,6 +877,55 @@ function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
 
 
+
+function AboutSmartServicesPage() {
+  const [, navigate] = useLocation();
+  const highlights = [
+    { icon: Zap, title: "Huduma sehemu moja", text: "Pata huduma mbalimbali za kidijitali kupitia jukwaa moja, bila kuzunguka tovuti nyingi." },
+    { icon: Smartphone, title: "Rahisi kutumia kwa simu", text: "Muundo umeandaliwa ili uweze kuvinjari na kuomba huduma kupitia simu au kompyuta." },
+    { icon: WalletCards, title: "Mfumo wa tokeni ulio wazi", text: "Unaweza kuona salio lako, kuongeza tokeni na kufuatilia matumizi ndani ya akaunti yako." },
+    { icon: ShieldCheck, title: "Uwazi na msaada", text: "Taarifa za akaunti na miamala huonyeshwa ndani ya mfumo; msaada unapatikana kupitia njia rasmi za mawasiliano." },
+  ];
+  return <main className="portal-main about-smartservices">
+    <section className="about-hero">
+      <span className="about-eyebrow"><Sparkles size={14}/> DIGITAL SERVICE HUB</span>
+      <h1>ABOUT <span>SMARTSERVICESTZ</span></h1>
+      <p>SmartServicesTZ ni jukwaa la huduma za kidijitali linalolenga kurahisisha upatikanaji wa huduma mbalimbali kwa kutumia simu au kompyuta — sehemu moja, hatua zilizo rahisi na uzoefu unaoeleweka.</p>
+      <div className="about-hero-actions">
+        <button type="button" onClick={() => navigate("/services")}>ANGALIA HUDUMA <ChevronRight size={17}/></button>
+        <button type="button" className="about-secondary-action" onClick={() => navigate("/")}>RUDI MWANZO</button>
+      </div>
+      <div className="about-hero-orb" aria-hidden="true">STZ</div>
+    </section>
+    <section className="about-intro-grid">
+      <article className="about-story-card">
+        <span className="about-section-kicker">KUHUSU SISI</span>
+        <h2>Teknolojia iwe rahisi kwa kila mtu.</h2>
+        <p>Lengo la SmartServicesTZ ni kuunganisha huduma za kidijitali katika mazingira rahisi kutumia. Tunajenga uzoefu unaomsaidia mtumiaji kupata huduma, kufuatilia maombi yake na kusimamia akaunti yake bila usumbufu usio wa lazima.</p>
+        <p>Huduma zinazopatikana zinaweza kubadilika kadri mfumo unavyoboreshwa. Taarifa za huduma, gharama na masharti huonyeshwa kwenye ukurasa husika kabla ya kuendelea.</p>
+      </article>
+      <article className="about-purpose-card">
+        <div className="about-purpose-icon"><HeartHandshake size={25}/></div>
+        <span className="about-section-kicker">DHAMIRA YETU</span>
+        <h2>Kurahisisha huduma za kidijitali.</h2>
+        <p>Kutumia teknolojia kupunguza hatua zisizo za lazima, kuweka taarifa muhimu wazi na kuboresha namna watu wanavyopata huduma mtandaoni.</p>
+      </article>
+    </section>
+    <section className="about-highlights">
+      <div className="about-section-heading"><span className="about-section-kicker">SMARTSERVICESTZ EXPERIENCE</span><h2>Kwa nini utumie SmartServicesTZ?</h2><p>Vipengele vinavyokusaidia kuanza na kuendelea kwa urahisi.</p></div>
+      <div className="about-highlight-grid">{highlights.map(({ icon: ItemIcon, title, text }) => <article className="about-highlight-card" key={title}><span className="about-highlight-icon"><ItemIcon size={21}/></span><h3>{title}</h3><p>{text}</p></article>)}</div>
+    </section>
+    <section className="about-how">
+      <div><span className="about-section-kicker">JINSI YA KUANZA</span><h2>Hatua chache tu.</h2><p>Fungua akaunti, chagua huduma unayohitaji, soma maelekezo na fuata hatua zinazoonyeshwa. Huduma zinazohitaji tokeni zitaonyesha gharama kabla hujaendelea.</p></div>
+      <ol><li><b>01</b><span><strong>Jisajili au ingia</strong><small>Tumia taarifa za akaunti yako kuingia.</small></span></li><li><b>02</b><span><strong>Chagua huduma</strong><small>Angalia maelezo na masharti ya huduma husika.</small></span></li><li><b>03</b><span><strong>Endelea kwa maelekezo</strong><small>Wasilisha taarifa zinazohitajika na fuatilia ombi lako.</small></span></li></ol>
+    </section>
+    <section className="about-contact">
+      <div><span className="about-section-kicker">TUNGEpenda KUKUSAIDIA</span><h2>Unahitaji msaada?</h2><p>Wasiliana na timu ya msaada kupitia WhatsApp kwa maswali kuhusu matumizi ya mfumo.</p></div>
+      <a href="https://wa.me/255692287767?text=Habari%20SmartServicesTZ%2C%20nahitaji%20msaada." target="_blank" rel="noreferrer"><MessageCircle size={18}/> WASILIANA NASI</a>
+    </section>
+  </main>;
+}
+
 const tokenPaymentAds = [
   { lead: "JEEEEEEEE 🤔🤔🤔", title: "Wajua sasa unaweza kujilipia mwenyewe na kupata tokeni zako bila kumtafuta Admin? 😂", detail: "Lipa kwa simu yako, tokeni zinaingia baada ya malipo kuthibitishwa." },
   { lead: "USIMSUBIRI MTU TENA! 📲", title: "Tokeni zako ziko mikononi mwako — nunua muda wowote ukiwa popote! 😎", detail: "Chagua kifurushi, weka namba ya simu na fuata maelekezo." },
@@ -895,21 +944,17 @@ function TokenPaymentAd({ onClick }: { onClick: () => void }) {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     let hideTimer: ReturnType<typeof setTimeout>;
-    let nextTimer: ReturnType<typeof setTimeout>;
-    const showCurrent = () => {
-      setVisible(true);
-      hideTimer = setTimeout(() => setVisible(false), 8000);
-    };
-    const rotate = () => {
+    const hideCurrent = () => { hideTimer = setTimeout(() => setVisible(false), 8000); };
+    hideCurrent();
+    const nextTimer = setInterval(() => {
       setIndex((current) => (current + 1) % tokenPaymentAds.length);
-      showCurrent();
-      nextTimer = setTimeout(rotate, 30000);
-    };
-    showCurrent();
-    nextTimer = setTimeout(rotate, 30000);
+      setVisible(true);
+      clearTimeout(hideTimer);
+      hideCurrent();
+    }, 30000);
     return () => {
       clearTimeout(hideTimer);
-      clearTimeout(nextTimer);
+      clearInterval(nextTimer);
     };
   }, []);
   const ad = tokenPaymentAds[index];
@@ -1389,7 +1434,7 @@ export default function Home() {
   const effectiveServices = mergeServiceCatalogDefaults(services, catalogInitialized).filter((service) => service.slug === "soft-copy-nida" || !/nida|\bnin\b/i.test(`${service.name} ${service.slug}`));
   const selectedService = effectiveServices.find((item) => item.slug === serviceSlug && item.active !== false && item.isVisible !== false);
   const serviceFields = Array.isArray(selectedService?.fields) ? selectedService.fields : [];
-  const page = serviceSlug && authLoading ? <main className="portal-main"><Notice tone="info">Inathibitisha akaunti yako, subiri kidogo…</Notice></main> : serviceSlug && (!isAuthenticated || (totalTokenBalance <= 0 && serviceSlug !== "pata-till-mitandao-yote" && serviceSlug !== "access-lipa-number")) ? <main className="portal-main"><section className="license-form-card" style={{ maxWidth: 620, margin: "40px auto", textAlign: "center" }}><div className="token-icon" style={{ margin: "0 auto 16px" }}><WalletCards size={30} /></div><h1>{!isAuthenticated ? "Ingia kwanza" : "Huna tokeni"}</h1><p>{!isAuthenticated ? "Ingia kwenye akaunti yako ili kutumia huduma." : "Huna tokeni zilizobaki. Ongeza tokeni kwanza; huduma hazitafunguka mpaka salio liwe zaidi ya sifuri."}</p><button type="button" className="button button--green" onClick={() => { if (!isAuthenticated) window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); else navigate("/tokens"); }}>{!isAuthenticated ? "INGIA / JISAJILI SASA" : "ONGEZA TOKENI"}</button></section></main> : location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "soft-copy-nida" ? <SoftCopyNidaDemoPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "stika-lipa" ? <LipaQrStudioPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "pata-pocket-wifi-mabando" ? <PocketWifiPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "pata-till-mitandao-yote" ? <PataTillNetworksPage /> : serviceSlug === "sme-vodacom" ? <SmeVodacomPage /> : serviceSlug === "sme-airtel" ? <SmeAirtelPage /> : serviceSlug === "change-business-name-airtel-lipa" ? <ChangeBusinessNameAirtelLipaPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <Tin3Page /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : serviceSlug === "tengeneza-mkataba" ? <ContractMakerPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/my-documents" ? <HistoryPage mode="documents" /> : location === "/my-applications" ? <MyApplicationsPage /> : location === "/history" ? <HistoryPage mode="history" /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /></main> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} userName={user?.name} isAuthenticated={isAuthenticated} allServicesPage={location === "/services"} />;
+  const page = serviceSlug && authLoading ? <main className="portal-main"><Notice tone="info">Inathibitisha akaunti yako, subiri kidogo…</Notice></main> : serviceSlug && (!isAuthenticated || (totalTokenBalance <= 0 && serviceSlug !== "pata-till-mitandao-yote" && serviceSlug !== "access-lipa-number")) ? <main className="portal-main"><section className="license-form-card" style={{ maxWidth: 620, margin: "40px auto", textAlign: "center" }}><div className="token-icon" style={{ margin: "0 auto 16px" }}><WalletCards size={30} /></div><h1>{!isAuthenticated ? "Ingia kwanza" : "Huna tokeni"}</h1><p>{!isAuthenticated ? "Ingia kwenye akaunti yako ili kutumia huduma." : "Huna tokeni zilizobaki. Ongeza tokeni kwanza; huduma hazitafunguka mpaka salio liwe zaidi ya sifuri."}</p><button type="button" className="button button--green" onClick={() => { if (!isAuthenticated) window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); else navigate("/tokens"); }}>{!isAuthenticated ? "INGIA / JISAJILI SASA" : "ONGEZA TOKENI"}</button></section></main> : location.startsWith("/admin") ? <AdminPage /> : serviceSlug === "soft-copy-nida" ? <SoftCopyNidaDemoPage /> : serviceSlug === "kitambulisho-wakala" ? <AgentIdPage /> : serviceSlug === "stika-lipa" ? <LipaQrStudioPage /> : serviceSlug === "leseni-biashara" ? <BusinessLicensePage /> : serviceSlug === "pata-lipa-namba" ? <LipaNumberPage /> : serviceSlug === "pata-pocket-wifi-mabando" ? <PocketWifiPage /> : serviceSlug === "access-lipa-number" ? <AccessLipaNumberPage /> : serviceSlug === "pata-till-mitandao-yote" ? <PataTillNetworksPage /> : serviceSlug === "sme-vodacom" ? <SmeVodacomPage /> : serviceSlug === "sme-airtel" ? <SmeAirtelPage /> : serviceSlug === "change-business-name-airtel-lipa" ? <ChangeBusinessNameAirtelLipaPage /> : serviceSlug === "cheti-tin" ? <TINCertificatePage /> : serviceSlug === "verify-tin" ? <Tin3Page /> : serviceSlug === "sme-airtel-mkataba" ? <AirtelSmeContractPage /> : serviceSlug === "tengeneza-mkataba" ? <ContractMakerPage /> : ["stika-mawakala", "sticker-za-wakala", "sticker-wakala", "sticker-wakala-1"].includes(serviceSlug ?? "") ? <AgentStickerPage /> : serviceSlug && servicesLoading ? <main className="portal-main"><Notice tone="info">Inapakia huduma kutoka Firestore…</Notice></main> : selectedService ? serviceFields.length ? <DynamicServicePage service={selectedService as any} /> : <ServiceWorkspace service={selectedService} /> : location === "/my-documents" ? <HistoryPage mode="documents" /> : location === "/my-applications" ? <MyApplicationsPage /> : location === "/history" ? <HistoryPage mode="history" /> : location === "/account" ? <AccountPage /> : location === "/tokens" ? <main className="portal-main"><TokenCard /></main> : location === "/about" ? <AboutSmartServicesPage /> : <PortalHome search={search} onUse={handleUse} services={effectiveServices} userName={user?.name} isAuthenticated={isAuthenticated} allServicesPage={location === "/services"} />;
   const accessMode = resolveAccountAccessMode(user);
   const fullAccessBlocked = isAuthenticated && accessMode === "denied";
   const restrictionNotice = accessMode === "read_only"
