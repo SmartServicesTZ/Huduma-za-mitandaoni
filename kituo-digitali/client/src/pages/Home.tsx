@@ -1075,10 +1075,10 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const openCount = displayedServices.length - lockedCount;
   const layoutStyle = { "--home-cols": layout.homeColumns, "--home-tablet-cols": layout.homeTabletColumns, "--home-mobile-cols": layout.homeMobileColumns, "--section-gap": `${layout.sectionGap}px`, "--card-gap": `${layout.cardGap}px`, "--card-radius": `${layout.cardRadius}px`, "--card-padding": `${layout.cardPadding}px`, "--hero-radius": `${layout.heroRadius}px`, "--hero-padding": `${layout.heroPadding}px`, "--content-max": `${layout.contentMaxWidth}px` } as React.CSSProperties;
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
-    {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
-    <TokenCard />
+    <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />
 
-    {!allServicesPage && <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />}
+    {/* Wallet ya Tokeni inaonekana mara tu baada ya tangazo. */}
+    <TokenCard />
 
     {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
 
