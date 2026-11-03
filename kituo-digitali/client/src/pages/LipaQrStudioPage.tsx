@@ -222,8 +222,8 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <div className="lq-halotel-business">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</div>
         <footer className="lq-halotel-footer-brand">
           <strong>NILIPE</strong>
-          <span>HaloPesa kwa simu</span>
           <img src={halopesaLogo} alt="HaloPesa" />
+          <span>kwa simu</span>
         </footer>
       </section>
     </article>;
