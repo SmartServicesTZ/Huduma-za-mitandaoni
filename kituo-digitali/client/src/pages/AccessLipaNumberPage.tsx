@@ -138,7 +138,7 @@ export default function AccessLipaNumberPage() {
     if (selected !== "vodacom" && !phone.trim()) { toast.error("Namba ya simu inahitajika."); return; }
     if (selected === "airtel" && (!fullName.trim() || !contact.trim())) { toast.error("Jaza majina 2 au 3 kama yalivyo kwenye kitambulisho pamoja na namba ya mawasiliano."); return; }
     if (selected === "yas" && (!nida.trim() || !passportPath || !contact.trim() || !tinNumber.trim())) { toast.error("Yas inahitaji NIDA, TIN, picha ya kitambulisho na namba ya mawasiliano. Leseni ya biashara haihitajiki kwenye Access."); return; }
-    if (selected === "vodacom" && (!phone.trim() || !fullName.trim() || !email.trim() || !/^\\d{20}$/.test(nida.replace(/\\D/g, "")) || !contact.trim())) { toast.error("Jaza namba ya simu, majina 3, E-mail, NIDA yenye tarakimu 20 na namba ya mawasiliano."); return; }
+    if (selected === "vodacom" && (!phone.trim() || !fullName.trim() || !email.trim() || !/^\d{20}$/.test(nida.replace(/\D/g, "")) || !contact.trim())) { toast.error("Jaza namba ya simu, majina 3, E-mail, NIDA yenye tarakimu 20 na namba ya mawasiliano."); return; }
     if (selected === "yas" && !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(nida)) { toast.error("Namba ya NIDA haijakamilika."); return; }
     setSubmitting(true);
     try {
