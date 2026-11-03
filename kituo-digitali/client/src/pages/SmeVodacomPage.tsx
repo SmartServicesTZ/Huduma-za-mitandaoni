@@ -225,7 +225,7 @@ export default function SmeVodacomPage() {
           </div>
         </header>
 
-        
+
 
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[.7fr_1.3fr]">
           {/* MAELEKEZO */}
