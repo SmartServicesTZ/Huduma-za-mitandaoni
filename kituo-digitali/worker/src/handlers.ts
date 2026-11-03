@@ -2199,8 +2199,12 @@ export const completeBusinessLicense = callable(async (request) => {
     const before = profile.tokenBalanceOther === undefined ? Number(profile.tokenBalance ?? 0) : Number(profile.tokenBalanceOther);
     if (!Number.isSafeInteger(before) || before < tokenCost) throw new ApiError("failed-precondition", `Huna tokeni za huduma za kutosha kupakua hati hii. Unahitaji tokeni ${tokenCost}.`);
     const after = before - tokenCost;
-    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, updatedAt: FieldValue.serverTimestamp() });
-    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "huduma", type: "service_usage", amount: -tokenCost, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
+    const bonusBefore = Math.min(before, Math.max(0, Number(profile.tokenBalanceBonus ?? 0)));
+    const paymentBefore = Math.max(0, before - bonusBefore);
+    const bonusUsed = Math.min(bonusBefore, tokenCost);
+    const paymentUsed = tokenCost - bonusUsed;
+    transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, tokenBalanceBonus: bonusBefore - bonusUsed, tokenBalancePayment: paymentBefore - paymentUsed, updatedAt: FieldValue.serverTimestamp() });
+    transaction.create(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: uid, tokenType: "huduma", type: "service_usage", walletType: "mixed", bonusUsed, paymentUsed, amount: -tokenCost, balanceBefore: before, balanceAfter: after, reason: "Matumizi ya LESENI YA BIASHARA", serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed", applicationId: application.applicationId });
     transaction.create(usageRef, { usageId: usageRef.id, userId: uid, serviceId: "leseni-biashara", serviceName: "LESENI YA BIASHARA", applicationId: application.applicationId, tokensUsed: tokenCost, balanceBefore: before, balanceAfter: after, documentType: "BUSINESS_LICENSE_PDF", status: "COMPLETED", createdAt: FieldValue.serverTimestamp(), reference: ledgerRef.id });
     transaction.update(applicationRef, { status: "COMPLETED", documentGenerated: true, reference: ledgerRef.id, updatedAt: FieldValue.serverTimestamp() });
     recordAudit(transaction, uid, String(profile.role ?? "user"), "GENERATE_BUSINESS_LICENSE_PDF", "licenseApplication", String(application.applicationId), { tokenBalance: before }, { tokenBalance: after }, { serviceId: "leseni-biashara", tokensUsed: tokenCost, reference: ledgerRef.id });
