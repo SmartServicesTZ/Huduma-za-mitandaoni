@@ -59,7 +59,7 @@ export default function PataTillNetworksPage() {
     if (!firebaseUser?.uid) { setApplications([]); return; }
     return subscribeUserServiceApplications(firebaseUser.uid, rows => setApplications(rows.filter(row => row.serviceSlug === "pata-till-mitandao-yote")));
   }, [firebaseUser?.uid]);
-  const set = (key: string, value: string) => setValues(current => ({ ...current, [key]: value }));
+  const set = (key: string, value: string) => { const nextValue = key === "tinNumber" ? (() => { const digits = value.replace(/\D/g, "").slice(0, 9); return [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)].filter(Boolean).join("-"); })() : value; setValues(current => ({ ...current, [key]: nextValue })); };
   const resetForm = () => { setEditingApplicationId(null); setValues({}); setIdentityFile(null); setFloatConfirmed(false); setNoExistingLipa(false); setPaidConfirmed(false); setReference(""); setSubmittedPaymentApplication(null); setPaymentOrderId(""); setPaymentStatusMessage(""); setRequestNonce((value) => value + 1); };
   const editRejectedApplication = (app: ServiceApplication) => {
     const data = app.applicantData ?? {};
