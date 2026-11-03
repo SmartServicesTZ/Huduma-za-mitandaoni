@@ -878,6 +878,7 @@ function AccountPage() { return <AccountSettingsPage />; }
 
 
 function PortalHome({ search, onUse, services, userName, isAuthenticated, allServicesPage }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[]; userName?: string; isAuthenticated: boolean; allServicesPage: boolean }) {
+  const [, navigate] = useLocation();
   const [category, setCategory] = useState("Zote");
   const [showAppDownload, setShowAppDownload] = useState(false);
   useEffect(() => {
@@ -973,6 +974,17 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
+
+    {!allServicesPage && <section aria-label="Jilipi tokeni kwa simu" style={{ margin: "0 0 24px", padding: "clamp(18px, 3vw, 26px)", borderRadius: 20, border: "1px solid rgba(34,197,94,.28)", background: "linear-gradient(115deg,#082d25 0%,#075b43 58%,#123c65 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, flexWrap: "wrap", boxShadow: "0 12px 30px rgba(5,46,35,.16)" }}>
+      <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 999, background: "rgba(134,239,172,.16)", color: "#bbf7d0", fontSize: 10, fontWeight: 900, letterSpacing: ".08em" }}>MALIPO YA MOJA KWA MOJA</span>
+        <h2 style={{ margin: "10px 0 6px", fontSize: "clamp(19px,3vw,25px)", lineHeight: 1.2, fontWeight: 900 }}>JILIPIE TOKENI KWA SIMU YAKO!</h2>
+        <p style={{ margin: 0, maxWidth: 650, color: "rgba(255,255,255,.86)", fontSize: 13, lineHeight: 1.65 }}>Huhitaji kumtafuta Admin. Fungua sehemu ya Ongeza Tokeni, chagua kiasi na fuata maelekezo ya malipo. Tokeni zitaongezwa baada ya malipo kuthibitishwa.</p>
+      </div>
+      <button type="button" onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9, flex: "0 0 auto", minHeight: 46, padding: "0 18px", border: 0, borderRadius: 12, background: "#86efac", color: "#073b2c", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>
+        <CreditCard size={17} /> LIPA / ONGEZA TOKENI <ChevronRight size={16} />
+      </button>
+    </section>}
 
     {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
 
