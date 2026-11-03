@@ -2368,8 +2368,7 @@
 .lq-artboard[data-watermarked="true"] .lq-airtel-name,
 .lq-artboard[data-watermarked="true"] .lq-voda-name,
 .lq-artboard[data-watermarked="true"] .lq-halotel-business,
-.lq-artboard[data-watermarked="true"] .lq-merchant-name,
-.lq-artboard[data-watermarked="true"] .lq-merchant-box {
+.lq-artboard[data-watermarked="true"] .lq-merchant-name {
   position: relative !important;
   isolation: isolate !important;
 }
@@ -2379,8 +2378,7 @@
 .lq-artboard[data-watermarked="true"] .lq-airtel-name::after,
 .lq-artboard[data-watermarked="true"] .lq-voda-name::after,
 .lq-artboard[data-watermarked="true"] .lq-halotel-business::after,
-.lq-artboard[data-watermarked="true"] .lq-merchant-name::after,
-.lq-artboard[data-watermarked="true"] .lq-merchant-box::after {
+.lq-artboard[data-watermarked="true"] .lq-merchant-name::after {
   content: "SMARTSERVICESTZ";
   position: absolute;
   z-index: 20;
@@ -2405,3 +2403,6 @@
   color: rgba(225, 0, 20, .86);
   font-size: clamp(9px, 1.9cqw, 20px);
 }
+
+/* Wallet side balances keep the decorative orbit behind the three readable balances. */
+.wallet-fashion-balance > .wallet-fashion-orbit { position:absolute; right:12px; bottom:-20px; z-index:0; opacity:.24; pointer-events:none; }
