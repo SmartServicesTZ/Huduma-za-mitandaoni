@@ -420,7 +420,7 @@ export const consumeTokens = callable(async (request) => {
     // Kitambulisho cha wakala ni huduma ya kulipia hata kama rekodi ya zamani ina isFree=true/tokenCost=0.
     // Tumia bei ya admin ikiwa ni chanya; vinginevyo tokeni 2 ndizo gharama ya msingi.
     const isAgentId = serviceId === "kitambulisho-wakala" || serviceId.startsWith("kitambulisho-wakala-");
-    const configuredCost = Number(service.tokenCost);
+    const configuredCost = serviceId === "stika-mawakala" ? Math.max(3, Number(service.tokenCost)) : Number(service.tokenCost);
     if (service.isFree === true && configuredCost <= 0 && !isAgentId) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     // Bei ya kitambulisho cha wakala huamuliwa upande wa server kwa aina iliyochaguliwa.
     const agentType = typeof data.agentType === "string" ? data.agentType.trim().slice(0, 40) : "";
@@ -778,7 +778,7 @@ export const submitLipaApplication = callable(async (request) => {
     if (existingApplication.exists) throw new ApiError("already-exists", "Namba hii ya ombi tayari imetumika.");
     const previousLipaApplications = await transaction.get(db.collection("lipaApplications").where("userId", "==", uid).where("networkId", "==", networkId).limit(100));
     const normalizeLipaPhone = (value: unknown) => {
-      let digits = String(value ?? "").replace(/\\D/g, "");
+      let digits = String(value ?? "").replace(/\D/g, "");
       if (digits.startsWith("0")) digits = `255${digits.slice(1)}`;
       else if (digits.length === 9) digits = `255${digits}`;
       return digits;
@@ -1241,17 +1241,18 @@ export const createServiceApplication = callable(async (request) => {
       { fieldName: "airtelPhone", label: "Namba", type: "PHONE", required: true, order: 1 },
       { fieldName: "nidaNumber", label: "NIDA", type: "NIDA", required: true, order: 2 },
     ];
-    const phone = String(rawValues.airtelPhone ?? "").replace(/\\D/g, "");
-    const nida = String(rawValues.nidaNumber ?? "").replace(/\\D/g, "");
-    if (!/^0[67]\\d{8}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya Airtel si sahihi.");
-    if (!/^\\d{20}$/.test(nida)) throw new ApiError("invalid-argument", "NIDA lazima iwe na tarakimu 20.");
+    const phone = String(rawValues.airtelPhone ?? "").replace(/\D/g, "");
+    const nida = String(rawValues.nidaNumber ?? "").replace(/\D/g, "");
+    if (!/^0[67]\d{8}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya Airtel si sahihi.");
+    if (!/^\d{20}$/.test(nida)) throw new ApiError("invalid-argument", "NIDA lazima iwe na tarakimu 20.");
   }
   const applicantData = cleanApplicationValues(rawValues, fields, uid, applicationId, "serviceUploads");
   if (serviceSlug === "pata-till-mitandao-yote") {
     const network = tillNetwork;
+    if (network === "HALOTEL" && !/^\\d{3}-\\d{3}-\\d{3}$/.test(String(applicantData.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
     if (!["HALOTEL", "AIRTEL", "VODACOM"].includes(network)) throw new ApiError("invalid-argument", "Mtandao wa Till si sahihi.");
     applicantData.network = network;
-    applicantData.price = network === "AIRTEL" || network === "VODACOM" ? "TSh 200" : "BURE";
+    applicantData.price = network === "AIRTEL" ? "TSh 5,000" : network === "VODACOM" ? "TSh 35,000" : "BURE";
     applicantData.paymentStatus = network === "HALOTEL" ? "NOT_REQUIRED" : "UNPAID";
   }
   const finalPaths: string[] = [];
@@ -1273,7 +1274,7 @@ export const createServiceApplication = callable(async (request) => {
   const applicationRef = db.collection("serviceApplications").doc(applicationId);
   const duplicateFingerprint = applicationDuplicateFingerprint(`service:${serviceSlug}`, applicantData);
   const openRef = db.collection("serviceOpenApplications").doc(`${uid}_${serviceSlug}_${applicationId}`);
-  const tokenCost = Number(service.isFree === true ? 0 : service.tokenCost);
+  const tokenCost = Number(service.isFree === true ? 0 : (serviceSlug === "stika-mawakala" ? Math.max(3, Number(service.tokenCost)) : service.tokenCost));
   if (!Number.isSafeInteger(tokenCost) || tokenCost < 0 || tokenCost > 100000) throw new ApiError("failed-precondition", "Gharama ya huduma haijawekwa sawa.");
   try {
   const result = await db.runTransaction(async (transaction) => {
@@ -1948,7 +1949,7 @@ function normalizeLicenseRequest(data: LicenseRequest) {
     // Kata is optional; some business locations do not use a ward value in the submitted address.
     ward: titleCaseLocation(typeof data.ward === "string" ? data.ward.trim().slice(0, 100) : ""),
     // Kijiji / mtaa is descriptive only: accept any user-entered value and do not block license generation.
-    street: typeof data.street === "string" ? titleCaseLocation(data.street.trim().replace(/\\s+/g, " ").slice(0, 140)) : "",
+    street: typeof data.street === "string" ? titleCaseLocation(data.street.trim().replace(/\s+/g, " ").slice(0, 140)) : "",
     tin: cleanText(data.tin, "TIN", 40).toUpperCase(),
     licenseFee: Number(data.licenseFee),
   };
