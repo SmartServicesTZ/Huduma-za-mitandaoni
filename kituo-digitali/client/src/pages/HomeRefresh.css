@@ -951,3 +951,68 @@ html body{background:var(--ss-paper);color:var(--ss-ink);font-family:Inter,ui-sa
 .token-choice-help{margin:6px 0!important}
 .token-minimum-note{margin:8px 0 0!important;padding:9px 10px!important;border-radius:10px!important;background:#fff7ed!important;border:1px solid #fed7aa!important;color:#9a3412!important;font-size:11px!important;line-height:1.45!important}
 @media(max-width:620px){.token-choice-card{max-height:86dvh!important;padding:13px!important;border-radius:16px!important}.token-choice-head h3{font-size:17px!important}}
+
+
+/* Rotating self-service token payment awareness ads */
+.token-payment-ad{
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  min-height:148px;margin:0 0 24px;padding:clamp(17px,3vw,25px);overflow:hidden;
+  border:1px solid rgba(255,255,255,.28);border-radius:21px;
+  color:#fff;background:linear-gradient(112deg,#24105b 0%,#6d28d9 48%,#087f80 100%);
+  box-shadow:0 14px 34px rgba(71,35,145,.2);
+  transition:opacity .42s ease,transform .42s ease,max-height .42s ease,margin .42s ease,padding .42s ease;
+}
+.token-payment-ad.is-hidden{display:none}
+.token-payment-ad__copy{position:relative;z-index:1;flex:1 1 270px;min-width:0}
+.token-payment-ad__lead{display:inline-flex;align-items:center;padding:5px 10px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(255,255,255,.15);font-size:11px;font-weight:950;letter-spacing:.045em}
+.token-payment-ad__copy h2{margin:10px 0 6px;color:#fff;font-size:clamp(17px,2.5vw,23px);line-height:1.3;font-weight:950;letter-spacing:-.025em}
+.token-payment-ad__copy p{margin:0;color:rgba(255,255,255,.86);font-size:12px;line-height:1.55}
+.token-payment-ad__cta{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:43px;padding:0 15px;border:0;border-radius:12px;background:#fef08a;color:#422006;font-size:10px;font-weight:950;letter-spacing:.025em;cursor:pointer;box-shadow:0 7px 18px rgba(0,0,0,.18);transition:transform .18s ease,filter .18s ease}
+.token-payment-ad__cta:hover{transform:translateY(-2px);filter:brightness(1.04)}
+.token-payment-ad__spark{position:absolute;right:18%;top:-55px;width:190px;height:190px;border:1px solid rgba(255,255,255,.12);border-radius:50%;color:rgba(255,255,255,.18);font-size:110px;display:grid;place-items:center;pointer-events:none}
+.token-payment-ad__counter{position:absolute;right:12px;top:10px;color:rgba(255,255,255,.62);font-size:9px;font-weight:800}
+@media(max-width:560px){
+ .token-payment-ad{gap:13px;min-height:0;padding:17px 15px;border-radius:17px}
+ .token-payment-ad__copy{flex-basis:100%;padding-right:12px}
+ .token-payment-ad__copy h2{font-size:17px}
+ .token-payment-ad__copy p{font-size:11px}
+ .token-payment-ad__cta{width:100%;min-height:42px;font-size:10px}
+ .token-payment-ad__spark{right:-45px;top:-65px}
+}
+@media(prefers-reduced-motion:reduce){.token-payment-ad{transition:none}.token-payment-ad__cta{transition:none}}
+
+
+/* Public About SmartServicesTZ page */
+.about-smartservices{max-width:1180px}
+.about-hero{position:relative;overflow:hidden;padding:clamp(25px,5vw,54px);border-radius:26px;color:#fff;background:radial-gradient(circle at 85% 15%,rgba(45,212,191,.28),transparent 32%),linear-gradient(120deg,#101b45 0%,#342078 54%,#075e62 100%);box-shadow:0 18px 45px rgba(25,35,90,.2)}
+.about-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid rgba(255,255,255,.24);border-radius:99px;background:rgba(255,255,255,.1);font-size:10px;font-weight:900;letter-spacing:.12em}
+.about-hero h1{position:relative;z-index:1;margin:20px 0 12px;color:#fff;font-size:clamp(27px,5vw,48px);line-height:1.08;font-weight:950;letter-spacing:-.04em}
+.about-hero h1 span{color:#a7f3d0}
+.about-hero>p{position:relative;z-index:1;max-width:690px;margin:0;color:rgba(255,255,255,.84);font-size:clamp(13px,1.7vw,16px);line-height:1.8}
+.about-hero-actions{position:relative;z-index:2;display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.about-hero-actions button,.about-contact>a{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 17px;border:0;border-radius:12px;background:#a7f3d0;color:#063b36;font-size:11px;font-weight:950;text-decoration:none;cursor:pointer}
+.about-hero-actions .about-secondary-action{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff}
+.about-hero-orb{position:absolute;right:6%;bottom:-46px;width:220px;height:220px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.13);border-radius:50%;color:rgba(255,255,255,.12);font-size:54px;font-weight:950;box-shadow:0 0 0 25px rgba(255,255,255,.035),0 0 0 55px rgba(255,255,255,.025);pointer-events:none}
+.about-intro-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;margin-top:18px}
+.about-story-card,.about-purpose-card,.about-highlight-card,.about-how,.about-contact{border:1px solid var(--border,rgba(148,163,184,.22));border-radius:20px;background:var(--card,rgba(255,255,255,.04));padding:clamp(19px,3vw,28px)}
+.about-section-kicker{color:#10b981;font-size:10px;font-weight:950;letter-spacing:.13em}
+.about-story-card h2,.about-purpose-card h2,.about-section-heading h2,.about-how h2,.about-contact h2{margin:9px 0 10px;color:var(--foreground,#f8fafc);font-size:clamp(20px,3vw,27px);line-height:1.2;font-weight:900;letter-spacing:-.025em}
+.about-story-card p,.about-purpose-card p,.about-section-heading p,.about-how p,.about-contact p,.about-highlight-card p{margin:0 0 10px;color:var(--muted-foreground,#94a3b8);font-size:13px;line-height:1.75}
+.about-purpose-card{background:linear-gradient(145deg,rgba(16,185,129,.1),rgba(59,130,246,.08))}
+.about-purpose-icon,.about-highlight-icon{display:grid;place-items:center;width:44px;height:44px;margin-bottom:15px;border-radius:13px;background:rgba(16,185,129,.14);color:#34d399}
+.about-highlights{margin-top:34px}
+.about-section-heading{margin:0 0 16px}
+.about-highlight-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.about-highlight-card h3{margin:0 0 8px;color:var(--foreground,#f8fafc);font-size:14px;font-weight:850}
+.about-highlight-card p{margin:0;font-size:12px}
+.about-how{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}
+.about-how ol{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.about-how li{display:flex;align-items:center;gap:13px;padding:12px;border:1px solid var(--border,rgba(148,163,184,.18));border-radius:13px}
+.about-how li>b{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:11px;background:rgba(16,185,129,.13);color:#34d399;font-size:12px}
+.about-how li strong,.about-how li small{display:block}
+.about-how li strong{color:var(--foreground,#f8fafc);font-size:12px}
+.about-how li small{margin-top:4px;color:var(--muted-foreground,#94a3b8);font-size:11px}
+.about-contact{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;background:linear-gradient(110deg,rgba(16,185,129,.1),rgba(59,130,246,.08))}
+.about-contact p{margin-bottom:0}
+@media(max-width:760px){.about-intro-grid,.about-how{grid-template-columns:1fr}.about-highlight-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.about-hero-orb{right:-70px;opacity:.65}}
+@media(max-width:420px){.about-highlight-grid{grid-template-columns:1fr}.about-contact{align-items:flex-start;flex-direction:column}.about-contact>a{width:100%}.about-hero-orb{display:none}}

@@ -15,6 +15,7 @@ function Router() {
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/services"} component={Home} />
+        <Route path={"/about"} component={Home} />
         <Route path={"/nida-demo"} component={SoftCopyNidaDemoPage} />
         <Route path="/workbench" component={Home} />
         <Route path="/service/:slug" component={Home} />
