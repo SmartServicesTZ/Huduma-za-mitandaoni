@@ -2406,3 +2406,44 @@
 
 /* Wallet side balances keep the decorative orbit behind the three readable balances. */
 .wallet-fashion-balance > .wallet-fashion-orbit { position:absolute; right:12px; bottom:-20px; z-index:0; opacity:.24; pointer-events:none; }
+
+
+/* Make the STIKA ZA LIPA trial watermark prominent and cross the merchant-name area. */
+.lq-artboard[data-watermarked="true"] .lq-sticker-name::after,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::after,
+.lq-artboard[data-watermarked="true"] .lq-airtel-name::after,
+.lq-artboard[data-watermarked="true"] .lq-voda-name::after,
+.lq-artboard[data-watermarked="true"] .lq-halotel-business::after,
+.lq-artboard[data-watermarked="true"] .lq-merchant-name::after {
+  font-size: clamp(16px, 5.2cqw, 58px) !important;
+  font-weight: 1000 !important;
+  letter-spacing: .12em !important;
+  color: rgba(225, 0, 20, .88) !important;
+  transform: rotate(-22deg) !important;
+  text-shadow: 0 2px 0 rgba(255,255,255,.9), 0 -1px 0 rgba(255,255,255,.65) !important;
+}
+.lq-artboard[data-watermarked="true"] .lq-sticker-name::before,
+.lq-artboard[data-watermarked="true"] .lq-no-qr-name-row > strong::before,
+.lq-artboard[data-watermarked="true"] .lq-a4-field:nth-child(2) > strong::before,
+.lq-artboard[data-watermarked="true"] .lq-airtel-name::before,
+.lq-artboard[data-watermarked="true"] .lq-voda-name::before,
+.lq-artboard[data-watermarked="true"] .lq-halotel-business::before,
+.lq-artboard[data-watermarked="true"] .lq-merchant-name::before {
+  content: "SMARTSERVICESTZ";
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: rgba(225, 0, 20, .48);
+  font-size: clamp(14px, 4.2cqw, 46px);
+  font-weight: 1000;
+  letter-spacing: .1em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: rotate(22deg);
+  text-shadow: 0 1px 0 rgba(255,255,255,.75);
+}
