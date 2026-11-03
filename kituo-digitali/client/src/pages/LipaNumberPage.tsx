@@ -256,7 +256,7 @@ const defaultLipaNetworks: LipaNetworkConfig[] = [
 function visibleLipaFields(network: LipaNetworkConfig, values: ServiceFormValues): ServiceFormField[] {
   if (!/halotel/i.test(network.id)) return network.fields.filter((field) => {
     if (field.fieldName !== "tinNumber") return true;
-    return !(/vodacom|yas|tigo/i.test(network.id)) || values.hasTinNumber === "Ndiyo";
+    return !/vodacom/i.test(network.id) || values.hasTinNumber === "Ndiyo";
   });
   const businessType = String(values.businessType ?? "");
   return network.fields
