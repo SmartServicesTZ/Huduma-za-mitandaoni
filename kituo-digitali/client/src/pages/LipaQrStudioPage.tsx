@@ -299,6 +299,12 @@ const HowToPayArtboard = forwardRef<HTMLElement, { values: LipaCardValues; netwo
         </article>
         <div className="lq-guide-app-steps">
           <h3>Au tumia app ya {selected.note}</h3>
+          <div className="lq-guide-network-logos" aria-label="Nembo za Airtel, Yas, Vodacom na Halotel">
+            <span><img src={`${import.meta.env.BASE_URL}airtel-logo.png`} alt="Airtel" /><b>Airtel</b></span>
+            <span><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="Yas" /><b>Yas</b></span>
+            <span><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" /><b>Vodacom</b></span>
+            <span><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><b>Halotel</b></span>
+          </div>
           <div className="lq-app-step"><b>A</b><span><strong>Fungua app ya {selected.note}</strong><small>Chagua huduma ya Lipa kwa biashara au Tan QR.</small></span></div>
           <div className="lq-app-step"><b>B</b><span><strong>Scan QR Code</strong><small>Hakiki jina na kiasi kabla ya kuthibitisha.</small></span></div>
           <p>QR kwenye kadi hii inatokana na taarifa za biashara ulizojaza.</p>
@@ -323,7 +329,7 @@ export default function LipaQrStudioPage() {
   const [network, setNetwork] = useState<LipaNetwork>("voda");
   const [stickerVariant, setStickerVariant] = useState<StickerVariant>("qr");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
-  const [format, setFormat] = useState<FileFormat>("pdf");
+  const [format, setFormat] = useState<FileFormat>("png");
   const [airtelPaperSize, setAirtelPaperSize] = useState<"A5" | "A4">("A5");
   const selectedPaperSize = network === "airtel" ? airtelPaperSize : "A5";
   const outputWidthMm = selectedPaperSize === "A4" ? A4_WIDTH_MM : A5_WIDTH_MM;
@@ -545,15 +551,15 @@ export default function LipaQrStudioPage() {
         </div>}
         <div className="lq-section-heading"><span>MATOKEO</span></div>
         <div className="lq-choice-group" role="group" aria-label="Chagua kurasa za kadi">
-          <button type="button" aria-pressed={pageMode === "card-only"} className={pageMode === "card-only" ? "is-active" : ""} onClick={() => setPageMode("card-only")}>Kadi pekee</button>
-          <button type="button" aria-pressed={pageMode === "card-and-guide"} className={pageMode === "card-and-guide" ? "is-active" : ""} onClick={() => setPageMode("card-and-guide")}>Kadi + maelekezo</button>
+          <button type="button" aria-pressed={pageMode === "card-only"} className={`lq-mode-button lq-mode-button--sticker ${pageMode === "card-only" ? "is-active" : ""}`} onClick={() => setPageMode("card-only")}>STIKA PEKEE</button>
+          <button type="button" aria-pressed={pageMode === "card-and-guide"} className={`lq-mode-button lq-mode-button--guide ${pageMode === "card-and-guide" ? "is-active" : ""}`} onClick={() => setPageMode("card-and-guide")}>STIKA + MAELEKEZO</button>
         </div>
         <div className="lq-file-heading"><span>Aina ya faili</span></div>
         <div className="lq-choice-group" role="group" aria-label="Chagua aina ya faili">
           <button type="button" aria-pressed={format === "pdf"} className={format === "pdf" ? "is-active" : ""} onClick={() => setFormat("pdf")}>PDF</button>
-          <button type="button" aria-pressed={format === "png"} className={format === "png" ? "is-active" : ""} onClick={() => setFormat("png")}>PNG</button>
+          <button type="button" aria-pressed={format === "png"} className={`lq-format-png ${format === "png" ? "is-active" : ""}`} onClick={() => setFormat("png")}>PNG <small>INAPENDEKEZWA</small></button>
         </div>
-        <p className="lq-print-note">Ukubwa wa {selectedPaperSize} {selectedPaperSize === "A4" ? "(297 × 210 mm, landscape)" : "(148 × 210 mm, portrait)"}, ubora wa 300 DPI. Ukichagua kadi + maelekezo, PNG zitapakuliwa kama picha mbili tofauti; maelekezo yatabaki A5.</p>
+        <p className="lq-print-note">Ukubwa wa {selectedPaperSize} {selectedPaperSize === "A4" ? "(297 × 210 mm, landscape)" : "(148 × 210 mm, portrait)"}, ubora wa 300 DPI. Ukichagua STIKA + MAELEKEZO, PNG zitapakuliwa kama picha mbili tofauti.</p>
         <button type="button" className="lq-button lq-download-cta" onClick={() => void exportFile()} disabled={!readyToDownload}><Download size={17} />{exporting ? "Inaandaa faili..." : `PAKUA STIKA ${format.toUpperCase()}`}</button>
         <small className="lq-download-help">Jaza namba ya Lipa na jina la biashara; kisha bonyeza hapa kupakua PDF au PNG.</small>
       </section>

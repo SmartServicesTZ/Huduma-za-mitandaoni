@@ -2329,3 +2329,18 @@
   .lq-network-logo { width: 34px !important; }
   .lq-editor-panel { padding: 9px !important; }
 }
+
+/* Lipa QR Studio: high-contrast sticker modes and exportable official network logos. */
+.lq-choice-group .lq-mode-button,.lq-choice-group .lq-format-png { color:#102033; border:2px solid transparent; font-weight:950; letter-spacing:.01em; }
+.lq-choice-group .lq-mode-button--sticker { background:#18a957; color:#fff; }
+.lq-choice-group .lq-mode-button--guide { background:#1267d6; color:#fff; }
+.lq-choice-group .lq-mode-button--sticker.is-active { background:#087c3b; color:#fff; border-color:#064d27; box-shadow:0 0 0 3px #18a95755,0 3px 8px #10203325; }
+.lq-choice-group .lq-mode-button--guide.is-active { background:#08499e; color:#fff; border-color:#052e68; box-shadow:0 0 0 3px #1267d655,0 3px 8px #10203325; }
+.lq-choice-group .lq-format-png { background:#f3c600; color:#2e2500; }
+.lq-choice-group .lq-format-png.is-active { background:#d6a900; color:#171200; border-color:#856800; box-shadow:0 0 0 3px #f3c60066,0 3px 8px #10203325; }
+.lq-format-png small { display:block; margin-top:2px; font-size:8px; font-weight:1000; line-height:1; }
+.lq-guide-network-logos { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:7px; margin:10px 0 13px; }
+.lq-guide-network-logos span { display:flex; align-items:center; gap:4px; min-width:58px; padding:4px 6px; border:1px solid #e5e9ef; border-radius:8px; background:#fff; box-shadow:0 2px 5px #12243a12; }
+.lq-guide-network-logos img { display:block; width:27px; height:19px; object-fit:contain; }
+.lq-guide-network-logos b { color:#273548; font-size:8px; font-weight:900; }
+@media(max-width:700px) { .lq-choice-group .lq-mode-button,.lq-choice-group .lq-format-png { min-height:46px; padding:7px 8px; font-size:10px; } .lq-guide-network-logos { gap:4px; } .lq-guide-network-logos span { min-width:50px; padding:3px 4px; } .lq-guide-network-logos img { width:23px; height:17px; } .lq-guide-network-logos b { font-size:7px; } }
