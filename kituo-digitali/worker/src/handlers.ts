@@ -716,23 +716,31 @@ export const submitLipaApplication = callable(async (request) => {
   let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
   if (/halotel/i.test(networkId)) {
     fields = [
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", required: true, order: 1 },
-      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
-      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
-      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+      { fieldName: "businessType", label: "Aina ya Maombi", type: "DROPDOWN", options: ["Machinga", "Binafsi", "Company Limited"], required: true, order: 1 },
+      { fieldName: "fullName", label: "Majina Kamili ya Mteja", type: "TEXT", required: true, order: 2 },
+      { fieldName: "lipaNumber", label: "Namba ya simu ya Lipa Namba", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 3 },
+      { fieldName: "contactNumber", label: "Namba ya simu ya mawasiliano", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 4 },
+      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 5 },
+      { fieldName: "idType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["NIDA"], required: true, order: 6 },
+      { fieldName: "idNumber", label: "Namba ya Kitambulisho", type: "NIDA", required: true, order: 7 },
+      { fieldName: "businessName", label: "Jina la Biashara (Hiari)", type: "TEXT", required: false, order: 8 },
+      { fieldName: "idFile", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 20 },
+      { fieldName: "tinFile", label: "Cheti cha TIN", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 21 },
+      { fieldName: "licenseFile", label: "Leseni ya Biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 22 },
+      { fieldName: "registrationCertificate", label: "Certificate of Registration / Incorporation", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 23 },
     ];
   }
   if (/yas|tigo/i.test(networkId)) {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
-      if (name === "businessLicense") fields.splice(index, 1);
-      else if (name === "tinNumber" || name === "businessLicensePhoto") fields[index] = { ...fields[index], required: false };
+      if (["businessLicense", "hasBusinessLicense"].includes(name)) fields.splice(index, 1);
+      else if (name === "tinNumber") fields[index] = { ...fields[index], required: false };
+      else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
     if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
     if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
-    if (!hasField("hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 4 });
-    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
   }
   if (networkId.toLowerCase().includes("vodacom")) {
     fields = fields.filter((field) => !["businessName", "businessNameEvidence"].includes(String(field.fieldName ?? "")));
@@ -841,23 +849,31 @@ export const updateLipaApplication = callable(async (request) => {
   let fields = Array.isArray(config.fields) ? [...config.fields as Array<Record<string, unknown>>] : [];
   if (/halotel/i.test(networkId)) {
     fields = [
-      { fieldName: "phone", label: "Namba ya Simu", type: "PHONE", required: true, order: 1 },
-      { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
-      { fieldName: "idDocumentType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["National ID", "Voter ID", "Driving License", "Passport"], required: true, order: 3 },
-      { fieldName: "idDocument", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 4 },
+      { fieldName: "businessType", label: "Aina ya Maombi", type: "DROPDOWN", options: ["Machinga", "Binafsi", "Company Limited"], required: true, order: 1 },
+      { fieldName: "fullName", label: "Majina Kamili ya Mteja", type: "TEXT", required: true, order: 2 },
+      { fieldName: "lipaNumber", label: "Namba ya simu ya Lipa Namba", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 3 },
+      { fieldName: "contactNumber", label: "Namba ya simu ya mawasiliano", type: "TEXT", required: true, validation: "^(06|07)\\d{8}$", order: 4 },
+      { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 5 },
+      { fieldName: "idType", label: "Aina ya Kitambulisho", type: "DROPDOWN", options: ["NIDA"], required: true, order: 6 },
+      { fieldName: "idNumber", label: "Namba ya Kitambulisho", type: "NIDA", required: true, order: 7 },
+      { fieldName: "businessName", label: "Jina la Biashara (Hiari)", type: "TEXT", required: false, order: 8 },
+      { fieldName: "idFile", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 20 },
+      { fieldName: "tinFile", label: "Cheti cha TIN", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 21 },
+      { fieldName: "licenseFile", label: "Leseni ya Biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 22 },
+      { fieldName: "registrationCertificate", label: "Certificate of Registration / Incorporation", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 23 },
     ];
   }
   if (/yas|tigo/i.test(networkId)) {
     for (let index = fields.length - 1; index >= 0; index -= 1) {
       const name = String(fields[index].fieldName ?? "");
-      if (name === "businessLicense") fields.splice(index, 1);
-      else if (name === "tinNumber" || name === "businessLicensePhoto") fields[index] = { ...fields[index], required: false };
+      if (["businessLicense", "hasBusinessLicense"].includes(name)) fields.splice(index, 1);
+      else if (name === "tinNumber") fields[index] = { ...fields[index], required: false };
+      else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
     if (!hasField("hasTinNumber")) fields.push({ fieldName: "hasTinNumber", label: "Je, una namba ya TIN?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 2.8 });
     if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: false, order: 3 });
-    if (!hasField("hasBusinessLicense")) fields.push({ fieldName: "hasBusinessLicense", label: "Je, una leseni ya biashara?", type: "DROPDOWN", options: ["Ndiyo", "Hapana"], required: true, order: 4 });
-    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: false, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
+    if (!hasField("businessLicensePhoto")) fields.push({ fieldName: "businessLicensePhoto", label: "Picha ya leseni ya biashara", type: "IMAGE_UPLOAD", required: true, maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 5 });
   }
   if (networkId.toLowerCase().includes("vodacom") && !fields.some((field) => String(field.fieldName ?? "") === "additionalNotes")) fields.push({ fieldName: "additionalNotes", label: "Maelezo ya ziada (si lazima)", type: "TEXTAREA", required: false, order: 999 });
   const previous = recordValues(current.applicantData);
