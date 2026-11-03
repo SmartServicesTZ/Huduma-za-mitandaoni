@@ -235,7 +235,7 @@ export default function PataTillNetworksPage() {
     {paymentApplication && (() => {
       const data = paymentApplication.applicantData ?? {};
       const networkName = String(data.network ?? "").toUpperCase();
-      const amount = networkName === "AIRTEL" ? "TSh 5,000" : "TSh 40,000";
+      const amount = networkName === "AIRTEL" ? "TSh 5,000" : "TSh 35,000";
       const startPayment = async () => {
         if (!paymentApplication.applicationId) return;
         if (!/^\+?\d[\d ()-]{7,18}$/.test(paymentPhone.trim())) { setPaymentStatusMessage("Weka namba sahihi ya simu ya kulipia."); toast.error("Weka namba sahihi ya simu ya kulipia."); return; }
