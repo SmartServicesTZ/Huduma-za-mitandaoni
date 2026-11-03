@@ -7,9 +7,7 @@ import { createPocketWifiOrder } from "@/lib/firebase";
 import tanzaniaLocations from "@/data/tanzaniaLocations.json";
 
 type DeviceId = "wireless-300" | "olax-mt30" | "zte-k12" | "airtel-odu";
-type PlanId = "none" | "10mbps" | "20mbps" | "30mbps" | "50mbps" | "100mbps" | "airtel25" | "airtel40";
 type NetworkProvider = "vodacom" | "airtel";
-type SaleType = "device-only" | "device-and-plan";
 type LocationData = { regions: Record<string, { districts: Record<string, string[]> }> };
 
 const locations = tanzaniaLocations as LocationData;
@@ -19,16 +17,6 @@ const devices: Array<{ id: DeviceId; name: string; shortName: string; descriptio
   { id: "olax-mt30", name: "OLAX MT30 LTE Advanced Mobile CPE", shortName: "OLAX MT30 LTE Advanced", description: "Pocket router ya 4G LTE yenye betri ya 4000mAh na port ya LAN/WAN.", features: ["Betri 4000mAh", "LAN/WAN", "Hadi vifaa 10"], price: 100000, icon: Router, theme: "violet", image: "https://ecdn6-nc.globalso.com/upload/p/4099/image_other/2025-10/mt30-4g-mini-pocket-wifi-cpe-router-3.jpg", specs: [["Aina", "Pocket WiFi ya kubeba; pia ina LAN/WAN"], ["Mtandao", "SIM ya 4G LTE; bendi zinazotajwa ni B1/3/5/7/20/28/38/40/41"], ["Kasi", "Hadi 150Mbps LTE kulingana na maelezo ya mtengenezaji"], ["Vifaa vinavyounganishwa", "Hadi vifaa 10 kulingana na jedwali la specs la mtengenezaji"], ["Betri", "4000mAh; muda hutegemea matumizi na signal"], ["Umbali wa Wi-Fi", "Hakuna umbali rasmi wa mita uliothibitishwa; hutegemea kuta na mazingira"]] },
   { id: "zte-k12", name: "ZTE K12 Wi-Fi 6 Router", shortName: "ZTE K12 Wi-Fi 6", description: "Router ya 4G LTE yenye Wi-Fi 6 na antena mbili za nje; imekusudiwa kaya au ofisi yenye vifaa vingi.", features: ["Hadi vifaa 32", "Wi-Fi 6", "Antena 2 za nje"], price: 135000, icon: Radio, theme: "blue", image: "https://ae-pic-a1.aliexpress-media.com/kf/S0879f680ac844e228ac1279ae169dc1cW.jpg", specs: [["Aina", "Router ya 4G LTE ya kuweka sehemu moja; betri hutegemea toleo"], ["Mtandao", "4G LTE na 3G/HSPA; ulinganifu hutegemea bendi za kifaa na operator"], ["Kasi ya intaneti", "LTE Cat 4 hadi 150Mbps download / 50Mbps upload katika mazingira yanayofaa"], ["Wi-Fi", "Wi-Fi 6, 2.4GHz; kiwango cha Wi-Fi si sawa na kasi ya intaneti"], ["Vifaa vinavyounganishwa", "Hadi vifaa 32"], ["Betri", "Thibitisha ukubwa wa betri kwenye toleo litakalotumwa; specs za mtandaoni zinatofautiana"], ["Umbali wa Wi-Fi", "Hakuna umbali wa mita uliothibitishwa; hutegemea eneo, kuta na vizuizi"]] },
   { id: "airtel-odu", name: "Airtel 5G Home Wi-Fi — Smart Connect", shortName: "Airtel 5G Home Wi-Fi", description: "Intaneti ya nyumbani au ofisini kupitia Airtel Smart Connect 5G Router, yenye vifurushi vya Unlimited Data vya siku 30. Upatikanaji wa 5G hutegemea eneo.", features: ["Unlimited Data · siku 30", "Hadi vifaa 64", "2.4GHz / 5GHz*"], price: 100000, icon: Radio, theme: "red", image: "https://image.zoomtanzania.net/zoomtanzania/14067.jpg", specs: [["Kifaa", "Airtel 5G Smart Box / Smart Connect Router kwa matumizi ya nyumbani au ofisini."], ["Vifaa vinavyounganishwa", "Hadi vifaa 64 kwa wakati mmoja, kulingana na taarifa za Airtel 5G."], ["Wi-Fi", "Dual-band 2.4GHz/5GHz, LAN/Ethernet na betri ya akiba hutegemea modeli halisi; thibitisha vipengele hivyo kabla ya kununua."], ["Kasi na coverage", "Kasi halisi hutegemea signal, msongamano wa mtandao na eneo. 5G haipatikani kila mahali; kutumia 4G pale 5G haipo hutegemea modeli na bendi zinazoungwa mkono."], ["SmartConnect 25Mbps", "TSh 70,000 kwa siku 30 (bando). Kifurushi cha kuanzia kilichotangazwa: TSh 30,000 ada ya kuunganishwa + TSh 70,000 bando = TSh 100,000."], ["SmartConnect 30–40Mbps", "Bei zilizotajwa hutofautiana: takriban TSh 100,000–110,000 kwa siku 30. Thibitisha bei na upatikanaji na Airtel kabla ya malipo."], ["SmartConnect 100Mbps", "TSh 200,000 kwa siku 30 imetajwa kwenye taarifa ulizotoa; thibitisha upatikanaji wa kifurushi hiki katika eneo lako."], ["Jinsi ya kujiunga", "Nunua kupitia Airtel Shop au wakala. Usajili wa laini unaweza kuhitaji NIDA."], ["Jinsi ya kulipia bando", "Taarifa zilizotolewa: piga *149*99# → HBB/Router/MiFi → 5G Unlimited, kisha fuata maelekezo. Menyu inaweza kubadilika; hakikisha hatua za sasa kwa Airtel."], ["Chanzo rasmi cha 5G", "https://www.airtel.co.tz/tz/personal/support/get-5g?lang=sw"]] },
-];
-const plans: Array<{ id: PlanId; speed: string; description: string; price: number; provider: NetworkProvider }> = [
-  { id: "none", speed: "Kifaa pekee", description: "Bila bando", price: 0, provider: "vodacom" },
-  { id: "10mbps", speed: "Hadi 10Mbps", description: "Unlimited M2M · No Data Cap", price: 70000, provider: "vodacom" },
-  { id: "20mbps", speed: "Hadi 20Mbps", description: "Unlimited M2M · No Data Cap", price: 100000, provider: "vodacom" },
-  { id: "30mbps", speed: "Hadi 30Mbps", description: "Unlimited M2M · No Data Cap", price: 120000, provider: "vodacom" },
-  { id: "50mbps", speed: "Hadi 50Mbps", description: "Unlimited M2M · No Data Cap", price: 150000, provider: "vodacom" },
-  { id: "100mbps", speed: "Hadi 100Mbps", description: "Unlimited M2M · No Data Cap", price: 200000, provider: "vodacom" },
-  { id: "airtel25", speed: "SmartConnect 25Mbps · Unlimited", description: "Siku 30 · TSh 70,000 bando; kifurushi cha kuanzia pamoja na ada ya kuunganishwa ni TSh 100,000", price: 0, provider: "airtel" },
-  { id: "airtel40", speed: "SmartConnect 30–40Mbps · Unlimited", description: "Siku 30 · takriban TSh 100,000–110,000; thibitisha bei na upatikanaji na Airtel", price: 10000, provider: "airtel" },
 ];
 const money = (amount: number) => "TSh " + amount.toLocaleString("en-TZ") + (amount === 0 ? "" : "/=");
 
@@ -50,9 +38,7 @@ export default function PocketWifiPage() {
   const [busy, setBusy] = useState(false);
   const [lastOrderId, setLastOrderId] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<DeviceId>("wireless-300");
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>("none");
   const [provider, setProvider] = useState<NetworkProvider>("vodacom");
-  const [saleType, setSaleType] = useState<SaleType>("device-only");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [region, setRegion] = useState("");
@@ -64,10 +50,6 @@ export default function PocketWifiPage() {
   const districtNames = useMemo(() => Object.keys(locations.regions[matchedRegion]?.districts ?? {}).sort((a, b) => a.localeCompare(b, "sw")), [matchedRegion]);
   const wardNames = useMemo(() => locations.regions[matchedRegion]?.districts[district] ?? [], [matchedRegion, district]);
   const device = devices.find((item) => item.id === selectedDevice) ?? devices[0];
-  const plan = plans.find((item) => item.id === selectedPlan) ?? plans[0];
-  const visiblePlans = plans.filter((item) => item.provider === provider);
-  const total = device.price + (saleType === "device-only" ? 0 : plan.price);
-
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const name = fullName.trim();
@@ -98,14 +80,12 @@ export default function PocketWifiPage() {
       "Wilaya: " + district,
       "Kata: " + ward,
       "Kijiji/Mtaa: " + villageName,
-      "Aina ya mauzo: " + (saleType === "device-only" ? "Kifaa pekee bila bando" : "Kifaa pamoja na bando"),
-      "Kifaa: " + device.name,
-      "Bei ya kifaa: " + money(device.price),
-      "Mtandao: " + (provider === "airtel" ? "Airtel Smart Connect Unlimited" : "Vodacom Unlimited M2M"),
-      "Bando: " + (saleType === "device-only" ? "Hakuna - kifaa pekee" : plan.speed),
-      "Bei ya bando: " + money(saleType === "device-only" ? 0 : plan.price),
+      "Kifaa kinachoombwa: " + device.name,
+      "Mtandao unaopendelewa: " + (provider === "airtel" ? "Airtel Smart Connect" : "Vodacom Unlimited M2M"),
+      "Kifurushi: Kitaamuliwa na admin baada ya kukagua eneo na mahitaji ya mteja.",
+      "Bei na upatikanaji: Vithibitishwe na admin kabla ya malipo.",
+      "Bei ya kifaa iliyoonyeshwa kwenye tovuti: " + money(device.price),
       "Maelezo ya kifaa: " + device.specs.map(([label, value]) => label + ": " + value).join("; "),
-      "JUMLA KUU: " + money(total),
       deliveryRule,
     ].join("\n");
     const message = [
@@ -142,7 +122,7 @@ export default function PocketWifiPage() {
         <span className="ml-auto hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10 sm:flex"><Wifi size={24} className="text-cyan-200" /></span>
       </header>
       <div className="relative mx-auto grid max-w-6xl gap-4 px-4 pb-8 pt-1 sm:px-6 md:grid-cols-[1fr_auto] md:items-end lg:px-8 lg:pb-10">
-        <div><span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-200/10 px-3 py-1.5 text-xs font-semibold text-cyan-100"><Zap size={14} /> Router na bando kulingana na mahitaji yako</span><h2 className="mt-4 max-w-2xl text-2xl font-black leading-tight sm:text-4xl">Mtandao wako. <span className="text-cyan-200">Chaguo lako.</span></h2><p className="mt-3 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">Chagua kifaa, linganisha mabando na uone gharama yote kabla ya kutuma oda.</p></div>
+        <div><span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-200/10 px-3 py-1.5 text-xs font-semibold text-cyan-100"><Zap size={14} /> Router na bando kulingana na mahitaji yako</span><h2 className="mt-4 max-w-2xl text-2xl font-black leading-tight sm:text-4xl">Mtandao wako. <span className="text-cyan-200">Chaguo lako.</span></h2><p className="mt-3 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">Tuma ombi la Wi-Fi; admin atakushauri kifaa na kifurushi kinachofaa kulingana na eneo lako.</p></div>
         <div className="hidden items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 md:flex"><ShieldCheck size={25} className="text-cyan-200" /><div><p className="text-sm font-bold">Bei wazi</p><p className="text-xs text-blue-100">Jumla inajihesabu yenyewe</p></div></div>
       </div>
     </div>
@@ -157,7 +137,7 @@ export default function PocketWifiPage() {
               const DeviceIcon = item.icon;
               const active = selectedDevice === item.id;
               const iconStyle = item.theme === "cyan" ? "bg-cyan-50 text-cyan-700 ring-cyan-100" : item.theme === "violet" ? "bg-violet-50 text-violet-700 ring-violet-100" : "bg-blue-50 text-blue-700 ring-blue-100";
-              return <div role="button" tabIndex={0} key={item.id} aria-pressed={active} onClick={() => { setSelectedDevice(item.id); if (item.id === "airtel-odu") { setProvider("airtel"); setSaleType("device-and-plan"); setSelectedPlan("airtel25"); } }} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedDevice(item.id); if (item.id === "airtel-odu") { setProvider("airtel"); setSaleType("device-and-plan"); setSelectedPlan("airtel25"); } } }} className={"flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition sm:gap-4 sm:p-4 " + (active ? "border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/10" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50")}>
+              return <div role="button" tabIndex={0} key={item.id} aria-pressed={active} onClick={() => { setSelectedDevice(item.id); if (item.id === "airtel-odu") setProvider("airtel"); }} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedDevice(item.id); if (item.id === "airtel-odu") { setProvider("airtel"); setSaleType("device-and-plan"); setSelectedPlan("airtel25"); } } }} className={"flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-3 text-left transition sm:gap-4 sm:p-4 " + (active ? "border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/10" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50")}>
 <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-1 sm:h-28 sm:w-28"><img src={item.image} alt={item.shortName} loading="lazy" className="h-full w-full object-contain mix-blend-multiply" onError={(event) => { event.currentTarget.style.display = "none"; }} /><DeviceIcon size={0} className="hidden" /></span>
                 <span className="min-w-0 flex-1"><strong className="block text-sm font-extrabold leading-5 text-slate-900 sm:text-base">{item.shortName}</strong><span className="mt-1 block text-xs leading-5 text-slate-500">{item.description}</span><span className="mt-2 flex flex-wrap gap-1.5">{item.features.map(feature => <span key={feature} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">{feature}</span>)}</span><details className="mt-2 text-left" onClick={event => event.stopPropagation()}><summary className="cursor-pointer text-xs font-bold text-blue-700">Soma maelezo ya kifaa</summary><dl className="mt-2 space-y-2 rounded-xl bg-white p-2">{item.specs.map(([label, value]) => <div key={label} className="grid grid-cols-[105px_1fr] gap-2 text-xs"><dt className="font-bold text-slate-600">{label}</dt><dd className="text-slate-700">{value}</dd></div>)}</dl></details></span>
                 <span className="flex shrink-0 flex-col items-end gap-2"><strong className="text-xs font-black text-blue-800 sm:text-sm">{money(item.price)}</strong><span className={"flex h-5 w-5 items-center justify-center rounded-full border " + (active ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 text-transparent")}><Check size={12} /></span></span>
@@ -166,30 +146,21 @@ export default function PocketWifiPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-          <div className="mb-5 flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"><Radio size={21} /></span><div><p className="text-xs font-bold uppercase tracking-wider text-rose-600">Hatua ya 2</p><h2 className="text-lg font-extrabold">Chagua mtandao na bando</h2><p className="text-xs text-slate-500">{provider === "airtel" ? "Airtel Smart Connect · Unlimited" : "Vodacom Unlimited M2M · No Data Cap"}</p></div></div>
-          <div className="mb-4 grid grid-cols-2 gap-3"><button type="button" onClick={() => { setProvider("vodacom"); if (selectedDevice === "airtel-odu") setSelectedDevice("wireless-300"); setSelectedPlan("none"); setSaleType("device-only"); }} className={"rounded-2xl border p-3 text-left transition " + (provider === "vodacom" ? "border-red-300 bg-red-50 ring-2 ring-red-500/10" : "border-slate-200 bg-white")}><strong className="block text-sm font-extrabold text-slate-900">Vodacom Unlimited</strong><span className="mt-1 block text-xs text-slate-500">M2M · 10–100Mbps</span></button><button type="button" onClick={() => { setProvider("airtel"); setSelectedDevice("airtel-odu"); setSelectedPlan("airtel25"); setSaleType("device-and-plan"); }} className={"rounded-2xl border p-3 text-left transition " + (provider === "airtel" ? "border-red-500 bg-red-50 ring-2 ring-red-500/10" : "border-slate-200 bg-white")}><strong className="block text-sm font-extrabold text-slate-900">Airtel Unlimited</strong><span className="mt-1 block text-xs text-slate-500">Smart Connect 5G · ODU</span></button></div>
-          {provider === "vodacom" && <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <button type="button" aria-pressed={saleType === "device-only"} onClick={() => { setSaleType("device-only"); setSelectedPlan("none"); }} className={"rounded-2xl border p-4 text-left transition " + (saleType === "device-only" ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/10" : "border-slate-200 bg-white hover:border-emerald-200")}><strong className="block text-sm font-extrabold text-slate-900">WiFi pekee</strong><span className="mt-1 block text-xs text-slate-500">Nunua kifaa bila bando</span><span className="mt-2 block text-sm font-black text-emerald-700">Hakuna gharama ya bando</span></button>
-            <button type="button" aria-pressed={saleType === "device-and-plan"} onClick={() => { setSaleType("device-and-plan"); if (selectedPlan === "none") setSelectedPlan("10mbps"); }} className={"rounded-2xl border p-4 text-left transition " + (saleType === "device-and-plan" ? "border-rose-400 bg-rose-50 ring-2 ring-rose-400/10" : "border-slate-200 bg-white hover:border-rose-200")}><strong className="block text-sm font-extrabold text-slate-900">WiFi + Bando</strong><span className="mt-1 block text-xs text-slate-500">Chagua kifaa pamoja na bando</span><span className="mt-2 block text-sm font-black text-rose-700">Bei huongezwa kiotomatiki</span></button>
-          </div>}
-          {saleType === "device-and-plan" && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {visiblePlans.filter((item) => item.id !== "none").map((item) => {
-              const active = selectedPlan === item.id;
-              return <button type="button" key={item.id} aria-pressed={active} onClick={() => setSelectedPlan(item.id)} className={"relative flex min-h-[118px] flex-col items-start rounded-2xl border p-4 text-left transition " + (active ? "border-rose-400 bg-rose-50 ring-2 ring-rose-400/10" : "border-slate-200 bg-white hover:border-rose-200 hover:bg-rose-50/40")}>
-                {active && <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white"><Check size={12} /></span>}
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{item.id === "none" ? "Chaguo la 1" : "Vodacom M2M"}</span><strong className="mt-1 pr-5 text-base font-black text-slate-900">{item.speed}</strong><span className="mt-1 text-[11px] text-slate-500">{item.description}</span><span className={"mt-auto pt-3 text-sm font-black " + (item.price === 0 ? "text-slate-600" : "text-rose-600")}>{item.id === "airtel25" ? "Imejumuishwa" : money(item.price)}</span>
-              </button>;
-            })}
-          </div>}
-          <p className="mt-4 text-xs leading-5 text-slate-500">{provider === "airtel" ? "Bei zilizopatikana mtandaoni: kifurushi cha kuanzia TSh 100,000 (25Mbps hadi siku 30 pamoja na ada ya kuunganishwa). Thibitisha coverage ya 5G na bei ya sasa kwa Airtel kabla ya malipo." : "Kasi halisi hutegemea coverage, signal, msongamano wa mtandao na masharti ya bando."}</p>
+        <section className="rounded-3xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
+          <div className="mb-4 flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"><Radio size={21} /></span><div><p className="text-xs font-bold uppercase tracking-wider text-rose-600">Hatua ya 2</p><h2 className="text-lg font-extrabold">Mtandao unaopendelea</h2><p className="text-xs text-slate-500">Chagua mtandao tu; hakuna kifurushi cha kuchagua hapa.</p></div></div>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => { setProvider("vodacom"); if (selectedDevice === "airtel-odu") setSelectedDevice("wireless-300"); }} className={"rounded-2xl border p-3 text-left transition " + (provider === "vodacom" ? "border-red-300 bg-red-50 ring-2 ring-red-500/10" : "border-slate-200 bg-white")}><strong className="block text-sm font-extrabold text-slate-900">Vodacom Unlimited</strong><span className="mt-1 block text-xs text-slate-500">M2M · router ya 4G</span></button>
+            <button type="button" onClick={() => { setProvider("airtel"); setSelectedDevice("airtel-odu"); }} className={"rounded-2xl border p-3 text-left transition " + (provider === "airtel" ? "border-red-500 bg-red-50 ring-2 ring-red-500/10" : "border-slate-200 bg-white")}><strong className="block text-sm font-extrabold text-slate-900">Airtel Smart Connect</strong><span className="mt-1 block text-xs text-slate-500">Home Wi-Fi · 5G kulingana na coverage</span></button>
+          </div>
+          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/70 p-4"><p className="text-sm font-bold text-blue-900">Kifurushi kitaamuliwa na admin</p><p className="mt-1 text-xs leading-5 text-blue-800">Baada ya kutuma ombi, tutakagua eneo lako na mahitaji yako, kisha tutakujulisha kasi, kifurushi, bei na upatikanaji kabla hujalipia.</p></div>
         </section>
+
       </div>
 
       <aside className="space-y-5 lg:sticky lg:top-4">
         <section className="overflow-hidden rounded-[1.75rem] border border-white bg-white shadow-[0_18px_55px_-30px_rgba(15,23,42,.4)]">
-          <div className="bg-gradient-to-r from-[#0b3270] to-[#087e9c] p-5 text-white sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">Muhtasari wa oda yako</p><div className="mt-3 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"><ShoppingBag size={23} /></span><div className="min-w-0"><h3 className="font-extrabold">{device.shortName}</h3><p className="mt-1 text-xs text-blue-100">{saleType === "device-only" ? "Bila bando" : plan.speed + " · Unlimited M2M"}</p></div></div></div>
-          <div className="space-y-3 p-5 sm:p-6"><div className="flex items-center justify-between gap-3 text-sm"><span className="text-slate-500">Bei ya kifaa</span><strong>{money(device.price)}</strong></div><div className="flex items-center justify-between gap-3 text-sm"><span className="text-slate-500">Bei ya bando</span><strong>{money(saleType === "device-only" ? 0 : plan.price)}</strong></div><div className="border-t border-dashed border-slate-200 pt-4"><p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">JUMLA KUU</p><p className="mt-1 text-3xl font-black tracking-tight text-blue-800">{money(total)}</p><p className="mt-1 text-[11px] text-slate-500">Bei ya kifaa + bei ya bando ulilochagua.</p></div></div>
+          <div className="bg-gradient-to-r from-[#0b3270] to-[#087e9c] p-5 text-white sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">Muhtasari wa ombi lako</p><div className="mt-3 flex items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10"><ShoppingBag size={23} /></span><div className="min-w-0"><h3 className="font-extrabold">{device.shortName}</h3><p className="mt-1 text-xs text-blue-100">{provider === "airtel" ? "Airtel Smart Connect" : "Vodacom Unlimited M2M"}</p></div></div></div>
+          <div className="space-y-3 p-5 sm:p-6"><div className="flex items-center justify-between gap-3 text-sm"><span className="text-slate-500">Bei ya kifaa (makadirio)</span><strong>{money(device.price)}</strong></div><div className="border-t border-dashed border-slate-200 pt-4"><p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">KIFURUSHI</p><p className="mt-1 text-lg font-black text-blue-800">Admin atakushauri</p><p className="mt-1 text-[11px] text-slate-500">Bei ya kifurushi na gharama ya mwisho vitathibitishwa baada ya ombi.</p></div></div>
         </section>
 
         <form onSubmit={submitOrder} className="space-y-4 rounded-[1.75rem] border border-white bg-white p-5 shadow-[0_18px_55px_-30px_rgba(15,23,42,.4)] sm:p-6">
@@ -207,6 +178,6 @@ export default function PocketWifiPage() {
         </form>
       </aside>
     </div>
-    <footer className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 pb-8 text-center text-xs text-slate-500 sm:px-6"><CheckCircle2 size={15} className="shrink-0 text-emerald-600" /> Chaguo na gharama zote zinaonekana kabla ya kutuma oda.</footer>
+    <footer className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 pb-8 text-center text-xs text-slate-500 sm:px-6"><CheckCircle2 size={15} className="shrink-0 text-emerald-600" /> Tuma ombi kwanza; admin atathibitisha kifurushi, bei na upatikanaji kabla ya malipo.</footer>
   </main>;
 }
