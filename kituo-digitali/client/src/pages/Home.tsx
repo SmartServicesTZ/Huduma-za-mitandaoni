@@ -877,6 +877,54 @@ function AdminPage() { return <AdminDashboard />; }
 function AccountPage() { return <AccountSettingsPage />; }
 
 
+const tokenPaymentAds = [
+  { lead: "JEEEEEEEE 🤔🤔🤔", title: "Wajua sasa unaweza kujilipia mwenyewe na kupata tokeni zako bila kumtafuta Admin? 😂", detail: "Lipa kwa simu yako, tokeni zinaingia baada ya malipo kuthibitishwa." },
+  { lead: "USIMSUBIRI MTU TENA! 📲", title: "Tokeni zako ziko mikononi mwako — nunua muda wowote ukiwa popote! 😎", detail: "Chagua kifurushi, weka namba ya simu na fuata maelekezo." },
+  { lead: "HEBU TUULIZE SWALI 😂", title: "Kwa nini umtumie mtu ujumbe akuongezee tokeni wakati unaweza kujiongezea mwenyewe? 🤭", detail: "Huduma ya malipo ya moja kwa moja ipo tayari kwenye akaunti yako." },
+  { lead: "HII NI HABARI NJEMA! 🎉", title: "Umeishiwa tokeni? Hakuna haja ya kusubiri — jiongezee mwenyewe kwa simu!", detail: "Malipo yakithibitishwa, tokeni zinaongezwa kwenye wallet yako." },
+  { lead: "BONYEZA TU, MALIZA! ⚡", title: "Hatua chache tu: chagua tokeni, weka namba, kisha thibitisha malipo. Rahisi hivyo!", detail: "Mitandao ya Airtel, Vodacom, Halotel na Yas inatumika." },
+  { lead: "USIKAE NJE YA HUDUMA 😅", title: "Salio likiisha, usiache kazi katikati — ongeza tokeni moja kwa moja!", detail: "Fungua sehemu ya Ongeza Tokeni uanze." },
+  { lead: "WEWE NDIYE BOSI! 👑", title: "Simamia tokeni zako mwenyewe. Hakuna foleni ya kumtafuta Admin!", detail: "Nunua kifurushi kinachokufaa kwa kutumia simu yako." },
+  { lead: "UNAJUA SIRI HII? 🤫", title: "Unaweza kuongeza tokeni hata ukiwa nyumbani, kazini au safarini!", detail: "Unachohitaji ni akaunti yako na simu ya kufanya malipo." },
+  { lead: "DAKIKA ZA KUSUBIRI ZIMEPUNGUA! 🚀", title: "Anzisha ombi la malipo moja kwa moja kwenye simu yako — kisha kagua hali yake.", detail: "Tokeni huongezwa baada ya mfumo kuthibitisha malipo." },
+  { lead: "RAFIKI, USISAHAU HILI! 💚", title: "Kabla hujaanza huduma, hakikisha una tokeni za kutosha. Jiongezee sasa!", detail: "Gusa hapa ujifunze namna ya kulipia hatua kwa hatua." },
+];
+
+function TokenPaymentAd({ onClick }: { onClick: () => void }) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout>;
+    let nextTimer: ReturnType<typeof setTimeout>;
+    const showCurrent = () => {
+      setVisible(true);
+      hideTimer = setTimeout(() => setVisible(false), 8000);
+    };
+    const rotate = () => {
+      setIndex((current) => (current + 1) % tokenPaymentAds.length);
+      showCurrent();
+      nextTimer = setTimeout(rotate, 30000);
+    };
+    showCurrent();
+    nextTimer = setTimeout(rotate, 30000);
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(nextTimer);
+    };
+  }, []);
+  const ad = tokenPaymentAds[index];
+  return <section className={`token-payment-ad ${visible ? "is-visible" : "is-hidden"}`} aria-label="Tangazo la malipo ya tokeni" aria-live="polite" aria-hidden={!visible}>
+    <div className="token-payment-ad__spark" aria-hidden="true">✦</div>
+    <div className="token-payment-ad__copy">
+      <span className="token-payment-ad__lead">{ad.lead}</span>
+      <h2>{ad.title}</h2>
+      <p>{ad.detail}</p>
+    </div>
+    <button type="button" className="token-payment-ad__cta" onClick={onClick}>GUSA HAPA KWA MAELEZO ZAIDI <span aria-hidden="true">→</span></button>
+    <span className="token-payment-ad__counter">{index + 1}/10</span>
+  </section>;
+}
+
 function PortalHome({ search, onUse, services, userName, isAuthenticated, allServicesPage }: { search: string; onUse: (service: ServiceCatalogItem) => void; services: ServiceCatalogItem[]; userName?: string; isAuthenticated: boolean; allServicesPage: boolean }) {
   const [, navigate] = useLocation();
   const [category, setCategory] = useState("Zote");
@@ -975,16 +1023,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     {/* Mwanzo sasa unaanza moja kwa moja na Wallet ya Tokeni kama ilivyoombwa. */}
     <TokenCard />
 
-    {!allServicesPage && <section aria-label="Jilipi tokeni kwa simu" style={{ margin: "0 0 24px", padding: "clamp(18px, 3vw, 26px)", borderRadius: 20, border: "1px solid rgba(34,197,94,.28)", background: "linear-gradient(115deg,#082d25 0%,#075b43 58%,#123c65 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, flexWrap: "wrap", boxShadow: "0 12px 30px rgba(5,46,35,.16)" }}>
-      <div style={{ flex: "1 1 260px", minWidth: 0 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 999, background: "rgba(134,239,172,.16)", color: "#bbf7d0", fontSize: 10, fontWeight: 900, letterSpacing: ".08em" }}>MALIPO YA MOJA KWA MOJA</span>
-        <h2 style={{ margin: "10px 0 6px", fontSize: "clamp(19px,3vw,25px)", lineHeight: 1.2, fontWeight: 900 }}>JILIPIE TOKENI KWA SIMU YAKO!</h2>
-        <p style={{ margin: 0, maxWidth: 650, color: "rgba(255,255,255,.86)", fontSize: 13, lineHeight: 1.65 }}>Huhitaji kumtafuta Admin. Fungua sehemu ya Ongeza Tokeni, chagua kiasi na fuata maelekezo ya malipo. Tokeni zitaongezwa baada ya malipo kuthibitishwa.</p>
-      </div>
-      <button type="button" onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9, flex: "0 0 auto", minHeight: 46, padding: "0 18px", border: 0, borderRadius: 12, background: "#86efac", color: "#073b2c", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>
-        <CreditCard size={17} /> LIPA / ONGEZA TOKENI <ChevronRight size={16} />
-      </button>
-    </section>}
+    {!allServicesPage && <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />}
 
     {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
 
