@@ -686,7 +686,7 @@ function cleanApplicationValues(values: Record<string, unknown>, fields: Array<R
     if (type === "NUMBER" && !Number.isFinite(Number(raw))) throw new ApiError("invalid-argument", `${label} iwe namba sahihi.`);
     if (type === "PHONE" && !/^\+?[0-9][0-9 ()-]{6,18}$/.test(raw)) throw new ApiError("invalid-argument", `${label} si namba sahihi ya simu.`);
     if (type === "TIN" && !/^\d{3}-\d{3}-\d{3}$/.test(raw)) throw new ApiError("invalid-argument", `${label} itumie muundo 123-123-123.`);
-    if (type === "NIDA" && !/^\d{8}-\d{5}-\d{5}-\d{2}$/.test(raw)) throw new ApiError("invalid-argument", `${label} itumie muundo 20068517-27520-00001-22.`);
+    if (type === "NIDA" && !/^(?:\d{20}|\d{8}-\d{5}-\d{5}-\d{2})$/.test(raw)) throw new ApiError("invalid-argument", `${label} itumie muundo 20068517-27520-00001-22.`);
     if (type === "DROPDOWN" && !(Array.isArray(field.options) && field.options.includes(raw))) throw new ApiError("invalid-argument", `Chagua ${label.toLowerCase()} kwenye orodha.`);
     if (type === "DATE" && (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(`${raw}T00:00:00Z`)))) throw new ApiError("invalid-argument", `${label} si tarehe sahihi.`);
     if (typeof field.validation === "string" && field.validation.length <= 200) {
