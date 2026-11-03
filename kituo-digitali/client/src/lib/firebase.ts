@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, getBytes, deleteObject } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   createUserWithEmailAndPassword,
@@ -75,111 +75,91 @@ export type SavedUserDocument = {
   sourceRef?: string;
 };
 
-/** Hifadhi hati iliyokwisha tengenezwa kwenye akaunti ya mmiliki kwa saa 24. */
+async function userDocumentWorkerRequest(path: string, init: RequestInit = {}) {
+  await authPersistenceReady;
+  const user = firebaseAuth.currentUser;
+  if (!user) throw Object.assign(new Error("Ingia kwanza ili kufikia HATI ZANGU."), { code: "unauthenticated" });
+  let token = await user.getIdToken();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("Accept", "application/json");
+    const response = await fetch(`${workerBaseUrl()}${path}`, { ...init, headers });
+    if (response.status === 401 && attempt === 0) {
+      token = await user.getIdToken(true);
+      continue;
+    }
+    return response;
+  }
+  throw new Error("Imeshindikana kuthibitisha akaunti. Ingia tena.");
+}
+
+/** Hifadhi hati kwenye Cloudflare R2 na metadata kwenye Firestore kwa saa 24. */
 export async function saveUserDocument(
   blob: Blob,
   name: string,
   type: string,
   metadata: { source?: string; sourceRef?: string } = {},
 ): Promise<SavedUserDocument> {
-  await authPersistenceReady;
-  const user = firebaseAuth.currentUser;
-  if (!user) throw Object.assign(new Error("Ingia kwanza ili kuhifadhi hati zako."), { code: "unauthenticated" });
   if (!(blob instanceof Blob) || blob.size <= 0) throw new Error("Hati tupu haiwezi kuhifadhiwa.");
   if (blob.size > 10 * 1024 * 1024) throw new Error("Hati imezidi ukubwa wa MB 10.");
-
   const safeName = name.normalize("NFKD").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(-110) || "smartservicestz-document";
-  const mimeType = blob.type || (type.toUpperCase() === "PDF" ? "application/pdf" : "application/octet-stream");
   const nameKey = safeName.length <= 36 ? safeName : `${safeName.slice(0, 20)}-${safeName.slice(-15)}`;
   const stableId = metadata.sourceRef
     ? `${metadata.sourceRef.slice(0, 36)}-${nameKey}`.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/-+/g, "-").slice(0, 80)
-    : "";
-  let recordRef = stableId.length >= 16
-    ? doc(firestore, "userDocuments", stableId)
-    : doc(collection(firestore, "userDocuments"));
-  let storagePath = `users/${user.uid}/documents/${recordRef.id}/${safeName}`;
-  let fileRef = storageRef(firebaseStorage, storagePath);
-
-  // Re-tries of the same generated file reuse its saved record instead of
-  // creating duplicate entries or uploading a second copy.
-  if (stableId.length >= 16) {
-    const existing = await getDocFromServer(recordRef);
-    const data = existing.data();
-    if (existing.exists() && data?.ownerUid === user.uid && data?.storagePath === storagePath
-      && Number(data?.size) === blob.size && data?.mimeType === mimeType
-      && Number(data?.expiresAt) > Date.now()) {
-      return { id: recordRef.id, ...data } as SavedUserDocument;
-    }
-    if (existing.exists()) {
-      recordRef = doc(collection(firestore, "userDocuments"));
-      storagePath = `users/${user.uid}/documents/${recordRef.id}/${safeName}`;
-      fileRef = storageRef(firebaseStorage, storagePath);
-    }
-  }
-
-  await uploadBytes(fileRef, blob, { contentType: mimeType, cacheControl: "private,no-store,max-age=0" });
-  try {
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-    await setDoc(recordRef, {
-      ownerUid: user.uid,
-      name: safeName,
-      type: type.slice(0, 30),
-      mimeType,
-      storagePath,
-      size: blob.size,
-      createdAt: serverTimestamp(),
-      expiresAt,
-      source: (metadata.source ?? "service").slice(0, 80),
-      ...(metadata.sourceRef ? { sourceRef: metadata.sourceRef.slice(0, 160) } : {}),
-    });
-    const verified = await getDocFromServer(recordRef);
-    const saved = verified.data();
-    if (!verified.exists() || saved?.ownerUid !== user.uid || saved?.storagePath !== storagePath || Number(saved?.size) !== blob.size) {
-      throw new Error("Hati imepakiwa lakini haikuthibitishwa kwenye akaunti yako. Jaribu tena.");
-    }
-    return { id: recordRef.id, ...saved } as SavedUserDocument;
-  } catch (error) {
-    await deleteObject(fileRef).catch(() => undefined);
+    : crypto.randomUUID().replaceAll("-", "");
+  const documentId = stableId.length >= 16 ? stableId : crypto.randomUUID().replaceAll("-", "");
+  const form = new FormData();
+  form.append("documentId", documentId);
+  form.append("name", safeName);
+  form.append("type", type.slice(0, 30));
+  form.append("source", (metadata.source ?? "service").slice(0, 80));
+  if (metadata.sourceRef) form.append("sourceRef", metadata.sourceRef.slice(0, 160));
+  form.append("file", blob, safeName);
+  const response = await userDocumentWorkerRequest("/user-documents", { method: "POST", body: form });
+  const result = await response.json().catch(() => null) as { data?: SavedUserDocument; error?: { message?: string; code?: string } } | null;
+  if (!response.ok || !result?.data) {
+    const error = new Error(result?.error?.message ?? `Hati haikuhifadhiwa (${response.status}). Jaribu tena.`);
+    Object.assign(error, { code: result?.error?.code ?? "document/save-failed" });
     throw error;
   }
+  return result.data;
 }
 
-/** Orodhesha hati za mtumiaji aliyeingia pekee; upatikanaji wake ni saa 24. */
+/** Orodhesha hati za mmiliki aliyeingia pekee; orodha hii hupakiwa kila unapofungua HATI ZANGU. */
 export function subscribeUserDocuments(
   uid: string,
   callback: (items: SavedUserDocument[]) => void,
   onError?: (error: unknown) => void,
 ) {
-  if (!firebaseAuth.currentUser || firebaseAuth.currentUser.uid !== uid) {
-    callback([]);
-    return () => undefined;
-  }
-  const documentsQuery = query(collection(firestore, "userDocuments"), where("ownerUid", "==", uid), limit(100));
-  return onSnapshot(documentsQuery, (snapshot) => {
-    const now = Date.now();
-    const items = snapshot.docs
-      .map((item) => ({ id: item.id, ...item.data() } as SavedUserDocument))
-      .filter((item) => Number(item.expiresAt) > now)
-      .sort((a, b) => {
-        const millis = (value: unknown) => value && typeof value === "object" && "toMillis" in value && typeof (value as { toMillis?: unknown }).toMillis === "function"
-          ? (value as { toMillis: () => number }).toMillis()
-          : new Date(String(value ?? 0)).getTime();
-        return millis(b.createdAt) - millis(a.createdAt);
-      });
-    callback(items);
-  }, onError);
+  let cancelled = false;
+  void (async () => {
+    try {
+      await authPersistenceReady;
+      if (!firebaseAuth.currentUser || firebaseAuth.currentUser.uid !== uid) { callback([]); return; }
+      const response = await userDocumentWorkerRequest("/user-documents", { method: "GET" });
+      const result = await response.json().catch(() => null) as { data?: SavedUserDocument[]; error?: { message?: string } } | null;
+      if (!response.ok || !result || !Array.isArray(result.data)) throw new Error(result?.error?.message ?? "Hati zako hazijapakiwa.");
+      if (!cancelled) callback(result.data);
+    } catch (error) { if (!cancelled) onError?.(error); }
+  })();
+  return () => { cancelled = true; };
 }
 
-/** Soma hati kutoka Firebase Storage kwa uthibitisho wa UID na muda wa upatikanaji. */
+/** Pakua hati kutoka R2 kwa uthibitisho wa UID na muda wa upatikanaji. */
 export async function getUserDocumentBlob(item: SavedUserDocument): Promise<Blob> {
   await authPersistenceReady;
   const uid = firebaseAuth.currentUser?.uid;
-  if (!uid || item.ownerUid !== uid || !item.storagePath.startsWith(`users/${uid}/documents/`)) {
+  if (!uid || item.ownerUid !== uid || !item.storagePath.startsWith(`userDocuments/${uid}/`)) {
     throw Object.assign(new Error("Huna ruhusa ya kufungua hati hii."), { code: "permission-denied" });
   }
   if (Number(item.expiresAt) <= Date.now()) throw new Error("Muda wa hati hii umeisha. Tengeneza hati upya ikiwa huduma inaruhusu.");
-  const bytes = await getBytes(storageRef(firebaseStorage, item.storagePath), 10 * 1024 * 1024);
-  return new Blob([bytes], { type: item.mimeType || "application/octet-stream" });
+  const response = await userDocumentWorkerRequest(`/user-documents/${encodeURIComponent(item.id)}`, { method: "GET" });
+  if (!response.ok) {
+    const result = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+    throw new Error(result?.error?.message ?? "Hati haikupatikana kwenye hifadhi.");
+  }
+  return response.blob();
 }
 
 export const usingFirebaseEmulators = import.meta.env.VITE_FIREBASE_EMULATOR === "true";
