@@ -384,7 +384,7 @@ export const claimDailyTokenBonus = callable(async (request) => {
     const after = before + dailyBonus;
     transaction.update(userRef, { tokenBalanceOther: after, tokenBalance: after, tokenBalanceBonus: bonusBefore + dailyBonus, tokenBalancePayment: paymentBefore, dailyBonusDaysGranted: daysGranted + 1, lastDailyTokenBonusDate: today, updatedAt: FieldValue.serverTimestamp() });
     const ledgerRef = db.collection("tokenTransactions").doc("daily_" + uid + "_" + today);
-    transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: dailyBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya kila siku", serviceId: "daily-bonus", serviceName: "Daily token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
+    transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", walletType: "bonus", category: "bonus", amount: dailyBonus, balanceBefore: before, balanceAfter: after, reason: "Bonus ya kila siku", serviceId: "daily-bonus", serviceName: "Daily token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
     return { granted: dailyBonus, balanceAfter: after, daysGranted: daysGranted + 1 };
   });
 });
@@ -458,8 +458,9 @@ export const consumeTokens = callable(async (request) => {
     let bonusUsed = 0;
     let paymentUsed = 0;
     if (effectiveTokenType === "huduma") {
-      const bonusBefore = Math.max(0, Number(profile.tokenBalanceBonus ?? 0));
-      const paymentBefore = Math.max(0, Number(profile.tokenBalancePayment ?? Math.max(0, legacyOther - bonusBefore)));
+      const bonusBefore = Math.min(legacyOther, Math.max(0, Number(profile.tokenBalanceBonus ?? 0)));
+      // Reconcile legacy/mismatched profiles so the two wallets always add up to the total balance.
+      const paymentBefore = Math.max(0, legacyOther - bonusBefore);
       bonusUsed = Math.min(bonusBefore, cost);
       paymentUsed = cost - bonusUsed;
       update.tokenBalance = after;
@@ -1751,7 +1752,7 @@ export const claimRegistrationPhone = callable(async (request) => {
 
     if (bonus > 0) {
       const ledgerRef = db.collection("tokenTransactions").doc("registration_" + uid);
-      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", amount: bonus, balanceBefore: currentOther, balanceAfter: currentOther + bonus, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
+      transaction.set(ledgerRef, { transactionId: ledgerRef.id, userId: uid, actorId: "SYSTEM", tokenType: "huduma", type: "bonus", walletType: "bonus", category: "bonus", amount: bonus, balanceBefore: currentOther, balanceAfter: currentOther + bonus, reason: "Bonus ya usajili mpya", serviceId: "registration-bonus", serviceName: "Registration token bonus", reference: ledgerRef.id, createdAt: FieldValue.serverTimestamp(), status: "completed" }, { merge: true });
     }
   });
 
