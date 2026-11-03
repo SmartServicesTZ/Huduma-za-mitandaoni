@@ -1290,7 +1290,9 @@ export const createServiceApplication = callable(async (request) => {
       { fieldName: "airtelPhone", label: "Namba", type: "PHONE", required: true, order: 1 },
       { fieldName: "nidaNumber", label: "NIDA", type: "NIDA", required: true, order: 2 },
     ];
-    const phone = String(rawValues.airtelPhone ?? "").replace(/\D/g, "");
+    let phone = String(rawValues.airtelPhone ?? "").replace(/\D/g, "");
+    if (phone.startsWith("255") && phone.length === 12) phone = "0" + phone.slice(3);
+    rawValues.airtelPhone = phone;
     const nida = String(rawValues.nidaNumber ?? "").replace(/\D/g, "");
     if (!/^0[67]\d{8}$/.test(phone)) throw new ApiError("invalid-argument", "Namba ya Airtel si sahihi.");
     if (!/^\d{20}$/.test(nida)) throw new ApiError("invalid-argument", "NIDA lazima iwe na tarakimu 20.");
