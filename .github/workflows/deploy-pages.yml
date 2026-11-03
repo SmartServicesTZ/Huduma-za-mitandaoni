@@ -65,12 +65,17 @@ jobs:
           VITE_FIREBASE_STORAGE_READY: "false"
         run: pnpm build
 
-      - name: Prepare GitHub Pages SPA fallback
+      - name: Verify GitHub Pages SPA fallback
         working-directory: kituo-digitali
         run: |
           test -f dist/public/index.html
-          cp dist/public/index.html dist/public/404.html
-          echo "Pages artifact ready with SPA 404 fallback."
+          test -f dist/public/404.html
+          grep -q 'location.replace(base + "/?route="' dist/public/404.html
+          if cmp -s dist/public/index.html dist/public/404.html; then
+            echo "ERROR: SPA 404 fallback was overwritten by index.html."
+            exit 1
+          fi
+          echo "Pages artifact contains the route-preserving 404.html fallback."
 
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
