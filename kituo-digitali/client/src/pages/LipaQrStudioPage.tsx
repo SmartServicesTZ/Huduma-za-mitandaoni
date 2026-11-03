@@ -324,7 +324,15 @@ export default function LipaQrStudioPage() {
   const [, setLocation] = useLocation();
   const [entryStatus, setEntryStatus] = useState<"checking" | "ready" | "paid" | "failed">("checking");
   const [entryMessage, setEntryMessage] = useState("Inafungua huduma...");
-  const entryRequestId = useRef(crypto.randomUUID());
+  const entryRequestId = useRef((() => {
+    try {
+      const existing = sessionStorage.getItem("smartservicestz:lipa-qr-entry-request");
+      if (existing) return existing;
+    } catch { /* session storage may be unavailable */ }
+    const next = crypto.randomUUID();
+    try { sessionStorage.setItem("smartservicestz:lipa-qr-entry-request", next); } catch { /* keep it in memory */ }
+    return next;
+  })());
   const outputUsed = useRef(false);
   const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "" });
   const [network, setNetwork] = useState<LipaNetwork>("voda");
@@ -452,6 +460,7 @@ export default function LipaQrStudioPage() {
         }
       }
       outputUsed.current = true;
+      try { sessionStorage.removeItem("smartservicestz:lipa-qr-entry-request"); } catch { /* storage may be unavailable */ }
       toast.success(config.isFree || config.tokenCost === 0 ? "Faili limehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa. Huduma hii ni bure." : `Faili limehifadhiwa kwenye HATI ZANGU; tokeni ${config.tokenCost} zimekatwa kama kawaida.`);
       setLocation("/services");
     } catch (error) {
