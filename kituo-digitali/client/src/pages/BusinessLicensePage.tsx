@@ -206,11 +206,11 @@ export default function BusinessLicensePage() {
         setIssuedFiles(files);
         setSubmitted(true);
         setLicenseNumber(result.licenseNumber);
-        try { sessionStorage.removeItem(REQUEST_ID_KEY); } catch { /* storage may be unavailable */ }
       }
 
       const blob = format === "pdf" ? files.pdfBlob : files.jpgBlob;
       await triggerDownload(blob, `leseni-${files.licenseNumber || "biashara"}.${format}`, format.toUpperCase(), { source: "leseni-biashara", sourceRef: files.reference || files.licenseNumber });
+      try { sessionStorage.removeItem(REQUEST_ID_KEY); } catch { /* storage may be unavailable */ }
 
       if (issuedFiles) {
         toast.success(`Hati ya ${format.toUpperCase()} imepakuliwa tena bila kukata tokeni nyingine.`, { description: `Rejea: ${files.reference}` });
