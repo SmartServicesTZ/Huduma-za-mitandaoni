@@ -84,10 +84,17 @@ export default function Tin3Page() {
       }
       try {
         const requestKey = `${tin}|${name.trim()}|${extension}`;
+        const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(requestKey));
+        const storageKey = `smartservicestz:verify-tin:${Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
         if (requestKeyRef.current !== requestKey || previousSuccessRef.current) {
-          requestIdRef.current = crypto.randomUUID();
+          let pendingRequestId = "";
+          if (!previousSuccessRef.current) {
+            try { pendingRequestId = sessionStorage.getItem(storageKey) ?? ""; } catch { /* storage may be unavailable */ }
+          }
+          requestIdRef.current = pendingRequestId || crypto.randomUUID();
           requestKeyRef.current = requestKey;
           previousSuccessRef.current = false;
+          try { sessionStorage.setItem(storageKey, requestIdRef.current); } catch { /* request remains stable for this page */ }
         }
         await consumeFirebaseTokens(firebaseUser.uid, {
           slug: "verify-tin",
@@ -104,6 +111,7 @@ export default function Tin3Page() {
           sourceRef: requestIdRef.current,
         });
         previousSuccessRef.current = true;
+        try { sessionStorage.removeItem(storageKey); } catch { /* storage may be unavailable */ }
         finish("done");
       } catch (error) {
         finish("idle");
@@ -165,7 +173,7 @@ export default function Tin3Page() {
               </div>
               <div className="flex flex-wrap gap-3 pt-1">
                 <button type="button" onClick={()=>{setTinInput("");setName("");}} className="inline-flex items-center gap-3 border-2 border-zinc-200 bg-white px-5 py-3.5 rounded-xl text-sm font-semibold text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 transition"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5 M4 17v-5h5 M5.64 5.64A9 9 0 0 1 20 12 M4 12a9 9 0 0 0 14.36 6.36" fill="none" stroke="#222" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/></svg><span>Reset</span></button>
-                <button type="button" onClick={download} disabled={downloadStatus === "downloading"} className="inline-flex items-center gap-2 bg-zinc-950 text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-lg hover:bg-red-700 disabled:opacity-75 disabled:cursor-wait transition">{downloadStatus === "downloading" ? <><LoaderCircle size={17} className="animate-spin"/>Inapakua...</> : downloadStatus === "done" ? <><Check size={17}/>Imepakuliwa</> : <><Download size={17}/>Download</>}</button>
+                <button type="button" onClick={download} disabled={downloadStatus === "downloading"} className="inline-flex items-center gap-2 bg-zinc-950 text-white px-6 py-3.5 rounded-xl text-sm font-semibold shadow-lg hover:bg-red-700 disabled:opacity-75 disabled:cursor-wait transition">{downloadStatus === "downloading" ? <><LoaderCircle size={17} className="animate-spin"/>Inapakua...</> : downloadStatus === "done" ? <><Check size={17}/>Imehifadhiwa HATI ZANGU</> : <><Download size={17}/>Download</>}</button>
               </div>
             </div>
           </section>
