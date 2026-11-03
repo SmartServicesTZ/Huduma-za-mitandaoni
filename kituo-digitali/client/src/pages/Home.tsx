@@ -598,8 +598,8 @@ function HistoryPage() {
     if (sharingId) return;
     setSharingId(item.id);
     try {
-      await shareSavedDocument(item);
-      toast.success("Hati imepelekwa kwenye sehemu ya kushare.");
+      const shared = await shareSavedDocument(item);
+      toast.success(shared ? "Hati imepelekwa kwenye sehemu ya kushare." : "Kushare hakupatikana kwenye kifaa hiki; upakuaji umeanzishwa.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kushare hati.");
     } finally { setSharingId(""); }
