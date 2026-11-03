@@ -648,7 +648,7 @@ const AGENT_ID_CSS = `
 .idl-head>*{position:relative;z-index:1}
 .idl-brand{font-size:8px;font-weight:800;letter-spacing:.14em;line-height:1.35;opacity:.9}
 .idl-title{margin-top:4px;font-size:15px;font-weight:900;line-height:1.15}
-.idl-bbody{position:relative;flex:1;min-height:0;display:flex;gap:16px;box-sizing:border-box;padding:14px 22px 6px;overflow:hidden}
+.idl-bbody{position:relative;flex:1;min-height:0;display:flex;align-items:center;gap:16px;box-sizing:border-box;padding:8px 22px;overflow:hidden}
 .idl-bbody .idl-wm{right:130px;bottom:-30px;opacity:.40;filter:contrast(1.35) saturate(1.4)}
 /* Nembo kubwa zikae katikati ya sehemu kuu ya mbele kwa Airtel, Vodacom, Halotel na Yas. */
 .net-airtel .idl-main>.idl-wm,.net-vodacom .idl-main>.idl-wm,.net-halotel .idl-main>.idl-wm,.net-yas .idl-main>.idl-wm{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);opacity:.32;filter:contrast(1.22) saturate(1.3)}
@@ -676,8 +676,8 @@ const AGENT_ID_CSS = `
 .idl-rules h4{margin:2px 0 10px;font-size:10px;font-weight:900;letter-spacing:.04em;color:var(--d)}
 .idl-rl{display:flex;align-items:flex-start;gap:8px;margin:0 0 9px;font-size:9.4px;line-height:1.38;color:#475569}
 .idl-rl i{flex:0 0 17px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-size:8px;font-weight:900}
-.idl-qr-wrap{position:relative;flex:0 0 180px;text-align:center}
-.idl-qr-tile{width:168px;height:168px;box-sizing:border-box;margin:0 auto;padding:7px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.18);border:1px solid #e5eaf2}
+.idl-qr-wrap{position:relative;flex:0 0 150px;width:150px;text-align:center}
+.idl-qr-tile{width:168px;height:168px;box-sizing:border-box;margin:0 auto;padding:7px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.18);border:1px solid #e5eaf2}.idl-bbody .idl-qr-tile{width:132px;height:132px;padding:0;flex:0 0 132px;border:0;box-shadow:none;border-radius:8px}.idl-bbody .idl-qr-tile img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .idl-qr-tile img,.idl-qr-empty{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .idl-qr-label{margin-top:6px;font-size:8px;font-weight:900;letter-spacing:.1em;color:var(--d)}
 .idl-info{margin:0 22px 9px;padding:8px 12px;display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:6px 12px;border-radius:12px;background:var(--accent)}
@@ -720,7 +720,7 @@ const AGENT_ID_CSS = `
 .idp-dates b{display:block;margin-top:2px;font-size:10.5px;font-weight:900;color:var(--d)}
 
 /* nyuma */
-.idp-qr-tile{position:relative;z-index:3;flex:0 0 auto;width:132px;height:132px;box-sizing:border-box;margin:-24px auto 0;padding:8px;border-radius:18px;background:#fff;border:1px solid #e5eaf2;box-shadow:0 10px 22px rgba(15,23,42,.18)}
+.idp-qr-tile{position:relative;z-index:3;flex:0 0 auto;width:132px;height:132px;box-sizing:border-box;margin:-24px auto 0;padding:0;border-radius:8px;background:#fff;border:0;box-shadow:none}
 .idp-qr-tile img,.idp-qr-empty{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .idp-qr-label{margin-top:7px;text-align:center;font-size:8.5px;font-weight:900;letter-spacing:.14em;color:var(--d)}
 .idp-back{flex:1;min-height:0;display:flex;flex-direction:column;box-sizing:border-box;padding:8px 18px 8px}

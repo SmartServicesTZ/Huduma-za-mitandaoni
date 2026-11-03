@@ -45,6 +45,14 @@ jobs:
         working-directory: kituo-digitali
         run: pnpm install --frozen-lockfile
 
+      - name: TypeScript check
+        working-directory: kituo-digitali
+        run: pnpm exec tsc --noEmit
+
+      - name: Frontend tests
+        working-directory: kituo-digitali
+        run: pnpm test
+
       - name: Validate Cloudflare Worker
         working-directory: kituo-digitali
         run: pnpm worker:check && pnpm worker:test && pnpm worker:build

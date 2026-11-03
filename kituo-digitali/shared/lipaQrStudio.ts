@@ -59,6 +59,46 @@ export function createTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumbe
   return body + tipsCrc16(body);
 }
 
+
+/** Airtel Money TIPS QR: exact accepted template supplied by the user. */
+export function createAirtelTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
+  const lipa = normalizeLipaNumber(values.lipaNumber);
+  const name = values.businessName.trim().toUpperCase();
+  const merchantAccount = `0014tz.go.bot.tips01050250402${String(lipa.length).padStart(2, "0")}${lipa}`;
+  const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
+  const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
+  const additionalValue = `03${String(lipa.length).padStart(2, "0")}${lipa}`;
+  const additionalField = `2${String(additionalValue.length).padStart(2, "0")}${additionalValue}`;
+  // Match the exact additional-data prefix in the Airtel QR confirmed by the user.
+  // Do not prepend the extra 6: it changes both the payload and its CRC.
+  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}6008TANZANIA6105141106${additionalField}6304`;
+  return body + tipsCrc16(body);
+}
+
+/** Yas/Mixx QR: preserve the exact accepted merchant TIPS template; vary only Lipa and merchant name. */
+export function createYasTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
+  const lipa = normalizeLipaNumber(values.lipaNumber);
+  const name = values.businessName.trim().toUpperCase();
+  const merchantAccount = `0014tz.go.bot.tips01050250102${String(lipa.length).padStart(2, "0")}${lipa}`;
+  const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
+  const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
+  // Fixed fields copied from the user-confirmed Yas QR that scans successfully.
+  const body = `000201010212${merchantAccountField}5204413153038345802TZ${nameField}6010KIBAHA CBD61056110462210308227151430705110026304`;
+  return body + tipsCrc16(body);
+}
+
+/** Vodacom sticker: preserve the supplied TIPS template and vary only Lipa number and merchant name. */
+export function createVodacomTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNumber" | "businessName">): string {
+  const lipa = normalizeLipaNumber(values.lipaNumber);
+  const name = values.businessName.trim().toUpperCase();
+  const merchantAccount = `0014tz.go.bot.tips01050250302${String(lipa.length).padStart(2, "0")}${lipa}`;
+  const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
+  const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
+  // KITETO, postal code 27500, and every other supplied TIPS field remain fixed.
+  const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}6006KITETO61052750062210308001123490705110026304`;
+  return body + tipsCrc16(body);
+}
+
 export function isValidTipsPaymentPayload(value: string): boolean {
   const payload = value.trim();
   if (!/^000201[\s\\S]*6304[0-9A-Fa-f]{4}$/.test(payload)) return false;

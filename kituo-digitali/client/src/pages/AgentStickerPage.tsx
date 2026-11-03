@@ -75,30 +75,34 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
   const ctx=canvas.getContext("2d");if(!ctx)return;
   canvas.width=W;canvas.height=H;
   const p=NETWORKS[network],nm=cleanName(name)||"JINA LA WAKALA",num=cleanNumber(number)||"000000";
-  if(network==="halotel" || network==="yas"){
+  if(network==="halotel"){
+    const reference=await loadImage(asset("halotel-agent-reference-clean.png"));
+    canvas.width=reference.naturalWidth;canvas.height=reference.naturalHeight;
+    ctx.drawImage(reference,0,0,canvas.width,canvas.height);
+    // Clear the editable panels defensively so an older cached template can never
+    // reintroduce the sample code or sample agent name.
+    const codeBoxes=[[92,498,301,675],[313,498,520,675],[531,498,739,675],[751,498,958,675],[970,498,1177,675],[1189,498,1389,675]];
+    codeBoxes.forEach(([x,y,w,h])=>round(ctx,x,y,w-x,h-y,28,"#fff"));
+    round(ctx,91,764,1298,127,30,"#fff");
+    const centers=[.133,.282,.431,.578,.727,.875];
+    const enteredNumber=cleanNumber(number),enteredName=cleanName(name);
+    enteredNumber.slice(0,6).split("").forEach((digit,index)=>textFit(ctx,digit,canvas.width*centers[index],canvas.height*.551,canvas.width*.115,canvas.height*.145,"#050505",950,false,true));
+    if(enteredName)textFit(ctx,enteredName,canvas.width*.5,canvas.height*.776,canvas.width*.76,canvas.height*.105,"#050505",950,false,true);
+    return;
+  }
+  if(network==="yas"){
     canvas.width=W;canvas.height=H;
-    const bg=ctx.createLinearGradient(0,0,W,H);
-    if(network==="halotel"){bg.addColorStop(0,"#fff3a3");bg.addColorStop(.48,"#facc15");bg.addColorStop(1,"#dca300");}
-    else{bg.addColorStop(0,"#0d6bb8");bg.addColorStop(.52,"#064b91");bg.addColorStop(1,"#061e4a");}
+    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,"#0d6bb8");bg.addColorStop(.52,"#064b91");bg.addColorStop(1,"#061e4a");
     ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-    ctx.save();ctx.globalAlpha=.13;ctx.strokeStyle=network==="halotel"?"#854d0e":"#ffffff";ctx.lineWidth=5;
+    ctx.save();ctx.globalAlpha=.13;ctx.strokeStyle="#ffffff";ctx.lineWidth=5;
     for(let x=-H;x<W;x+=110){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+H,H);ctx.stroke();}
     ctx.restore();
-    const logo=await loadImage(asset(network==="halotel"?"halotel-logo.png":"yas-logo.png"));
-    const logoW=network==="halotel"?520:410, logoH=network==="halotel"?210:230;
-    ctx.save();ctx.fillStyle="#fff";ctx.globalAlpha=.96;ctx.beginPath();ctx.roundRect((W-logoW-36)/2,45,logoW+36,logoH+26,34);ctx.fill();ctx.restore();
-    ctx.drawImage(logo,(W-logoW)/2,58,logoW,logoH);
-    drawStickerFrame(ctx,W,H);
-    const numberColor=network==="halotel"?"#3b2500":"#ffffff";
-    const nameColor=network==="halotel"?"#241700":"#ffffff";
-    textFit(ctx,num,W/2,565,W*.78,150,numberColor,950,true,true);
-    textFit(ctx,nm,W/2,790,W*.82,88,nameColor,950,true,true);
-    if(network==="halotel"){
-      textFit(ctx,"LIPA KWA HALOPESA",W/2,930,W*.75,44,"#4a2c00",900,false);
-      textFit(ctx,"*150*88#",W/2,990,W*.5,36,"#4a2c00",900,false);
-    }else{
-      textFit(ctx,"YAS WAKALA",W/2,930,W*.75,48,"#ffdf00",900,false);
-    }
+    const logo=await loadImage(asset("yas-logo.png"));
+    ctx.save();ctx.fillStyle="#fff";ctx.globalAlpha=.96;ctx.beginPath();ctx.roundRect((W-446)/2,45,446,256,34);ctx.fill();ctx.restore();
+    ctx.drawImage(logo,(W-410)/2,58,410,230);drawStickerFrame(ctx,W,H);
+    textFit(ctx,num,W/2,565,W*.78,150,"#ffffff",950,true,true);
+    textFit(ctx,nm,W/2,790,W*.82,88,"#ffffff",950,true,true);
+    textFit(ctx,"YAS WAKALA",W/2,930,W*.75,48,"#ffdf00",900,false);
     return;
   }
   if(network!=="airtel"){
@@ -179,28 +183,13 @@ export default function AgentStickerPage(){
       if(!active)return;
       setServiceCost(config.tokenCost);setServiceName(config.name);
       setEntryStatus("pending");
-      setEntryMessage(config.isFree
-        ? "Huduma hii imewekwa BURE na Admin. Hakuna tokeni zitakazokatwa. Utaruhusiwa kupakua stika MOJA ya mtandao wowote."
-        : `Gharama ni tokeni ${config.tokenCost} kulingana na Dashboard ya Admin. Ukikubali, tokeni zitakatwa mara moja. Utaruhusiwa kupakua stika MOJA ya mtandao wowote. Hata usipopakua, tokeni hazitarejeshwa.`);
+      setEntryMessage("");
     }).catch(error=>{
       if(!active)return;
       setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kusoma gharama ya huduma.");
     });
     return ()=>{active=false;};
   },[authLoading,firebaseUser,profile]);
-  const confirmTokenCharge=async()=>{
-    if(!firebaseUser||entryStatus!=="pending"||serviceCost===null)return;
-    setEntryStatus("charging");setEntryMessage("Tunasubiri uthibitisho wa makato...");
-    try{
-      await consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:serviceName,tokenCost:serviceCost,kind:serviceCost===0?"free":"paid",tokenType:"huduma"},entryRequestId.current);
-      setEntryStatus("paid");
-      setEntryMessage(serviceCost===0
-        ? "Huduma ni BURE. Unaweza kupakua stika MOJA ya mtandao wowote."
-        : `Tokeni ${serviceCost} zimekatwa kulingana na bei ya Admin. Unaweza kupakua stika MOJA ya mtandao wowote. Baada ya kupakua utarudishwa kwenye huduma.`);
-    }catch(error){
-      setEntryStatus("failed");setEntryMessage(error instanceof Error?error.message:"Imeshindikana kukata tokeni. Jaribu tena.");
-    }
-  };
   useEffect(()=>{
     let active=true;
     setPreviewReady(false);setPreviewError("");
@@ -211,20 +200,30 @@ export default function AgentStickerPage(){
     }
     return ()=>{active=false;};
   },[network,agentName,agentNumber]);
-  function downloadSticker(){
-    const canvas=canvasRef.current;if(!canvas||!valid||busy||!previewReady||entryStatus!=="paid"||outputUsed.current)return;setBusy(true);
-    canvas.toBlob(blob=>{
-      if(blob){
-        const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();
-        triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");
-        outputUsed.current=true;toast.success("Stika limepakuliwa. Unarudishwa kwenye huduma.");setLocation("/services");
-      }else toast.error("Imeshindikana kuandaa stika. Jaribu tena.");
-      setBusy(false);
-    },"image/png",1);
+  async function downloadSticker(){
+    const canvas=canvasRef.current;
+    if(!canvas||!valid||busy||!previewReady||entryStatus!=="pending"||outputUsed.current)return;
+    if(!firebaseUser||serviceCost===null)return;
+    setBusy(true);
+    setEntryStatus("charging");
+    try {
+      await consumeFirebaseTokens(firebaseUser.uid,{slug:"stika-mawakala",name:serviceName,tokenCost:serviceCost,kind:serviceCost===0?"free":"paid",tokenType:"huduma"},entryRequestId.current);
+      setEntryStatus("paid");
+      await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+      const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png",1));
+      if(!blob)throw new Error("Imeshindikana kuandaa stika. Jaribu tena.");
+      const safe=cleanName(agentName).replace(/\\s+/g,"-").toLowerCase();
+      triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG");
+      outputUsed.current=true;
+      toast.success("Stika limepakuliwa kikamilifu.");
+    } catch(error) {
+      setEntryStatus("pending");
+      toast.error(error instanceof Error?error.message:"Imeshindikana kupakua stika.");
+    } finally { setBusy(false); }
   }
   function reset(){setAgentName("");setAgentNumber("");}
   const p=NETWORKS[network];
-  if(entryStatus!=="paid") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-amber-300 bg-white p-6 shadow-xl"><div className="mb-4 text-center text-4xl">🔐</div><h1 className="text-center text-2xl font-black">STIKA ZA WAKALA</h1><div role="status" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-950"><strong>TAARIFA YA MAKATO YA TOKENI</strong><p className="mt-2">{entryMessage}</p></div>{entryStatus==="pending"&&<div className="mt-5 grid gap-3"><button type="button" onClick={()=>void confirmTokenCharge()} className="w-full rounded-xl bg-amber-700 px-4 py-4 font-black text-white">{serviceCost===0?"NAKUBALI, ENDELEA BILA MAKATO":`NAKUBALI, KATA TOKENI ${serviceCost}`}</button><button type="button" onClick={()=>setLocation("/services")} className="w-full rounded-xl border border-slate-300 px-4 py-3 font-bold">SITAKI, RUDI NYUMA</button></div>}{entryStatus==="checking"||entryStatus==="charging"?<p className="mt-4 text-center text-sm font-bold text-slate-600">Tafadhali subiri...</p>:null}<button type="button" onClick={()=>setLocation("/services")} className="mt-4 w-full text-sm text-slate-500 underline">Rudi kwenye huduma</button></section></main>;
+  if(entryStatus==="checking"||entryStatus==="failed") return <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900"><section className="mx-auto mt-12 max-w-xl rounded-2xl border border-amber-300 bg-white p-6 shadow-xl"><div className="mb-4 text-center text-4xl">🔐</div><h1 className="text-center text-2xl font-black">STIKA ZA WAKALA</h1><p role="alert" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold leading-relaxed text-amber-950">{entryMessage || "Huduma haijafunguliwa."}</p>{entryStatus==="checking"?<p className="mt-4 text-center text-sm font-bold text-slate-600">Tafadhali subiri...</p>:<button type="button" onClick={()=>setLocation("/services")} className="mt-5 w-full rounded-xl border border-slate-300 px-4 py-3 font-bold">Rudi kwenye huduma</button>}</section></main>;
   return <main className="min-h-screen bg-slate-50 px-3 py-5 text-slate-900 sm:px-6">
     <div className="mx-auto max-w-6xl">
       <header className="mb-6 flex items-center justify-between gap-3 rounded-2xl px-4 py-4 text-white shadow-sm sm:px-6" style={{background:p.deep}}>
@@ -232,28 +231,44 @@ export default function AgentStickerPage(){
       </header>
       <div className="grid items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-bold leading-relaxed text-amber-900">
-            <strong>TAARIFA YA MAKATO YA TOKENI</strong><br/>{entryMessage}
+          <div role="status" className="mb-4 rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm leading-relaxed text-sky-950">
+            <strong className="font-black">TAARIFA KUHUSU WATERMARK</strong>
+            <p className="mt-1 text-xs font-semibold">Watermark huonekana kwenye hakikisho ili kulinda stika. Itatoweka moja kwa moja baada ya tokeni {serviceCost===null?"":serviceCost} kukatwa. Stika utakayopakua itakuwa safi bila watermark.</p>
           </div>
           <h2 className="mb-4 text-lg font-black">Taarifa za wakala</h2>
-          <label className="mb-4 block"><span className="mb-2 block text-sm font-extrabold">Chagua mtandao</span>
-            <select value={network} onChange={e=>setNetwork(e.target.value as NetworkKey)} className="h-12 w-full rounded-xl border-2 border-slate-200 bg-white px-3 text-base font-semibold outline-none focus:border-slate-500">
-              <option value="airtel">Airtel Money</option><option value="vodacom">Vodacom M-Pesa</option><option value="halotel">Halotel HaloPesa</option><option value="yas">Yas</option>
-            </select>
-          </label>
+          <div className="mb-5">
+            <span className="mb-2 block text-sm font-extrabold">Chagua mtandao</span>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {([
+                {id:"airtel",label:"Airtel",logo:"airtel-logo.png"},
+                {id:"vodacom",label:"Vodacom",logo:"vodacom-logo.png"},
+                {id:"halotel",label:"Halotel",logo:"halotel-logo.png"},
+                {id:"yas",label:"Yas",logo:"yas-logo.png"},
+              ] as const).map(item=>(
+                <button key={item.id} type="button" onClick={()=>setNetwork(item.id)} aria-pressed={network===item.id}
+                  className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border-2 bg-white p-2 shadow-sm transition"
+                  style={{borderColor:network===item.id?"#0284c7":"#e2e8f0",background:network===item.id?"#f0f9ff":"#fff"}}>
+                  <img src={asset(item.logo)} alt={item.label} className="h-10 w-full max-w-[105px] object-contain" />
+                  <span className="text-xs font-extrabold text-slate-800">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="mb-4 block"><span className="mb-2 block text-sm font-extrabold">Majina ya wakala</span>
             <input value={agentName} onChange={e=>setAgentName(e.target.value.slice(0,40))} maxLength={40} autoComplete="off" placeholder="Andika majina ya wakala" className="h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base font-semibold uppercase outline-none focus:border-slate-500"/>
           </label>
           <label className="mb-5 block"><span className="mb-2 block text-sm font-extrabold">Namba ya wakala</span>
             <input value={agentNumber} onChange={e=>setAgentNumber(cleanNumber(e.target.value))} inputMode="numeric" maxLength={12} autoComplete="off" placeholder="Andika namba ya wakala" className="h-12 w-full rounded-xl border-2 border-slate-200 px-3 text-base font-semibold outline-none focus:border-slate-500"/>
           </label>
-          <button type="button" disabled={!valid||busy||!previewReady||entryStatus!=="paid"||outputUsed.current} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{busy?"Inaandaa...":!previewReady?"Subiri preview...":"PAKUA STIKA PNG"}</button>
+          <button type="button" disabled={!valid||busy||!previewReady||entryStatus!=="pending"||outputUsed.current} onClick={downloadSticker} className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-black text-white disabled:cursor-not-allowed disabled:opacity-40" style={{background:p.deep}}><Download className="h-5 w-5"/>{entryStatus==="charging"?"Inathibitisha tokeni...":busy?"Inaandaa...":!previewReady?"Subiri preview...":"PAKUA STIKA PNG"}</button>
           <button type="button" onClick={reset} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-3 font-bold text-slate-700"><RotateCcw className="h-4 w-4"/>Futa taarifa</button>
           {!valid&&(agentName||agentNumber)&&<p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-semibold text-amber-800">Weka angalau majina mawili na namba yenye tarakimu 5 hadi 12.</p>}
         </section>
         <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-black">Muonekano wa stika</h2><p className="text-xs text-slate-500">{p.label} · Hakikisho la moja kwa moja</p></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">LIVE PREVIEW</span></div>
-          <div className="flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/></div>
+          <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-2 sm:p-4"><canvas ref={canvasRef} className="block h-auto w-full max-w-3xl shadow-lg" aria-label={`Stika ya wakala ${p.label}`}/>{entryStatus!=="paid"&&<div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+            <span className="-rotate-[22deg] select-none whitespace-nowrap text-center text-[clamp(22px,4vw,52px)] font-black tracking-[.14em] text-white/65" style={{WebkitTextStroke:"1.5px rgba(15,23,42,.72)",textShadow:"0 2px 5px rgba(0,0,0,.55)"}}>SMARTSERVICESTZ</span>
+          </div>}</div>
           <p className="mt-3 text-center text-xs text-slate-500">{previewError||(!previewReady?"Inapakia muundo wa stika...":"PNG itapakuliwa kwa mwonekano huu huu.")}</p>
         </section>
       </div>
