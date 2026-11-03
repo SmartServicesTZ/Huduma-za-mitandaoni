@@ -2344,3 +2344,9 @@
 .lq-guide-network-logos img { display:block; width:27px; height:19px; object-fit:contain; }
 .lq-guide-network-logos b { color:#273548; font-size:8px; font-weight:900; }
 @media(max-width:700px) { .lq-choice-group .lq-mode-button,.lq-choice-group .lq-format-png { min-height:46px; padding:7px 8px; font-size:10px; } .lq-guide-network-logos { gap:4px; } .lq-guide-network-logos span { min-width:50px; padding:3px 4px; } .lq-guide-network-logos img { width:23px; height:17px; } .lq-guide-network-logos b { font-size:7px; } }
+
+.lq-choice-group .lq-sticker-variant-button { border:2px solid transparent; font-weight:950; }
+.lq-choice-group .lq-sticker-variant-button--qr { background:#18a957; color:#fff; }
+.lq-choice-group .lq-sticker-variant-button--no-qr { background:#f3c600; color:#2e2500; }
+.lq-choice-group .lq-sticker-variant-button--qr.is-active { background:#087c3b; border-color:#064d27; box-shadow:0 0 0 3px #18a95755; }
+.lq-choice-group .lq-sticker-variant-button--no-qr.is-active { background:#d6a900; border-color:#856800; box-shadow:0 0 0 3px #f3c60066; }

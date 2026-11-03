@@ -525,8 +525,8 @@ export default function LipaQrStudioPage() {
           <small>Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini.</small>
         </div>
         {network !== "airtel" && <div className="lq-choice-group lq-sticker-variant-choice" role="group" aria-label="Chagua aina ya stika">
-          <button type="button" aria-pressed={stickerVariant === "qr"} className={stickerVariant === "qr" ? "is-active" : ""} onClick={() => setStickerVariant("qr")}>Stika yenye QR</button>
-          <button type="button" aria-pressed={stickerVariant === "no-qr"} className={stickerVariant === "no-qr" ? "is-active" : ""} onClick={() => setStickerVariant("no-qr")}>Stika bila QR</button>
+          <button type="button" aria-pressed={stickerVariant === "qr"} className={`lq-sticker-variant-button lq-sticker-variant-button--qr ${stickerVariant === "qr" ? "is-active" : ""}`} onClick={() => setStickerVariant("qr")}>STIKA QR</button>
+          <button type="button" aria-pressed={stickerVariant === "no-qr"} className={`lq-sticker-variant-button lq-sticker-variant-button--no-qr ${stickerVariant === "no-qr" ? "is-active" : ""}`} onClick={() => setStickerVariant("no-qr")}>STIKA BILA QR</button>
         </div>}
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
