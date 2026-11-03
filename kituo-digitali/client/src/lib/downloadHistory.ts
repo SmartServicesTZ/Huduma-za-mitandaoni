@@ -203,17 +203,13 @@ export async function downloadSavedDocument(item: SavedUserDocument) {
   await deliverBlob(blob, item.name);
 }
 
-/** Share hati iliyohifadhiwa; ikikosekana Web Share API, tumia download ya kawaida. */
+/** Pakua hati iliyohifadhiwa. Web Share haifai hapa kwa sababu blob hupatikana baada ya await ya Firebase, nje ya user gesture. */
 export async function shareSavedDocument(item: SavedUserDocument): Promise<boolean> {
   const blob = await getUserDocumentBlob(item);
-  const file = new File([blob], item.name, { type: item.mimeType || blob.type });
-  if (typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] }))) {
-    await navigator.share({ files: [file], title: item.name });
-    return true;
-  }
-  await deliverBlob(blob, item.name);
+  startBrowserDownload(blob, item.name);
+  window.dispatchEvent(new CustomEvent("smartservicestz-download-complete", { detail: { name: item.name } }));
   return false;
-};
+}
 
 const startBrowserDownload = (blob: Blob, name: string) => {
   const url = URL.createObjectURL(blob);
