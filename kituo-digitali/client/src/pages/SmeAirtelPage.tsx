@@ -202,51 +202,7 @@ export default function SmeAirtelPage() {
           <div className="sa-float flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white text-4xl font-black italic text-red-600 shadow-[0_25px_60px_-10px_rgba(0,0,0,.45)] sm:h-36 sm:w-36">airtel</div>
         </div>
       </header>
-    {/* VIFURUSHI */}
-      <section className="sa-in mt-6 rounded-3xl border border-white bg-white/80 p-4 shadow-[0_10px_40px_-15px_rgba(15,23,42,.15)] backdrop-blur-xl sm:p-6" style={{ animationDelay: "120ms" }}>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <span className="text-xs font-black tracking-[.18em] text-red-700">VIFURUSHI VYA BIASHARA</span>
-            <h2 className="mt-1 text-xl font-black sm:text-2xl">Chagua kifurushi</h2>
-            <p className="mt-1 text-sm text-slate-500">Bei ni TSh kwa mwezi.</p>
-          </div>
-          <div className="relative inline-grid grid-cols-2 rounded-2xl bg-slate-100 p-1" role="tablist" aria-label="Aina ya kifurushi">
-            <span aria-hidden className="absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-xl bg-gradient-to-r from-red-600 to-red-700 shadow-lg shadow-red-500/30 transition-all duration-500 ease-[cubic-bezier(.34,1.56,.64,1)]" style={{ left: form.planType === "data" ? "4px" : "calc(50%)" }} />
-            <button type="button" role="tab" aria-selected={form.planType === "data"} onClick={() => update("planType", "data")} className={"relative z-10 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors duration-300 " + (form.planType === "data" ? "text-white" : "text-slate-600 hover:text-red-700")}><Wifi size={15} className="mr-1 inline" /> Data bando</button>
-            <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={"relative z-10 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors duration-300 " + (form.planType === "combo" ? "text-white" : "text-slate-600 hover:text-red-700")}><Smartphone size={15} className="mr-1 inline" /> Combo bando</button>
-          </div>
-        </div>
-
-        <div key={form.planType} className="mt-5 grid grid-cols-3 gap-1.5 sm:gap-3 lg:grid-cols-4">
-          {plans.map((plan, i) => {
-            const selected = form.selectedPlan === String(plan.price);
-            const combo = "calls" in plan;
-            return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))}
-              style={{ animationDelay: `${i * 60}ms` }}
-              className={"sa-in group relative overflow-hidden rounded-xl border-2 p-2 text-left transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-xl active:scale-[0.97] sm:rounded-2xl sm:p-3.5 " +
-                (selected ? "border-red-600 bg-gradient-to-br from-red-50 to-white shadow-lg shadow-red-500/15 ring-4 ring-red-600/10" : "border-slate-200 bg-white hover:border-red-300 hover:shadow-red-500/10")}>
-              <span aria-hidden className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-red-500/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-              {selected && <span className="sa-pop absolute right-2 top-2 text-red-600 sm:right-3 sm:top-3"><CircleCheck size={20} fill="currentColor" className="text-red-600 [&>path]:stroke-white" /></span>}
-              <span className="inline-flex rounded-full bg-slate-100 px-1.5 py-1 text-[8px] font-black tracking-wide text-slate-600 sm:px-2.5 sm:text-[10px]">KILA MWEZI</span>
-              <p className="mt-2 text-base font-black text-slate-900 sm:text-2xl">{plan.data}</p>
-              <p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
-              {combo
-                ? <div className="mt-1 flex flex-col gap-0.5 border-t border-slate-200 pt-1 text-[9px] font-semibold text-slate-600 sm:mt-2 sm:flex-row sm:gap-x-2 sm:gap-y-1 sm:pt-2 sm:text-[11px]"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div>
-                : <p className="mt-1 border-t border-slate-100 pt-1 text-[9px] text-slate-500 sm:mt-2 sm:pt-2 sm:text-[11px]">Data pekee</p>}
-              <span className={"mt-1 inline-flex items-center gap-1 text-[9px] font-extrabold transition-colors sm:mt-2 sm:text-[11px] " + (selected ? "text-red-700" : "text-slate-500 group-hover:text-red-600")}>{selected ? "Kimechaguliwa ✓" : "Chagua kifurushi →"}</span>
-            </button>;
-          })}
-        </div>
-        <FieldError field="selectedPlan" />
-
-        <div className="mt-5 flex flex-col gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-white/60">Kifurushi ulichochagua</p>
-            <p key={chosenPlan?.price ?? "none"} className="sa-swap mt-1 text-lg font-black">{chosenPlan ? chosenPlan.data + " · TSh " + money(chosenPlan.price) : "Bado hujachagua kifurushi"}</p>
-          </div>
-          <span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3 py-2 text-xs font-bold backdrop-blur"><CheckCircle2 size={15} /> Airtel Business</span>
-        </div>
-      </section>
+    
 
       <section className="mt-6 grid items-start gap-6 lg:grid-cols-[.7fr_1.3fr]">
         {/* ZAWADI */}
@@ -388,6 +344,53 @@ export default function SmeAirtelPage() {
                 {app.rejectionReason && <p className="mt-2 text-sm text-red-700"><strong>Sababu:</strong> {app.rejectionReason}</p>}
               </article>)}</div>}
       </section>
+
+      {/* VIFURUSHI */}
+      <section className="sa-in mt-6 rounded-3xl border border-white bg-white/80 p-4 shadow-[0_10px_40px_-15px_rgba(15,23,42,.15)] backdrop-blur-xl sm:p-6" style={{ animationDelay: "120ms" }}>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <span className="text-xs font-black tracking-[.18em] text-red-700">VIFURUSHI VYA BIASHARA</span>
+            <h2 className="mt-1 text-xl font-black sm:text-2xl">Chagua kifurushi</h2>
+            <p className="mt-1 text-sm text-slate-500">Bei ni TSh kwa mwezi.</p>
+          </div>
+          <div className="relative inline-grid grid-cols-2 rounded-2xl bg-slate-100 p-1" role="tablist" aria-label="Aina ya kifurushi">
+            <span aria-hidden className="absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-xl bg-gradient-to-r from-red-600 to-red-700 shadow-lg shadow-red-500/30 transition-all duration-500 ease-[cubic-bezier(.34,1.56,.64,1)]" style={{ left: form.planType === "data" ? "4px" : "calc(50%)" }} />
+            <button type="button" role="tab" aria-selected={form.planType === "data"} onClick={() => update("planType", "data")} className={"relative z-10 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors duration-300 " + (form.planType === "data" ? "text-white" : "text-slate-600 hover:text-red-700")}><Wifi size={15} className="mr-1 inline" /> Data bando</button>
+            <button type="button" role="tab" aria-selected={form.planType === "combo"} onClick={() => update("planType", "combo")} className={"relative z-10 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors duration-300 " + (form.planType === "combo" ? "text-white" : "text-slate-600 hover:text-red-700")}><Smartphone size={15} className="mr-1 inline" /> Combo bando</button>
+          </div>
+        </div>
+
+        <div key={form.planType} className="mt-5 grid grid-cols-3 gap-1.5 sm:gap-3 lg:grid-cols-4">
+          {plans.map((plan, i) => {
+            const selected = form.selectedPlan === String(plan.price);
+            const combo = "calls" in plan;
+            return <button key={plan.price} type="button" onClick={() => update("selectedPlan", String(plan.price))}
+              style={{ animationDelay: `${i * 60}ms` }}
+              className={"sa-in group relative overflow-hidden rounded-xl border-2 p-2 text-left transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-xl active:scale-[0.97] sm:rounded-2xl sm:p-3.5 " +
+                (selected ? "border-red-600 bg-gradient-to-br from-red-50 to-white shadow-lg shadow-red-500/15 ring-4 ring-red-600/10" : "border-slate-200 bg-white hover:border-red-300 hover:shadow-red-500/10")}>
+              <span aria-hidden className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-red-500/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              {selected && <span className="sa-pop absolute right-2 top-2 text-red-600 sm:right-3 sm:top-3"><CircleCheck size={20} fill="currentColor" className="text-red-600 [&>path]:stroke-white" /></span>}
+              <span className="inline-flex rounded-full bg-slate-100 px-1.5 py-1 text-[8px] font-black tracking-wide text-slate-600 sm:px-2.5 sm:text-[10px]">KILA MWEZI</span>
+              <p className="mt-2 text-base font-black text-slate-900 sm:text-2xl">{plan.data}</p>
+              <p className="mt-1 text-xs font-bold text-red-700 sm:text-sm">TSh {money(plan.price)}</p>
+              {combo
+                ? <div className="mt-1 flex flex-col gap-0.5 border-t border-slate-200 pt-1 text-[9px] font-semibold text-slate-600 sm:mt-2 sm:flex-row sm:gap-x-2 sm:gap-y-1 sm:pt-2 sm:text-[11px]"><p>☎ {plan.calls}</p><p>✉ {plan.sms}</p></div>
+                : <p className="mt-1 border-t border-slate-100 pt-1 text-[9px] text-slate-500 sm:mt-2 sm:pt-2 sm:text-[11px]">Data pekee</p>}
+              <span className={"mt-1 inline-flex items-center gap-1 text-[9px] font-extrabold transition-colors sm:mt-2 sm:text-[11px] " + (selected ? "text-red-700" : "text-slate-500 group-hover:text-red-600")}>{selected ? "Kimechaguliwa ✓" : "Chagua kifurushi →"}</span>
+            </button>;
+          })}
+        </div>
+        <FieldError field="selectedPlan" />
+
+        <div className="mt-5 flex flex-col gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-white/60">Kifurushi ulichochagua</p>
+            <p key={chosenPlan?.price ?? "none"} className="sa-swap mt-1 text-lg font-black">{chosenPlan ? chosenPlan.data + " · TSh " + money(chosenPlan.price) : "Bado hujachagua kifurushi"}</p>
+          </div>
+          <span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3 py-2 text-xs font-bold backdrop-blur"><CheckCircle2 size={15} /> Airtel Business</span>
+        </div>
+      </section>
+
     </div>
   </main>;
 }
