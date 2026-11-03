@@ -68,7 +68,7 @@ export function createYasTipsPaymentPayload(values: Pick<LipaCardValues, "lipaNu
   const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
   const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
   // Fixed fields copied from the user-confirmed Yas QR that scans successfully.
-  const body = `000201010212${merchantAccountField}5204413153038345802TZ${nameField}6010KIBAHA CBD6105611046221030822715143070511006304`;
+  const body = `000201010212${merchantAccountField}5204413153038345802TZ${nameField}6010KIBAHA CBD61056110462210308227151430705110026304`;
   return body + tipsCrc16(body);
 }
 
