@@ -109,6 +109,7 @@ const accessFields = {
     { fieldName: "phone", label: "Namba ya simu", type: "PHONE", required: true, order: 1 },
     { fieldName: "nidaNumber", label: "Namba ya NIDA", type: "NIDA", required: true, order: 2 },
     { fieldName: "passportPhoto", label: "Picha ya Kitambulisho", type: "IMAGE_UPLOAD", required: true, helpText: "Pakia picha ya kitambulisho chako, kikiwa kizima na taarifa zinasomeka. JPG, PNG au WebP; hadi MB 5.", maxSizeMb: 5, accept: ["image/jpeg", "image/png", "image/webp"], order: 3 },
+    { fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, placeholder: "123-123-123", order: 4 },
     { fieldName: "contact", label: "Namba ya mawasiliano Normal / WhatsApp", type: "PHONE", required: true, order: 4 },
   ] as ServiceFormField[],
   vodacom: [
