@@ -572,7 +572,7 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
         throw new Error("Gharama ya huduma haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
       }
       currentCost = service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : service.slug === "stika-mawakala" ? Math.max(3, configuredCost) : configuredCost;
-      currentIsFree = !service.agentType && row.isFree === true && configuredCost === 0;
+      currentIsFree = service.slug !== "stika-mawakala" && !service.agentType && row.isFree === true && configuredCost === 0;
     }
   } catch (error) {
     // Do not silently fall back to an old price when the live catalog could
@@ -756,7 +756,7 @@ export async function adminListUsers() {
 
 export async function adminListServices() {
   const rows = await getCollectionOnce("services");
-  return rows.map((item) => item.slug === "stika-mawakala" ? { ...item, tokenCost: Math.max(3, Number(item.tokenCost) || 0) } : item);
+  return rows.map((item) => item.slug === "stika-mawakala" ? { ...item, tokenCost: Math.max(3, Number(item.tokenCost) || 0), isFree: false } : item);
 }
 
 /** Read the live token price configured by Admin for a service. */
@@ -771,7 +771,7 @@ export async function getServiceTokenConfig(slug: string): Promise<{ name: strin
   return {
     name: String(row.name ?? slug),
     tokenCost: slug === "stika-mawakala" ? Math.max(3, tokenCost) : tokenCost,
-    isFree: row.isFree === true || tokenCost === 0,
+    isFree: slug === "stika-mawakala" ? false : row.isFree === true || tokenCost === 0,
     agentTypeTokenCosts: row.agentTypeTokenCosts && typeof row.agentTypeTokenCosts === "object" ? row.agentTypeTokenCosts as Record<string, number> : undefined,
   };
 }
