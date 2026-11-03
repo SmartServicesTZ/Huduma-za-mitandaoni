@@ -44,6 +44,13 @@ const A5_HEIGHT_MM = 210;
 const A4_WIDTH_MM = 297;
 const A4_HEIGHT_MM = 210;
 const A4_HEIGHT_PX = 2480;
+
+// Landscape export dimensions for QR-free type-2 stickers (3x reference size).
+function getNoQrExportSpec(network: LipaNetwork) {
+  return network === "voda"
+    ? { widthPx: 1881, heightPx: 1467, widthMm: 269.4, heightMm: 210 }
+    : { widthPx: 2208, heightPx: 1560, widthMm: 297, heightMm: 210 };
+}
 const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
 const A4_GUIDES: ReadonlyArray<readonly [string, string, readonly string[]]> = [
   ["LIPA KWA SIMU", "Piga *150*60#", ["Chagua 5 Lipa Bili", "Chagua 1 Lipa kwa Simu", "Chagua 1 Airtel", "Weka Lipa Namba", "Weka Kiasi", "Weka PIN"]],
@@ -141,11 +148,27 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halopesa-logo.png"}`;
-  if (variant === "no-qr" && network !== "airtel") return <article ref={ref} className={`lq-artboard lq-no-qr-artboard lq-no-qr-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
-    <header className="lq-no-qr-header"><h2>{network === "voda" ? "Lipa kwa m-pesa hapa" : "LIPA KWA SIMU HAPA"}</h2><img src={network === "voda" ? `${import.meta.env.BASE_URL}vodacom-logo.png` : `${import.meta.env.BASE_URL}${network === "yas" ? "yas-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} /></header>
-    <section className="lq-no-qr-body"><div className="lq-no-qr-number-label">Lipa namba</div><div className="lq-no-qr-number-boxes" aria-label="Namba ya Lipa">{Array.from({ length: 7 }, (_, index) => <span key={index} />)}</div><div className="lq-no-qr-name-row"><span>Jina</span><strong>{values.businessName.trim().toUpperCase() || " "}</strong></div><p>{network === "voda" ? "Lipa kwenda mitandao yote" : "KUTOKA MITANDAO YOTE"}</p></section>
-    {network === "voda" && <footer className="lq-no-qr-voda-footer"><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" /><span>m-pesa</span><b>Mixx by Yas</b><b>T-PESA</b><span>Airtel money</span><span>halopesa</span></footer>}
-  </article>;
+  if (variant === "no-qr" && network !== "airtel") {
+    const digits = values.lipaNumber.replace(/\D/g, "").slice(0, 12).split("");
+    const boxCount = Math.max(7, digits.length);
+    return <article ref={ref} className={`lq-artboard lq-no-qr-artboard lq-no-qr-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
+      <header className="lq-no-qr-header">
+        <h2>{network === "voda" ? "Lipa kwa m-pesa hapa" : "LIPA KWA SIMU HAPA"}</h2>
+        {network === "yas" ? <div className="lq-no-qr-brand-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="YAS" /><img src={`${import.meta.env.BASE_URL}stika-yas/mixx-yas-logo.png`} alt="Mixx by Yas" /></div>
+          : network === "halotel" ? <div className="lq-no-qr-brand-logos"><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><img src={`${import.meta.env.BASE_URL}halopesa-logo.png`} alt="HaloPesa" /></div>
+          : <img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" />}
+      </header>
+      <section className="lq-no-qr-body">
+        <div className="lq-no-qr-number-label">Lipa namba</div>
+        <div className="lq-no-qr-number-boxes" aria-label={`Namba ya Lipa: ${values.lipaNumber || "haijawekwa"}`} style={{ gridTemplateColumns: `repeat(${boxCount}, minmax(0, 1fr))` }}>
+          {Array.from({ length: boxCount }, (_, index) => <span key={index}>{digits[index] || ""}</span>)}
+        </div>
+        <div className="lq-no-qr-name-row"><span>Jina</span><strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong></div>
+        <p>{network === "voda" ? "Lipa kwenda mitandao yote" : "KUTOKA MITANDAO YOTE"}</p>
+      </section>
+      {network === "voda" && <footer className="lq-no-qr-voda-footer"><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" /><span>m-pesa</span><b>Mixx by Yas</b><b>T-PESA</b><span>Airtel money</span><span>halopesa</span></footer>}
+    </article>;
+  }
   if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">
     <div className="lq-a4-layout">
       <section className="lq-a4-payment-panel">
@@ -374,7 +397,10 @@ export default function LipaQrStudioPage() {
     setExporting(true);
     try {
       // Hakikisha faili linaweza kutengenezwa kabla ya kukata tokeni.
-      for (const page of pages) await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX, page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined);
+      for (const page of pages) {
+        const noQrSpec = page.classList.contains("lq-no-qr-artboard") ? getNoQrExportSpec(network) : null;
+        await captureArtboard(page, noQrSpec?.widthPx ?? (page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX), noQrSpec?.heightPx ?? (page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined));
+      }
       if (!firebaseUser) throw new Error("Ingia kwenye akaunti yako ili kupakua.");
       const config = await getServiceTokenConfig("stika-lipa");
       await consumeFirebaseTokens(firebaseUser.uid, {
@@ -385,7 +411,10 @@ export default function LipaQrStudioPage() {
       // Subiri watermark iondoke kwenye preview baada ya tokeni kuthibitishwa.
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const canvases: HTMLCanvasElement[] = [];
-      for (const page of pages) canvases.push(await captureArtboard(page, page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX, page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined));
+      for (const page of pages) {
+        const noQrSpec = page.classList.contains("lq-no-qr-artboard") ? getNoQrExportSpec(network) : null;
+        canvases.push(await captureArtboard(page, noQrSpec?.widthPx ?? (page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX), noQrSpec?.heightPx ?? (page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined)));
+      }
       const paperSuffix = network === "airtel" ? `-airtel-${airtelPaperSize.toLowerCase()}` : "";
       const stem = makeFileStem(values.businessName, values.lipaNumber) + paperSuffix;
       if (format === "pdf") {
@@ -393,9 +422,11 @@ export default function LipaQrStudioPage() {
         const pdf = await PDFDocument.create();
         for (let index = 0; index < canvases.length; index += 1) {
           const canvas = canvases[index];
-          const isAirtelCard = pages[index]?.dataset.network === "airtel";
-          const pageWidth = (isAirtelCard ? outputWidthMm : A5_WIDTH_MM) * 72 / 25.4;
-          const pageHeight = (isAirtelCard ? outputHeightMm : A5_HEIGHT_MM) * 72 / 25.4;
+          const pageElement = pages[index];
+          const noQrSpec = pageElement?.classList.contains("lq-no-qr-artboard") ? getNoQrExportSpec(network) : null;
+          const isAirtelCard = pageElement?.dataset.network === "airtel";
+          const pageWidth = (noQrSpec?.widthMm ?? (isAirtelCard ? outputWidthMm : A5_WIDTH_MM)) * 72 / 25.4;
+          const pageHeight = (noQrSpec?.heightMm ?? (isAirtelCard ? outputHeightMm : A5_HEIGHT_MM)) * 72 / 25.4;
           const image = await pdf.embedPng(canvas.toDataURL("image/png"));
           const page = pdf.addPage([pageWidth, pageHeight]);
           page.drawImage(image, { x: 0, y: 0, width: pageWidth, height: pageHeight });
@@ -428,19 +459,23 @@ export default function LipaQrStudioPage() {
     if (!validateBeforeAction()) return;
     outputUsed.current = true;
 
-    // Print size follows the selected Airtel paper; every other network stays A5.
+    // QR-free type-2 cards use their own landscape paper; QR/Airtel sizes remain unchanged.
+    const noQrSpec = stickerVariant === "no-qr" && network !== "airtel" ? getNoQrExportSpec(network) : null;
     const paperSize = network === "airtel" ? airtelPaperSize : "A5";
-    const widthMm = paperSize === "A4" ? A4_WIDTH_MM : A5_WIDTH_MM;
-    const heightMm = paperSize === "A4" ? A4_HEIGHT_MM : A5_HEIGHT_MM;
+    const widthMm = noQrSpec?.widthMm ?? (paperSize === "A4" ? A4_WIDTH_MM : A5_WIDTH_MM);
+    const heightMm = noQrSpec?.heightMm ?? (paperSize === "A4" ? A4_HEIGHT_MM : A5_HEIGHT_MM);
     document.getElementById("lq-dynamic-print-size")?.remove();
     const printStyle = document.createElement("style");
     printStyle.id = "lq-dynamic-print-size";
     printStyle.textContent = `
-      @page { size: ${paperSize === "A4" ? "A4 landscape" : "A5 portrait"}; margin: 0; }
+      @page { size: ${noQrSpec ? "A5 portrait" : paperSize === "A4" ? "A4 landscape" : "A5 portrait"}; margin: 0; }
+      ${noQrSpec ? `@page lq-no-qr { size: ${widthMm}mm ${heightMm}mm; margin: 0; }` : ""}
       @media print {
-        html, body { width: ${widthMm}mm !important; height: ${heightMm}mm !important; margin: 0 !important; padding: 0 !important; }
-        .lq-print-root { width: ${widthMm}mm !important; height: ${heightMm}mm !important; }
-        .lq-print-root > .lq-artboard { width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }\n        .lq-print-root > .lq-card-artboard--airtel-a4 { width: 297mm !important; height: 210mm !important; }
+        html, body { margin: 0 !important; padding: 0 !important; }
+        .lq-print-root { width: ${widthMm}mm !important; }
+        .lq-print-root > .lq-artboard:not(.lq-no-qr-artboard) { width: ${noQrSpec ? "148" : widthMm}mm !important; height: ${noQrSpec ? "210" : heightMm}mm !important; aspect-ratio: auto !important; }
+        .lq-print-root > .lq-no-qr-artboard { page: lq-no-qr; width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }
+        .lq-print-root > .lq-card-artboard--airtel-a4 { width: 297mm !important; height: 210mm !important; }
       }
     `;
     document.head.appendChild(printStyle);
