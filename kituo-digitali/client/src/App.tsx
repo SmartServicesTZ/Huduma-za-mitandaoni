@@ -14,6 +14,9 @@ function Router() {
     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/login"} component={Home} />
+        <Route path={"/register"} component={Home} />
+        <Route path={"/dashboard"} component={Home} />
         <Route path={"/services"} component={Home} />
         <Route path={"/about"} component={Home} />
         <Route path={"/nida-demo"} component={SoftCopyNidaDemoPage} />
