@@ -309,7 +309,7 @@ export async function createTillPaymentOrder(request: Request) {
   if (String(application.userId ?? "") !== auth.uid || String(application.serviceSlug ?? "") !== "pata-till-mitandao-yote") throw new ApiError("permission-denied", "Huna ruhusa ya kulipia ombi hili.");
   const applicant = application.applicantData && typeof application.applicantData === "object" ? application.applicantData as Record<string, unknown> : {};
   const network = statusValue(applicant.network);
-  const amount = network === "AIRTEL" || network === "VODACOM" ? 200 : 0;
+  const amount = network === "AIRTEL" ? 5000 : network === "VODACOM" ? 35000 : 0;
   if (!amount) throw new ApiError("failed-precondition", "Mtandao huu hauna malipo ya Till kupitia mfumo huu.");
   if (statusValue(applicant.paymentStatus) === "PAID" || !["AWAITING_PAYMENT", "PENDING"].includes(String(application.status))) throw new ApiError("failed-precondition", "Ombi hili halisubiri malipo.");
   const existing = await db.collection("servicePaymentOrders").where("applicationId", "==", applicationId).limit(20).get();
