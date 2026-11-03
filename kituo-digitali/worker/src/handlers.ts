@@ -377,7 +377,9 @@ export const claimDailyTokenBonus = callable(async (request) => {
       ? dateInTanzania((createdAt as {toDate: () => Date}).toDate())
       : typeof createdAt === "string" ? createdAt.slice(0, 10) : "";
     const daysGranted = Math.max(0, Math.floor(Number(profile.dailyBonusDaysGranted ?? 0)));
-    if (!createdDate || createdDate >= today || profile.lastDailyTokenBonusDate === today || dailyBonus === 0 || daysGranted >= 3) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0), daysGranted };
+    const elapsedDays = createdDate ? Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${createdDate}T00:00:00Z`)) / 86_400_000) : 0;
+    // Bonus inapatikana katika siku 1, 2 na 3 tu baada ya usajili; siku zilizopita hazihamishwi mbele.
+    if (!createdDate || elapsedDays < 1 || elapsedDays > 3 || profile.lastDailyTokenBonusDate === today || dailyBonus === 0 || daysGranted >= 3) return { granted: 0, balanceAfter: Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0), daysGranted };
     const before = Number(profile.tokenBalanceOther ?? profile.tokenBalance ?? 0);
     const bonusBefore = Number(profile.tokenBalanceBonus ?? 0);
     const paymentBefore = Number(profile.tokenBalancePayment ?? Math.max(0, before - bonusBefore));
