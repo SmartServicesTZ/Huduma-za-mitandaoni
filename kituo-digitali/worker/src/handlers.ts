@@ -420,7 +420,7 @@ export const consumeTokens = callable(async (request) => {
     // Kitambulisho cha wakala ni huduma ya kulipia hata kama rekodi ya zamani ina isFree=true/tokenCost=0.
     // Tumia bei ya admin ikiwa ni chanya; vinginevyo tokeni 2 ndizo gharama ya msingi.
     const isAgentId = serviceId === "kitambulisho-wakala" || serviceId.startsWith("kitambulisho-wakala-");
-    const configuredCost = serviceId === "stika-mawakala" ? Math.max(3, Number(service.tokenCost)) : Number(service.tokenCost);
+    const configuredCost = serviceId === "stika-mawakala" ? Math.max(3, Number(service.tokenCost ?? 3)) : Number(service.tokenCost);
     if (service.isFree === true && configuredCost <= 0 && !isAgentId) throw new ApiError("failed-precondition", "Huduma hii haitumii tokeni.");
     // Bei ya kitambulisho cha wakala huamuliwa upande wa server kwa aina iliyochaguliwa.
     const agentType = typeof data.agentType === "string" ? data.agentType.trim().slice(0, 40) : "";
