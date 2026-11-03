@@ -219,7 +219,7 @@ export default function AgentStickerPage(){
       await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
       const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png",1));
       if(!blob)throw new Error("Imeshindikana kuandaa stika. Jaribu tena.");
-      const safe=cleanName(agentName).replace(/\\s+/g,"-").toLowerCase();
+      const safe=cleanName(agentName).replace(/\s+/g,"-").toLowerCase();
       await triggerDownload(blob,`stika-wakala-${network}-${safe}-${cleanNumber(agentNumber)}.png`,"PNG",{source:"stika-wakala",sourceRef:entryRequestId.current});
       setOutputUsed(true);
       try { sessionStorage.setItem("smartservicestz:agent-sticker-used","1"); } catch { /* keep the one-download lock in memory */ }
