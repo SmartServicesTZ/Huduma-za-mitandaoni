@@ -110,7 +110,7 @@ export default function TINCertificatePage() {
       pdfBytes.set(bytes);
       const blob = new Blob([pdfBytes.buffer], { type: "application/pdf" });
       await triggerDownload(blob, "tin-certificate.pdf", "PDF");
-      toast.success("PDF imeandaliwa kupakuliwa. Angalia Downloads au Historia ndani ya dakika 30.");
+      toast.success("PDF imehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Imeshindikana kutengeneza PDF.");
     } finally {
