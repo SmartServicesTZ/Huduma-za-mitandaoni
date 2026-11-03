@@ -471,7 +471,7 @@ export default function LipaQrStudioPage() {
       @page { size: ${noQrSpec ? "A5 portrait" : paperSize === "A4" ? "A4 landscape" : "A5 portrait"}; margin: 0; }
       ${noQrSpec ? `@page lq-no-qr { size: ${widthMm}mm ${heightMm}mm; margin: 0; }` : ""}
       @media print {
-        html, body { margin: 0 !important; padding: 0 !important; }
+        html, body { width: ${widthMm}mm !important; height: ${heightMm}mm !important; margin: 0 !important; padding: 0 !important; }
         .lq-print-root { width: ${widthMm}mm !important; }
         .lq-print-root > .lq-artboard:not(.lq-no-qr-artboard) { width: ${noQrSpec ? "148" : widthMm}mm !important; height: ${noQrSpec ? "210" : heightMm}mm !important; aspect-ratio: auto !important; }
         .lq-print-root > .lq-no-qr-artboard { page: lq-no-qr; width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }
