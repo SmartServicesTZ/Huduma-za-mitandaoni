@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildLipaInfoQrPayload,
+  getHalotelStickerDigits,
   normalizeLipaNumber,
   validateLipaCard,
   type LipaCardValues,
@@ -39,5 +40,31 @@ describe("Lipa QR Studio helpers", () => {
       "Eneo: MBEYA",
       "Posta: 53000",
     ].join("\n"));
+  });
+});
+
+
+describe("Halotel sticker digit and footer requirements", () => {
+  it.each([5, 6, 7, 8, 9])("supports a %i-digit Halotel Lipa number without changing generic validation", (length) => {
+    const lipaNumber = "123456789".slice(0, length);
+    expect(normalizeLipaNumber(lipaNumber)).toBe(lipaNumber);
+    expect(validateLipaCard({ ...validValues, lipaNumber })).toEqual({});
+    expect(lipaNumber.length).toBe(length);
+  });
+});
+
+describe("Halotel sticker digit boxes", () => {
+  it.each([5, 6, 7, 8, 9])("returns exactly %i boxes for a %i-digit number", (length) => {
+    const digits = getHalotelStickerDigits("123456789".slice(0, length));
+    expect(digits).toHaveLength(length);
+    expect(digits.join("")).toBe("123456789".slice(0, length));
+  });
+
+  it("shows five empty placeholder boxes before a number is entered", () => {
+    expect(getHalotelStickerDigits("")).toEqual(["", "", "", "", ""]);
+  });
+
+  it("does not change the shared 5-to-12 digit validation", () => {
+    expect(validateLipaCard({ ...validValues, lipaNumber: "123456789012" })).toEqual({});
   });
 });
