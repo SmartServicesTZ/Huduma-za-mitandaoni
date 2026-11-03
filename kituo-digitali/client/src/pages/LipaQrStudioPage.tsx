@@ -160,7 +160,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
       </header>
       <section className="lq-no-qr-body">
         <div className="lq-no-qr-number-label">Lipa namba</div>
-        <div className="lq-no-qr-number-boxes" aria-label={`Namba ya Lipa: ${values.lipaNumber || "haijawekwa"}`}>
+        <div className="lq-no-qr-number-boxes" aria-label={`Namba ya Lipa: ${values.lipaNumber || "haijawekwa"}`} style={{ gridTemplateColumns: `repeat(${boxCount}, minmax(0, 1fr))` }}>
           {Array.from({ length: boxCount }, (_, index) => <span key={index}>{digits[index] || ""}</span>)}
         </div>
         <div className="lq-no-qr-name-row"><span>Jina</span><strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong></div>
