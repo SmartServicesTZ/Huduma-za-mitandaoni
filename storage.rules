@@ -24,16 +24,6 @@ service firebase.storage {
       allow delete: if accountMay('profile') && request.auth.uid == userId;
     }
 
-    match /users/{userId}/documents/{documentId}/{fileName} {
-      allow read: if accountMayRead() && request.auth.uid == userId;
-      allow write: if accountMay('services')
-        && request.auth.uid == userId
-        && documentId.matches('[A-Za-z0-9_-]{16,80}')
-        && request.resource.size > 0
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('(image/(jpeg|png|webp)|application/pdf|application/octet-stream)');
-      allow delete: if accountMay('services') && request.auth.uid == userId;
-    }
     match /license-documents/{userId}/{fileName} {
       allow read: if accountMayRead() && request.auth.uid == userId;
       allow write, delete: if false;

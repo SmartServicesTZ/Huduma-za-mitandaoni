@@ -122,3 +122,26 @@ test("FimiPay order-status endpoint requires a Firebase-authenticated customer",
   }), baseEnv as never);
   assert.equal(response.status, 401);
 });
+
+
+test("Hati Zangu list, upload and file-download routes all require Firebase authentication", async () => {
+  const list = await worker.fetch(request("/user-documents"), baseEnv as never);
+  assert.equal(list.status, 401);
+  assert.equal((await list.json() as { error: { code: string } }).error.code, "unauthenticated");
+
+  const form = new FormData();
+  form.append("documentId", "doc123456789012345678901234");
+  form.append("name", "hati-test.png");
+  form.append("type", "PNG");
+  form.append("file", new Blob(["test"], { type: "image/png" }), "hati-test.png");
+  const upload = await worker.fetch(new Request("https://worker.example/user-documents", {
+    method: "POST",
+    body: form,
+  }), baseEnv as never);
+  assert.equal(upload.status, 401);
+  assert.equal((await upload.json() as { error: { code: string } }).error.code, "unauthenticated");
+
+  const download = await worker.fetch(request("/user-documents/doc123456789012345678901234"), baseEnv as never);
+  assert.equal(download.status, 401);
+  assert.equal((await download.json() as { error: { code: string } }).error.code, "unauthenticated");
+});
