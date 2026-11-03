@@ -152,9 +152,9 @@ function PasswordField({ value, visible, autoComplete, placeholder, onChange, on
   return <div className="password-field"><input required type={visible ? "text" : "password"} autoComplete={autoComplete} value={value} onChange={onChange} placeholder={placeholder} /><button type="button" aria-label={visible ? "Ficha password" : "Onesha password"} onClick={onToggle}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>;
 }
 
-function LocalAuthModal({ onClose }: { onClose: () => void }) {
+function LocalAuthModal({ onClose, initialMode = "login" }: { onClose: () => void; initialMode?: "login" | "register" }) {
   const [, navigate] = useLocation();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -237,7 +237,16 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
   };
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
-  useEffect(() => { const openAuth = () => setAuthOpen(true); window.addEventListener("smartservicestz-open-auth", openAuth); return () => window.removeEventListener("smartservicestz-open-auth", openAuth); }, []);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  useEffect(() => {
+    const openAuth = (event: Event) => {
+      const requestedMode = (event as CustomEvent<{ mode?: "login" | "register" }>).detail?.mode;
+      setAuthMode(requestedMode === "register" ? "register" : "login");
+      setAuthOpen(true);
+    };
+    window.addEventListener("smartservicestz-open-auth", openAuth);
+    return () => window.removeEventListener("smartservicestz-open-auth", openAuth);
+  }, []);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<Record<string, unknown> & { id: string }>>([]);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -277,7 +286,7 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
       <Link href="/" className="portal-brand"><span className="portal-logo" aria-label="SmartServicesTZ logo"><i>S</i><b>S</b></span><span><b>SmartServicesTZ</b><small className="brand-subtitle">HUDUMA ZA MTANDAONI</small></span></Link>
       <label className="global-search"><Search size={18} /><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tafuta huduma, akaunti au sehemu..." aria-label="Tafuta huduma" /><kbd>Ctrl/⌘ K</kbd></label>
       <div className="header-actions"><a className="header-support" href={whatsappUrl} target="_blank" rel="noreferrer" aria-label="Wasiliana na support kupitia WhatsApp"><MessageCircle size={17} /><span>WhatsApp</span></a><div className="notification-anchor" style={{ position: "relative" }}><button type="button" className="header-icon" onClick={() => { if (isAuthenticated) setNotificationsOpen((open) => !open); else { setAuthOpen(true); toast("Ingia ili kuona taarifa za akaunti yako."); } }} aria-label="Fungua arifa na ujumbe" title="Arifa na ujumbe"><Bell size={19} />{unreadCount > 0 && <span style={{ position: "absolute", right: "-4px", top: "-5px", minWidth: "17px", height: "17px", borderRadius: "999px", background: "#dc2626", color: "#fff", fontSize: "10px", fontWeight: 800, display: "grid", placeItems: "center", padding: "0 3px" }}>{unreadCount > 99 ? "99+" : unreadCount}</span>}</button>{notificationsOpen && <div role="dialog" aria-label="Notification na ujumbe" style={{ position: "absolute", right: 0, top: "calc(100% + 12px)", zIndex: 100, width: "min(360px, calc(100vw - 28px))", maxHeight: "min(70vh, 520px)", overflowY: "auto", background: "#fff", color: "#172033", border: "1px solid #dce4ec", borderRadius: "14px", boxShadow: "0 18px 48px #0f172a2b", padding: "14px" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "10px" }}><strong>Ujumbe na notification</strong><button type="button" onClick={() => setNotificationsOpen(false)} aria-label="Funga notification" style={{ border: 0, background: "transparent", fontSize: "20px", cursor: "pointer" }}>×</button></div>{notifications.length === 0 ? <p style={{ margin: 0, padding: "20px 4px", color: "#68758a", fontSize: "13px" }}>Bado hujapokea ujumbe. Ujumbe wa hali ya maombi utaonekana hapa.</p> : notifications.slice(0, 30).map((item) => <article key={item.id} onClick={() => void openNotification(item)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") void openNotification(item); }} style={{ padding: "11px 2px", borderTop: "1px solid #edf1f5", cursor: "pointer", background: item.read === true || (Array.isArray(item.readBy) && item.readBy.includes(user?.uid ?? "")) ? "#fff" : "#eff6ff" }}><strong style={{ display: "block", fontSize: "13px", lineHeight: 1.4 }}>{String(item.subject ?? "Taarifa mpya")}</strong><p style={{ whiteSpace: "pre-wrap", margin: "5px 0", color: "#465569", fontSize: "12px", lineHeight: 1.55 }}>{String(item.body ?? "")}</p><small style={{ color: "#8793a3", fontSize: "10px" }}>{String(item.createdAt ?? "")}</small></article>)}</div>}</div>{authLoading ? <span className="header-user">Inathibitisha akaunti...</span> : !isAuthenticated ? <button className="button button--green button--small" onClick={() => setAuthOpen(true)}><LogIn size={15} /> Ingia / Jisajili</button> : null}</div>
-    </header>{authOpen && <LocalAuthModal onClose={() => setAuthOpen(false)} />}
+    </header>{authOpen && <LocalAuthModal initialMode={authMode} onClose={() => setAuthOpen(false)} />}
   </>;
 }
 
@@ -1131,6 +1140,13 @@ function BottomNav() {
 
 export default function Home() {
   const [location, navigate] = useLocation();
+  useEffect(() => {
+    if (location === "/login" || location === "/register") {
+      window.dispatchEvent(new CustomEvent("smartservicestz-open-auth", {
+        detail: { mode: location === "/register" ? "register" : "login" },
+      }));
+    }
+  }, [location]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [serviceNotice, setServiceNotice] = useState("");
