@@ -167,7 +167,8 @@ async function settle(orderId: string, providerOrder: Record<string, unknown>, t
     const before = Number(user.tokenBalanceOther ?? user.tokenBalance ?? 0);
     if (!Number.isSafeInteger(before) || before < 0 || !Number.isSafeInteger(before + tokens)) return markReviewInTransaction("Customer token balance failed integrity validation");
     const after = before + tokens;
-    const paymentBefore = Number(user.tokenBalancePayment ?? Math.max(0, before - Number(user.tokenBalanceBonus ?? 0)));
+    const bonusBefore = Math.min(before, Math.max(0, Number(user.tokenBalanceBonus ?? 0)));
+    const paymentBefore = Math.max(0, before - bonusBefore);
     const paymentAfter = paymentBefore + tokens;
     const now = FieldValue.serverTimestamp();
     const transactionData = {
@@ -179,7 +180,7 @@ async function settle(orderId: string, providerOrder: Record<string, unknown>, t
       paymentAmount: amount, currency: "TZS", createdAt: now, status: "completed",
     };
 
-    tx.update(userRef, { tokenBalanceOther: after, tokenBalance: after, tokenBalancePayment: paymentAfter, tokenBalanceBonus: Number(user.tokenBalanceBonus ?? 0), updatedAt: now });
+    tx.update(userRef, { tokenBalanceOther: after, tokenBalance: after, tokenBalancePayment: paymentAfter, tokenBalanceBonus: bonusBefore, updatedAt: now });
     tx.create(ledgerRef, transactionData);
     tx.set(canonicalRef, { ...order, orderId, userId, amount, currency: "TZS", tokens, tokenAmount: tokens, status: "PAID", settled: true, paymentStatus: "COMPLETED", providerTransactionId: transid ?? null, balanceBefore: before, balanceAfter: after, creditedAt: now, updatedAt: now }, { merge: true });
     if (legacySnapshot.exists) tx.set(legacyRef, { settled: true, paymentStatus: "COMPLETED", providerTransactionId: transid ?? null, balanceBefore: before, balanceAfter: after, updatedAt: now }, { merge: true });
