@@ -152,7 +152,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   if (variant === "no-qr" && network !== "airtel") {
     const digits = values.lipaNumber.replace(/\D/g, "").slice(0, 12).split("");
     const boxCount = Math.max(7, digits.length);
-    return <article ref={ref} className={`lq-artboard lq-no-qr-artboard lq-no-qr-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-watermarked={watermarked} data-paper-size={paperSize}>
+    return <article ref={ref} className={`lq-artboard lq-no-qr-artboard lq-no-qr-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
       <header className="lq-no-qr-header">
         <h2>{network === "voda" ? "Lipa kwa m-pesa hapa" : "LIPA KWA SIMU HAPA"}</h2>
         {network === "yas" ? <div className="lq-no-qr-brand-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="YAS" /><img src={`${import.meta.env.BASE_URL}stika-yas/mixx-yas-logo.png`} alt="Mixx by Yas" /></div>
