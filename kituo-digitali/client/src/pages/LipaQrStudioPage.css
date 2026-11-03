@@ -2329,3 +2329,96 @@
   .lq-network-logo { width: 34px !important; }
   .lq-editor-panel { padding: 9px !important; }
 }
+
+
+/* Clear, high-contrast colour coding for sticker type and output selection. */
+.lq-sticker-variant-choice {
+  display: grid !important;
+  grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  gap: 9px !important;
+  padding: 5px !important;
+  border: 0 !important;
+  border-radius: 13px !important;
+  background: #dfe6ee !important;
+}
+.lq-sticker-variant-choice .lq-sticker-type-option {
+  display: flex !important;
+  min-height: 54px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 10px 7px !important;
+  border: 2px solid transparent !important;
+  border-radius: 10px !important;
+  color: #173322 !important;
+  background: #b9e9c8 !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  letter-spacing: .015em !important;
+  text-align: center !important;
+  box-shadow: 0 2px 5px #17202c18 !important;
+}
+.lq-sticker-variant-choice .lq-sticker-type-option--qr {
+  color: #fff !important;
+  background: #159447 !important;
+}
+.lq-sticker-variant-choice .lq-sticker-type-option--qr.is-active {
+  border-color: #075d2a !important;
+  background: #087b38 !important;
+  box-shadow: 0 0 0 3px #16a34a35, 0 3px 8px #14532d30 !important;
+}
+.lq-sticker-variant-choice .lq-sticker-type-option--no-qr {
+  color: #4a3100 !important;
+  background: #ffdc55 !important;
+}
+.lq-sticker-variant-choice .lq-sticker-type-option--no-qr.is-active {
+  border-color: #a66b00 !important;
+  background: #ffc928 !important;
+  box-shadow: 0 0 0 3px #eab30845, 0 3px 8px #854d0e30 !important;
+}
+.lq-output-panel .lq-choice-group[aria-label="Chagua aina ya stika ya matokeo"] {
+  display: grid !important;
+  grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  gap: 9px !important;
+  padding: 5px !important;
+  border: 0 !important;
+  border-radius: 13px !important;
+  background: #dfe6ee !important;
+}
+.lq-output-panel .lq-output-type-option {
+  min-height: 54px !important;
+  padding: 10px 7px !important;
+  border: 2px solid transparent !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  font-weight: 950 !important;
+  text-align: center !important;
+  box-shadow: 0 2px 5px #17202c18 !important;
+}
+.lq-output-panel .lq-output-type-option--single {
+  color: #fff !important;
+  background: #159447 !important;
+}
+.lq-output-panel .lq-output-type-option--single.is-active {
+  border-color: #075d2a !important;
+  background: #087b38 !important;
+  box-shadow: 0 0 0 3px #16a34a35, 0 3px 8px #14532d30 !important;
+}
+.lq-output-panel .lq-output-type-option--guide {
+  color: #fff !important;
+  background: #1976d2 !important;
+}
+.lq-output-panel .lq-output-type-option--guide.is-active {
+  border-color: #0b4380 !important;
+  background: #125eae !important;
+  box-shadow: 0 0 0 3px #2196f340, 0 3px 8px #123c6b30 !important;
+}
+@media (max-width: 380px) {
+  .lq-sticker-variant-choice .lq-sticker-type-option,
+  .lq-output-panel .lq-output-type-option {
+    min-height: 50px !important;
+    padding: 8px 4px !important;
+    font-size: 10px !important;
+  }
+}
