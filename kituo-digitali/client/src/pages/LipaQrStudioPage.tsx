@@ -20,6 +20,7 @@ import "./LipaQrStudioPage.css";
 type PageMode = "card-only" | "card-and-guide";
 type FileFormat = "pdf" | "png";
 type LipaNetwork = "voda" | "yas" | "airtel" | "halotel";
+type StickerVariant = "qr" | "no-qr";
 
 const LIPA_NETWORKS: Record<LipaNetwork, { label: string; stickerName: string }> = {
   voda: { label: "Vodacom M-Pesa", stickerName: "Pesa ni M-Pesa" },
@@ -136,10 +137,15 @@ function A4ServiceLogo({ kind }: { kind: A4ServiceLogoKind }) {
   return <svg viewBox="0 0 240 62" role="img" aria-label="Huduma nyingine za malipo" className="lq-a4-vector-logo"><rect x="7" y="9" width="44" height="34" rx="6" fill="#263b75"/><rect x="16" y="17" width="44" height="34" rx="6" fill="#e0b832"/><rect x="25" y="25" width="44" height="28" rx="5" fill="#31875d"/><path d="M37 34h20M37 41h14" stroke="#fff" strokeWidth="3" strokeLinecap="round"/><text x="83" y="40" fill="#bd1d2c" fontSize="29" fontWeight="900">WENGINE</text></svg>;
 }
 
-const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; watermarked: boolean; paperSize: "A5" | "A4" }>(function CardArtboard({ values, qrDataUrl, network, watermarked, paperSize }, ref) {
+const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl: string; network: LipaNetwork; variant: StickerVariant; watermarked: boolean; paperSize: "A5" | "A4" }>(function CardArtboard({ values, qrDataUrl, network, variant, watermarked, paperSize }, ref) {
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halopesa-logo.png"}`;
+  if (variant === "no-qr" && network !== "airtel") return <article ref={ref} className={`lq-artboard lq-no-qr-artboard lq-no-qr-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
+    <header className="lq-no-qr-header"><h2>{network === "voda" ? "Lipa kwa m-pesa hapa" : "LIPA KWA SIMU HAPA"}</h2><img src={network === "voda" ? `${import.meta.env.BASE_URL}vodacom-logo.png` : `${import.meta.env.BASE_URL}${network === "yas" ? "yas-logo.png" : "halotel-logo.png"}`} alt={LIPA_NETWORKS[network].label} /></header>
+    <section className="lq-no-qr-body"><div className="lq-no-qr-number-label">Lipa namba</div><div className="lq-no-qr-number-boxes" aria-label="Namba ya Lipa">{Array.from({ length: 7 }, (_, index) => <span key={index} />)}</div><div className="lq-no-qr-name-row"><span>Jina</span><strong>{values.businessName.trim().toUpperCase() || " "}</strong></div><p>{network === "voda" ? "Lipa kwenda mitandao yote" : "KUTOKA MITANDAO YOTE"}</p></section>
+    {network === "voda" && <footer className="lq-no-qr-voda-footer"><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" /><span>m-pesa</span><b>Mixx by Yas</b><b>T-PESA</b><span>Airtel money</span><span>halopesa</span></footer>}
+  </article>;
   if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">
     <div className="lq-a4-layout">
       <section className="lq-a4-payment-panel">
@@ -292,6 +298,7 @@ export default function LipaQrStudioPage() {
   const outputUsed = useRef(false);
   const [values, setValues] = useState<LipaCardValues>({ lipaNumber: "", businessName: "", location: "", postalCode: "" });
   const [network, setNetwork] = useState<LipaNetwork>("voda");
+  const [stickerVariant, setStickerVariant] = useState<StickerVariant>("qr");
   const [pageMode, setPageMode] = useState<PageMode>("card-only");
   const [format, setFormat] = useState<FileFormat>("pdf");
   const [airtelPaperSize, setAirtelPaperSize] = useState<"A5" | "A4">("A5");
@@ -351,7 +358,8 @@ export default function LipaQrStudioPage() {
 
   const validateBeforeAction = () => {
     setShowErrors(true);
-    if (!isValid || !paymentPayload || !qrDataUrl) {
+    const needsQr = stickerVariant === "qr" || network === "airtel";
+    if (!isValid || (needsQr && (!paymentPayload || !qrDataUrl))) {
       toast.error("Kamilisha taarifa zote sahihi kabla ya kuendelea.");
       return false;
     }
@@ -445,7 +453,8 @@ export default function LipaQrStudioPage() {
   };
 
   const fieldError = (field: keyof LipaCardValues) => showErrors ? errors[field] : undefined;
-  const readyToDownload = isValid && Boolean(qrDataUrl) && !exporting && entryStatus === "ready" && !outputUsed.current;
+  const needsQr = stickerVariant === "qr" || network === "airtel";
+  const readyToDownload = isValid && (!needsQr || Boolean(qrDataUrl)) && !exporting && entryStatus === "ready" && !outputUsed.current;
 
   if (entryStatus === "checking") return null;
   if (entryStatus === "failed") return <main className="lq-app"><section className="lq-editor-panel" style={{maxWidth:480,margin:"48px auto"}}><p role="alert">{entryMessage}</p><button type="button" onClick={()=>setLocation("/services")} className="lq-button lq-button-outline" style={{width:"100%",marginTop:18}}>RUDI KWENYE HUDUMA</button></section></main>;
@@ -474,6 +483,10 @@ export default function LipaQrStudioPage() {
           </div>
           <small>Muundo wa stika hubadilika kulingana na mtandao; jaza taarifa zako mwenyewe hapa chini.</small>
         </div>
+        {network !== "airtel" && <div className="lq-choice-group lq-sticker-variant-choice" role="group" aria-label="Chagua aina ya stika">
+          <button type="button" aria-pressed={stickerVariant === "qr"} className={stickerVariant === "qr" ? "is-active" : ""} onClick={() => setStickerVariant("qr")}>Stika yenye QR</button>
+          <button type="button" aria-pressed={stickerVariant === "no-qr"} className={stickerVariant === "no-qr" ? "is-active" : ""} onClick={() => setStickerVariant("no-qr")}>Stika bila QR</button>
+        </div>}
         <label className={`lq-field ${fieldError("lipaNumber") ? "has-error" : ""}`} htmlFor="lq-number">
           <span>Namba ya Lipa</span>
           <input id="lq-number" inputMode="numeric" autoComplete="off" maxLength={12} placeholder="Tarakimu 5–12" value={values.lipaNumber} onChange={(event) => update("lipaNumber", event.target.value)} aria-invalid={Boolean(fieldError("lipaNumber"))} />
@@ -521,7 +534,7 @@ export default function LipaQrStudioPage() {
         </div>
       </div>
       <div className="lq-preview-pages lq-print-root" data-paper-size={selectedPaperSize}>
-        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} watermarked={entryStatus !== "paid"} paperSize={selectedPaperSize} />
+        <CardArtboard ref={cardRef} values={values} qrDataUrl={qrDataUrl} network={network} variant={stickerVariant} watermarked={entryStatus !== "paid"} paperSize={selectedPaperSize} />
         {pageMode === "card-and-guide" && <HowToPayArtboard ref={guideRef} values={values} network={network} watermarked={entryStatus === "paid"} />}
       </div>
       <div className="lq-preview-footnote"><Info size={14} />Hakikisha QR inasomwa na inaonyesha jina na namba sahihi kabla ya kuchapisha.</div>

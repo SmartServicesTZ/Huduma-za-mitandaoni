@@ -2099,3 +2099,27 @@
   .lq-card-artboard--halotel .lq-sticker-header { padding-right: 7%; padding-left: 7%; }
   .lq-card-artboard--halotel .lq-halotel-qr-paper { width: 60% !important; }
 }
+
+/* Sticker type 2: QR-free layouts. Existing QR artboards remain untouched. */
+.lq-no-qr-artboard{container-type:inline-size;display:flex;flex-direction:column;overflow:hidden;border:0;border-radius:0;color:#fff;text-transform:none}
+.lq-no-qr-header{display:flex;align-items:flex-start;justify-content:space-between;flex:0 0 25%;box-sizing:border-box;padding:4% 7% 2%;background:#fff0;color:#fff}
+.lq-no-qr-header h2{max-width:68%;margin:0;font-size:7.1cqw;line-height:1.05;font-weight:950;letter-spacing:-.045em;text-transform:uppercase}
+.lq-no-qr-header img{width:24%;max-height:19cqw;object-fit:contain;padding:2%;background:#fff}
+.lq-no-qr-body{position:relative;display:flex;flex:1;flex-direction:column;align-items:flex-start;box-sizing:border-box;padding:0 7% 4%;color:#fff}
+.lq-no-qr-number-label{padding:1.7% 2.5%;font-size:5.7cqw;line-height:1;font-weight:950;text-transform:none;background:#c90020}
+.lq-no-qr-number-boxes{display:grid;grid-template-columns:repeat(7,1fr);gap:1%;width:66%;margin-top:1.7%}
+.lq-no-qr-number-boxes span{display:block;aspect-ratio:.72;background:#fff;border:1px solid #6d0a18}
+.lq-no-qr-name-row{display:flex;align-items:stretch;width:64%;margin-top:5%;min-height:14%;color:#111;background:#fff}
+.lq-no-qr-name-row>span{display:grid;place-items:center;padding:0 2.5%;color:#fff;background:#c90020;font-size:5.7cqw;font-weight:950}
+.lq-no-qr-name-row>strong{display:flex;align-items:center;min-width:0;flex:1;padding:0 3%;font-size:3.5cqw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lq-no-qr-body>p{align-self:center;margin:auto 0 0;font-size:4.6cqw;line-height:1.1;font-weight:950;text-transform:uppercase}
+.lq-no-qr-artboard--voda{background:#a00018;background-image:linear-gradient(130deg,#700818 0%,#bb071c 58%,#df3a44 100%)}
+.lq-no-qr-artboard--voda .lq-no-qr-header{background:#9d0015}
+.lq-no-qr-artboard--voda .lq-no-qr-header img{background:transparent}
+.lq-no-qr-artboard--voda .lq-no-qr-body:before{position:absolute;content:"";right:25%;top:0;width:44%;height:70%;border:8px solid #e3061b55;border-radius:50%;transform:rotate(-15deg);pointer-events:none}
+.lq-no-qr-artboard--voda .lq-no-qr-body>p{color:#a9001b;background:#fff;border-radius:0 30px 0 0;padding:3% 8%;width:76%;margin-left:-7%;margin-right:-7%}
+.lq-no-qr-voda-footer{display:flex;align-items:center;justify-content:space-around;gap:1%;min-height:13%;padding:2% 1%;color:#263b61;background:#fff;font-size:2.8cqw;font-weight:850}
+.lq-no-qr-voda-footer img{width:9%;max-height:7cqw;object-fit:contain}.lq-no-qr-voda-footer span,.lq-no-qr-voda-footer b{white-space:nowrap}.lq-no-qr-voda-footer b:nth-of-type(1){padding:2% 3%;border-radius:4px;color:#fff;background:#1b4e87}.lq-no-qr-voda-footer b:nth-of-type(2){padding:2% 3%;border-radius:4px;color:#fff;background:#151515}
+.lq-no-qr-artboard--yas{background:#080d86;background-image:linear-gradient(145deg,#10179f,#070873)}
+.lq-no-qr-artboard--yas .lq-no-qr-header{background:transparent}.lq-no-qr-artboard--yas .lq-no-qr-header img{width:22%;padding:3%;background:#fff}.lq-no-qr-artboard--yas .lq-no-qr-number-label{display:none}.lq-no-qr-artboard--yas .lq-no-qr-number-boxes{width:100%;gap:1.2%;margin-top:3%;order:0}.lq-no-qr-artboard--yas .lq-no-qr-number-boxes span{aspect-ratio:.82;border:0}.lq-no-qr-artboard--yas .lq-no-qr-name-row{width:100%;min-height:18%;margin-top:2%;order:1}.lq-no-qr-artboard--yas .lq-no-qr-name-row>span{display:none}.lq-no-qr-artboard--yas .lq-no-qr-name-row>strong{font-size:4.2cqw}.lq-no-qr-artboard--yas .lq-no-qr-body>p{margin-top:auto;align-self:center;font-size:5.2cqw}.lq-no-qr-artboard--halotel{background:#f58200;background-image:linear-gradient(145deg,#ff9e0b,#ee7600)}.lq-no-qr-artboard--halotel .lq-no-qr-header{background:transparent}.lq-no-qr-artboard--halotel .lq-no-qr-number-label{display:none}.lq-no-qr-artboard--halotel .lq-no-qr-number-boxes{width:100%;margin-top:3%;gap:1.2%}.lq-no-qr-artboard--halotel .lq-no-qr-number-boxes span{aspect-ratio:.82;border:0}.lq-no-qr-artboard--halotel .lq-no-qr-name-row{width:100%;min-height:22%;margin-top:2%}.lq-no-qr-artboard--halotel .lq-no-qr-name-row>span{display:none}.lq-no-qr-artboard--halotel .lq-no-qr-name-row>strong{font-size:4.2cqw}.lq-no-qr-artboard--halotel .lq-no-qr-body>p{margin-top:auto;align-self:center;font-size:5.2cqw}
+.lq-sticker-variant-choice{margin-top:2px}
