@@ -91,18 +91,20 @@ async function drawSticker(canvas:HTMLCanvasElement,network:NetworkKey,name:stri
     return;
   }
   if(network==="yas"){
-    canvas.width=W;canvas.height=H;
-    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,"#0d6bb8");bg.addColorStop(.52,"#064b91");bg.addColorStop(1,"#061e4a");
-    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-    ctx.save();ctx.globalAlpha=.13;ctx.strokeStyle="#ffffff";ctx.lineWidth=5;
-    for(let x=-H;x<W;x+=110){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+H,H);ctx.stroke();}
-    ctx.restore();
-    const logo=await loadImage(asset("yas-logo.png"));
-    ctx.save();ctx.fillStyle="#fff";ctx.globalAlpha=.96;ctx.beginPath();ctx.roundRect((W-446)/2,45,446,256,34);ctx.fill();ctx.restore();
-    ctx.drawImage(logo,(W-410)/2,58,410,230);drawStickerFrame(ctx,W,H);
-    textFit(ctx,num,W/2,565,W*.78,150,"#ffffff",950,true,true);
-    textFit(ctx,nm,W/2,790,W*.82,88,"#ffffff",950,true,true);
-    textFit(ctx,"YAS WAKALA",W/2,930,W*.75,48,"#ffdf00",900,false);
+    const reference=await loadImage(asset("yas-agent-reference.jpg"));
+    canvas.width=reference.naturalWidth;canvas.height=reference.naturalHeight;
+    ctx.drawImage(reference,0,0,canvas.width,canvas.height);
+    // The reference has six empty number boxes and one empty name field.
+    // Repaint them before the dynamic overlay so no sample data can leak in.
+    const boxes=[[360,199,105,105],[472,199,105,105],[584,199,105,105],[696,199,105,105],[808,199,105,105],[920,199,109,105]];
+    boxes.forEach(([x,y,w,h])=>round(ctx,x,y,w,h,10,"#fff"));
+    round(ctx,357,369,676,89,14,"#fff");
+    const enteredNumber=cleanNumber(number).slice(0,6);
+    enteredNumber.split("").forEach((digit,index)=>{
+      const [x,y,w,h]=boxes[index];
+      textFit(ctx,digit,x+w/2,y+h/2,w*.78,h*.72,"#092d63",950,false,true);
+    });
+    if(cleanName(name))textFit(ctx,cleanName(name),695,414,620,53,"#092d63",900,false,true);
     return;
   }
   if(network!=="airtel"){
