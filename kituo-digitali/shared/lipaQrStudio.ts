@@ -68,9 +68,9 @@ export function createAirtelTipsPaymentPayload(values: Pick<LipaCardValues, "lip
   const merchantAccountField = `26${String(merchantAccount.length).padStart(2, "0")}${merchantAccount}`;
   const nameField = `59${String(name.length).padStart(2, "0")}${name}`;
   const additionalValue = `03${String(lipa.length).padStart(2, "0")}${lipa}`;
-  const additionalField = `62${String(additionalValue.length).padStart(2, "0")}${additionalValue}`;
-  // Airtel's accepted template uses country/city and postal fields plus a
-  // repeated Lipa identifier in additional data; these are not user inputs.
+  const additionalField = `2${String(additionalValue.length).padStart(2, "0")}${additionalValue}`;
+  // Match the exact additional-data prefix in the Airtel QR confirmed by the user.
+  // Do not prepend the extra 6: it changes both the payload and its CRC.
   const body = `000201010211${merchantAccountField}5204000053038345802TZ${nameField}6008TANZANIA6105141106${additionalField}6304`;
   return body + tipsCrc16(body);
 }
