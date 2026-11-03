@@ -29,7 +29,6 @@ function normalizePhone(value: string) {
   return digits;
 }
 function validPhone(value: string) { return /^255[67]\d{8}$/.test(normalizePhone(value)); }
-function money(value: number) { return value.toLocaleString("en-TZ"); }
 function formatTin(value: string) { const digits = value.replace(/\D/g, "").slice(0, 9); return [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)].filter(Boolean).join("-"); }
 
 /* Animation zimewekwa hapa ili ukurasa ujitegemee (hakuna haja ya kuhariri tailwind.config) */
