@@ -268,11 +268,11 @@ export default function AdminDashboard() {
           const normalizedBonus = { registrationBonus: 2, dailyBonus: 1 };
           setTokenBonusConfig(normalizedBonus);
           // Viwango vipya vya bonus ni 2 wakati wa usajili na 1 kwa siku.
-          if (hasPermission("manageTokens") && needs("tokens") && (Number(bonus.registrationBonus ?? 12) !== 2 || Number(bonus.dailyBonus ?? 3) !== 1)) {
+          if (hasPermission("manageTokens") && needs("tokens", "overview") && (Number(bonus.registrationBonus ?? 12) !== 2 || Number(bonus.dailyBonus ?? 3) !== 1)) {
             try { await adminSaveSiteSettings(firebaseUser!.uid, { tokenBonusConfig: normalizedBonus }); }
             catch (error) { setDataError((current) => current || "Bonasi ya kila siku haikuhifadhiwa: " + safeError(error)); }
           }
-        } else if (hasPermission("manageTokens") && needs("tokens")) {
+        } else if (hasPermission("manageTokens") && needs("tokens", "overview")) {
           const normalizedBonus = { registrationBonus: 2, dailyBonus: 1 };
           setTokenBonusConfig(normalizedBonus);
           try { await adminSaveSiteSettings(firebaseUser!.uid, { tokenBonusConfig: normalizedBonus }); }
@@ -560,7 +560,7 @@ function TokensPanel({ users, form, setForm, onRun, adminId, busy, bonusConfig, 
   };
   const adjustAll = (direction: 1 | -1) => {
     if (invalidAmount) { toast.error("Weka kiasi sahihi cha tokeni."); return; }
-    const targets = users.filter((item: any) => item.role !== "super_admin");
+    const targets = users.filter((item: any) => item.role === "user");
     if (!targets.length) { toast.error("Hakuna akaunti za watumiaji zilizopatikana."); return; }
     const amount = amountValue * direction;
     const description = String(form.reason || "").trim() || (walletType === "bonus" ? "Bonus ya Admin kwa watumiaji wote" : "Payment ya Admin kwa watumiaji wote");
