@@ -202,11 +202,13 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     <div className="lq-voda-name">{values.businessName.trim().toUpperCase()}</div>
   </article>;
   if (network === "halotel") {
-    const numberDigits = values.lipaNumber.slice(0, 8).padEnd(8, "");
+    const enteredDigits = values.lipaNumber.replace(/\\D/g, "").slice(0, 9);
+    const numberDigits = enteredDigits ? enteredDigits.split("") : Array.from({ length: 5 }, () => "");
+    const halopesaLogo = `${import.meta.env.BASE_URL}halopesa-logo.png`;
     return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--halotel" data-lipa-export-page="card" data-network="halotel" data-watermarked={watermarked} data-paper-size={paperSize}>
       <header className="lq-sticker-header">
         <img className="lq-tips-logo" src={`${LIPA_ASSET_BASE}tips-logo-reference.png`} alt="TIPS — Tanzania Instant Payment System" />
-        <img className="lq-mixx-logo" src={`${import.meta.env.BASE_URL}halopesa-logo.png`} alt="HaloPesa" />
+        <img className="lq-mixx-logo" src={halopesaLogo} alt="HaloPesa" />
       </header>
       <section className="lq-sticker-main lq-halotel-sticker-main">
         <div className="lq-halotel-curve" aria-hidden="true" />
@@ -214,12 +216,15 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
         <div className="lq-sticker-qr-paper lq-halotel-qr-paper">
           {qrDataUrl ? <img src={qrDataUrl} alt="QR ya malipo ya HaloPesa" /> : <span>Jaza taarifa kuona QR</span>}
         </div>
-        <div className="lq-halotel-number-grid" aria-label="Namba ya Lipa">
-          {Array.from(numberDigits).map((digit, index) => <span key={`${digit}-${index}`}>{digit}</span>)}
+        <div className="lq-halotel-number-grid" aria-label="Namba ya Lipa" style={{ gridTemplateColumns: `repeat(${numberDigits.length}, minmax(0, 1fr))` }}>
+          {numberDigits.map((digit, index) => <span key={index}>{digit}</span>)}
         </div>
         <div className="lq-halotel-business">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</div>
-        <div className="lq-halotel-footer-copy"><strong>Nilipo</strong><span>kwa mitandao yote na Benki</span></div>
-        <p className="lq-halotel-support">Lipa kwa mitandao yote na Benki</p>
+        <footer className="lq-halotel-footer-brand">
+          <strong>NILIPE</strong>
+          <span>HaloPesa kwa simu</span>
+          <img src={halopesaLogo} alt="HaloPesa" />
+        </footer>
       </section>
     </article>;
   }
