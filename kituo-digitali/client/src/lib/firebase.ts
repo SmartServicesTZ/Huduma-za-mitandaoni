@@ -156,8 +156,7 @@ export async function getUserDocumentBlob(item: SavedUserDocument): Promise<Blob
   }
   if (Number(item.expiresAt) <= Date.now()) throw new Error("Muda wa hati hii umeisha. Tengeneza hati upya ikiwa huduma inaruhusu.");
   const bytes = await getBytes(storageRef(firebaseStorage, item.storagePath), 10 * 1024 * 1024);
-  const buffer = bytes.slice().buffer as ArrayBuffer;
-  return new Blob([buffer], { type: item.mimeType || "application/octet-stream" });
+  return new Blob([bytes], { type: item.mimeType || "application/octet-stream" });
 }
 
 export const usingFirebaseEmulators = import.meta.env.VITE_FIREBASE_EMULATOR === "true";
