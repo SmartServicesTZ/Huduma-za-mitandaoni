@@ -90,8 +90,9 @@ export async function saveUserDocument(
 
   const safeName = name.normalize("NFKD").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(-110) || "smartservicestz-document";
   const mimeType = blob.type || (type.toUpperCase() === "PDF" ? "application/pdf" : "application/octet-stream");
+  const nameKey = safeName.length <= 36 ? safeName : `${safeName.slice(0, 20)}-${safeName.slice(-15)}`;
   const stableId = metadata.sourceRef
-    ? `${metadata.sourceRef}-${safeName}`.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/-+/g, "-").slice(0, 80)
+    ? `${metadata.sourceRef.slice(0, 36)}-${nameKey}`.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/-+/g, "-").slice(0, 80)
     : "";
   let recordRef = stableId.length >= 16
     ? doc(firestore, "userDocuments", stableId)
