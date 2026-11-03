@@ -737,6 +737,7 @@ export const submitLipaApplication = callable(async (request) => {
       else if (name === "tinNumber") fields[index] = { ...fields[index], required: true };
       else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
+    fields = fields.filter((field) => String(field.fieldName ?? "") !== "hasTinNumber");
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
 
     if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 3 });
@@ -867,6 +868,7 @@ export const updateLipaApplication = callable(async (request) => {
       else if (name === "tinNumber") fields[index] = { ...fields[index], required: true };
       else if (name === "businessLicensePhoto") fields[index] = { ...fields[index], required: true };
     }
+    fields = fields.filter((field) => String(field.fieldName ?? "") !== "hasTinNumber");
     const hasField = (name: string) => fields.some((field) => String(field.fieldName ?? "") === name);
 
     if (!hasField("tinNumber")) fields.push({ fieldName: "tinNumber", label: "Namba ya TIN", type: "TIN", required: true, order: 3 });
@@ -923,8 +925,8 @@ export const updateLipaApplication = callable(async (request) => {
     }
     if (/halotel/i.test(networkId)) {
       if (String(next.idType ?? "") !== "NIDA") throw new ApiError("invalid-argument", "Aina ya kitambulisho cha Halotel ni NIDA pekee.");
-      if (!/^(?:\d{20}|\\d{8}-\\d{5}-\\d{5}-\\d{2})$/.test(String(next.idNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20.");
-      if (!/^\d{3}-\\d{3}-\\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
+      if (!/^(?:\d{20}|\d{8}-\d{5}-\d{5}-\d{2})$/.test(String(next.idNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya NIDA lazima iwe na tarakimu 20.");
+      if (!/^\d{3}-\d{3}-\d{3}$/.test(String(next.tinNumber ?? ""))) throw new ApiError("invalid-argument", "Namba ya TIN ya Halotel itumie muundo 123-123-123.");
     }
     const duplicateFingerprint = applicationDuplicateFingerprint(`lipa:${networkId}`, next);
     await db.runTransaction(async (transaction) => {
