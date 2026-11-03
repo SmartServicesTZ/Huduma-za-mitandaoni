@@ -8,6 +8,7 @@ import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
 import {
   createTipsPaymentPayload,
   createVodacomTipsPaymentPayload,
+  createYasTipsPaymentPayload,
   normalizeLipaNumber,
   validateLipaCard,
   type LipaCardValues,
@@ -277,9 +278,9 @@ export default function LipaQrStudioPage() {
   const isValid = Object.keys(errors).length === 0;
   const paymentPayload = useMemo(() => {
     if (!isValid || network === "halotel") return "";
-    return network === "voda"
-      ? createVodacomTipsPaymentPayload(values)
-      : createTipsPaymentPayload(values);
+    if (network === "voda") return createVodacomTipsPaymentPayload(values);
+    if (network === "yas") return createYasTipsPaymentPayload(values);
+    return createTipsPaymentPayload(values);
   }, [isValid, values, network]);
 
   useEffect(() => {
