@@ -10,6 +10,7 @@ import {
   createTipsPaymentPayload,
   createVodacomTipsPaymentPayload,
   createYasTipsPaymentPayload,
+  getHalotelStickerDigits,
   normalizeLipaNumber,
   validateLipaCard,
   type LipaCardValues,
@@ -202,8 +203,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     <div className="lq-voda-name">{values.businessName.trim().toUpperCase()}</div>
   </article>;
   if (network === "halotel") {
-    const enteredDigits = values.lipaNumber.replace(/\\D/g, "").slice(0, 9);
-    const numberDigits = enteredDigits ? enteredDigits.split("") : Array.from({ length: 5 }, () => "");
+    const numberDigits = getHalotelStickerDigits(values.lipaNumber);
     const halopesaLogo = `${import.meta.env.BASE_URL}halopesa-logo.png`;
     return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--halotel" data-lipa-export-page="card" data-network="halotel" data-watermarked={watermarked} data-paper-size={paperSize}>
       <header className="lq-sticker-header">
