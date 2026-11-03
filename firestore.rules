@@ -46,7 +46,7 @@ service cloud.firestore {
 
     match /userDocuments/{documentId} {
       allow read: if accountMayRead() && resource.data.ownerUid == request.auth.uid;
-      allow create: if signedIn() && accountMay('applications')
+      allow create: if signedIn() && accountMay('services')
         && request.resource.data.keys().hasOnly(['ownerUid','name','type','mimeType','storagePath','size','createdAt','expiresAt','source','sourceRef'])
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
@@ -65,12 +65,12 @@ service cloud.firestore {
     }
     match /agentIdCounters/{counterId} {
       allow read: if accountMayRead();
-      allow create: if signedIn() && accountMay('applications')
+      allow create: if signedIn() && accountMay('services')
         && request.resource.data.keys().hasOnly(['lastSerial', 'regionCode', 'networkCode', 'typeCode', 'updatedAt'])
         && request.resource.data.lastSerial == 1
         && counterId == request.resource.data.regionCode + '-' + request.resource.data.networkCode + '-' + request.resource.data.typeCode
         && request.resource.data.updatedAt == request.time;
-      allow update: if signedIn() && accountMay('applications')
+      allow update: if signedIn() && accountMay('services')
         && request.resource.data.keys().hasOnly(['lastSerial', 'regionCode', 'networkCode', 'typeCode', 'updatedAt'])
         && request.resource.data.lastSerial == resource.data.lastSerial + 1
         && request.resource.data.regionCode == resource.data.regionCode
@@ -81,7 +81,7 @@ service cloud.firestore {
       allow delete: if false;
     }
     match /agentRecords/{recordId} {
-      allow create: if signedIn() && accountMay('applications')
+      allow create: if signedIn() && accountMay('services')
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.keys().hasOnly(['userId','name','phone','network','type','region','regionCode','district','area','issueDate','expiryDate','networkCode','typeCode','agentId','status','createdAt','updatedAt','lastUpdatedBy','history'])
         && request.resource.data.name is string && request.resource.data.name.size() > 0
@@ -197,7 +197,7 @@ service cloud.firestore {
     }
     match /serviceRequests/{id} {
       allow create: if signedIn()
-        && accountMay('applications')
+        && accountMay('services')
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.serviceSlug is string
         && serviceIsUnlocked(request.resource.data.serviceSlug);
