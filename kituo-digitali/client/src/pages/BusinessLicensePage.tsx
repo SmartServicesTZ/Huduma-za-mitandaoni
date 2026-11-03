@@ -210,7 +210,7 @@ export default function BusinessLicensePage() {
       }
 
       const blob = format === "pdf" ? files.pdfBlob : files.jpgBlob;
-      await triggerDownload(blob, `leseni-${files.licenseNumber || "biashara"}.${format}`, format.toUpperCase());
+      await triggerDownload(blob, `leseni-${files.licenseNumber || "biashara"}.${format}`, format.toUpperCase(), { source: "leseni-biashara", sourceRef: files.reference || files.licenseNumber });
 
       if (issuedFiles) {
         toast.success(`Hati ya ${format.toUpperCase()} imepakuliwa tena bila kukata tokeni nyingine.`, { description: `Rejea: ${files.reference}` });
