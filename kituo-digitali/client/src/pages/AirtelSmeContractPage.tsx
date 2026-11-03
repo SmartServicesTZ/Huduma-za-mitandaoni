@@ -264,9 +264,9 @@ export default function AirtelSmeContractPage() {
           await consumeFirebaseTokens(uid, service, requestId);
           setPaid(true);
         }
-        triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase());
+        await triggerDownload(outputBlob, `SME-AIRTEL-MKATABA-${form.customerName.replace(/\s+/g, "-") || "mteja"}.${extension}`, extension.toUpperCase());
         const sizeKB = Math.round(outputBlob.size / 1024);
-        setStatus(`✓ Mkataba umepakuliwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
+        setStatus(`✓ Mkataba umehifadhiwa kwenye HATI ZANGU; upakuaji umeanzishwa (${extension.toUpperCase()}, takribani ${sizeKB} KB).`);
       } finally {
         URL.revokeObjectURL(svgUrl);
       }
