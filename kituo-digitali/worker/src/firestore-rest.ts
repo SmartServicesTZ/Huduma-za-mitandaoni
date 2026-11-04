@@ -176,6 +176,10 @@ export class Query {
     return this.client.runQuery(this, transactionId);
   }
 
+  async count() {
+    return this.client.countQuery(this);
+  }
+
   get queryFilter() {
     return this.filter;
   }
@@ -328,6 +332,36 @@ export class FirestoreRest {
       return new DocumentSnapshot(new DocumentReference(this, path), row.document);
     });
     return new QuerySnapshot(documents);
+  }
+
+  async countQuery(query: Query) {
+    const collectionId = query.collectionPath.split("/").filter(Boolean).at(-1);
+    if (!collectionId) throw new Error("Invalid Firestore collection path.");
+    const structuredQuery: Record<string, unknown> = { from: [{ collectionId }] };
+    if (query.queryFilter) {
+      structuredQuery.where = {
+        fieldFilter: {
+          field: { fieldPath: fieldPath(query.queryFilter.field) },
+          op: "EQUAL",
+          value: encodeValue(query.queryFilter.value),
+        },
+      };
+    }
+    const response = await this.fetchGoogle(`${this.root()}:runAggregationQuery`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredAggregationQuery: {
+          structuredQuery,
+          aggregations: [{ alias: "count", count: {} }],
+        },
+      }),
+    });
+    const rows = await this.readStream(response) as Array<{ result?: { aggregateFields?: { count?: { integerValue?: string; doubleValue?: number } } } }>;
+    const value = rows[0]?.result?.aggregateFields?.count;
+    const count = value?.integerValue !== undefined ? Number(value.integerValue) : Number(value?.doubleValue ?? 0);
+    if (!Number.isSafeInteger(count) || count < 0) throw new Error("Firestore returned an invalid aggregation count.");
+    return count;
   }
 
   async commit(writes: Array<Record<string, unknown>>, transactionId?: string) {

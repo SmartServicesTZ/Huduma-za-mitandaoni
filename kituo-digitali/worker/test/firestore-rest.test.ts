@@ -48,3 +48,28 @@ test("Firestore cursor rejects invalid document IDs", () => {
   const db = new FirestoreRest();
   assert.throws(() => db.collection("items").startAfterDocumentId("bad/id"), /Invalid Firestore cursor/);
 });
+
+test("Firestore REST aggregation count uses a filtered aggregation query", async () => {
+  const originalFetch = globalThis.fetch;
+  let aggregationBody: Record<string, any> | undefined;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("oauth2.googleapis.com/token")) return json({ access_token: "test-access", expires_in: 3600 });
+    assert.match(url, /:runAggregationQuery$/);
+    aggregationBody = JSON.parse(String(init.body)) as Record<string, any>;
+    return json([{ result: { aggregateFields: { count: { integerValue: "7" } } } }]);
+  };
+  try {
+    await withWorkerEnv(environment(), async () => {
+      const db = new FirestoreRest();
+      const count = await db.collection("serviceApplications").where("status", "==", "PENDING").count();
+      assert.equal(count, 7);
+    });
+    assert.equal(aggregationBody?.structuredAggregationQuery.structuredQuery.from[0].collectionId, "serviceApplications");
+    assert.equal(aggregationBody?.structuredAggregationQuery.structuredQuery.where.fieldFilter.field.fieldPath, "status");
+    assert.equal(aggregationBody?.structuredAggregationQuery.structuredQuery.where.fieldFilter.value.stringValue, "PENDING");
+    assert.deepEqual(aggregationBody?.structuredAggregationQuery.aggregations, [{ alias: "count", count: {} }]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
