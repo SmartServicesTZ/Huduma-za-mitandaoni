@@ -358,6 +358,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         const result = await checkFimipayMobileOrder(fimipayOrderId);
         if (!active) return;
         setFimipayStatus(result.payment_status);
+        setFimipayError("");
         if (result.paid) {
           toast.success("Malipo yamethibitishwa; tokeni zimeongezwa.");
           await refreshProfile().catch(() => undefined);
