@@ -199,3 +199,26 @@ test("stale reviewed knowledge stops matching instead of being served as current
   assert.equal(findTanzaniaKnowledge("Ninaangaliaje salio la Airtel Money?", afterExpiry).length, 0);
   assert.match(localInfoFallback("Ninaangaliaje salio la Airtel Money?"), /Sina chanzo rasmi/);
 });
+
+test("TIN questions retrieve approved TRA evidence before calling the model", async () => {
+  const originalFetch = globalThis.fetch;
+  let providerBody: any;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("tra.go.tz")) {
+      return new Response("<main>TRA guidance: apply for a Taxpayer Identification Number through the official taxpayer portal.</main>", {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    providerBody = JSON.parse(String(init.body));
+    return new Response(JSON.stringify({ choices: [{ message: { content: "Jibu limetengenezwa kwa ushahidi wa TRA." } }] }), { status: 200 });
+  };
+  try {
+    const result = await ask("Nataka kupata TIN kwa biashara Tanzania", undefined, { ...env, ENABLE_LIVE_WEB_RETRIEVAL: "true", GROQ_API_KEY: "test-key" });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.sources?.[0]?.url, "https://www.tra.go.tz/page/starting-business-income-for-individuals-and-paying-taxes");
+    assert.match(providerBody.messages[0].content, /UNTRUSTED WEB EVIDENCE/);
+    assert.match(providerBody.messages[0].content, /Taxpayer Identification Number/);
+  } finally { globalThis.fetch = originalFetch; }
+});

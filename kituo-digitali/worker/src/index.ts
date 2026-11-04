@@ -43,7 +43,7 @@ import { withWorkerEnv, type WorkerEnv } from "./runtime.js";
 import { getStorage, uploadStorageObject } from "./storage-rest.js";
 import { FieldValue, getFirestore } from "./firestore-rest.js";
 import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";
-import { renderExternalSourceContext, retrieveApprovedExternalSources } from "./knowledge/external-sources.js";
+import { findApprovedExternalSources, renderExternalSourceContext, retrieveApprovedExternalSources } from "./knowledge/external-sources.js";
 import { checkFimipayOrder, createFimipayOrder, listFimipayOrders, handleFimipayWebhook, createTillPaymentOrder, checkTillPaymentOrder } from "./fimipay.js";
 
 interface Env extends WorkerEnv {}
@@ -449,13 +449,14 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
     return jsonResponse({ reply: isEnglishQuestion(message) ? entries[0].directAnswerEn : entries[0].directAnswerSw, sources }, 200, cors);
   }
   const requiresVerifiedSource = needsVerifiedTanzaniaSource(message);
+  const hasApprovedLiveCandidate = findApprovedExternalSources(message).length > 0;
   const liveWebEnabled = String(env.ENABLE_LIVE_WEB_RETRIEVAL ?? "false").toLowerCase() === "true";
-  const liveSources = liveWebEnabled && requiresVerifiedSource
+  const liveSources = liveWebEnabled && (requiresVerifiedSource || hasApprovedLiveCandidate)
     ? await retrieveApprovedExternalSources(message)
     : [];
   const liveSourceCitations = liveSources.map(({ title, url, verifiedAt }) => ({ title, url, verifiedAt }));
   if (liveSources.length > 0) sources.push(...liveSourceCitations);
-  if (requiresVerifiedSource && liveSources.length === 0) {
+  if ((requiresVerifiedSource || hasApprovedLiveCandidate) && liveSources.length === 0) {
     const verificationSources = findVerificationSources(message).map((entry) => ({ title: entry.sourceTitle, url: entry.sourceUrl, verifiedAt: entry.verifiedAt }));
     return jsonResponse({ reply: localInfoFallback(message), sources: verificationSources }, 200, cors);
   }

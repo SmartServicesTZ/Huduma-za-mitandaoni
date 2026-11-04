@@ -91,7 +91,7 @@ const foreignCountryTerms = [
   "kenya", "uganda", "india", "nigeria", "zambia", "malawi", "rwanda", "burundi", "congo", "drc", "south africa",
 ];
 const operatorTerms = ["airtel", "vodacom", "tigo", "yas", "halotel", "ttcl", "zantel", "mixx", "mpesa", "m-pesa", "tigopesa", "halo pesa", "halopesa", "tpesa", "t-pesa"];
-const tanzaniaServiceTerms = ["nida", "brela", "tra", "nhif", "nssf", "crdb", "nmb", "tanesco", "selcom", "neec", "tanroads"];
+const tanzaniaServiceTerms = ["nida", "brela", "tra", "tin", "tax", "taxpayer", "business registration", "business license", "nhif", "nssf", "crdb", "nmb", "tanesco", "selcom", "neec", "tanroads"];
 const withdrawalTerms = ["withdraw", "cash out", "cash-out", "cashout", "kutoa pesa", "kutoa hela", "kutoa fedha", "toa pesa", "toa hela", "toa fedha"];
 const sendMoneyTerms = ["send money", "sending money", "transfer money", "money transfer", "kutuma pesa", "kutuma hela", "kutuma fedha", "tuma pesa", "tuma hela", "tuma fedha"];
 const changeableServiceTerms = [
