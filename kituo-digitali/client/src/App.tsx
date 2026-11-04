@@ -19,6 +19,9 @@ function Router() {
         <Route path={"/dashboard"} component={Home} />
         <Route path={"/services"} component={Home} />
         <Route path={"/about"} component={Home} />
+        <Route path={"/help"} component={Home} />
+        <Route path={"/privacy"} component={Home} />
+        <Route path={"/terms"} component={Home} />
         <Route path={"/nida-demo"} component={SoftCopyNidaDemoPage} />
         <Route path="/workbench" component={Home} />
         <Route path="/service/:slug" component={Home} />
