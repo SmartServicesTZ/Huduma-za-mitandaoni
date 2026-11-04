@@ -10,7 +10,7 @@ const titles: Record<Category,string> = { appearance:"Muonekano wa App", privacy
 export default function SettingsCategoryPage({ category }: { category: Category }) {
   const { profile, updateProfile } = useAuth();
   const { setPreference } = useTheme();
-  const [theme,setTheme]=useState<"system"|"light"|"dark">("dark");
+  const [theme,setTheme]=useState<"system"|"light"|"dark">("light");
   const [accent,setAccent]=useState("green");
   const [notifications,setNotifications]=useState(true);
   const [showBalance,setShowBalance]=useState(true);
@@ -24,7 +24,7 @@ export default function SettingsCategoryPage({ category }: { category: Category 
 
   useEffect(()=>{
     const s=profile?.settings??{};
-    const t=(s.theme==="light"||s.theme==="system"||s.theme==="dark")?s.theme:"dark";
+    const t=(s.theme==="light"||s.theme==="system"||s.theme==="dark")?s.theme:"light";
     setTheme(t); setPreference(t); setAccent(String(s.accent??"green"));
     setNotifications(s.notifications!==false); setShowBalance(s.showBalance!==false);
     setShowOnlineStatus(s.showOnlineStatus!==false); setCompactMode(s.compactMode===true);
