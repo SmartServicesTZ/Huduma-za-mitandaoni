@@ -529,6 +529,71 @@ async function handleGeminiChat(request: Request, cors: Headers, env: Env): Prom
   return jsonResponse({ error: { message: "AI zote zilizosanidiwa hazijajibu kwa sasa. Mfumo umejaribu watoa huduma mbadala; jaribu tena baada ya muda mfupi." } }, 503, cors);
 }
 
+async function cleanupExpiredUserDocuments(env: Env) {
+  if (!env.LIPA_DOCUMENTS) throw new Error("LIPA_DOCUMENTS binding is unavailable.");
+  const now = Date.now();
+  let cursor: string | undefined;
+  let scanned = 0;
+  let deleted = 0;
+  let failed = 0;
+  let pages = 0;
+
+  // Only inspect the dedicated userDocuments/ namespace. Application uploads,
+  // Lipa evidence, and all other R2 objects are intentionally excluded.
+  do {
+    const page = await env.LIPA_DOCUMENTS.list({
+      prefix: "userDocuments/",
+      limit: 1000,
+      ...(cursor ? { cursor } : {}),
+      include: ["customMetadata"],
+    });
+    pages += 1;
+    for (const object of page.objects) {
+      scanned += 1;
+      const metadata = object.customMetadata ?? {};
+      const ownerUid = metadata.ownerUid ?? "";
+      const documentId = metadata.documentId ?? "";
+      const expiresAt = Number(metadata.expiresAt ?? 0);
+      const expectedPrefix = ownerUid && documentId
+        ? `userDocuments/${ownerUid}/${documentId}/`
+        : "";
+      if (!expectedPrefix || !object.key.startsWith(expectedPrefix)
+        || !Number.isFinite(expiresAt) || expiresAt <= 0 || expiresAt > now) continue;
+
+      try {
+        const recordRef = getFirestore().collection("userDocuments").doc(`${ownerUid}_${documentId}`);
+        const recordSnapshot = await recordRef.get();
+        if (!recordSnapshot.exists) {
+          // Orphaned R2 object: metadata itself proves its 24-hour expiry.
+          await env.LIPA_DOCUMENTS.delete(object.key);
+          deleted += 1;
+          continue;
+        }
+        const record = recordSnapshot.data() ?? {};
+        // Require both independent expiry records and the exact storage path to
+        // match before deleting anything. This protects newer/replaced uploads.
+        if (record.ownerUid !== ownerUid
+          || record.documentId !== documentId
+          || record.storagePath !== object.key
+          || Number(record.expiresAt) !== expiresAt
+          || Number(record.expiresAt) > now) continue;
+
+        await env.LIPA_DOCUMENTS.delete(object.key);
+        await recordRef.delete();
+        deleted += 1;
+      } catch (error) {
+        failed += 1;
+        console.error("Expired user document cleanup item failed", {
+          code: error instanceof Error ? error.name : "unknown",
+        });
+      }
+    }
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor && pages < 50);
+
+  console.log("Expired user document cleanup completed", { scanned, deleted, failed, pages, hasMore: Boolean(cursor) });
+}
+
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const cors = corsHeaders(request, env);
@@ -659,6 +724,9 @@ const worker = {
       }));
     }
     return jsonResponse({ error: { code: "not-found", message: "Njia ya API haikupatikana." } }, 404, cors);
+  },
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(withWorkerEnv(env, () => cleanupExpiredUserDocuments(env)));
   },
 };
 
