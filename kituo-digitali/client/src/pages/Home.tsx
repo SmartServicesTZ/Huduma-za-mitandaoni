@@ -297,6 +297,18 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   return <aside className="sidebar-portal"><div className="sidebar-brand"><Link href="/" onClick={onClose}><b>SmartServicesTZ</b><small className="brand-subtitle">DIGITAL SERVICE HUB</small></Link><button className="sidebar-close" onClick={onClose}><X size={20} /></button></div><div className="sidebar-user"><div className="user-avatar">{(user?.name?.trim()?.slice(0, 1).toUpperCase() ?? "S")}</div><div><strong>{authLoading ? "Inathibitisha akaunti..." : user?.name ?? "Mgeni"} <VerifiedTick balance={user?.tokenBalanceOther ?? user?.tokenBalance ?? 0} /></strong><small>{authLoading ? "Inathibitisha akaunti..." : user ? "Akaunti yangu" : "Ingia kuanza"}</small></div></div>{!authLoading && !user && <button type="button" className="sidebar-auth-cta" onClick={() => { window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); onClose?.(); }}><LogIn size={17} /><span>INGIA / JISAJILI</span></button>}{["super_admin", "admin", "moderator", "support"].includes(user?.role ?? "") && <><Link href="/admin" onClick={onClose} className={`portal-nav-item admin-link ${location === "/admin" ? "active" : ""}`} style={{margin:"8px 10px",borderRadius:12,border:"1px solid #c4b5fd",background:"linear-gradient(135deg,#f5f3ff,#eef2ff)",color:"#4c1d95",fontWeight:800}}><Settings2 size={19} /><span>Paneli ya Admin</span><ChevronRight size={16}/></Link></>}<nav>{items.map(({ href, label, icon: ItemIcon }) => href === "#support" ? <button key={href} type="button" onClick={() => { window.dispatchEvent(new CustomEvent("smartservicestz-open-ai-support")); onClose?.(); }} className="portal-nav-item" style={{ width: "100%", border: 0, background: "transparent", cursor: "pointer", textAlign: "left", font: "inherit" }}><ItemIcon size={19} /><span>{label} · AI</span></button> : <Link key={href} href={href} onClick={onClose} className={`portal-nav-item ${href === "/" ? location === "/" : location.startsWith(href) ? "active" : ""}`}><ItemIcon size={19} /><span>{label}</span></Link>)}</nav><a href="https://wa.me/255692287767?text=Habari%20SmartServicesTZ%2C%20nahitaji%20msaada." target="_blank" rel="noreferrer" className="sidebar-support-contact" style={{display:"flex",alignItems:"center",gap:10,margin:"8px 10px",padding:10,borderRadius:12,background:"#e7f9ef",color:"#075e36",textDecoration:"none",fontSize:12,fontWeight:700,flexShrink:0}}><MessageCircle size={18}/><span>WhatsApp: 0692287767<small style={{display:"block",fontWeight:500,marginTop:3}}>WhatsApp tu · si simu ya kawaida</small></span></a><div className="sidebar-foot"><ShieldCheck size={17} /><span>Huduma salama<br /><small>Tokeni zako zinalindwa.</small></span></div></aside>;
 }
 
+function fimipayStatusLabel(value: unknown) {
+  const status = String(value ?? "").trim().toUpperCase();
+  const labels: Record<string, string> = {
+    PENDING: "Inasubiri malipo", INPROGRESS: "Malipo yanaendelea",
+    PAID: "Malipo yamethibitishwa", COMPLETED: "Malipo yamethibitishwa", SUCCESS: "Malipo yamethibitishwa",
+    FAILED: "Malipo yameshindwa", CANCELLED: "Malipo yameghairiwa", CANCELED: "Malipo yameghairiwa",
+    USER_CANCELLED: "Umeghairi malipo", REJECTED: "Malipo yamekataliwa", EXPIRED: "Muda wa malipo umeisha",
+    NEEDS_REVIEW: "Malipo yanahitaji ukaguzi",
+  };
+  return labels[status] ?? (status ? "Hali ya malipo inakaguliwa" : "Bado hakuna taarifa ya malipo");
+}
+
 function TokenCard({ compact = false }: { compact?: boolean }) {
   const { isAuthenticated, profile, firebaseUser, refresh: refreshProfile } = useAuth();
   const accountProfile = profile as (typeof profile & { firstName?: string; lastName?: string }) | null;
@@ -311,6 +323,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
   const [fimipayOrderId, setFimipayOrderId] = useState("");
   const [fimipayStatus, setFimipayStatus] = useState("");
   const [fimipayBusy, setFimipayBusy] = useState(false);
+  const [fimipayError, setFimipayError] = useState("");
   const totalBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
   const paymentBalance = Math.max(0, Number(totalBalance) - Number(profile?.tokenBalanceBonus ?? 0));
 
@@ -327,6 +340,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       const latestStatus = String(latest.payment_status ?? "PENDING").toUpperCase();
       setFimipayOrderId(latest.order_id);
       setFimipayStatus(latestStatus);
+      setFimipayError("");
       if (["PAID", "COMPLETED", "SUCCESS"].includes(latestStatus)) void refreshProfile().catch(() => undefined);
     }).catch((error) => console.warn("Could not restore saved FimiPay order", error));
     return () => { active = false; };
@@ -350,6 +364,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         }
       } catch (error) {
         console.warn("Automatic FimiPay status check failed", error);
+        if (active) setFimipayError("Imeshindikana kupata hali mpya ya malipo. Angalia intaneti kisha bonyeza KAGUA MALIPO.");
       } finally { checking = false; }
     };
     const timer = window.setInterval(() => { void checkSavedOrder(); }, 8000);
@@ -368,6 +383,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
       return;
     }
     setFimipayBusy(true);
+    setFimipayError("");
     try {
       const result = await createFimipayMobileOrder({ tokens: otherCount, phone: paymentPhone });
       setFimipayOrderId(result.order_id);
@@ -378,12 +394,15 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         toast.success("Ombi la malipo limetumwa. Kamilisha kwenye simu yako.");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Imeshindikana kuanzisha malipo.");
+      const message = error instanceof Error ? error.message : "Imeshindikana kuanzisha malipo.";
+      setFimipayError(message);
+      toast.error(message);
     } finally { setFimipayBusy(false); }
   };
   const refreshFimipayStatus = async () => {
     if (!fimipayOrderId || fimipayBusy) return;
     setFimipayBusy(true);
+    setFimipayError("");
     try {
       const result = await checkFimipayMobileOrder(fimipayOrderId);
       setFimipayStatus(result.payment_status);
@@ -393,7 +412,11 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         await refreshProfile().catch(() => undefined);
       }
       else toast.info("Malipo bado hayajathibitishwa. Subiri kidogo kisha kagua tena.");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Hali ya malipo haikupatikana."); }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Hali ya malipo haikupatikana.";
+      setFimipayError(message);
+      toast.error(message);
+    }
     finally { setFimipayBusy(false); }
   };
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
@@ -422,7 +445,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
         
         <div className="token-choice-networks"><div className="token-choice-networks-head"><strong>Mitandao inayotumika</strong><span>Airtel · Halotel · Vodacom · Yas</span></div><div className="token-network-grid">{[{name:"Airtel",file:"airtel-logo.png",tone:"airtel"},{name:"Halotel",file:"halotel-logo.png",tone:"halotel"},{name:"Vodacom",file:"vodacom-logo.png",tone:"vodacom"},{name:"Yas",file:"yas-logo.png",tone:"yas"}].map(network => <div className={`token-network token-network--${network.tone}`} key={network.name}><span className="token-network-logo"><img src={`${import.meta.env.BASE_URL}${network.file}`} alt={`${network.name} logo`} /></span><span>{network.name}</span></div>)}</div></div>
         <p className="token-choice-help">Mtandao utatambuliwa kulingana na namba yako ya simu. Tokeni zitaongezwa baada ya malipo kuthibitishwa.</p>
-        {fimipayOrderId && <div role="status" style={{marginTop:10,padding:12,borderRadius:10,background:"#eff6ff"}}><b>Rejea: {fimipayOrderId}</b><p>Hali: {fimipayStatus}</p><button type="button" className="button button--small" disabled={fimipayBusy} onClick={refreshFimipayStatus}>KAGUA MALIPO</button></div>}
+        {fimipayOrderId && <div role="status" aria-live="polite" style={{marginTop:10,padding:12,borderRadius:10,background:"#eff6ff"}}><b>Rejea: {fimipayOrderId}</b><p>Hali: <strong>{fimipayStatusLabel(fimipayStatus)}</strong></p>{fimipayStatus.toUpperCase() === "NEEDS_REVIEW" && <p>Malipo yamepokelewa lakini yanahitaji ukaguzi. Tafadhali wasiliana na support ukiwa na namba hii ya rejea.</p>}{fimipayError && <p role="alert" style={{color:"#b42318"}}>{fimipayError}</p>}<button type="button" className="button button--small" disabled={fimipayBusy} onClick={refreshFimipayStatus}>{fimipayBusy ? "INAKAGUA..." : "KAGUA MALIPO"}</button></div>}
       </div>
     </div>, document.body)}
   </section>;
