@@ -2684,3 +2684,47 @@ html body .portal-shell .portal-content .portal-main .special-card > svg { width
   .admin-table-wrap { overflow-x: hidden !important; }
   .admin-table th, .admin-table td { padding: 6px 4px !important; font-size: 9px; }
 }
+
+/* User-selectable dark appearance */
+.dark body { background:#0b1220; color:#e5e7eb; }
+.dark .profile-page,.dark .portal-main { color:#e5e7eb; }
+.dark .profile-main-card,.dark .profile-side-card,.dark .profile-login-card,.dark .account-panel { background:#111c2e !important; border-color:#26364d !important; color:#e5e7eb !important; }
+.dark .profile-side-card h3,.dark .profile-main-card h2,.dark .profile-side-title h3,.dark .profile-summary-copy strong { color:#f8fafc !important; }
+.dark .profile-muted,.dark .profile-side-card p,.dark .profile-main-card p { color:#a8b7ca !important; }
+.dark .profile-field input,.dark .profile-field textarea,.dark .profile-field select,.dark .settings-select select { background:#0b1424 !important; color:#e5e7eb !important; border-color:#34445c !important; }
+.dark .settings-category { background:#0c1728; border-color:#2b3c53; color:#e5e7eb; }
+.dark .settings-category small { color:#9aabc0; }
+.dark .settings-subpage h4 { color:#f8fafc; }
+.dark .profile-setting-row { border-color:#2b3c53; color:#e5e7eb; }
+.dark .settings-back { color:#93c5fd; background:#14243a; }
+.dark .profile-side-link { color:#bfdbfe; background:#14243a; border-color:#2b3c53; }
+.dark .admin-app { color:#e5e7eb; background:#0b1220; }
+.dark .admin-content { background:radial-gradient(circle at 90% 0,rgba(99,102,241,.12),transparent 32%),#0b1220 !important; }
+.dark .admin-header h1,.dark .admin-card-heading h2,.dark .admin-card h2,.dark .admin-card h3 { color:#f8fafc !important; }
+.dark .admin-card,.dark .admin-stat-card { background:#111c2e !important; border-color:#26364d !important; color:#dbe5f2; }
+.dark .admin-stat-card span,.dark .admin-card p,.dark .admin-card label,.dark .control-field { color:#aebed1; }
+.dark .admin-stat-card strong,.dark .admin-list-row strong,.dark .user-cell { color:#f8fafc; }
+.dark .admin-table th { color:#cbd5e1; background:#17243a; }
+.dark .admin-table td { color:#dbe5f2; border-color:#29394f; }
+.dark .admin-search,.dark .control-field input,.dark .control-field select,.dark .control-field textarea { color:#e5e7eb; background:#0b1424; border-color:#34445c; }
+.dark .admin-search input { color:#e5e7eb; }
+.dark .admin-list-row { border-color:#29394f; }
+.dark .admin-list-row small,.dark .admin-empty { color:#9aabc0; }
+.dark .admin-icon-button,.dark .admin-menu { color:#e5e7eb; background:#17243a; border-color:#34445c; }
+.dark .admin-modal { color:#e5e7eb; background:#111c2e; }
+.dark .admin-modal h2,.dark .profile-grid strong { color:#f8fafc; }
+.dark .profile-grid>div { background:#0b1424; }
+.dark .admin-guard { color:#e5e7eb; background:#0b1220; }
+.dark .admin-guard h2 { color:#f8fafc; }
+.settings-category-grid { display:grid; gap:10px; margin-top:14px; }
+.settings-category { display:flex; align-items:center; gap:12px; width:100%; padding:13px; border:1px solid #e2e8f0; border-radius:14px; background:#f8fafc; color:#172033; text-align:left; cursor:pointer; }
+.settings-category>span:nth-child(2) { display:grid; gap:4px; flex:1; }
+.settings-category strong { font-size:13px; }
+.settings-category small { color:#64748b; font-size:11px; }
+.settings-category>b { font-size:23px; color:#64748b; }
+.settings-category-icon { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; color:#2563eb; background:#dbeafe; }
+.settings-subpage { display:grid; gap:12px; margin-top:14px; }
+.settings-subpage h4 { margin:5px 0; color:#172033; font-size:15px; }
+.settings-back { justify-self:start; border:0; border-radius:10px; padding:9px 12px; color:#1d4ed8; background:#eff6ff; font-weight:800; cursor:pointer; }
+.settings-subpage .settings-select { display:grid; gap:7px; color:inherit; font-size:12px; font-weight:700; }
+.settings-subpage .settings-select select { width:100%; padding:11px; border:1px solid #dbe3ee; border-radius:10px; background:#fff; color:#172033; }
