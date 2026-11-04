@@ -1023,16 +1023,15 @@ export async function adminDeleteCollectionItem(adminId: string, collectionName:
 export async function adminSaveSiteSettings(adminId: string, values: Record<string, unknown>) {
   const callable = createWorkerCall("adminWrite");
   const result = (await callable({ collection: "siteSettings", id: "public", values })).data;
-  publicSiteSettingsRevision += 1;
-  publicSiteSettingsCache = undefined;
-  publicSiteSettingsRequest = undefined;
-  publicLicenseTemplateCache = undefined;
+  invalidatePublicSiteSettingsCache();
   return result;
 }
 
 export async function setHomepageServiceOrder(serviceOrder: string[], homepageSectionOrder: string[]) {
   const callable = createWorkerCall<{ serviceOrder: string[]; homepageSectionOrder: string[] }, { savedServices: number; savedSections: number }>("setHomepageServiceOrder");
-  return (await callable({ serviceOrder, homepageSectionOrder })).data;
+  const result = (await callable({ serviceOrder, homepageSectionOrder })).data;
+  invalidatePublicSiteSettingsCache();
+  return result;
 }
 
 export async function getPublicSiteSettings() {
@@ -1041,11 +1040,10 @@ export async function getPublicSiteSettings() {
 let publicSiteSettingsCache: { loadedAt: number; value: DocumentData | null } | undefined;
 let publicSiteSettingsRequest: Promise<DocumentData | null> | undefined;
 let publicSiteSettingsRevision = 0;
-export async function getPublicSiteSettingsOnce(options?: { force?: boolean }): Promise<DocumentData | null> {
-  const force = options?.force === true;
-  if (force) publicSiteSettingsRevision += 1;
-  if (!force && publicSiteSettingsCache && Date.now() - publicSiteSettingsCache.loadedAt < 45_000) return publicSiteSettingsCache.value;
-  if (!force && publicSiteSettingsRequest) return publicSiteSettingsRequest;
+export const PUBLIC_SITE_SETTINGS_INVALIDATED_EVENT = "smartservicestz:site-settings-invalidated";
+export async function getPublicSiteSettingsOnce(): Promise<DocumentData | null> {
+  if (publicSiteSettingsCache && Date.now() - publicSiteSettingsCache.loadedAt < 300_000) return publicSiteSettingsCache.value;
+  if (publicSiteSettingsRequest) return publicSiteSettingsRequest;
   const revision = publicSiteSettingsRevision;
   const request: Promise<DocumentData | null> = getDoc(doc(firestore, "siteSettings", "public")).then((snapshot): Promise<DocumentData | null> | DocumentData | null => {
     const value = snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as DocumentData) : null;
@@ -1058,6 +1056,14 @@ export async function getPublicSiteSettingsOnce(options?: { force?: boolean }): 
 }
 
 let publicLicenseTemplateCache: Record<string, unknown> | null | undefined;
+function invalidatePublicSiteSettingsCache() {
+  publicSiteSettingsRevision += 1;
+  publicSiteSettingsCache = undefined;
+  publicSiteSettingsRequest = undefined;
+  publicLicenseTemplateCache = undefined;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(PUBLIC_SITE_SETTINGS_INVALIDATED_EVENT));
+}
+
 export async function getPublicLicenseTemplateSettings() {
   if (publicLicenseTemplateCache !== undefined) return publicLicenseTemplateCache;
   const settings = await getPublicSiteSettings();
