@@ -397,6 +397,7 @@ function TokenCard({ compact = false }: { compact?: boolean }) {
     finally { setFimipayBusy(false); }
   };
   return <section className={`token-card ${compact ? "token-card--compact" : ""}`}>
+    {compact && <h1 className="token-card-title">HUDUMA ZA KIDIGITALI SEHEMU MOJA</h1>}
     <div className="wallet-fashion-head"><div className="wallet-fashion-brand"><span className="wallet-fashion-mark"><WalletCards size={22}/></span><span><small>SMARTSERVICESTZ</small><strong>WALLET YA TOKENI</strong></span></div><span className="wallet-fashion-chip"><span/> {isAuthenticated ? "AKAUNTI YAKO" : "KARIBU"}</span></div>
     <div className="wallet-fashion-balance" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",alignItems:"center",columnGap:16,rowGap:8}}><div><span className="wallet-fashion-caption">SALIO LILILOKO</span><div className="wallet-fashion-amount">{isAuthenticated ? totalBalance : 0}<span>TK</span></div><p>Tokeni za kutumia huduma zako</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(76px,1fr))",gap:8,alignItems:"stretch",zIndex:2}}><div style={{minWidth:76,padding:"9px 11px",borderRadius:12,background:"#fff0f0",border:"1px solid #ffd0d0",textAlign:"center"}}><span style={{display:"block",fontSize:11,fontWeight:900,color:"#bd101c",letterSpacing:".04em"}}>BONUS</span><strong style={{display:"block",fontSize:"clamp(36px,7vw,54px)",lineHeight:1.1,fontWeight:950,color:"#9f0712",fontVariantNumeric:"tabular-nums"}}>{isAuthenticated ? profile?.tokenBalanceBonus ?? 0 : 0}</strong><small style={{fontSize:10,fontWeight:800,color:"#9f0712"}}>TOKENI</small></div><div style={{minWidth:76,padding:"9px 11px",borderRadius:12,background:"#edf4ff",border:"1px solid #c9dcff",textAlign:"center"}}><span style={{display:"block",fontSize:11,fontWeight:900,color:"#164a9a",letterSpacing:".04em"}}>PAYMENT</span><strong style={{display:"block",fontSize:"clamp(22px,4vw,34px)",lineHeight:1.1,fontWeight:950,color:"#123c80",fontVariantNumeric:"tabular-nums"}}>{isAuthenticated ? paymentBalance : 0}</strong><small style={{fontSize:10,fontWeight:800,color:"#123c80"}}>TOKENI</small></div></div><div className="wallet-fashion-orbit" aria-hidden="true"><span/><span/><span/></div></div>
     <div className="wallet-fashion-account"><div className="wallet-fashion-avatar">{walletAccountName.slice(0,1).toUpperCase()}</div><div className="wallet-fashion-account-copy"><small>AKAUNTI</small><strong className="TK-account-name">{walletAccountName} <VerifiedTick balance={profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0} /></strong><span className="wallet-fashion-phone">{walletAccountPhone || "Ingia ili kuona namba ya simu"}</span></div><span className={"wallet-fashion-status " + (status === "approved" ? "is-verified" : "is-pending")}>{status === "approved" ? "IMETHIBITISHWA" : "INASUBIRI"}</span></div>
@@ -1108,24 +1109,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const layoutStyle = { "--home-cols": layout.homeColumns, "--home-tablet-cols": layout.homeTabletColumns, "--home-mobile-cols": layout.homeMobileColumns, "--section-gap": `${layout.sectionGap}px`, "--card-gap": `${layout.cardGap}px`, "--card-radius": `${layout.cardRadius}px`, "--card-padding": `${layout.cardPadding}px`, "--hero-radius": `${layout.heroRadius}px`, "--hero-padding": `${layout.heroPadding}px`, "--content-max": `${layout.contentMaxWidth}px` } as React.CSSProperties;
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
 
-    {!allServicesPage && layout.showHero !== false && <section className="home-hero home-hero--wallet" aria-labelledby="home-hero-title">
-      <div className="home-hero__content">
-        <span className="home-hero__eyebrow"><Sparkles size={14} aria-hidden="true" /> SMARTSERVICESTZ · DIGITAL SERVICE HUB</span>
-        <h1 id="home-hero-title">Huduma za kidijitali,<br /><span>sehemu moja.</span></h1>
-        <p>Pata huduma za wakala na huduma nyingine mtandaoni kwa urahisi. Chagua huduma, soma gharama na masharti, kisha fuatilia ombi lako kupitia akaunti yako.</p>
-        <div className="home-hero__actions">
-          <button type="button" className="home-hero__primary" onClick={() => document.getElementById("home-services")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Chunguza huduma <ChevronRight size={17} /></button>
-          <a className="home-hero__secondary" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} /> Wasiliana nasi</a>
-        </div>
-        {layout.showMetrics !== false && <div className="home-hero__inline-metrics" aria-label="Muhtasari wa huduma">
-          <span><strong>{displayedServices.length}</strong> huduma</span>
-          <span><strong>{openCount}</strong> zinapatikana</span>
-          <span><strong>{freeCount}</strong> bure</span>
-        </div>}
-      </div>
-      <div className="home-hero__wallet"><TokenCard compact /></div>
-      <div className="home-hero__decoration" aria-hidden="true"><span>STZ</span><i /><b /></div>
-    </section>}
+    {!allServicesPage && <TokenCard compact />}
 
     {!allServicesPage && <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />}
 
