@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import React from "react";
 
 type Props = { page: string };
@@ -44,7 +45,7 @@ export default function SupportLegalPage({ page }: Props) {
       .sl-note{font-size:12px!important;opacity:.8}
       @media(max-width:600px){.sl-contact{align-items:flex-start}.sl-contact a{width:100%;text-align:center}}
     `}</style>
-    <header className="sl-hero"><span className="sl-kicker">SMARTSERVICESTZ • HUDUMA ZA MTANDAONI</span><h1>{title}</h1><p>{isPrivacy ? "Taarifa kuhusu namna tunavyokusanya, kutumia, kuhifadhi na kulinda taarifa zako unapofungua akaunti au kutumia huduma." : isTerms ? "Tafadhali soma masharti haya kabla ya kutumia akaunti, tokeni na huduma zinazopatikana kwenye jukwaa." : "Pata majibu ya maswali ya kawaida kuhusu akaunti, tokeni, maombi na matumizi ya huduma."}</p></header>
+    <Link className="settings-back" href="/settings">← Rudi kwenye Settings</Link><header className="sl-hero"><span className="sl-kicker">SMARTSERVICESTZ • HUDUMA ZA MTANDAONI</span><h1>{title}</h1><p>{isPrivacy ? "Taarifa kuhusu namna tunavyokusanya, kutumia, kuhifadhi na kulinda taarifa zako unapofungua akaunti au kutumia huduma." : isTerms ? "Tafadhali soma masharti haya kabla ya kutumia akaunti, tokeni na huduma zinazopatikana kwenye jukwaa." : "Pata majibu ya maswali ya kawaida kuhusu akaunti, tokeni, maombi na matumizi ya huduma."}</p></header>
     <nav className="sl-tabs" aria-label="Kurasa za taarifa"><a href="/Huduma-za-mitandaoni/help" aria-current={!isPrivacy&&!isTerms?"page":undefined}>Msaada na FAQ</a><a href="/Huduma-za-mitandaoni/privacy" aria-current={isPrivacy?"page":undefined}>Faragha</a><a href="/Huduma-za-mitandaoni/terms" aria-current={isTerms?"page":undefined}>Masharti</a></nav>
     {!isPrivacy&&!isTerms ? <section className="sl-card sl-faq"><span className="sl-kicker">MASWALI YANAYOULIZWA MARA KWA MARA</span><h2 style={{marginTop:8}}>Tunaweza kukusaidia nini?</h2>{faqs.map((item)=><details key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}</section> : isPrivacy ? <>
       <section className="sl-card"><h2>1. Taarifa tunazoweza kukusanya</h2><p>Tunaweza kuchakata jina lako, namba ya simu, taarifa za akaunti, maombi unayotuma, taarifa za matumizi ya mfumo, hati au picha unazopakia, na kumbukumbu za miamala zinazohitajika kuthibitisha malipo. Usitume taarifa zisizohitajika kwa huduma husika.</p></section>
