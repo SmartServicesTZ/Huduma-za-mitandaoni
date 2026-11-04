@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders, createTillFimipayOrder, checkTillFimipayOrder, subscribeUserDocuments, type SavedUserDocument } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, getTokenHistoryState, loadOlderTokenHistory, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders, createTillFimipayOrder, checkTillFimipayOrder, subscribeUserDocuments, type SavedUserDocument } from "@/lib/firebase";
 import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -549,13 +549,34 @@ function HistoryPage({ mode = "history" }: { mode?: "documents" | "history" }) {
   const [serviceApplications, setServiceApplications] = useState<any[]>([]);
   const [savedDocuments, setSavedDocuments] = useState<SavedUserDocument[]>([]);
   const [documentLoading, setDocumentLoading] = useState(true);
+  const [tokenHistoryHasMore, setTokenHistoryHasMore] = useState(false);
+  const [loadingOlderTokenHistory, setLoadingOlderTokenHistory] = useState(false);
   const [downloadingId, setDownloadingId] = useState("");
   const [sharingId, setSharingId] = useState("");
 
   useEffect(() => {
-    if (!firebaseUser) { setRows([]); return; }
-    return subscribeToTokenHistory(firebaseUser.uid, (items) => setRows(items.filter((item) => !isHiddenHistoryRecord(item))));
+    if (!firebaseUser) { setRows([]); setTokenHistoryHasMore(false); return; }
+    return subscribeToTokenHistory(firebaseUser.uid, (items) => {
+      setRows(items.filter((item) => !isHiddenHistoryRecord(item)));
+      setTokenHistoryHasMore(getTokenHistoryState(firebaseUser.uid).hasMore);
+    });
   }, [firebaseUser]);
+
+  const loadOlderHistory = async () => {
+    const uid = firebaseUser?.uid;
+    if (!uid || loadingOlderTokenHistory) return;
+    setLoadingOlderTokenHistory(true);
+    try {
+      const items = await loadOlderTokenHistory(uid);
+      setRows(items.filter((item) => !isHiddenHistoryRecord(item)));
+      setTokenHistoryHasMore(getTokenHistoryState(uid).hasMore);
+    } catch (error) {
+      console.error("Imeshindikana kupakia historia ya zamani ya tokeni", error);
+      toast.error("Historia ya zamani haijapakiwa. Jaribu tena.");
+    } finally {
+      setLoadingOlderTokenHistory(false);
+    }
+  };
 
   useEffect(() => {
     if (!firebaseUser?.uid) {
@@ -675,7 +696,7 @@ function HistoryPage({ mode = "history" }: { mode?: "documents" | "history" }) {
 
     <section>
       <div className="page-heading" style={{marginBottom:10}}><div><span className="overline">Tokeni</span><h2>HISTORIA YA TOKENI</h2></div></div>
-      {firebaseUser ? <><div className="history-table"><div className="history-head"><span>Tarehe</span><span>Huduma</span><span>Tokeni</span><span>Salio</span><span>Rejea</span></div>{rows.map((row) => <div className="history-row" key={row.reference ?? row.id}><span>{row.createdAt?.toDate ? row.createdAt.toDate().toLocaleString("sw-TZ") : "—"}</span><strong>{row.description ?? row.reason ?? row.serviceName ?? "Miamala ya tokeni"}{(row.walletType === "bonus" || row.category === "bonus") && <small style={{display:"block",color:"#047857",fontSize:10,fontWeight:900}}>BONUS</small>}{(row.walletType === "payment" || row.category === "payment") && <small style={{display:"block",color:"#1d4ed8",fontSize:10,fontWeight:900}}>PAYMENT</small>}</strong><span className={row.amount < 0 ? "amount-negative" : "amount-positive"}>{row.amount > 0 ? "+" : ""}{row.amount}</span><span>{row.balanceAfter}</span><code>{row.reference ?? row.id}</code></div>)}</div><Notice tone="info">Historia ya matumizi na ununuzi wa tokeni itaonekana hapa mara tu shughuli zitakapotokea.</Notice></> : <Notice tone="info">Ingia kwenye akaunti yako ili kuona historia yako ya tokeni.</Notice>}
+      {firebaseUser ? <><div className="history-table"><div className="history-head"><span>Tarehe</span><span>Huduma</span><span>Tokeni</span><span>Salio</span><span>Rejea</span></div>{rows.map((row) => <div className="history-row" key={row.reference ?? row.id}><span>{row.createdAt?.toDate ? row.createdAt.toDate().toLocaleString("sw-TZ") : "—"}</span><strong>{row.description ?? row.reason ?? row.serviceName ?? "Miamala ya tokeni"}{(row.walletType === "bonus" || row.category === "bonus") && <small style={{display:"block",color:"#047857",fontSize:10,fontWeight:900}}>BONUS</small>}{(row.walletType === "payment" || row.category === "payment") && <small style={{display:"block",color:"#1d4ed8",fontSize:10,fontWeight:900}}>PAYMENT</small>}</strong><span className={row.amount < 0 ? "amount-negative" : "amount-positive"}>{row.amount > 0 ? "+" : ""}{row.amount}</span><span>{row.balanceAfter}</span><code>{row.reference ?? row.id}</code></div>)}</div><div style={{display:"flex",justifyContent:"center",marginTop:12}}>{tokenHistoryHasMore && <button type="button" className="button button--small" onClick={() => void loadOlderHistory()} disabled={loadingOlderTokenHistory}>{loadingOlderTokenHistory ? "Inapakia..." : "Pakia historia ya zamani"}</button>}</div><Notice tone="info">Historia ya matumizi na ununuzi wa tokeni itaonekana hapa mara tu shughuli zitakapotokea.</Notice></> : <Notice tone="info">Ingia kwenye akaunti yako ili kuona historia yako ya tokeni.</Notice>}
     </section>
     </>}
   </main>;
