@@ -1108,7 +1108,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const layoutStyle = { "--home-cols": layout.homeColumns, "--home-tablet-cols": layout.homeTabletColumns, "--home-mobile-cols": layout.homeMobileColumns, "--section-gap": `${layout.sectionGap}px`, "--card-gap": `${layout.cardGap}px`, "--card-radius": `${layout.cardRadius}px`, "--card-padding": `${layout.cardPadding}px`, "--hero-radius": `${layout.heroRadius}px`, "--hero-padding": `${layout.heroPadding}px`, "--content-max": `${layout.contentMaxWidth}px` } as React.CSSProperties;
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
 
-    {!allServicesPage && layout.showHero !== false && <section className="home-hero" aria-labelledby="home-hero-title">
+    {!allServicesPage && layout.showHero !== false && <section className="home-hero home-hero--wallet" aria-labelledby="home-hero-title">
       <div className="home-hero__content">
         <span className="home-hero__eyebrow"><Sparkles size={14} aria-hidden="true" /> SMARTSERVICESTZ · DIGITAL SERVICE HUB</span>
         <h1 id="home-hero-title">Huduma za kidijitali,<br /><span>sehemu moja.</span></h1>
@@ -1117,19 +1117,19 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
           <button type="button" className="home-hero__primary" onClick={() => document.getElementById("home-services")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Chunguza huduma <ChevronRight size={17} /></button>
           <a className="home-hero__secondary" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} /> Wasiliana nasi</a>
         </div>
+        {layout.showMetrics !== false && <div className="home-hero__inline-metrics" aria-label="Muhtasari wa huduma">
+          <span><strong>{displayedServices.length}</strong> huduma</span>
+          <span><strong>{openCount}</strong> zinapatikana</span>
+          <span><strong>{freeCount}</strong> bure</span>
+        </div>}
       </div>
-      {layout.showMetrics !== false && <div className="home-hero__metrics" aria-label="Muhtasari wa huduma">
-        <div><strong>{displayedServices.length}</strong><span>Huduma zilizoorodheshwa</span></div>
-        <div><strong>{openCount}</strong><span>Huduma zinazopatikana</span></div>
-        <div><strong>{freeCount}</strong><span>Huduma za bure</span></div>
-      </div>}
+      <div className="home-hero__wallet"><TokenCard compact /></div>
       <div className="home-hero__decoration" aria-hidden="true"><span>STZ</span><i /><b /></div>
     </section>}
 
-    <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />
+    {!allServicesPage && <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />}
 
-    {/* Wallet ya Tokeni inaonekana mara tu baada ya tangazo. */}
-    <TokenCard />
+    {allServicesPage && <TokenCard />}
 
     {!allServicesPage && <section className="home-category-panel" aria-label="Chagua kundi la huduma">
       <div className="home-category-panel__heading"><div><span className="overline">ANZA HAPA</span><h2>Unatafuta huduma gani?</h2></div><span>{matches.length} matokeo</span></div>
