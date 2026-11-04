@@ -10,6 +10,7 @@ export interface WorkerEnv {
   SUPER_ADMIN_PHONE?: string;
   FIMIPAY_SECRET_KEY?: string;
   FIMIPAY_WEBHOOK_SECRET?: string;
+  ENABLE_LIVE_WEB_RETRIEVAL?: string;
   ALLOWED_ORIGINS?: string;
   [key: string]: unknown;
 }
