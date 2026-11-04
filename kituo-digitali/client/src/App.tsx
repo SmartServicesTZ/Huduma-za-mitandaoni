@@ -30,6 +30,7 @@ function Router() {
         <Route path="/my-documents" component={Home} />
         <Route path={"/tokens"} component={Home} />
         <Route path={"/account"} component={Home} />
+        <Route path={"/settings"} component={Home} />
         <Route path={"/admin"} component={Home} />
         <Route path={"/admin/users"} component={Home} />
         <Route path={"/admin/tokens"} component={Home} />
