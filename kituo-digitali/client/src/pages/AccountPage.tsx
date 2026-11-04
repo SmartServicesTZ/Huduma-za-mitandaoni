@@ -65,7 +65,7 @@ export default function AccountPage() {
   if (!isAuthenticated || !firebaseUser) return <main className="portal-main"><div className="page-heading"><div><span className="overline">Wasifu na usalama</span><h1>Akaunti yangu</h1><p>Ingia ili kuona taarifa za akaunti yako binafsi.</p></div></div><section className="profile-login-card"><span className="profile-icon"><UserRound size={22}/></span><strong>Akaunti yako iko tayari</strong><p>Tumia kitufe cha Ingia / Jisajili juu ili kufungua wasifu wako.</p><Link className="button button--green" href="/">Rudi mwanzo</Link></section></main>;
 
   return <main className="portal-main profile-page">
-    <header className="page-heading profile-page-heading"><div><span className="overline">SETTINGS</span><h1>Settings za App</h1><p>Akaunti yako, wasifu, usalama na mipangilio yote sehemu moja.</p></div><span className="profile-secure-tag"><ShieldCheck size={15}/> Firebase Auth salama</span></header>
+    <header className="page-heading profile-page-heading"><div><Link className="settings-back" href="/settings">← Rudi kwenye Settings</Link><span className="overline">MY ACCOUNT</span><h1>My Account</h1><p>Taarifa zako binafsi, wasifu na usalama wa akaunti yako.</p></div><span className="profile-secure-tag"><ShieldCheck size={15}/> Firebase Auth salama</span></header>
     <section aria-label="Mawasiliano ya msaada" style={{margin:"0 0 22px",padding:"20px",borderRadius:18,border:"2px solid #22c55e",background:"linear-gradient(135deg,rgba(34,197,94,.13),rgba(20,184,166,.08))",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
       <div style={{display:"flex",alignItems:"center",gap:14,minWidth:0}}>
         <span style={{width:54,height:54,borderRadius:16,display:"grid",placeItems:"center",background:"#16a34a",color:"#fff",flexShrink:0}}><MessageCircle size={28}/></span>
@@ -92,43 +92,7 @@ export default function AccountPage() {
         <section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Globe2 size={18}/></span><div><h3>Akaunti</h3><p>Hali na salio lako la sasa.</p></div></div><div className="profile-stat-row"><span>Salio la tokeni</span><strong>{showBalance ? (profile?.tokenBalance ?? 0) : "•••"}</strong></div><div className="profile-stat-row"><span>Uthibitisho</span><strong>{profile?.verificationStatus === "approved" ? "Imeidhinishwa" : "Inasubiri"}</strong></div><Link className="profile-side-link" href="/tokens">Angalia maelezo ya tokeni</Link></section>
         <section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><LockKeyhole size={18}/></span><div><h3>Badilisha password</h3><p>Password huenda Firebase Authentication pekee.</p></div></div><label className="profile-field">Password mpya<input type="password" autoComplete="new-password" placeholder="Angalau herufi 6" value={newPassword} onChange={(event) => setNewPassword(event.target.value)}/></label><button className="profile-secondary-button" type="button" onClick={() => void saveNewPassword()}>Hifadhi password mpya</button></section>
         <section className="profile-side-card profile-notifications"><div className="profile-side-title"><span className="profile-icon"><ImagePlus size={18}/></span><div><h3>Ujumbe na taarifa</h3><p>Updates za akaunti na maombi yako.</p></div></div>{messages.length ? messages.slice(0, 4).map((item) => <article className="account-notification" key={item.id}><strong>{String(item.subject ?? "Taarifa")}</strong><p>{String(item.body ?? "")}</p><small>{String(item.createdAt ?? "")}</small></article>) : <p className="profile-muted">Bado hakuna taarifa mpya.</p>}<Link className="profile-side-link" href="/service/pata-lipa-namba">Maombi ya Lipa Namba</Link></section>
-        <section className="profile-side-card settings-hub-card">
-<div className="profile-side-title"><span className="profile-icon"><SlidersHorizontal size={18}/></span><div><h3>SETTINGS ZA APP</h3><p>Chagua kundi moja kufungua mipangilio yake.</p></div></div>
-{settingsPage === "home" ? <div className="settings-category-grid">
-<button type="button" className="settings-category" onClick={() => setSettingsPage("appearance")}><span className="settings-category-icon"><Palette size={19}/></span><span><strong>Muonekano</strong><small>Dark mode, rangi na ukubwa</small></span><b>›</b></button>
-<button type="button" className="settings-category" onClick={() => setSettingsPage("privacy")}><span className="settings-category-icon"><ShieldCheck size={19}/></span><span><strong>Arifa na faragha</strong><small>Arifa, salio na hali ya online</small></span><b>›</b></button>
-<button type="button" className="settings-category" onClick={() => setSettingsPage("experience")}><span className="settings-category-icon"><SlidersHorizontal size={19}/></span><span><strong>Uzoefu wa matumizi</strong><small>Sauti, refresh na data saver</small></span><b>›</b></button>
-<button type="button" className="settings-category" onClick={() => setSettingsPage("account")}><span className="settings-category-icon"><LockKeyhole size={19}/></span><span><strong>Akaunti na usalama</strong><small>Historia na kutoka kwenye akaunti</small></span><b>›</b></button>
-</div> : <div className="settings-subpage">
-<button type="button" className="settings-back" onClick={() => setSettingsPage("home")}>← Rudi kwenye Settings</button>
-{settingsPage === "appearance" ? <>
-<h4>Muonekano wa app</h4>
-<label className="settings-select"><span><Palette size={15}/> Mandhari</span><select value={theme} onChange={(event) => { const value = event.target.value as typeof theme; setTheme(value); applyThemePreference(value); void saveSetting({theme:value}); }}><option value="dark">Dark — usiku</option><option value="light">Light — mchana</option><option value="system">Fuata simu (System)</option></select></label>
-<label className="settings-select"><span>Rangi ya app</span><select value={accent} onChange={(event) => { const value = event.target.value as typeof accent; setAccent(value); void saveSetting({accent:value}); }}><option value="green">Green</option><option value="blue">Blue</option><option value="purple">Purple</option></select></label>
-<div className="profile-setting-row"><span><SlidersHorizontal size={16}/> Muonekano compact</span><button type="button" className={compactMode ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!compactMode; setCompactMode(value); void saveSetting({compactMode:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span><Eye size={16}/> Punguza miondoko</span><button type="button" className={reduceMotion ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!reduceMotion; setReduceMotion(value); void saveSetting({reduceMotion:value}); }}><i/></button></div>
-</> : null}
-{settingsPage === "privacy" ? <>
-<h4>Arifa na faragha</h4>
-<div className="profile-setting-row"><span><Bell size={16}/> Arifa za akaunti</span><button type="button" className={notifications ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!notifications; setNotifications(value); void saveSetting({notifications:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span><WalletCards size={16}/> Onyesha salio la tokeni</span><button type="button" className={showBalance ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showBalance; setShowBalance(value); void saveSetting({showBalance:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span>🟢 Onyesha hali ya online</span><button type="button" className={showOnlineStatus ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showOnlineStatus; setShowOnlineStatus(value); void saveSetting({showOnlineStatus:value}); }}><i/></button></div>
-</> : null}
-{settingsPage === "experience" ? <>
-<h4>Uzoefu na matumizi</h4>
-<div className="profile-setting-row"><span>🔊 Sauti za app</span><button type="button" className={sounds ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!sounds; setSounds(value); void saveSetting({sounds:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span>↻ Refresh ya moja kwa moja</span><button type="button" className={autoRefresh ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!autoRefresh; setAutoRefresh(value); void saveSetting({autoRefresh:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span>✓ Thibitisha vitendo muhimu</span><button type="button" className={confirmActions ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!confirmActions; setConfirmActions(value); void saveSetting({confirmActions:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span>📶 Data saver</span><button type="button" className={dataSaver ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!dataSaver; setDataSaver(value); void saveSetting({dataSaver:value}); }}><i/></button></div>
-</> : null}
-{settingsPage === "account" ? <>
-<h4>Akaunti na usalama</h4>
-<Link className="profile-side-link" href="/history">Historia ya shughuli</Link>
-<button type="button" className="profile-side-link" onClick={() => void logout()}>Ondoka kwenye akaunti</button>
-</> : null}
-</div>}
-<p className="profile-muted">Mipangilio huhifadhiwa kwenye akaunti yako. Dark mode huanza kutumika mara moja.</p>
-</section><section className="profile-side-card">
+        <section className="profile-side-card">
           <div className="profile-side-title"><span className="profile-icon"><Globe2 size={18}/></span><div><h3>Kuhusu SmartServicesTZ</h3><p>Taarifa za app na njia za haraka.</p></div></div>
           <div className="profile-stat-row"><span>Jina la app</span><strong>SmartServicesTZ</strong></div>
           <div className="profile-stat-row"><span>Aina</span><strong>Huduma za mtandaoni</strong></div>
@@ -140,86 +104,6 @@ export default function AccountPage() {
           </div>
           <p className="profile-muted" style={{marginTop:10}}>Usalama: usimpe mtu password yako wala kutuma taarifa za siri kwenye mazungumzo.</p>
         </section><section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Eye size={18}/></span><div><h3>Faragha na usalama</h3><p>Simamia usalama na historia ya akaunti.</p></div></div><Link className="profile-side-link" href="/history"><History size={15}/> Angalia historia ya shughuli</Link></section>
-        <section className="profile-side-card support-center-card">
-          <div className="profile-side-title"><span className="profile-icon"><Bell size={18}/></span><div><h3>Msaada na Maswali</h3><p>Maswali 18 ya kawaida kuhusu akaunti na huduma.</p></div></div>
-          <div className="settings-divider">Maswali ya mara kwa mara (18)</div>
-          <p className="profile-muted">Bonyeza swali ili kufungua jibu. Ukikwama bado, wasiliana nasi kwa WhatsApp kupitia kitufe cha kijani hapo juu.</p>
-          <div style={{display:"grid",gap:10}}>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kujisajili?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Bonyeza Ingia / Jisajili, jaza taarifa zinazohitajika na tumia namba yako ya simu. Hakikisha namba unayotumia ni yako na unaweza kuipata.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Nimeshindwa kuingia au nimesahau password</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Kagua namba na password, hakikisha intaneti ipo, kisha jaribu tena. Usitengeneze akaunti ya pili kwa namba iliyosajiliwa; wasiliana na msaada ukikwama.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha jina langu?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Akaunti/Settings, hariri jina la kwanza na la mwisho, kisha bonyeza Hifadhi wasifu.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha password?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Settings, sehemu ya Badilisha password, weka password mpya yenye angalau herufi 6 na uhifadhi.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Tokeni zangu ni nini?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Tokeni ni salio la ndani linalotumika kufungua huduma zinazohitaji tokeni. Kagua gharama inayoonyeshwa kabla ya kuendelea.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Kwa nini sina tokeni?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Angalia salio kwenye Wallet ya Tokeni. Ikiwa ulitarajia kupata tokeni za bonasi na hazijaonekana, wasiliana nasi kupitia WhatsApp.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kuona historia ya shughuli?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Historia kwenye menyu au sehemu ya Akaunti ili kuona rekodi zinazopatikana za shughuli zako.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Tokeni zimekatwa lakini huduma haijafunguka</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Usirudie ombi mara moja. Hifadhi rejea ya muamala, jina la huduma na picha ya hitilafu, kisha wasiliana nasi kupitia WhatsApp.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kuomba huduma?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Chagua huduma unayotaka, soma maelekezo na gharama yake, kisha jaza taarifa sahihi na tuma ombi.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ombi langu limechelewa, nifanye nini?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Kagua Historia au ukurasa wa huduma kuona hali ya ombi. Ukiwasiliana nasi, tuma jina la huduma na rejea ya ombi.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Nikipakua hati sioni kwenye simu</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Historia &gt; HATI ZANGU kisha bonyeza Pakua tena. Hati zinapatikana kwa saa 24, na kuzipakua tena hakukati token nyingine.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Kitufe cha kupakua hakifanyi kazi</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Angalia intaneti, jaribu tena na ruhusu upakuaji. Ikiendelea, tuma jina la huduma na picha ya hitilafu kupitia WhatsApp.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Huduma haifunguki au ukurasa ni mweupe</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Refresh ukurasa, funga na fungua app tena au jaribu Chrome. Ikiendelea, tuma jina la huduma na picha ya hitilafu bila taarifa za siri.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Namba au taarifa ninazoandika hazikubaliwi</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Kagua muundo unaotakiwa, hakikisha sehemu zote muhimu zimejazwa na taarifa ni sahihi. Usitumie taarifa za mtu mwingine.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha lugha?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Akaunti/Settings na uchague Kiswahili au English kwenye sehemu ya Lugha ya matumizi.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kubadilisha mwonekano wa app?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Fungua Settings na uchague Theme pamoja na rangi ya Accent. Baadhi ya mipangilio inaweza kutegemea ukurasa unaotumika.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Arifa za akaunti zina maana gani?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Arifa hukusaidia kuona taarifa na ujumbe unaohusiana na akaunti au maombi yako. Unaweza kubadilisha chaguo hilo kwenye Settings.</p>
-            </details>
-            <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
-              <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kuwasiliana na msimamizi?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Bonyeza kitufe kikubwa cha WhatsApp cha msaada kwenye ukurasa huu. Namba rasmi ni 0698232313 (WhatsApp tu; hakuna simu ya kawaida au SMS).</p>
-            </details>
-          </div>
-          <p className="profile-muted" style={{marginTop:12}}>Usitume password au taarifa nyeti kupitia ujumbe.</p>
-        </section>
         <button className="profile-logout-button" type="button" onClick={() => void logout()}><LogOut size={16}/> Toka kwenye akaunti</button>
       </aside>
     </div>
