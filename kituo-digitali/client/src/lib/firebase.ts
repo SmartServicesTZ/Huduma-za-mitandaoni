@@ -1460,20 +1460,12 @@ export async function getServiceApplicationDocument(applicationId: string, field
 }
 
 export function subscribeUserServiceApplications(uid: string, callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
-  // Keep service-application tracking live: admin status changes and replies should
-  // appear for the applicant without requiring a page refresh.
-  const applicationsQuery = query(collection(firestore, "serviceApplications"), where("userId", "==", uid));
-  return onSnapshot(applicationsQuery, (snapshot) => {
-    const rows = snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-      submittedAt: timestampValue(item.data().submittedAt),
-      updatedAt: timestampValue(item.data().updatedAt),
-    } as ServiceApplication));
-    const sortedRows = rows.sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
-    userServiceApplicationsCache.set(uid, { loadedAt: Date.now(), rows: sortedRows });
-    callback(sortedRows);
-  }, (error) => onError?.(error));
+  // Load the user's application history once and reuse the short-lived cache.
+  let active = true;
+  void getUserServiceApplicationsOnce(uid)
+    .then((rows) => { if (active) callback(rows); })
+    .catch((error) => { if (active) onError?.(error); });
+  return () => { active = false; };
 }
 
 async function getUserServiceApplicationsOnce(uid: string) {
