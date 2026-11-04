@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, getTokenHistoryState, loadOlderTokenHistory, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders, createTillFimipayOrder, checkTillFimipayOrder, subscribeUserDocuments, type SavedUserDocument } from "@/lib/firebase";
+import { adminAdjustTokens, adminDeleteService, adminListServices, adminListTransactions, adminListUsers, adminSaveService, adminUpdateUser, completeRequiredPasswordChange, consumeFirebaseTokens, createServiceRequest, ensureDefaultServiceCatalog, firebaseAuth, registerFirebaseUser, signInWithPhonePassword, getPublicSiteSettingsOnce, PUBLIC_SITE_SETTINGS_INVALIDATED_EVENT, getTokenHistoryState, loadOlderTokenHistory, subscribeToCollection, subscribeToTokenHistory, subscribeUserServiceApplications, subscribeUserLipaApplications, subscribeUserMessages, markUserMessageRead, claimDailyTokenBonus, createFimipayMobileOrder, checkFimipayMobileOrder, listFimipayMobileOrders, createTillFimipayOrder, checkTillFimipayOrder, subscribeUserDocuments, type SavedUserDocument } from "@/lib/firebase";
 import { getPortalServiceName, mergeServiceCatalogDefaults, serviceCatalog, specialServices, whatsappUrl, type ServiceCatalogItem } from "../../../shared/catalog";
 import { normalizeTanzaniaPhone } from "../../../shared/tanzaniaPhone";
 import { resolveAccountAccessMode, accountRestrictionActionLabels, accountRestrictionActions } from "../../../shared/accountAccess";
@@ -1063,10 +1063,11 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
       if (Array.isArray(settings?.homepageSectionOrder)) setHomepageSectionOrder(settings.homepageSectionOrder.filter((id: unknown): id is string => typeof id === "string"));
       setLayout((current) => ({ ...current, ...Object.fromEntries(Object.keys(current).map((key) => [key, settings?.[key] ?? current[key as keyof typeof current]])) }));
     };
-    void getPublicSiteSettingsOnce().then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined);
-    const refreshTimer = window.setInterval(() => { void getPublicSiteSettingsOnce({ force: true }).then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined); }, 45_000);
+    const refreshSettings = () => { void getPublicSiteSettingsOnce().then((settings) => applySettings(settings as Record<string, unknown> | null)).catch(() => undefined); };
+    refreshSettings();
+    window.addEventListener(PUBLIC_SITE_SETTINGS_INVALIDATED_EVENT, refreshSettings);
     const stopLocks = subscribeToCollection("serviceLocks", (rows) => { const overrides = Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true])); const tinLock = rows.find((item) => ["cheti-tin", "cheti-cha-tin", "cheti-tin-certificate", "tin-certificate"].includes(String(item.slug ?? item.id).toLowerCase())); if (tinLock) overrides["cheti-tin"] = tinLock.isLocked === true; setServiceLockOverrides(overrides); });
-    return () => { active = false; window.clearInterval(refreshTimer); stopLocks(); };
+    return () => { active = false; window.removeEventListener(PUBLIC_SITE_SETTINGS_INVALIDATED_EVENT, refreshSettings); stopLocks(); };
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
