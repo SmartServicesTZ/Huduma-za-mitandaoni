@@ -392,6 +392,12 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
         .dynamic-service-title { margin: 0; font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1.05; }
         .dynamic-service-description { margin: 14px 0 0; color: #557083; font-size: 1rem; line-height: 1.65; }
         .dynamic-service-instructions { margin-top: 22px; padding: 16px 18px; border-left: 4px solid #ecaa4c; background: #fff8ed; border-radius: 8px; color: #5d482b; line-height: 1.6; white-space: pre-line; }
+        .dynamic-service-guide { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:20px; }
+        .dynamic-service-guide-card { min-width:0; padding:14px 15px; border:1px solid #dce7ee; border-radius:12px; background:#f8fbfd; }
+        .dynamic-service-guide-card h2 { margin:0 0 8px; color:#19384d; font-size:.88rem; font-weight:850; }
+        .dynamic-service-guide-card p,.dynamic-service-guide-card li { margin:0; color:#536b7c; font-size:.88rem; line-height:1.55; }
+        .dynamic-service-guide-card ul { display:grid; gap:5px; margin:0; padding-left:18px; }
+        .dynamic-service-cost { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border-radius:999px; background:#e8f6ef; color:#12613d!important; font-weight:850; }
         .dynamic-service-card { padding: clamp(20px, 4vw, 34px); }
         .dynamic-service-card-heading { margin: 0 0 24px; font-size: 1.25rem; }
         .dynamic-service-form { display: grid; gap: 20px; }
@@ -448,6 +454,21 @@ export default function DynamicServicePage({ service }: DynamicServicePageProps)
           <h1 className="dynamic-service-title">{service.name}</h1>
           {service.description && <p className="dynamic-service-description">{service.description}</p>}
           {service.instructions && <div className="dynamic-service-instructions"><strong>Maelekezo</strong><br />{service.instructions}</div>}
+          <div className="dynamic-service-guide" aria-label="Muhtasari wa huduma">
+            <section className="dynamic-service-guide-card">
+              <h2>GHARAMA YA HUDUMA</h2>
+              <p className="dynamic-service-cost">{Number(service.tokenCost ?? 0) > 0 ? `Tokeni ${Number(service.tokenCost)}` : "BURE"}</p>
+              <p style={{marginTop:8}}>Gharama inayoonyeshwa hapa ni kulingana na usanidi wa huduma hii.</p>
+            </section>
+            <section className="dynamic-service-guide-card">
+              <h2>UNACHOHITAJI KUJAZA</h2>
+              {fields.length ? <ul>{fields.map((field) => <li key={field.fieldName}>{field.label}{field.required ? " (lazima)" : " (si lazima)"}</li>)}</ul> : <p>Fomu ya huduma hii bado haijawekewa sehemu za kujaza.</p>}
+            </section>
+            <section className="dynamic-service-guide-card">
+              <h2>JINSI YA KUTUMIA</h2>
+              <ul><li>Ingia kwenye akaunti yako.</li><li>Jaza taarifa zinazohitajika na ambatisha faili pale zinapoombwa.</li><li>Bonyeza kitufe cha kutuma ombi.</li><li>Fuatilia majibu kupitia sehemu ya maombi hapa chini.</li></ul>
+            </section>
+          </div>
         </header>
         <section className="dynamic-service-card">
           <h2 className="dynamic-service-card-heading">Taarifa za ombi</h2>
