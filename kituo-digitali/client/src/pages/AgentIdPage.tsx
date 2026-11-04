@@ -712,6 +712,9 @@ const AGENT_ID_CSS = `
 .idl-rl{display:flex;align-items:flex-start;gap:8px;margin:0 0 9px;font-size:9.4px;line-height:1.38;color:#475569}
 .idl-rl i{flex:0 0 17px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:#fff;font-style:normal;font-size:8px;font-weight:900}
 .idl-qr-wrap{position:relative;flex:0 0 150px;width:150px;text-align:center}
+/* Inua QR na maandishi yake kidogo ili SCAN TO VERIFY isikatwe chini ya kadi. */
+.idl-bbody .idl-qr-wrap{transform:translateY(-7px);flex-basis:154px}
+.idl-bbody .idl-qr-label{display:block;margin-top:4px;padding-bottom:2px;line-height:1.3;white-space:nowrap}
 .idl-qr-tile{width:168px;height:168px;box-sizing:border-box;margin:0 auto;padding:7px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.18);border:1px solid #e5eaf2}.idl-bbody .idl-qr-tile{width:132px;height:132px;padding:0;flex:0 0 132px;border:0;box-shadow:none;border-radius:8px}.idl-bbody .idl-qr-tile img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .idl-qr-tile img,.idl-qr-empty{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .idl-qr-label{margin-top:6px;font-size:8px;font-weight:900;letter-spacing:.1em;color:var(--d)}
