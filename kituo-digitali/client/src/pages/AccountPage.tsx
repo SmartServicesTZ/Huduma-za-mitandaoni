@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Link } from "wouter";
 import { BadgeCheck, CheckCircle2, Globe2, ImagePlus, LockKeyhole, LogOut, ShieldCheck, UserRound, Bell, MessageCircle, Palette, SlidersHorizontal, Eye, History, WalletCards } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +8,8 @@ import { subscribeUserMessages, updatePassword } from "@/lib/firebase";
 
 export default function AccountPage() {
   const { isAuthenticated, user, profile, firebaseUser, logout, updateProfile: saveProfile } = useAuth();
+  const { setPreference: applyThemePreference } = useTheme();
+  const [settingsPage, setSettingsPage] = useState<"home" | "appearance" | "privacy" | "experience" | "account">("home");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [bio, setBio] = useState("");
@@ -25,9 +28,10 @@ export default function AccountPage() {
     setCompactMode(profile.settings?.compactMode === true);
     setShowBalance(profile.settings?.showBalance !== false);
     setTheme(profile.settings?.theme ?? "dark");
+    applyThemePreference(profile.settings?.theme === "light" || profile.settings?.theme === "system" ? profile.settings.theme : "dark");
     setAccent(profile.settings?.accent ?? "green");
     setReduceMotion(profile.settings?.reduceMotion === true); setSounds(profile.settings?.sounds !== false); setAutoRefresh(profile.settings?.autoRefresh !== false); setShowOnlineStatus(profile.settings?.showOnlineStatus !== false); setConfirmActions(profile.settings?.confirmActions !== false); setDataSaver(profile.settings?.dataSaver === true);
-  }, [profile?.uid, profile?.firstName, profile?.lastName, profile?.bio, profile?.language, profile?.settings]);
+  }, [profile?.uid, profile?.firstName, profile?.lastName, profile?.bio, profile?.language, profile?.settings, applyThemePreference]);
   useEffect(() => {
     if (!firebaseUser) { setMessages([]); return; }
     return subscribeUserMessages(firebaseUser.uid, setMessages, () => toast.error("Imeshindikana kupakia ujumbe."));
@@ -88,25 +92,43 @@ export default function AccountPage() {
         <section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><Globe2 size={18}/></span><div><h3>Akaunti</h3><p>Hali na salio lako la sasa.</p></div></div><div className="profile-stat-row"><span>Salio la tokeni</span><strong>{showBalance ? (profile?.tokenBalance ?? 0) : "•••"}</strong></div><div className="profile-stat-row"><span>Uthibitisho</span><strong>{profile?.verificationStatus === "approved" ? "Imeidhinishwa" : "Inasubiri"}</strong></div><Link className="profile-side-link" href="/tokens">Angalia maelezo ya tokeni</Link></section>
         <section className="profile-side-card"><div className="profile-side-title"><span className="profile-icon"><LockKeyhole size={18}/></span><div><h3>Badilisha password</h3><p>Password huenda Firebase Authentication pekee.</p></div></div><label className="profile-field">Password mpya<input type="password" autoComplete="new-password" placeholder="Angalau herufi 6" value={newPassword} onChange={(event) => setNewPassword(event.target.value)}/></label><button className="profile-secondary-button" type="button" onClick={() => void saveNewPassword()}>Hifadhi password mpya</button></section>
         <section className="profile-side-card profile-notifications"><div className="profile-side-title"><span className="profile-icon"><ImagePlus size={18}/></span><div><h3>Ujumbe na taarifa</h3><p>Updates za akaunti na maombi yako.</p></div></div>{messages.length ? messages.slice(0, 4).map((item) => <article className="account-notification" key={item.id}><strong>{String(item.subject ?? "Taarifa")}</strong><p>{String(item.body ?? "")}</p><small>{String(item.createdAt ?? "")}</small></article>) : <p className="profile-muted">Bado hakuna taarifa mpya.</p>}<Link className="profile-side-link" href="/service/pata-lipa-namba">Maombi ya Lipa Namba</Link></section>
-        <section className="profile-side-card settings-hub-card"><div className="profile-side-title"><span className="profile-icon"><SlidersHorizontal size={18}/></span><div><h3>SETTINGS ZA APP</h3><p>Badilisha SmartServicesTZ ikae na ifanye kazi unavyotaka.</p></div></div>
-<div className="settings-grid">
-<label className="settings-select"><span><Palette size={15}/> Theme</span><select value={theme} onChange={(event) => { const value = event.target.value as typeof theme; setTheme(value); void saveSetting({theme:value}); }}><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></label>
-<label className="settings-select"><span>Accent color</span><select value={accent} onChange={(event) => { const value = event.target.value as typeof accent; setAccent(value); void saveSetting({accent:value}); }}><option value="green">Green</option><option value="blue">Blue</option><option value="purple">Purple</option></select></label>
-</div>
+        <section className="profile-side-card settings-hub-card">
+<div className="profile-side-title"><span className="profile-icon"><SlidersHorizontal size={18}/></span><div><h3>SETTINGS ZA APP</h3><p>Chagua kundi moja kufungua mipangilio yake.</p></div></div>
+{settingsPage === "home" ? <div className="settings-category-grid">
+<button type="button" className="settings-category" onClick={() => setSettingsPage("appearance")}><span className="settings-category-icon"><Palette size={19}/></span><span><strong>Muonekano</strong><small>Dark mode, rangi na ukubwa</small></span><b>›</b></button>
+<button type="button" className="settings-category" onClick={() => setSettingsPage("privacy")}><span className="settings-category-icon"><ShieldCheck size={19}/></span><span><strong>Arifa na faragha</strong><small>Arifa, salio na hali ya online</small></span><b>›</b></button>
+<button type="button" className="settings-category" onClick={() => setSettingsPage("experience")}><span className="settings-category-icon"><SlidersHorizontal size={19}/></span><span><strong>Uzoefu wa matumizi</strong><small>Sauti, refresh na data saver</small></span><b>›</b></button>
+<button type="button" className="settings-category" onClick={() => setSettingsPage("account")}><span className="settings-category-icon"><LockKeyhole size={19}/></span><span><strong>Akaunti na usalama</strong><small>Historia na kutoka kwenye akaunti</small></span><b>›</b></button>
+</div> : <div className="settings-subpage">
+<button type="button" className="settings-back" onClick={() => setSettingsPage("home")}>← Rudi kwenye Settings</button>
+{settingsPage === "appearance" ? <>
+<h4>Muonekano wa app</h4>
+<label className="settings-select"><span><Palette size={15}/> Mandhari</span><select value={theme} onChange={(event) => { const value = event.target.value as typeof theme; setTheme(value); applyThemePreference(value); void saveSetting({theme:value}); }}><option value="dark">Dark — usiku</option><option value="light">Light — mchana</option><option value="system">Fuata simu (System)</option></select></label>
+<label className="settings-select"><span>Rangi ya app</span><select value={accent} onChange={(event) => { const value = event.target.value as typeof accent; setAccent(value); void saveSetting({accent:value}); }}><option value="green">Green</option><option value="blue">Blue</option><option value="purple">Purple</option></select></label>
+<div className="profile-setting-row"><span><SlidersHorizontal size={16}/> Muonekano compact</span><button type="button" className={compactMode ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!compactMode; setCompactMode(value); void saveSetting({compactMode:value}); }}><i/></button></div>
+<div className="profile-setting-row"><span><Eye size={16}/> Punguza miondoko</span><button type="button" className={reduceMotion ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!reduceMotion; setReduceMotion(value); void saveSetting({reduceMotion:value}); }}><i/></button></div>
+</> : null}
+{settingsPage === "privacy" ? <>
+<h4>Arifa na faragha</h4>
 <div className="profile-setting-row"><span><Bell size={16}/> Arifa za akaunti</span><button type="button" className={notifications ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!notifications; setNotifications(value); void saveSetting({notifications:value}); }}><i/></button></div>
 <div className="profile-setting-row"><span><WalletCards size={16}/> Onyesha salio la tokeni</span><button type="button" className={showBalance ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showBalance; setShowBalance(value); void saveSetting({showBalance:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span><SlidersHorizontal size={16}/> Compact mode</span><button type="button" className={compactMode ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!compactMode; setCompactMode(value); void saveSetting({compactMode:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span><Eye size={16}/> Reduce motion</span><button type="button" className={reduceMotion ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!reduceMotion; setReduceMotion(value); void saveSetting({reduceMotion:value}); }}><i/></button></div>
-<div className="settings-divider">Uzoefu na matumizi</div>
+<div className="profile-setting-row"><span>🟢 Onyesha hali ya online</span><button type="button" className={showOnlineStatus ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showOnlineStatus; setShowOnlineStatus(value); void saveSetting({showOnlineStatus:value}); }}><i/></button></div>
+</> : null}
+{settingsPage === "experience" ? <>
+<h4>Uzoefu na matumizi</h4>
 <div className="profile-setting-row"><span>🔊 Sauti za app</span><button type="button" className={sounds ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!sounds; setSounds(value); void saveSetting({sounds:value}); }}><i/></button></div>
 <div className="profile-setting-row"><span>↻ Refresh ya moja kwa moja</span><button type="button" className={autoRefresh ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!autoRefresh; setAutoRefresh(value); void saveSetting({autoRefresh:value}); }}><i/></button></div>
-<div className="profile-setting-row"><span>🟢 Onyesha hali ya online</span><button type="button" className={showOnlineStatus ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!showOnlineStatus; setShowOnlineStatus(value); void saveSetting({showOnlineStatus:value}); }}><i/></button></div>
 <div className="profile-setting-row"><span>✓ Thibitisha vitendo muhimu</span><button type="button" className={confirmActions ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!confirmActions; setConfirmActions(value); void saveSetting({confirmActions:value}); }}><i/></button></div>
 <div className="profile-setting-row"><span>📶 Data saver</span><button type="button" className={dataSaver ? "setting-toggle on" : "setting-toggle"} onClick={() => { const value=!dataSaver; setDataSaver(value); void saveSetting({dataSaver:value}); }}><i/></button></div>
-<div className="settings-divider">Akaunti na faragha</div>
-<div className="settings-action-grid"><Link href="/history">Historia ya shughuli</Link><button type="button" onClick={() => void logout()}>Ondoka kwenye akaunti</button></div>
-<div className="settings-shortcuts"><Link href="/history">🧾 Historia</Link><Link href="/tokens">🪙 Tokeni</Link></div>
-<p className="profile-muted">Settings hizi zimehifadhiwa kwenye akaunti yako; hazipotei ukilog out.</p></section><section className="profile-side-card">
+</> : null}
+{settingsPage === "account" ? <>
+<h4>Akaunti na usalama</h4>
+<Link className="profile-side-link" href="/history">Historia ya shughuli</Link>
+<button type="button" className="profile-side-link" onClick={() => void logout()}>Ondoka kwenye akaunti</button>
+</> : null}
+</div>}
+<p className="profile-muted">Mipangilio huhifadhiwa kwenye akaunti yako. Dark mode huanza kutumika mara moja.</p>
+</section><section className="profile-side-card">
           <div className="profile-side-title"><span className="profile-icon"><Globe2 size={18}/></span><div><h3>Kuhusu SmartServicesTZ</h3><p>Taarifa za app na njia za haraka.</p></div></div>
           <div className="profile-stat-row"><span>Jina la app</span><strong>SmartServicesTZ</strong></div>
           <div className="profile-stat-row"><span>Aina</span><strong>Huduma za mtandaoni</strong></div>
