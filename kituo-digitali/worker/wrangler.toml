@@ -15,5 +15,8 @@ ALLOWED_ORIGINS = "https://smartservicestz.github.io,https://steward-tz.github.i
 binding = "LIPA_DOCUMENTS"
 bucket_name = "smartservices-lipa-documents"
 
+[[triggers]]
+crons = ["0 * * * *"]
+
 [observability]
 enabled = true
