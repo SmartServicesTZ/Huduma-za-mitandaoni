@@ -2745,3 +2745,19 @@ html body .portal-shell .portal-content .portal-main .special-card > svg { width
 .dark .notice--warning { color:#fecaca; background:#3a2029; }
 .dark .account-warning { color:#fecaca; background:#3a2029; }
 .dark .settings-divider { color:#9aabc0; border-color:#29394f; }
+
+
+/* Dedicated Settings category landing */
+.settings-landing{max-width:1050px}
+.settings-landing .page-heading{margin-bottom:22px}
+.settings-landing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.settings-landing-card{min-width:0;display:flex;align-items:center;gap:14px;padding:18px;border:1px solid rgba(148,163,184,.2);border-radius:17px;color:var(--foreground,#f8fafc);background:var(--card,#17243a);text-decoration:none;box-shadow:0 9px 22px rgba(0,0,0,.12);transition:transform .16s ease,border-color .16s ease}
+.settings-landing-card:hover{transform:translateY(-2px);border-color:#22c55e}
+.settings-landing-icon{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border-radius:14px;color:#34d399;background:rgba(16,185,129,.13)}
+.settings-landing-copy{flex:1;min-width:0;display:grid;gap:5px}
+.settings-landing-copy small{color:#34d399;font-size:10px;font-weight:800;letter-spacing:.04em}
+.settings-landing-copy strong{color:var(--foreground,#f8fafc);font-size:15px;line-height:1.3}
+.settings-landing-copy>span{color:var(--muted-foreground,#aab8ca);font-size:12px;line-height:1.5}
+.settings-landing-arrow{flex:0 0 auto;color:#94a3b8}
+.settings-landing-foot{display:flex;align-items:center;gap:8px;margin-top:18px;color:var(--muted-foreground,#94a3b8);font-size:12px}
+@media(max-width:620px){.settings-landing-grid{grid-template-columns:1fr}.settings-landing-card{padding:15px}.settings-landing-copy strong{font-size:14px}}
