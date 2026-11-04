@@ -213,8 +213,18 @@ export default function AgentIdPage() {
   const cfg = NETWORKS[network];
   const data: AgentData = { name, agentId, phone, type, tokenCost: tokenCost ?? 0, region, district, area, issueDate, contractedBy };
 
-  // QR inabeba taarifa nne muhimu ili skani ionyeshe majina, Agent ID, cheo na mkoa.
-  const qrText = useMemo(() => JSON.stringify({ Majina: name.trim(), "Agent ID": agentId.trim(), "Aina ya cheo": type, "Contracted by": contractedBy, Mkoa: region }), [name, agentId, type, contractedBy, region]);
+  // QR inabeba taarifa za msingi za wakala pamoja na tarehe ya mwisho wa matumizi.
+  const qrText = useMemo(() => JSON.stringify({
+    Majina: name.trim(),
+    "Agent ID": agentId.trim(),
+    "Aina ya cheo": type,
+    "Contracted by": contractedBy,
+    Mkoa: region,
+    Wilaya: district,
+    Mtandao: network,
+    "Tarehe ya kutolewa": fmt(issueDate),
+    "Expiry Date": fmt(expiry(issueDate)),
+  }), [name, agentId, type, contractedBy, region, district, network, issueDate]);
 
   useEffect(() => {
     setPaid(false);
