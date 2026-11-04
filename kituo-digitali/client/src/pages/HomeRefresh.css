@@ -1122,3 +1122,32 @@ html body{background:var(--ss-paper);color:var(--ss-ink);font-family:Inter,ui-sa
 @media(prefers-reduced-motion:reduce) {
   .home-hero__primary,.home-hero__secondary,.home-category-chips button { transition:none !important; }
 }
+
+
+/* Compact combined homepage hero + token wallet */
+.home-hero--wallet{grid-template-columns:minmax(0,1fr) minmax(330px,.92fr);align-items:center;gap:clamp(18px,2.4vw,30px);min-height:0;padding:clamp(19px,2.6vw,30px);margin-bottom:16px}
+.home-hero--wallet .home-hero__content,.home-hero__wallet{position:relative;z-index:2;min-width:0}
+.home-hero--wallet .home-hero__eyebrow{margin-bottom:11px}
+.home-hero--wallet h1{font-size:clamp(27px,3.3vw,43px)}
+.home-hero--wallet .home-hero__content>p{margin-top:10px;font-size:12px;line-height:1.6}
+.home-hero--wallet .home-hero__actions{margin-top:16px}
+.home-hero__inline-metrics{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.home-hero__inline-metrics span{padding:6px 9px;border:1px solid rgba(226,232,240,.2);border-radius:999px;color:#d7e4f5;background:rgba(255,255,255,.07);font-size:9px}
+.home-hero__inline-metrics strong{color:#6ee7c0;font-size:11px}
+.home-hero__wallet .token-card{width:100%;min-width:0;margin:0!important;padding:17px!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:20px!important;background:rgba(255,255,255,.97)!important;box-shadow:0 12px 30px rgba(0,0,0,.16)!important}
+.home-hero__wallet .token-card::after{display:none!important}
+.home-hero__wallet .wallet-fashion-mark{width:36px;height:36px;border-radius:11px}
+.home-hero__wallet .wallet-fashion-brand strong{font-size:10px}
+.home-hero__wallet .wallet-fashion-balance{gap:8px!important;margin:12px 0!important;padding:13px!important;border-radius:14px!important}
+.home-hero__wallet .wallet-fashion-amount{font-size:clamp(34px,4vw,46px)!important}
+.home-hero__wallet .wallet-fashion-balance>div:nth-child(2){grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+.home-hero__wallet .wallet-fashion-balance>div:nth-child(2)>div{min-width:0!important;padding:7px 6px!important}
+.home-hero__wallet .wallet-fashion-balance>div:nth-child(2) strong{font-size:clamp(18px,2.2vw,26px)!important}
+.home-hero__wallet .wallet-fashion-orbit{display:none}
+.home-hero__wallet .wallet-fashion-account{gap:8px;padding:9px;border-radius:12px}
+.home-hero__wallet .wallet-fashion-avatar{width:32px;height:32px;flex-basis:32px}
+.home-hero__wallet .wallet-fashion-account-copy .TK-account-name{font-size:11px}
+.home-hero__wallet .token-add-button{min-height:43px!important;margin-top:10px!important}
+@media(max-width:900px){.home-hero--wallet{grid-template-columns:minmax(0,1fr) minmax(280px,.9fr);gap:14px}}
+@media(max-width:700px){.home-hero--wallet{grid-template-columns:minmax(0,1fr);gap:15px;padding:18px 15px}.home-hero--wallet h1{font-size:clamp(27px,8vw,36px)}.home-hero--wallet .home-hero__content>p{max-width:100%;font-size:11px}.home-hero--wallet .home-hero__actions{margin-top:12px}.home-hero__wallet .token-card{padding:13px!important}.home-hero__wallet .wallet-fashion-balance{grid-template-columns:minmax(0,1fr) auto!important}}
+@media(max-width:380px){.home-hero__wallet .wallet-fashion-balance>div:nth-child(2){grid-template-columns:repeat(2,minmax(58px,1fr))!important}.home-hero__wallet .wallet-fashion-balance>div:nth-child(2)>div{padding:6px 4px!important}}
