@@ -1582,12 +1582,18 @@ export const getAdminApplicationCounts = callable(async (request) => {
   const actor = await profileFor(uid, request.profile as Profile | undefined);
   const canServices = can(actor, "manageServices");
   const canLipa = can(actor, "manageLipaApplications");
-  const [pendingServices, pendingLipa, processingLipa] = await Promise.all([
-    canServices ? getAllCollectionDocs("serviceApplications", ADMIN_LIST_LIMIT, { field: "status", value: "PENDING" }) : Promise.resolve([]),
-    canLipa ? getAllCollectionDocs("lipaApplications", ADMIN_LIST_LIMIT, { field: "status", value: "PENDING" }) : Promise.resolve([]),
-    canLipa ? getAllCollectionDocs("lipaApplications", ADMIN_LIST_LIMIT, { field: "status", value: "PROCESSING" }) : Promise.resolve([]),
+  const [servicePending, lipaPendingOnly, lipaProcessing] = await Promise.all([
+    canServices ? db.collection("serviceApplications").where("status", "==", "PENDING").count() : Promise.resolve(0),
+    canLipa ? db.collection("lipaApplications").where("status", "==", "PENDING").count() : Promise.resolve(0),
+    canLipa ? db.collection("lipaApplications").where("status", "==", "PROCESSING").count() : Promise.resolve(0),
   ]);
-  return { servicePending: pendingServices.length, lipaPending: pendingLipa.length + processingLipa.length };
+  return {
+    servicePending,
+    // Keep the existing badge semantics while exposing the two underlying counts.
+    lipaPending: lipaPendingOnly + lipaProcessing,
+    lipaPendingOnly,
+    lipaProcessing,
+  };
 });
 
 export const replyToServiceApplication = callable(async (request) => {

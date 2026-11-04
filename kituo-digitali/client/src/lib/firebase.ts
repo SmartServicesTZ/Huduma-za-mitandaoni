@@ -1225,7 +1225,7 @@ export async function adminListLipaApplicationsPage(cursor?: string, pageSize = 
 
 export async function adminGetApplicationCounts() {
   const callable = createWorkerCall("getAdminApplicationCounts");
-  return (await callable({})).data as { servicePending: number; lipaPending: number };
+  return (await callable({})).data as { servicePending: number; lipaPending: number; lipaPendingOnly?: number; lipaProcessing?: number };
 }
 
 export function subscribeUserLipaApplications(uid: string, callback: (rows: LipaApplication[]) => void, onError?: (error: unknown) => void) {
