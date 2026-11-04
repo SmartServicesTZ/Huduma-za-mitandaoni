@@ -578,8 +578,10 @@ async function cleanupExpiredUserDocuments(env: Env) {
           || Number(record.expiresAt) !== expiresAt
           || Number(record.expiresAt) > now) continue;
 
-        await env.LIPA_DOCUMENTS.delete(object.key);
+        // Remove metadata first. If the R2 delete fails, the next scheduled
+        // pass safely recognizes the expired object as an orphan and retries it.
         await recordRef.delete();
+        await env.LIPA_DOCUMENTS.delete(object.key);
         deleted += 1;
       } catch (error) {
         failed += 1;
