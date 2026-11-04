@@ -65,9 +65,9 @@ export default function AccountPage() {
     <section aria-label="Mawasiliano ya msaada" style={{margin:"0 0 22px",padding:"20px",borderRadius:18,border:"2px solid #22c55e",background:"linear-gradient(135deg,rgba(34,197,94,.13),rgba(20,184,166,.08))",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
       <div style={{display:"flex",alignItems:"center",gap:14,minWidth:0}}>
         <span style={{width:54,height:54,borderRadius:16,display:"grid",placeItems:"center",background:"#16a34a",color:"#fff",flexShrink:0}}><MessageCircle size={28}/></span>
-        <div><strong style={{display:"block",fontSize:18}}>Unahitaji msaada wa moja kwa moja?</strong><p style={{margin:"5px 0",lineHeight:1.5}}>Wasiliana na msimamizi wa SmartServicesTZ kupitia WhatsApp.</p><strong style={{fontSize:16}}>0692287767 <span style={{fontSize:12,color:"#15803d"}}>· WhatsApp tu</span></strong><p style={{margin:"4px 0 0",fontSize:12}}>Namba hii haipokei simu za kawaida wala SMS.</p></div>
+        <div><strong style={{display:"block",fontSize:18}}>Unahitaji msaada wa moja kwa moja?</strong><p style={{margin:"5px 0",lineHeight:1.5}}>Wasiliana na msimamizi wa SmartServicesTZ kupitia WhatsApp.</p><strong style={{fontSize:16}}>0698232313 <span style={{fontSize:12,color:"#15803d"}}>· WhatsApp tu</span></strong><p style={{margin:"4px 0 0",fontSize:12}}>Namba hii haipokei simu za kawaida wala SMS.</p></div>
       </div>
-      <a href="https://wa.me/255692287767?text=Habari%2C%20nahitaji%20msaada%20wa%20SmartServicesTZ." target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:9,padding:"13px 20px",borderRadius:12,background:"#16a34a",color:"#fff",fontWeight:800,textDecoration:"none",minHeight:48,boxShadow:"0 5px 16px rgba(22,163,74,.25)"}}><MessageCircle size={19}/> Fungua WhatsApp</a>
+      <a href="https://wa.me/255698232313?text=Habari%2C%20nahitaji%20msaada%20wa%20SmartServicesTZ." target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:9,padding:"13px 20px",borderRadius:12,background:"#16a34a",color:"#fff",fontWeight:800,textDecoration:"none",minHeight:48,boxShadow:"0 5px 16px rgba(22,163,74,.25)"}}><MessageCircle size={19}/> Fungua WhatsApp</a>
     </section>
     <div className="profile-layout">
       <section className="profile-main-card">
@@ -193,7 +193,7 @@ export default function AccountPage() {
             </details>
             <details style={{padding:"12px 14px",border:"1px solid var(--border, #dbe3ee)",borderRadius:12,background:"var(--card, #fff)"}}>
               <summary style={{fontWeight:700,cursor:"pointer",lineHeight:1.45}}>Ninawezaje kuwasiliana na msimamizi?</summary>
-              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Bonyeza kitufe kikubwa cha WhatsApp cha msaada kwenye ukurasa huu. Namba rasmi ni 0692287767 (WhatsApp tu; hakuna simu ya kawaida au SMS).</p>
+              <p style={{margin:"9px 0 0",lineHeight:1.6}}>Bonyeza kitufe kikubwa cha WhatsApp cha msaada kwenye ukurasa huu. Namba rasmi ni 0698232313 (WhatsApp tu; hakuna simu ya kawaida au SMS).</p>
             </details>
           </div>
           <p className="profile-muted" style={{marginTop:12}}>Usitume password au taarifa nyeti kupitia ujumbe.</p>
