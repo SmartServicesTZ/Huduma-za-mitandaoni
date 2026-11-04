@@ -479,7 +479,7 @@ function ServiceCard({ service, onUse }: { service: ServiceCatalogItem; onUse: (
 function ServiceGrid({ title, services, onUse }: { title: string; services: ServiceCatalogItem[]; onUse: (service: ServiceCatalogItem) => void }) {
   const arrangedServices = prioritizeHomepageServices(services);
   const openCount = arrangedServices.filter((service) => service.kind !== "locked").length;
-  return <section className="portal-section">
+  return <section id="home-services" className="portal-section home-services-section">
     <div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>{title}</h2><p className="service-order-hint">{openCount} wazi · {arrangedServices.length - openCount} zimefungwa</p></div><span className="section-count">{services.length}</span></div>
     <div className="portal-service-grid portal-service-grid--ordered">{arrangedServices.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div>
   </section>;
@@ -1107,14 +1107,50 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   const openCount = displayedServices.length - lockedCount;
   const layoutStyle = { "--home-cols": layout.homeColumns, "--home-tablet-cols": layout.homeTabletColumns, "--home-mobile-cols": layout.homeMobileColumns, "--section-gap": `${layout.sectionGap}px`, "--card-gap": `${layout.cardGap}px`, "--card-radius": `${layout.cardRadius}px`, "--card-padding": `${layout.cardPadding}px`, "--hero-radius": `${layout.heroRadius}px`, "--hero-padding": `${layout.heroPadding}px`, "--content-max": `${layout.contentMaxWidth}px` } as React.CSSProperties;
   return <main className={`portal-main ${layout.compactCards ? "layout-compact" : ""}`} style={layoutStyle}>
+
+    {!allServicesPage && layout.showHero !== false && <section className="home-hero" aria-labelledby="home-hero-title">
+      <div className="home-hero__content">
+        <span className="home-hero__eyebrow"><Sparkles size={14} aria-hidden="true" /> SMARTSERVICESTZ · DIGITAL SERVICE HUB</span>
+        <h1 id="home-hero-title">Huduma za kidijitali,<br /><span>sehemu moja.</span></h1>
+        <p>Pata huduma za wakala na huduma nyingine mtandaoni kwa urahisi. Chagua huduma, soma gharama na masharti, kisha fuatilia ombi lako kupitia akaunti yako.</p>
+        <div className="home-hero__actions">
+          <button type="button" className="home-hero__primary" onClick={() => document.getElementById("home-services")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Chunguza huduma <ChevronRight size={17} /></button>
+          <a className="home-hero__secondary" href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} /> Wasiliana nasi</a>
+        </div>
+      </div>
+      {layout.showMetrics !== false && <div className="home-hero__metrics" aria-label="Muhtasari wa huduma">
+        <div><strong>{displayedServices.length}</strong><span>Huduma zilizoorodheshwa</span></div>
+        <div><strong>{openCount}</strong><span>Huduma zinazopatikana</span></div>
+        <div><strong>{freeCount}</strong><span>Huduma za bure</span></div>
+      </div>}
+      <div className="home-hero__decoration" aria-hidden="true"><span>STZ</span><i /><b /></div>
+    </section>}
+
     <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />
 
     {/* Wallet ya Tokeni inaonekana mara tu baada ya tangazo. */}
     <TokenCard />
 
+    {!allServicesPage && <section className="home-category-panel" aria-label="Chagua kundi la huduma">
+      <div className="home-category-panel__heading"><div><span className="overline">ANZA HAPA</span><h2>Unatafuta huduma gani?</h2></div><span>{matches.length} matokeo</span></div>
+      <div className="home-category-chips">
+        {categories.map((item) => <button key={item} type="button" className={category === item ? "active" : ""} aria-pressed={category === item} onClick={() => { setCategory(item); document.getElementById("home-services")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{item === "Zote" ? "Huduma zote" : item}</button>)}
+      </div>
+    </section>}
+
     {showAppDownload && <a role="complementary" aria-label="Pakua SmartServicesTZ App" className="stz-app-float-button" href="https://github.com/SmartServicesTZ/Huduma-za-mitandaoni/releases/download/smartservicestz-latest/SmartServicesTZ.apk"><Smartphone size={16} aria-hidden="true" /><span>Pakua App</span></a>}
 
     {matches.length ? orderedSections.map((section) => <Fragment key={section}>{sections[section]}</Fragment>) : <section className="empty-service-state"><div className="empty-service-state__icon"><Search size={24}/></div><div><span className="overline">HAKUNA MATOKEO</span><h3>Huduma haijapatikana</h3><p>Jaribu neno jingine au chagua kundi la huduma tofauti.</p></div><button type="button" onClick={() => setCategory("Zote")}>Onesha zote</button></section>}
+
+    {!allServicesPage && <section className="home-how-section" aria-labelledby="home-how-title">
+      <div className="home-how-section__heading"><span className="overline">HATUA RAHISI</span><h2 id="home-how-title">Jinsi ya kutumia SmartServicesTZ</h2><p>Fuata hatua hizi kuanza kutumia huduma.</p></div>
+      <div className="home-how-grid">
+        <article><span className="home-how-number">01</span><span className="home-how-icon"><Search size={21}/></span><h3>Chagua huduma</h3><p>Vinjari makundi na fungua huduma unayohitaji ili kusoma maelezo na masharti yake.</p></article>
+        <article><span className="home-how-number">02</span><span className="home-how-icon"><WalletCards size={21}/></span><h3>Angalia gharama</h3><p>Hakiki tokeni au gharama inayoonyeshwa kabla ya kuthibitisha hatua yoyote.</p></article>
+        <article><span className="home-how-number">03</span><span className="home-how-icon"><FileBadge size={21}/></span><h3>Fuatilia ombi</h3><p>Ingia kwenye akaunti yako kuangalia hali ya ombi na kupata hati zako.</p></article>
+      </div>
+      <div className="home-trust-strip"><span className="home-trust-strip__icon"><ShieldCheck size={23}/></span><div><strong>Uwazi katika kila hatua</strong><p>Soma taarifa za huduma na gharama kabla ya kuendelea. Kwa msaada, tumia njia rasmi ya WhatsApp.</p></div><a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Pata msaada <ChevronRight size={16}/></a></div>
+    </section>}
   </main>;
 }
 
