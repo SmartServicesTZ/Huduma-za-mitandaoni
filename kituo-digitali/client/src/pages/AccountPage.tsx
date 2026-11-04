@@ -16,7 +16,7 @@ export default function AccountPage() {
   const [language, setLanguage] = useState<"sw" | "en">("sw");
   const [newPassword, setNewPassword] = useState("");
   const [profileBusy, setProfileBusy] = useState(false);
-  const [notifications, setNotifications] = useState(true); const [compactMode, setCompactMode] = useState(false); const [showBalance, setShowBalance] = useState(true); const [theme, setTheme] = useState<"system" | "light" | "dark">("dark"); const [accent, setAccent] = useState<"green" | "blue" | "purple">("green"); const [reduceMotion, setReduceMotion] = useState(false); const [sounds, setSounds] = useState(true); const [autoRefresh, setAutoRefresh] = useState(true); const [showOnlineStatus, setShowOnlineStatus] = useState(true); const [confirmActions, setConfirmActions] = useState(true); const [dataSaver, setDataSaver] = useState(false); const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
+  const [notifications, setNotifications] = useState(true); const [compactMode, setCompactMode] = useState(false); const [showBalance, setShowBalance] = useState(true); const [theme, setTheme] = useState<"system" | "light" | "dark">("light"); const [accent, setAccent] = useState<"green" | "blue" | "purple">("green"); const [reduceMotion, setReduceMotion] = useState(false); const [sounds, setSounds] = useState(true); const [autoRefresh, setAutoRefresh] = useState(true); const [showOnlineStatus, setShowOnlineStatus] = useState(true); const [confirmActions, setConfirmActions] = useState(true); const [dataSaver, setDataSaver] = useState(false); const [messages, setMessages] = useState<Array<Record<string, unknown> & { id: string }>>([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -27,8 +27,8 @@ export default function AccountPage() {
     setNotifications(profile.settings?.notifications !== false);
     setCompactMode(profile.settings?.compactMode === true);
     setShowBalance(profile.settings?.showBalance !== false);
-    setTheme(profile.settings?.theme ?? "dark");
-    applyThemePreference(profile.settings?.theme === "light" || profile.settings?.theme === "system" ? profile.settings.theme : "dark");
+    setTheme(profile.settings?.theme ?? "light");
+    applyThemePreference(profile.settings?.theme === "light" || profile.settings?.theme === "system" || profile.settings?.theme === "dark" ? profile.settings.theme : "light");
     setAccent(profile.settings?.accent ?? "green");
     setReduceMotion(profile.settings?.reduceMotion === true); setSounds(profile.settings?.sounds !== false); setAutoRefresh(profile.settings?.autoRefresh !== false); setShowOnlineStatus(profile.settings?.showOnlineStatus !== false); setConfirmActions(profile.settings?.confirmActions !== false); setDataSaver(profile.settings?.dataSaver === true);
   }, [profile?.uid, profile?.firstName, profile?.lastName, profile?.bio, profile?.language, profile?.settings, applyThemePreference]);
