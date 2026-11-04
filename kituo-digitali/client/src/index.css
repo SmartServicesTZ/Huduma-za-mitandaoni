@@ -2728,3 +2728,20 @@ html body .portal-shell .portal-content .portal-main .special-card > svg { width
 .settings-back { justify-self:start; border:0; border-radius:10px; padding:9px 12px; color:#1d4ed8; background:#eff6ff; font-weight:800; cursor:pointer; }
 .settings-subpage .settings-select { display:grid; gap:7px; color:inherit; font-size:12px; font-weight:700; }
 .settings-subpage .settings-select select { width:100%; padding:11px; border:1px solid #dbe3ee; border-radius:10px; background:#fff; color:#172033; }
+
+/* Dark mode surfaces across the customer portal */
+.dark .portal-shell,.dark .portal-main,.dark .portal-content { background:#0b1220 !important; color:#e5e7eb; }
+.dark .token-card,.dark .portal-service-card,.dark .tutorial-card,.dark .history-table,.dark .history-row,.dark .history-head,.dark .account-panel,.dark .admin-panel,.dark .portal-modal { background:#111c2e !important; color:#e5e7eb !important; border-color:#26364d !important; }
+.dark .token-card__top strong,.dark .portal-service-card strong,.dark .tutorial-card strong,.dark .history-row strong,.dark .account-panel h2,.dark .account-panel h3,.dark .admin-panel h2 { color:#f8fafc !important; }
+.dark .token-card__meta,.dark .token-note,.dark .service-card-copy span,.dark .tutorial-card small,.dark .history-row,.dark .history-head,.dark .account-panel>p,.dark .admin-user-copy span { color:#a8b7ca !important; }
+.dark .service-card-foot,.dark .history-row,.dark .history-head,.dark .account-panel hr,.dark .admin-user-row { border-color:#29394f !important; }
+.dark .service-card-icon { color:#cbd5e1; background:#23344c; }
+.dark .service-locked { background:#182336 !important; }
+.dark .portal-modal input,.dark .portal-modal textarea,.dark .portal-modal select,.dark .admin-form-grid input,.dark .admin-form-grid textarea,.dark .admin-panel>select,.dark .language-label select { color:#e5e7eb !important; background:#0b1424 !important; border-color:#34445c !important; }
+.dark .auth-switch { background:#17243a; }
+.dark .auth-switch button { color:#cbd5e1; }
+.dark .notice--info { color:#bfdbfe; background:#172e4b; }
+.dark .notice--success { color:#bbf7d0; background:#123528; }
+.dark .notice--warning { color:#fecaca; background:#3a2029; }
+.dark .account-warning { color:#fecaca; background:#3a2029; }
+.dark .settings-divider { color:#9aabc0; border-color:#29394f; }
