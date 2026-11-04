@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { UserRound, CircleHelp, Palette, Bell, ChevronRight } from "lucide-react";
+import { UserRound, CircleHelp, Palette, Bell, ChevronRight, Settings2 } from "lucide-react";
 
 const groups = [
   { title: "My Account", description: "Majina, taarifa binafsi, kubadili nenosiri na usalama wa akaunti.", detail: "Wasifu na usalama", href: "/account", icon: UserRound },
