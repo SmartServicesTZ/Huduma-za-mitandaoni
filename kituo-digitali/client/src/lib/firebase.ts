@@ -512,6 +512,7 @@ export async function syncFirebaseAuthClaims(force = false) {
 export async function signOutFirebaseUser() {
   const uid = firebaseAuth.currentUser?.uid;
   await signOut(firebaseAuth);
+  clearUserHistoryCaches();
   if (uid) {
     authClaimsInFlight.delete(uid);
     profileCache.delete(uid);
@@ -551,7 +552,10 @@ export async function saveFirebaseProfile(uid: string, values: Partial<FirebaseP
 
 export async function claimDailyTokenBonus() {
   const callable = createWorkerCall<{ }, { granted: number; balanceAfter: number }>("claimDailyTokenBonus");
-  return (await callable({})).data;
+  const result = (await callable({})).data;
+  const uid = firebaseAuth.currentUser?.uid;
+  if (uid) invalidateUserHistoryCache(uid);
+  return result;
 }
 
 export async function consumeFirebaseTokens(uid: string, service: { slug: string; name: string; tokenCost: number; kind: string; tokenType?: "nida" | "huduma"; agentType?: string }, requestId?: string) {
@@ -582,7 +586,9 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
   if (currentIsFree) return { balanceAfter: null, reference: requestId ?? `free-${Date.now()}`, duplicate: false };
   const transactionId = requestId?.trim() || crypto.randomUUID();
   const callable = createWorkerCall<{ serviceId: string; serviceName: string; tokenCost: number; requestId: string; tokenType: "nida" | "huduma"; agentType?: string }, { balanceAfter: number; reference: string; duplicate: boolean }>("consumeTokens");
-  return (await callable({ serviceId: service.slug, serviceName: currentName, tokenCost: currentCost, requestId: transactionId, tokenType: service.tokenType ?? "huduma", ...(service.agentType ? { agentType: service.agentType } : {}) })).data;
+  const result = (await callable({ serviceId: service.slug, serviceName: currentName, tokenCost: currentCost, requestId: transactionId, tokenType: service.tokenType ?? "huduma", ...(service.agentType ? { agentType: service.agentType } : {}) })).data;
+  invalidateUserHistoryCache(uid);
+  return result;
 }
 
 export type TokenPurchaseOrder = { id: string; orderId: string; amount: number; currency: string; tokenAmount: number; status: string; createdAt?: unknown; transid?: string };
@@ -653,14 +659,86 @@ export async function createServiceRequest(uid: string, service: { slug: string;
   return requestRef.id;
 }
 
+const USER_HISTORY_CACHE_TTL_MS = 60_000;
+const USER_HISTORY_PAGE_SIZE = 100;
+type TokenHistoryCache = { loadedAt: number; rows: DocumentData[]; cursor?: QueryDocumentSnapshot<DocumentData>; hasMore: boolean };
+const tokenHistoryCache = new Map<string, TokenHistoryCache>();
+const tokenHistoryPending = new Map<string, Promise<TokenHistoryCache>>();
+const tokenHistoryOlderPending = new Map<string, Promise<DocumentData[]>>();
+const userServiceApplicationsCache = new Map<string, { loadedAt: number; rows: ServiceApplication[] }>();
+const userServiceApplicationsPending = new Map<string, Promise<ServiceApplication[]>>();
+const userHistoryRevisions = new Map<string, number>();
+
+function clearUserHistoryCaches(uid?: string) {
+  const keys = uid ? [uid] : [...new Set([
+    ...tokenHistoryCache.keys(), ...tokenHistoryPending.keys(),
+    ...userServiceApplicationsCache.keys(), ...userServiceApplicationsPending.keys(),
+  ])];
+  for (const key of keys) {
+    userHistoryRevisions.set(key, (userHistoryRevisions.get(key) ?? 0) + 1);
+    tokenHistoryCache.delete(key);
+    tokenHistoryPending.delete(key);
+    tokenHistoryOlderPending.delete(key);
+    userServiceApplicationsCache.delete(key);
+    userServiceApplicationsPending.delete(key);
+  }
+}
+
+let activeHistoryUid: string | null = null;
+onAuthStateChanged(firebaseAuth, (user) => {
+  const nextUid = user?.uid ?? null;
+  if (activeHistoryUid && activeHistoryUid !== nextUid) clearUserHistoryCaches(activeHistoryUid);
+  activeHistoryUid = nextUid;
+});
+
+export function invalidateUserHistoryCache(uid: string) {
+  clearUserHistoryCaches(uid);
+}
+
+async function getUserTokenHistoryOnce(uid: string) {
+  const cached = tokenHistoryCache.get(uid);
+  if (cached && Date.now() - cached.loadedAt < USER_HISTORY_CACHE_TTL_MS) return cached;
+  const pending = tokenHistoryPending.get(uid);
+  if (pending) return pending;
+  const revision = userHistoryRevisions.get(uid) ?? 0;
+  const request = getDocs(query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), orderBy("createdAt", "desc"), limit(USER_HISTORY_PAGE_SIZE))).then((snapshot) => {
+    const page: TokenHistoryCache = {
+      loadedAt: Date.now(),
+      rows: snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData)),
+      cursor: snapshot.docs.at(-1),
+      hasMore: snapshot.docs.length === USER_HISTORY_PAGE_SIZE,
+    };
+    if (revision === (userHistoryRevisions.get(uid) ?? 0)) tokenHistoryCache.set(uid, page);
+    return page;
+  }).finally(() => { if (tokenHistoryPending.get(uid) === request) tokenHistoryPending.delete(uid); });
+  tokenHistoryPending.set(uid, request);
+  return request;
+}
+
+export function getTokenHistoryState(uid: string) {
+  const cached = tokenHistoryCache.get(uid);
+  return { hasMore: cached?.hasMore === true, loading: tokenHistoryPending.has(uid) };
+}
+
+export async function loadOlderTokenHistory(uid: string) {
+  const current = await getUserTokenHistoryOnce(uid);
+  if (!current.hasMore || !current.cursor) return current.rows;
+  const pending = tokenHistoryOlderPending.get(uid);
+  if (pending) return pending;
+  const revision = userHistoryRevisions.get(uid) ?? 0;
+  const request = getDocs(query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), orderBy("createdAt", "desc"), startAfter(current.cursor), limit(USER_HISTORY_PAGE_SIZE))).then((page) => {
+    const olderRows = page.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData));
+    const next: TokenHistoryCache = { loadedAt: Date.now(), rows: [...current.rows, ...olderRows], cursor: page.docs.at(-1), hasMore: page.docs.length === USER_HISTORY_PAGE_SIZE };
+    if (revision === (userHistoryRevisions.get(uid) ?? 0)) tokenHistoryCache.set(uid, next);
+    return next.rows;
+  }).finally(() => { if (tokenHistoryOlderPending.get(uid) === request) tokenHistoryOlderPending.delete(uid); });
+  tokenHistoryOlderPending.set(uid, request);
+  return request;
+}
+
 export function subscribeToTokenHistory(uid: string, callback: (rows: DocumentData[]) => void, onError?: (error: unknown) => void) {
   let active = true;
-  // History is displayed newest-first and capped to the latest 100 entries.
-  // Older entries can be loaded on demand through getCollectionPage-style queries.
-  void getDocs(query(collection(firestore, "tokenTransactions"), where("userId", "==", uid), orderBy("createdAt", "desc"), limit(100))).then((snapshot) => {
-    if (!active) return;
-    callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DocumentData)));
-  }).catch((error) => { if (active) onError?.(error); });
+  void getUserTokenHistoryOnce(uid).then((page) => { if (active) callback(page.rows); }).catch((error) => { if (active) onError?.(error); });
   return () => { active = false; };
 }
 
@@ -1249,17 +1327,26 @@ export async function createPocketWifiOrder(applicationId: string, details: stri
 
 export async function createServiceApplication(applicationId: string, serviceSlug: string, values: ServiceFormValues) {
   const callable = createWorkerCall("createServiceApplication");
-  return (await callable({ applicationId, serviceSlug, values })).data as { applicationId: string; status: string; duplicate: boolean; balanceAfter: number | null; reference: string };
+  const result = (await callable({ applicationId, serviceSlug, values })).data as { applicationId: string; status: string; duplicate: boolean; balanceAfter: number | null; reference: string };
+  const uid = firebaseAuth.currentUser?.uid;
+  if (uid) invalidateUserHistoryCache(uid);
+  return result;
 }
 
 export async function updateServiceApplication(applicationId: string, values: ServiceFormValues) {
   const callable = createWorkerCall("updateServiceApplication");
-  return (await callable({ applicationId, values })).data as { applicationId: string; status: string; updated: boolean };
+  const result = (await callable({ applicationId, values })).data as { applicationId: string; status: string; updated: boolean };
+  const uid = firebaseAuth.currentUser?.uid;
+  if (uid) invalidateUserHistoryCache(uid);
+  return result;
 }
 
 export async function setServiceApplicationStatus(applicationId: string, status: string, rejectionReason = "", allowResubmission = false) {
   const callable = createWorkerCall("setServiceApplicationStatus");
-  return (await callable({ applicationId, status, rejectionReason, allowResubmission })).data;
+  const result = (await callable({ applicationId, status, rejectionReason, allowResubmission })).data;
+  const uid = firebaseAuth.currentUser?.uid;
+  if (uid) invalidateUserHistoryCache(uid);
+  return result;
 }
 
 async function compressServiceImage(file: File): Promise<File> {
@@ -1368,11 +1455,23 @@ export async function getServiceApplicationDocument(applicationId: string, field
 
 export function subscribeUserServiceApplications(uid: string, callback: (rows: ServiceApplication[]) => void, onError?: (error: unknown) => void) {
   let active = true;
-  void readAllDocuments((cursor) => query(collection(firestore, "serviceApplications"), where("userId", "==", uid), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
-    if (!active) return;
-    callback(documents.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))));
-  }).catch((error) => { if (active) onError?.(error); });
+  void getUserServiceApplicationsOnce(uid).then((rows) => { if (active) callback(rows); }).catch((error) => { if (active) onError?.(error); });
   return () => { active = false; };
+}
+
+async function getUserServiceApplicationsOnce(uid: string) {
+  const cached = userServiceApplicationsCache.get(uid);
+  if (cached && Date.now() - cached.loadedAt < USER_HISTORY_CACHE_TTL_MS) return cached.rows;
+  const pending = userServiceApplicationsPending.get(uid);
+  if (pending) return pending;
+  const revision = userHistoryRevisions.get(uid) ?? 0;
+  const request = readAllDocuments((cursor) => query(collection(firestore, "serviceApplications"), where("userId", "==", uid), limit(100), ...(cursor ? [startAfter(cursor)] : []))).then((documents) => {
+    const rows = documents.map((item) => ({ id: item.id, ...item.data(), submittedAt: timestampValue(item.data().submittedAt), updatedAt: timestampValue(item.data().updatedAt) } as ServiceApplication)).sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? "")));
+    if (revision === (userHistoryRevisions.get(uid) ?? 0)) userServiceApplicationsCache.set(uid, { loadedAt: Date.now(), rows });
+    return rows;
+  }).finally(() => { if (userServiceApplicationsPending.get(uid) === request) userServiceApplicationsPending.delete(uid); });
+  userServiceApplicationsPending.set(uid, request);
+  return request;
 }
 
 export async function markUserMessageRead(messageId: string, uid: string) {
