@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { LipaApplication, ServiceApplication } from "@/lib/firebase";
 type InboxKind = "ALL" | "SERVICE" | "LIPA";
 type InboxStatus = "ALL" | "NO_PAYMENT" | "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
-type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; requestTypeKey:string; kindLabel:string; filterKey:string; filterLabel:string; person:string; service:string; serviceKey:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
+type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; filterKey:string; filterLabel:string; person:string; service:string; serviceKey:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
 function dateValue(value:unknown):number {
   if(!value)return 0;
   try {
@@ -30,13 +30,16 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
       const slug=String(application.serviceSlug??"").toLowerCase();
       const fullName=String(service?.name??application.serviceName??application.serviceSlug??"Ombi");
-      const requestTypeKey=slug.includes("access-lipa")?"access-lipa-number":slug==="pata-till-mitandao-yote"?"pata-till-mitandao-yote":slug||`service:${fullName.toLowerCase()}`;\n      const requestName=slug==="pata-till-mitandao-yote"?"PATA TILL MITANDAO YOTE":slug.includes("access-lipa")?"ACCESS LIPA NAMBA":fullName;
+      const requestTypeKey=slug.includes("access-lipa")?"access-lipa-number":slug==="pata-till-mitandao-yote"?"pata-till-mitandao-yote":slug||`service:${fullName.toLowerCase()}`;
+      const requestName=slug==="pata-till-mitandao-yote"?"PATA TILL MITANDAO YOTE":slug.includes("access-lipa")?"ACCESS LIPA NAMBA":fullName;
       const data=(application.applicantData??{}) as Record<string,unknown>;
       const network=String(data.network??"").toUpperCase();
       const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
       const paidService=tillPayment;
       const paymentGated=paidService && String(application.status??"PENDING").toUpperCase()==="PENDING" && String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
-      const filterKey=`SERVICE:${slug||fullName.toLowerCase()}`;\n      const filterLabel=requestName==="ACCESS"?"ACCESS (HUDUMA)":requestName;\n      return {id:application.applicationId||application.id,kind:"SERVICE",requestTypeKey,kindLabel:requestName,filterKey,filterLabel,person:application.userName||"Jina halijawekwa",service:network,serviceKey:`${slug} ${fullName}`.toLowerCase(),phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
+      const filterKey=`SERVICE:${slug||fullName.toLowerCase()}`;
+      const filterLabel=requestName==="ACCESS"?"ACCESS (HUDUMA)":requestName;
+      return {id:application.applicationId||application.id,kind:"SERVICE",requestTypeKey,kindLabel:requestName,filterKey,filterLabel,person:application.userName||"Jina halijawekwa",service:network,serviceKey:`${slug} ${fullName}`.toLowerCase(),phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
     });
     const lipaRows:InboxRow[]=lipaApplications.map((application)=>{
       const network=networks.find((item)=>item.id===application.networkId||item.id===application.network||item.name===application.network);
@@ -46,7 +49,8 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     const priority:Record<string,number>={PENDING:0,PROCESSING:1,APPROVED:2,REJECTED:3};
     return [...serviceRows,...lipaRows].sort((a,b)=>(priority[String(a.status).toUpperCase()]??4)-(priority[String(b.status).toUpperCase()]??4)||dateValue(b.dateValue)-dateValue(a.dateValue));
   },[serviceApplications,lipaApplications,services,networks]);
-  const requestTypeOptions=Array.from(new Map(rows.map((row)=>[row.filterKey,row.filterLabel])).entries()).sort((a,b)=>a[1].localeCompare(b[1],"sw"));\n  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(requestTypeFilter==="ALL"||row.filterKey===requestTypeFilter)&&(!serviceFilter||(row.kind==="SERVICE"&&row.serviceKey.includes("soft")&&row.serviceKey.includes("nida")))&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
+  const requestTypeOptions=Array.from(new Map(rows.map((row)=>[row.filterKey,row.filterLabel])).entries()).sort((a,b)=>a[1].localeCompare(b[1],"sw"));
+  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(requestTypeFilter==="ALL"||row.filterKey===requestTypeFilter)&&(!serviceFilter||(row.kind==="SERVICE"&&row.serviceKey.includes("soft")&&row.serviceKey.includes("nida")))&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
   const counts={ALL:rows.length,NO_PAYMENT:rows.filter((r)=>r.paymentGated).length,PENDING:rows.filter((r)=>!r.paymentGated&&String(r.status).toUpperCase()==="PENDING").length,PROCESSING:rows.filter((r)=>String(r.status).toUpperCase()==="PROCESSING").length,APPROVED:rows.filter((r)=>String(r.status).toUpperCase()==="APPROVED").length,REJECTED:rows.filter((r)=>String(r.status).toUpperCase()==="REJECTED").length};
   return <div className="unified-inbox" aria-label="Orodha moja ya maombi yote">
     <style>{`
