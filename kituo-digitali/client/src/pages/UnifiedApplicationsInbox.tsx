@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { LipaApplication, ServiceApplication } from "@/lib/firebase";
 type InboxKind = "ALL" | "SERVICE" | "LIPA";
 type InboxStatus = "ALL" | "NO_PAYMENT" | "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
-type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; filterKey:string; filterLabel:string; person:string; service:string; serviceKey:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
+type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; requestTypeKey:string; kindLabel:string; filterKey:string; filterLabel:string; person:string; service:string; serviceKey:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
 function dateValue(value:unknown):number {
   if(!value)return 0;
   try {
@@ -18,11 +18,11 @@ function statusClass(status:string):string {
   if(value==="processing")return "unified-inbox-status-processing";
   return "unified-inbox-status-pending";
 }
-export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect,initialKind="ALL",serviceFilter}:{
+export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect,serviceFilter}:{
   serviceApplications:ServiceApplication[]; lipaApplications:LipaApplication[]; services:any[]; networks:any[];
-  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void; initialKind?:InboxKind; serviceFilter?:string;
+  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void; serviceFilter?:string;
 }) {
-  const [kindFilter,setKindFilter]=useState<InboxKind>(initialKind);
+  const [requestTypeFilter,setRequestTypeFilter]=useState("ALL");
   const [statusFilter,setStatusFilter]=useState<InboxStatus>("ALL");
   const rows=useMemo<InboxRow[]>(()=>{
     const serviceRows:InboxRow[]=serviceApplications.map((application)=>{
@@ -30,13 +30,13 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
       const slug=String(application.serviceSlug??"").toLowerCase();
       const fullName=String(service?.name??application.serviceName??application.serviceSlug??"Ombi");
-      const requestName=slug==="pata-till-mitandao-yote"?"TILL":slug.includes("access-lipa")?"ACCESS":fullName;
+      const requestTypeKey=slug.includes("access-lipa")?"access-lipa-number":slug==="pata-till-mitandao-yote"?"pata-till-mitandao-yote":slug||`service:${fullName.toLowerCase()}`;\n      const requestName=slug==="pata-till-mitandao-yote"?"PATA TILL MITANDAO YOTE":slug.includes("access-lipa")?"ACCESS LIPA NAMBA":fullName;
       const data=(application.applicantData??{}) as Record<string,unknown>;
       const network=String(data.network??"").toUpperCase();
       const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
       const paidService=tillPayment;
       const paymentGated=paidService && String(application.status??"PENDING").toUpperCase()==="PENDING" && String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
-      const filterKey=`SERVICE:${slug||fullName.toLowerCase()}`;\n      const filterLabel=requestName==="ACCESS"?"ACCESS (HUDUMA)":requestName;\n      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,filterKey,filterLabel,person:application.userName||"Jina halijawekwa",service:network,serviceKey:`${slug} ${fullName}`.toLowerCase(),phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
+      const filterKey=`SERVICE:${slug||fullName.toLowerCase()}`;\n      const filterLabel=requestName==="ACCESS"?"ACCESS (HUDUMA)":requestName;\n      return {id:application.applicationId||application.id,kind:"SERVICE",requestTypeKey,kindLabel:requestName,filterKey,filterLabel,person:application.userName||"Jina halijawekwa",service:network,serviceKey:`${slug} ${fullName}`.toLowerCase(),phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
     });
     const lipaRows:InboxRow[]=lipaApplications.map((application)=>{
       const network=networks.find((item)=>item.id===application.networkId||item.id===application.network||item.name===application.network);
