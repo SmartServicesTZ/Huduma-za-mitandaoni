@@ -49,7 +49,7 @@ const A4_HEIGHT_PX = 2480;
 // Landscape export dimensions for QR-free type-2 stickers (3x reference size).
 function getNoQrExportSpec(network: LipaNetwork) {
   return network === "voda"
-    ? { widthPx: 1881, heightPx: 1467, widthMm: 269.4, heightMm: 210 }
+    ? { widthPx: 3000, heightPx: 2055, widthMm: 304.8, heightMm: 208.8 }
     : { widthPx: 2208, heightPx: 1560, widthMm: 297, heightMm: 210 };
 }
 const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
@@ -149,12 +149,44 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   const networkLogo = network === "voda"
     ? `${LIPA_ASSET_BASE}mpesa-header-reference.png`
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halopesa-logo.png"}`;
-  if (variant === "no-qr" && network !== "airtel") {
+  if (variant === "no-qr" && network === "voda") {
+    const digits = values.lipaNumber.replace(/\D/g, "").slice(0, 12).split("");
+    const boxCount = Math.max(7, digits.length);
+    return <article ref={ref} className="lq-artboard lq-no-qr-artboard lq-no-qr-artboard--voda-reference" data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
+      <section className="lq-voda-no-qr-main">
+        <header className="lq-voda-no-qr-heading">
+          <h2>Lipa kwa<br />Simu hapa</h2>
+          <span className="lq-voda-no-qr-number-label">Lipa namba</span>
+        </header>
+        <div className="lq-voda-no-qr-number-boxes" aria-label={`Namba ya Lipa: ${values.lipaNumber || "haijawekwa"}`} style={{ gridTemplateColumns: `repeat(${boxCount}, minmax(0, 1fr))` }}>
+          {Array.from({ length: boxCount }, (_, index) => <span key={index}>{digits[index] || ""}</span>)}
+        </div>
+        <div className="lq-voda-no-qr-name-row">
+          <span>Jina</span>
+          <strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
+        </div>
+      </section>
+      <footer className="lq-voda-no-qr-footer">
+        <div className="lq-voda-no-qr-accepted">
+          <strong>Kutoka mitandao yote</strong>
+          <div className="lq-voda-no-qr-network-text" aria-label="Mitandao inayokubaliwa">
+            <span className="lq-footer-tigo">tigo pesa</span>
+            <span className="lq-footer-ezy">EZYPESA</span>
+            <span className="lq-footer-tpesa">T-PESA</span>
+            <span className="lq-footer-airtel">airtel <small>money</small></span>
+            <span className="lq-footer-halo">halopesa</span>
+          </div>
+        </div>
+        <img className="lq-voda-no-qr-mpesa" src={`${LIPA_ASSET_BASE}mpesa-header-reference.png`} alt="Vodacom M-Pesa" />
+      </footer>
+    </article>;
+  }
+  if (variant === "no-qr" && network !== "airtel" && network !== "voda") {
     const digits = values.lipaNumber.replace(/\D/g, "").slice(0, 12).split("");
     const boxCount = Math.max(7, digits.length);
     return <article ref={ref} className={`lq-artboard lq-no-qr-artboard lq-no-qr-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
       <header className="lq-no-qr-header">
-        <h2>{network === "voda" ? "Lipa kwa m-pesa hapa" : "LIPA KWA SIMU HAPA"}</h2>
+        <h2>LIPA KWA SIMU HAPA</h2>
         {network === "yas" ? <div className="lq-no-qr-brand-logos"><img src={`${import.meta.env.BASE_URL}yas-logo.png`} alt="YAS" /><img src={`${import.meta.env.BASE_URL}stika-yas/mixx-yas-logo.png`} alt="Mixx by Yas" /></div>
           : network === "halotel" ? <div className="lq-no-qr-brand-logos"><img src={`${import.meta.env.BASE_URL}halotel-logo.png`} alt="Halotel" /><img src={`${import.meta.env.BASE_URL}halopesa-logo.png`} alt="HaloPesa" /></div>
           : <img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" />}
@@ -165,9 +197,8 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
           {Array.from({ length: boxCount }, (_, index) => <span key={index}>{digits[index] || ""}</span>)}
         </div>
         <div className="lq-no-qr-name-row"><span>Jina</span><strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong></div>
-        <p>{network === "voda" ? "Lipa kwenda mitandao yote" : "KUTOKA MITANDAO YOTE"}</p>
+        <p>KUTOKA MITANDAO YOTE</p>
       </section>
-      {network === "voda" && <footer className="lq-no-qr-voda-footer"><img src={`${import.meta.env.BASE_URL}vodacom-logo.png`} alt="Vodacom" /><span>m-pesa</span><b>Mixx by Yas</b><b>T-PESA</b><span>Airtel money</span><span>halopesa</span></footer>}
     </article>;
   }
   if (network === "airtel" && paperSize === "A4") return <article ref={ref} className="lq-artboard lq-card-artboard lq-card-artboard--airtel lq-card-artboard--airtel-a4" data-lipa-export-page="card" data-network="airtel" data-watermarked={watermarked} data-paper-size="A4">

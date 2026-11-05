@@ -2450,3 +2450,176 @@
 .lq-artboard[data-watermarked="true"] .lq-merchant-name::after {
   content: none !important;
 }
+
+/* Vodacom STIKA ZA LIPA bila QR — layout maalum inayofuata picha A. */
+.lq-artboard.lq-no-qr-artboard--voda-reference {
+  flex: 0 1 1000px !important;
+  width: min(100%, 1000px) !important;
+  max-width: 1000px !important;
+  height: auto !important;
+  aspect-ratio: 1000 / 685 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #111827 !important;
+  background-color: #a90018 !important;
+  background-image:
+    repeating-radial-gradient(ellipse at 87% 45%, transparent 0 7%, #ff536315 7.15% 7.7%, transparent 7.9% 14%),
+    repeating-radial-gradient(ellipse at 22% 62%, transparent 0 8%, #61000d20 8.2% 8.8%, transparent 9% 16%),
+    linear-gradient(135deg, #870012 0%, #b5001b 52%, #e11932 100%) !important;
+  container-type: inline-size !important;
+}
+.lq-voda-no-qr-main {
+  position: relative;
+  display: flex;
+  flex: 1 1 76%;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  padding: 5.2% 6.5% 3.8%;
+  box-sizing: border-box;
+  color: #fff;
+}
+.lq-voda-no-qr-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4%;
+  min-height: 29%;
+}
+.lq-voda-no-qr-heading h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 8.4cqw;
+  line-height: .96;
+  font-weight: 950;
+  letter-spacing: -.055em;
+  text-align: left;
+}
+.lq-voda-no-qr-number-label {
+  flex: 0 0 auto;
+  margin-top: 8.8%;
+  padding: 1.45% 3.4%;
+  color: #fff;
+  background: #5c0010;
+  font-size: 4.1cqw;
+  line-height: 1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.lq-voda-no-qr-number-boxes {
+  display: grid;
+  gap: 1.25%;
+  width: 87%;
+  margin: 0;
+}
+.lq-voda-no-qr-number-boxes span {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  aspect-ratio: .82;
+  color: #111827;
+  background: #fff;
+  border: 1px solid #d8dce1;
+  font-size: 7.3cqw;
+  line-height: 1;
+  font-weight: 950;
+  text-align: center;
+}
+.lq-voda-no-qr-name-row {
+  display: flex;
+  align-items: stretch;
+  width: 87%;
+  min-height: 22%;
+  margin-top: 1.3%;
+  overflow: hidden;
+  color: #15202c;
+  background: #f5f8fb;
+}
+.lq-voda-no-qr-name-row > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 13%;
+  padding: 0 1.5%;
+  color: #fff;
+  background: #5c0010;
+  font-size: 4.1cqw;
+  font-weight: 900;
+}
+.lq-voda-no-qr-name-row > strong {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  padding: 0 3%;
+  color: #111827;
+  font-size: 4.8cqw;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: .015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lq-voda-no-qr-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4%;
+  flex: 0 0 24%;
+  min-height: 0;
+  padding: 2.2% 6.5% 2.5%;
+  box-sizing: border-box;
+  color: #a0001c;
+  background: #f7f8fa;
+}
+.lq-voda-no-qr-accepted {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9%;
+  min-width: 0;
+}
+.lq-voda-no-qr-accepted > strong {
+  color: #a0001c;
+  font-size: 5.1cqw;
+  line-height: 1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.lq-voda-no-qr-network-text {
+  display: flex;
+  align-items: center;
+  gap: 2.5%;
+  min-width: 0;
+  color: #233c67;
+  font-size: 2.6cqw;
+  line-height: 1;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.lq-voda-no-qr-network-text span { display: inline-flex; align-items: baseline; min-width: 0; }
+.lq-footer-tigo { color: #163b70; font-style: italic; }
+.lq-footer-ezy { color: #253c5a; font-size: 2.05cqw; }
+.lq-footer-tpesa { color: #101010; }
+.lq-footer-airtel { color: #b42332; }
+.lq-footer-airtel small { margin-left: 2px; font-size: .72em; font-weight: 700; }
+.lq-footer-halo { color: #b17d35; }
+.lq-voda-no-qr-mpesa {
+  display: block;
+  flex: 0 0 25%;
+  width: 25%;
+  max-height: 90%;
+  object-fit: contain;
+}
+@media (max-width: 700px) {
+  .lq-artboard.lq-no-qr-artboard--voda-reference {
+    width: min(100%, 1000px) !important;
+  }
+  .lq-voda-no-qr-main { padding-left: 6%; padding-right: 6%; }
+  .lq-voda-no-qr-heading h2 { font-size: 8.2cqw; }
+  .lq-voda-no-qr-number-boxes, .lq-voda-no-qr-name-row { width: 88%; }
+  .lq-voda-no-qr-footer { padding-left: 6%; padding-right: 6%; }
+  .lq-voda-no-qr-network-text { gap: 1.8%; font-size: 2.45cqw; }
+}
