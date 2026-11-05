@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { LipaApplication, ServiceApplication } from "@/lib/firebase";
 type InboxKind = "ALL" | "SERVICE" | "LIPA";
 type InboxStatus = "ALL" | "NO_PAYMENT" | "PENDING" | "PROCESSING" | "APPROVED" | "REJECTED";
-type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; person:string; service:string; serviceKey:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
+type InboxRow = { id:string; kind:Exclude<InboxKind,"ALL">; kindLabel:string; filterKey:string; filterLabel:string; person:string; service:string; serviceKey:string; phone:string; status:string; paymentGated:boolean; dateValue:unknown; dateLabel:string };
 function dateValue(value:unknown):number {
   if(!value)return 0;
   try {
@@ -36,17 +36,17 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
       const tillPayment=slug==="pata-till-mitandao-yote" && network!=="HALOTEL" && network!=="";
       const paidService=tillPayment;
       const paymentGated=paidService && String(application.status??"PENDING").toUpperCase()==="PENDING" && String(data.paymentStatus??"UNPAID").toUpperCase()!=="PAID";
-      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,person:application.userName||"Jina halijawekwa",service:network,serviceKey:`${slug} ${fullName}`.toLowerCase(),phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
+      const filterKey=`SERVICE:${slug||fullName.toLowerCase()}`;\n      const filterLabel=requestName==="ACCESS"?"ACCESS (HUDUMA)":requestName;\n      return {id:application.applicationId||application.id,kind:"SERVICE",kindLabel:requestName,filterKey,filterLabel,person:application.userName||"Jina halijawekwa",service:network,serviceKey:`${slug} ${fullName}`.toLowerCase(),phone:String((application as any).phone??data.phone??""),status:application.status||"PENDING",paymentGated,dateValue:date,dateLabel:dateLabel(date)};
     });
     const lipaRows:InboxRow[]=lipaApplications.map((application)=>{
       const network=networks.find((item)=>item.id===application.networkId||item.id===application.network||item.name===application.network);
       const date=application.submittedAt??(application as unknown as {createdAt?:unknown}).createdAt;
-      const serviceId=String((application as any).serviceId??""); const requestName=/access.*lipa|lipa.*access/i.test(serviceId)?"ACCESS":/wifi|wi-fi/i.test(serviceId)?"WIFI":"LIPA NAMBA"; return {id:application.applicationId||application.id,kind:"LIPA",kindLabel:requestName,person:application.applicantName||application.userName||application.phone||"Jina halijawekwa",service:network?.name??application.network??"",serviceKey:"",phone:application.phone||"",status:application.status||"PENDING",paymentGated:false,dateValue:date,dateLabel:dateLabel(date)};
+      const serviceId=String((application as any).serviceId??""); const requestName=/access.*lipa|lipa.*access/i.test(serviceId)?"ACCESS LIPA NAMBA":/wifi|wi-fi/i.test(serviceId)?"WIFI":"LIPA NAMBA"; const filterKey=`LIPA:${serviceId||requestName}`; return {id:application.applicationId||application.id,kind:"LIPA",kindLabel:requestName,filterKey,filterLabel:requestName,person:application.applicantName||application.userName||application.phone||"Jina halijawekwa",service:network?.name??application.network??"",serviceKey:"",phone:application.phone||"",status:application.status||"PENDING",paymentGated:false,dateValue:date,dateLabel:dateLabel(date)};
     });
     const priority:Record<string,number>={PENDING:0,PROCESSING:1,APPROVED:2,REJECTED:3};
     return [...serviceRows,...lipaRows].sort((a,b)=>(priority[String(a.status).toUpperCase()]??4)-(priority[String(b.status).toUpperCase()]??4)||dateValue(b.dateValue)-dateValue(a.dateValue));
   },[serviceApplications,lipaApplications,services,networks]);
-  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(!serviceFilter||(row.kind==="SERVICE"&&row.serviceKey.includes("soft")&&row.serviceKey.includes("nida")))&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
+  const requestTypeOptions=Array.from(new Map(rows.map((row)=>[row.filterKey,row.filterLabel])).entries()).sort((a,b)=>a[1].localeCompare(b[1],"sw"));\n  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(requestTypeFilter==="ALL"||row.filterKey===requestTypeFilter)&&(!serviceFilter||(row.kind==="SERVICE"&&row.serviceKey.includes("soft")&&row.serviceKey.includes("nida")))&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
   const counts={ALL:rows.length,NO_PAYMENT:rows.filter((r)=>r.paymentGated).length,PENDING:rows.filter((r)=>!r.paymentGated&&String(r.status).toUpperCase()==="PENDING").length,PROCESSING:rows.filter((r)=>String(r.status).toUpperCase()==="PROCESSING").length,APPROVED:rows.filter((r)=>String(r.status).toUpperCase()==="APPROVED").length,REJECTED:rows.filter((r)=>String(r.status).toUpperCase()==="REJECTED").length};
   return <div className="unified-inbox" aria-label="Orodha moja ya maombi yote">
     <style>{`
@@ -73,7 +73,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     `}</style>
     <div className="unified-inbox-counts" aria-label="Muhtasari wa maombi">{(["NO_PAYMENT","PENDING","PROCESSING","APPROVED","REJECTED","ALL"] as const).map((status)=><div className="unified-inbox-count" key={status}>{status==="ALL"?"YOTE":status==="NO_PAYMENT"?"NO PAYMENT":status}<strong>{counts[status]}</strong></div>)}</div>
     <div className="unified-inbox-filters">
-      <label>Aina ya ombi<select value={kindFilter} onChange={(event)=>setKindFilter(event.target.value as InboxKind)}><option value="ALL">Aina zote</option><option value="SERVICE">Huduma za mfumo / SME</option><option value="LIPA">LIPA NAMBA / ACCESS LIPA</option></select></label>
+      <label>Aina ya ombi<select value={requestTypeFilter} onChange={(event)=>setRequestTypeFilter(event.target.value)}><option value="ALL">Aina zote</option>{requestTypeOptions.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
       <label>Hali ya ombi<select value={statusFilter} onChange={(event)=>setStatusFilter(event.target.value as InboxStatus)}><option value="ALL">Hali zote</option><option value="NO_PAYMENT">NO PAYMENT</option><option value="PENDING">PENDING</option><option value="PROCESSING">PROCESSING</option><option value="APPROVED">APPROVED</option><option value="REJECTED">REJECTED</option></select></label>
       <span style={{fontSize:".8rem",color:"#63716a"}}>Inaonekana: <strong>{visibleRows.length}</strong> / {rows.length}</span>
     </div>
