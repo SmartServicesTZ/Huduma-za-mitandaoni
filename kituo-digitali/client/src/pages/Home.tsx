@@ -1522,7 +1522,7 @@ export default function Home() {
   }, [firebaseUser?.uid, canManageServices]);
   const tokenOperationKeys = useRef(new Map<string, string>());
   const totalTokenBalance = profile?.tokenBalanceOther ?? profile?.tokenBalance ?? 0;
-  const appTheme = profile?.settings?.theme ?? "dark";
+  const appTheme = profile?.settings?.theme === "dark" || profile?.settings?.theme === "system" ? profile.settings.theme : "light";
   const appAccent = profile?.settings?.accent ?? "green";
   const compactMode = profile?.settings?.compactMode === true;
   const useService = { mutate: async (service: ServiceCatalogItem) => { if (!firebaseUser) return; const requestId = tokenOperationKeys.current.get(service.slug) ?? crypto.randomUUID(); tokenOperationKeys.current.set(service.slug, requestId); try { const result = await consumeFirebaseTokens(firebaseUser.uid, service, requestId); toast.success(`${service.name} imefunguliwa.`, { description: `Rejea: ${result.reference}` }); if (service.actionUrl) window.location.href = service.actionUrl; else navigate(`/service/${service.slug}`); } catch (error: any) { toast.error(error?.message ?? "Imeshindikana kutumia huduma."); } finally { tokenOperationKeys.current.delete(service.slug); } } };
