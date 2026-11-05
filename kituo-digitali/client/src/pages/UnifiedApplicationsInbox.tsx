@@ -18,10 +18,11 @@ function statusClass(status:string):string {
   if(value==="processing")return "unified-inbox-status-processing";
   return "unified-inbox-status-pending";
 }
-export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect,serviceFilter}:{
+export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,services,networks,onSelect,initialKind="ALL",serviceFilter}:{
   serviceApplications:ServiceApplication[]; lipaApplications:LipaApplication[]; services:any[]; networks:any[];
-  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void; serviceFilter?:string;
+  onSelect:(kind:Exclude<InboxKind,"ALL">,id:string)=>void; initialKind?:InboxKind; serviceFilter?:string;
 }) {
+  const [kindFilter]=useState<InboxKind>(initialKind);
   const [requestTypeFilter,setRequestTypeFilter]=useState("ALL");
   const [statusFilter,setStatusFilter]=useState<InboxStatus>("ALL");
   const rows=useMemo<InboxRow[]>(()=>{
@@ -49,7 +50,7 @@ export function UnifiedApplicationsInbox({serviceApplications,lipaApplications,s
     return [...serviceRows,...lipaRows].sort((a,b)=>(priority[String(a.status).toUpperCase()]??4)-(priority[String(b.status).toUpperCase()]??4)||dateValue(b.dateValue)-dateValue(a.dateValue));
   },[serviceApplications,lipaApplications,services,networks]);
   const requestTypeOptions=Array.from(new Map([...services.map((item)=>{const slug=String(item.slug??item.id??"").toLowerCase();const label=slug==="pata-till-mitandao-yote"?"PATA TILL MITANDAO YOTE":slug.includes("access-lipa")?"ACCESS LIPA NAMBA":String(item.name??slug);const key=slug.includes("access-lipa")?"ACCESS LIPA NAMBA":slug.includes("pata-lipa-namba")?"PATA LIPA NAMBA":slug==="pata-till-mitandao-yote"?"PATA TILL MITANDAO YOTE":`SERVICE:${slug}`;return [key,label] as [string,string];}),["PATA LIPA NAMBA","PATA LIPA NAMBA"],["ACCESS LIPA NAMBA","ACCESS LIPA NAMBA"],["WIFI","WIFI"],...rows.map((row)=>[row.filterKey,row.filterLabel] as [string,string])]).entries()).sort((a,b)=>a[1].localeCompare(b[1],"sw"));
-  const visibleRows=rows.filter((row)=>(requestTypeFilter==="ALL"||row.filterKey===requestTypeFilter)&&(!serviceFilter||(row.kind==="SERVICE"&&row.serviceKey.includes("soft")&&row.serviceKey.includes("nida")))&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
+  const visibleRows=rows.filter((row)=>(kindFilter==="ALL"||row.kind===kindFilter)&&(requestTypeFilter==="ALL"||row.filterKey===requestTypeFilter)&&(!serviceFilter||(row.kind==="SERVICE"&&row.serviceKey.includes("soft")&&row.serviceKey.includes("nida")))&&(statusFilter==="ALL"||(statusFilter==="NO_PAYMENT"?row.paymentGated:!row.paymentGated&&String(row.status).toUpperCase()===statusFilter)));
   const counts={ALL:rows.length,NO_PAYMENT:rows.filter((r)=>r.paymentGated).length,PENDING:rows.filter((r)=>!r.paymentGated&&String(r.status).toUpperCase()==="PENDING").length,PROCESSING:rows.filter((r)=>String(r.status).toUpperCase()==="PROCESSING").length,APPROVED:rows.filter((r)=>String(r.status).toUpperCase()==="APPROVED").length,REJECTED:rows.filter((r)=>String(r.status).toUpperCase()==="REJECTED").length};
   return <div className="unified-inbox" aria-label="Orodha moja ya maombi yote">
     <style>{`
