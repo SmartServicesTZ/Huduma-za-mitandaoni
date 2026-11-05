@@ -769,7 +769,7 @@ border:1px solid rgba(255,255,255,.11);box-shadow:0 25px 70px rgba(1,9,22,.28);}
   --border-soft:#e2eaf3;
   --shadow-soft:0 12px 34px rgba(7,26,54,.10);
 }
-html{color-scheme:dark;}
+html{color-scheme:light;}
 body{overflow-x:hidden;}
 .app-header{box-shadow:0 8px 30px rgba(0,0,0,.10);}
 .global-search:focus-within{border-color:rgba(101,230,155,.65);background:rgba(255,255,255,.11);box-shadow:0 0 0 3px rgba(101,230,155,.08);}
@@ -1665,7 +1665,7 @@ button.send-motion-active [class*="animate-spin"] {
 
 
 /* $teward Tz experience polish — lightweight, responsive, and data-conscious. */
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 .portal-main { width: min(100%, var(--content-max, 1420px)); margin-inline: auto; }
 .portal-main :is(input, textarea, select) { max-width: 100%; transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
 .portal-main :is(input, textarea, select):focus { border-color: rgba(131,246,177,.78); box-shadow: 0 0 0 3px rgba(24,185,105,.12); outline: none; }
