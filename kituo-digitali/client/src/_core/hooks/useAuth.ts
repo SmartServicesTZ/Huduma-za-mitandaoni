@@ -76,15 +76,22 @@ export function useAuth(options?: UseAuthOptions) {
     return () => { active = false; unsubscribe(); };
   }, []);
 
-  // Load the profile once per sign-in instead of keeping a live Firestore
-  // listener in every useAuth() instance (Home, header, and admin can mount
-  // separately). This avoids duplicate reads on every profile document change.
+  // Initialize/repair the Firestore profile before reading it. Previously the
+  // profile read raced the registration/profile-creation request; accounts
+  // whose document was created a moment later stayed on the "Mwanachama" fallback
+  // until another sign-in. Serialize both operations and force a server read.
   useEffect(() => {
     if (!firebaseUser) return;
     let active = true;
-    void getFirebaseProfileOnce(firebaseUser.uid)
-      .then((nextProfile) => { if (active) setProfile(nextProfile); })
-      .catch((cause) => { if (active) setError(cause); });
+    void (async () => {
+      try {
+        await ensureAuthenticatedProfile(firebaseUser);
+        const nextProfile = await getFirebaseProfileOnce(firebaseUser.uid, { force: true });
+        if (active) setProfile(nextProfile);
+      } catch (cause) {
+        if (active) setError(cause);
+      }
+    })();
     return () => { active = false; };
   }, [firebaseUser]);
 
