@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { Bell, Eye, Palette, ShieldCheck, SlidersHorizontal, WalletCards, Volume2, RefreshCw, CheckCircle2, Wifi } from "lucide-react";
+import { Bell, Eye, Palette, ShieldCheck, SlidersHorizontal, WalletCards, Volume2, RefreshCw, CheckCircle2, Wifi, LogOut } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -8,7 +8,7 @@ type Category = "appearance" | "privacy" | "experience";
 const titles: Record<Category,string> = { appearance:"Muonekano wa App", privacy:"Arifa na faragha", experience:"Uzoefu wa matumizi" };
 
 export default function SettingsCategoryPage({ category }: { category: Category }) {
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile, logout } = useAuth();
   const { setPreference } = useTheme();
   const [theme,setTheme]=useState<"system"|"light"|"dark">("light");
   const [accent,setAccent]=useState("green");
@@ -64,6 +64,10 @@ export default function SettingsCategoryPage({ category }: { category: Category 
         {row("Data saver",<Wifi size={16}/>,dataSaver,"dataSaver",setDataSaver)}
       </>:null}
       <p className="profile-muted">Mipangilio huhifadhiwa kwenye akaunti yako pale unapobadilisha chaguo.</p>
+      <section className="profile-side-card" aria-label="Usalama wa akaunti">
+        <div className="profile-side-title"><ShieldCheck size={18}/><div><h3>Usalama wa akaunti</h3><p>Ondoka kwenye akaunti yako kwa usalama kwenye kifaa hiki.</p></div></div>
+        <button className="profile-logout-button" type="button" onClick={() => void logout()}><LogOut size={16}/> Toka kwenye akaunti</button>
+      </section>
     </section>
   </main>;
 }
