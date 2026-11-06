@@ -1144,6 +1144,13 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
 
     {!allServicesPage && <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />}
 
+    {!allServicesPage && <section className="dada-service-entry" style={{ margin: "14px 0", padding: 16, borderRadius: 16, border: "1px solid #c4b5fd", background: "linear-gradient(120deg,#f5f3ff,#fff)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div><span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.5, color: "#7c3aed" }}>ZANA YA PICHA</span><h2 style={{ margin: "4px 0", fontSize: 20 }}>DADA</h2><p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>Fungua kifaa cha kupanga template na kusogeza maandishi.</p></div>
+        <button type="button" className="button button--green" onClick={() => navigate("/dada")}>FUNGUA DADA <ChevronRight size={17} /></button>
+      </div>
+    </section>}
+
     {allServicesPage && <TokenCard />}
 
     {!allServicesPage && <section className="home-category-panel" aria-label="Chagua kundi la huduma">
