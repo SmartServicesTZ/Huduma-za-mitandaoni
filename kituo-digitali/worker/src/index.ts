@@ -44,7 +44,7 @@ import { getStorage, uploadStorageObject } from "./storage-rest.js";
 import { FieldValue, getFirestore } from "./firestore-rest.js";
 import { findTanzaniaKnowledge, findVerificationSources, isEnglishQuestion, localInfoFallback, needsVerifiedTanzaniaSource, renderKnowledgeContext } from "./knowledge/tanzania-services.js";
 import { findApprovedExternalSources, renderExternalSourceContext, retrieveApprovedExternalSources } from "./knowledge/external-sources.js";
-import { checkFimipayOrder, createFimipayOrder, listFimipayOrders, handleFimipayWebhook, createTillPaymentOrder, checkTillPaymentOrder } from "./fimipay.js";
+import { checkFimipayOrder, createFimipayOrder, listFimipayOrders, handleFimipayWebhook, createTillPaymentOrder, checkTillPaymentOrder, createPrivateServicePaymentOrder, checkPrivateServicePaymentOrder, lookupPrivateServicePayment } from "./fimipay.js";
 
 interface Env extends WorkerEnv {}
 
@@ -641,6 +641,16 @@ const worker = {
         if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
         console.error("FimiPay Till status check failed", { code: error instanceof Error ? error.name : "unknown" });
         return jsonResponse({ error: { code: "internal", message: "Hali ya malipo ya Till haikupatikana. Jaribu tena." } }, 500, cors);
+      }));
+    }
+
+    if (url.pathname === "/payments/fimipay/private/create-order" || url.pathname === "/payments/fimipay/private/status" || url.pathname === "/payments/fimipay/private/admin-lookup") {
+      if (request.method !== "POST") return jsonResponse({ error: { code: "invalid-argument", message: "Tumia POST." } }, 405, cors);
+      const action = url.pathname.endsWith("/create-order") ? createPrivateServicePaymentOrder : url.pathname.endsWith("/status") ? checkPrivateServicePaymentOrder : lookupPrivateServicePayment;
+      return withWorkerEnv(env, () => action(request).then((response) => withCors(response, cors)).catch((error) => {
+        if (error instanceof ApiError) return jsonResponse({ error: { code: error.code, message: error.message } }, statusForError(error.code), cors);
+        console.error("FimiPay private payment request failed", { path: url.pathname, code: error instanceof Error ? error.name : "unknown" });
+        return jsonResponse({ error: { code: "internal", message: "Ombi la malipo binafsi halikukamilika. Jaribu tena." } }, 500, cors);
       }));
     }
     if (url.pathname === "/payments/fimipay/orders") {
