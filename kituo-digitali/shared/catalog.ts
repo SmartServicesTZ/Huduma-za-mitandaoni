@@ -86,6 +86,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   locked("simba-sc", "SIMBA SC WHATSAPP GROUP", "Kipengele kimefungwa kwa muda; group bado halijaandaliwa.", "trophy", "HUDUMA ZINGINE"),
   paid("yanga-africans", "YANGA SC WHATSAPP GROUP", "Jiunge na group la mashabiki wa Yanga baada ya kusoma na kukubali sheria.", "star", "HUDUMA ZINGINE"),
   paid("azam-tv", "AZAM TV", "Fungua huduma rasmi za Azam TV.", "tv", "HUDUMA ZINGINE"),
+  free("dada", "DADA", "Fomu ya majina, namba, tarehe na jinsia; zana ya picha ya mfano.", "id-card", "HUDUMA ZINGINE"),
 ];
 export const specialServices = [
   { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4" },
