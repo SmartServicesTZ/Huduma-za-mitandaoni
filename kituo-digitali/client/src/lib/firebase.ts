@@ -489,16 +489,25 @@ export async function registerFirebaseUser(input: { password: string; firstName:
       const oneSignalWindow = window as Window & {
         OneSignalDeferred?: Array<(oneSignal: { login: (externalId: string) => Promise<void> }) => Promise<void> | void>;
       };
-      if (Array.isArray(oneSignalWindow.OneSignalDeferred)) {
-        oneSignalWindow.OneSignalDeferred.push(async (oneSignal) => {
-          try {
-            await oneSignal.login(credential.user.uid);
-            await invokeWorker("sendRegistrationWelcome", {}, credential.user);
-          } catch (error) {
-            console.warn("Registration welcome notification was not sent", error);
-          }
-        });
-      }
+      // Always queue the callback, even if the SDK script has not created its
+      // deferred queue yet. The queue is drained when OneSignalSDK.page.js loads.
+      oneSignalWindow.OneSignalDeferred = oneSignalWindow.OneSignalDeferred ?? [];
+      oneSignalWindow.OneSignalDeferred.push(async (oneSignal) => {
+        try {
+          await oneSignal.login(credential.user.uid);
+          const result = await invokeWorker<{ sent: boolean; duplicate?: boolean; reason?: string }>("sendRegistrationWelcome", {}, credential.user);
+          console.info("Registration welcome notification result", {
+            sent: result.sent === true,
+            duplicate: result.duplicate === true,
+            reason: result.reason ?? null,
+          });
+        } catch (error) {
+          console.warn("Registration welcome notification was not sent", {
+            code: error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : "unknown",
+            message: error instanceof Error ? error.message.slice(0, 240) : "unknown",
+          });
+        }
+      });
     }
     // No email is collected, displayed, sent, or saved to the Firestore profile.
     return credential.user;
