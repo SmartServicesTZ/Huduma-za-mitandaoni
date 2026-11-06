@@ -29,11 +29,13 @@ function Router() {
         <Route path="/my-applications" component={Home} />
         <Route path="/my-documents" component={Home} />
         <Route path={"/tokens"} component={Home} />
+        <Route path={"/private-payments"} component={Home} />
         <Route path={"/account"} component={Home} />
         <Route path={"/settings"} component={Home} />
         <Route path={"/settings/:category"} component={Home} />
         <Route path={"/admin"} component={Home} />
         <Route path={"/admin/users"} component={Home} />
+        <Route path={"/admin/private-payments"} component={Home} />
         <Route path={"/admin/tokens"} component={Home} />
         <Route path={"/admin/services"} component={Home} />
         <Route path={"/admin/videos"} component={Home} />
