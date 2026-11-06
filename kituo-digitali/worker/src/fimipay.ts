@@ -490,3 +490,125 @@ export async function handleFimipayWebhook(request: Request) {
     return json({ received: false }, 503);
   }
 }
+
+
+/** Private service payments: FimiPay-confirmed funds produce a tracking code, never tokens. */
+async function markPrivateServicePaymentPaid(orderId: string, providerOrder: Record<string, unknown>) {
+  const ref = db.collection("privateServicePayments").doc(orderId);
+  return db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(ref);
+    if (!snapshot.exists) throw new ApiError("not-found", "Oda ya malipo haikupatikana.");
+    const saved = snapshot.data()!;
+    if (String(saved.status).toUpperCase() === "PAID" && typeof saved.confirmationCode === "string") {
+      return { paid: true, duplicate: true, confirmation_code: saved.confirmationCode };
+    }
+    const amount = Number(saved.amount);
+    if (!isConfirmedLivePayment(providerOrder, orderId, amount)
+      || String(saved.environment).toUpperCase() !== "LIVE"
+      || String(saved.currency).toUpperCase() !== "TZS") {
+      throw new ApiError("failed-precondition", "Uthibitisho wa FimiPay haujalingana na oda hii.");
+    }
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const bytes = crypto.getRandomValues(new Uint8Array(10));
+    const code = "SSP-" + Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+    const now = FieldValue.serverTimestamp();
+    tx.set(ref, {
+      status: "PAID", paymentStatus: "COMPLETED", confirmationCode: code,
+      providerTransactionId: String(providerOrder.transid ?? ""),
+      paidAt: now, updatedAt: now,
+    }, { merge: true });
+    tx.create(db.collection("auditLogs").doc(), {
+      action: "PRIVATE_SERVICE_PAYMENT_CONFIRMED", actorId: "FIMIPAY",
+      userId: String(saved.userId), orderId, amount, currency: "TZS",
+      confirmationCode: code, providerTransactionId: String(providerOrder.transid ?? ""),
+      createdAt: now,
+    });
+    return { paid: true, duplicate: false, confirmation_code: code };
+  });
+}
+
+export async function createPrivateServicePaymentOrder(request: Request) {
+  const auth = await verifyOwner(request);
+  const credentials = fimipaySecret();
+  if (credentials.environment !== "LIVE") throw new ApiError("failed-precondition", "Malipo binafsi yanahitaji FimiPay LIVE key.");
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const amount = Number(body?.amount);
+  if (!Number.isSafeInteger(amount) || amount < 1000 || amount > 20_000_000) {
+    throw new ApiError("invalid-argument", "Weka kiasi kamili kuanzia TSh 1,000 hadi TSh 20,000,000.");
+  }
+  let phone = "";
+  try { phone = normalizeTanzaniaPhone(String(body?.phone ?? "")) ?? ""; } catch { /* invalid phone */ }
+  if (!phone) throw new ApiError("invalid-argument", "Namba ya simu ya Tanzania si sahihi.");
+  const profileSnapshot = await db.collection("users").doc(auth.uid).get();
+  if (!profileSnapshot.exists) throw new ApiError("not-found", "Akaunti haikupatikana.");
+  const profile = profileSnapshot.data()!;
+  if (profile.accountStatus === "blocked" || profile.accountStatus === "deleted") {
+    throw new ApiError("permission-denied", "Akaunti hairuhusiwi kufanya malipo.");
+  }
+  const { result, data } = await provider("/payment/create_order", {
+    buyer_phone: digits(phone),
+    buyer_name: String(profile.name ?? [profile.firstName, profile.lastName].filter(Boolean).join(" ") ?? "Mteja").slice(0, 100),
+    amount, currency: "TZS", payment_method: "mobile",
+  });
+  const providerData = (result.data && typeof result.data === "object" ? result.data : data) as Record<string, unknown>;
+  const orderId = String(providerData.order_id ?? data.order_id ?? "").trim();
+  if (!/^[A-Za-z0-9_-]{4,180}$/.test(orderId)) throw new Error("FimiPay did not return a valid order_id.");
+  const ref = db.collection("privateServicePayments").doc(orderId);
+  await ref.create({
+    orderId, userId: auth.uid, buyerPhone: phone, amount, currency: "TZS",
+    status: "PENDING", paymentStatus: statusValue(providerData.payment_status ?? data.payment_status) || "PENDING",
+    environment: credentials.environment, simulated: providerData.simulated === true,
+    createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+  });
+  return json({ data: { order_id: orderId, payment_status: "PENDING", amount, currency: "TZS" } });
+}
+
+export async function checkPrivateServicePaymentOrder(request: Request) {
+  const auth = await verifyOwner(request);
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const orderId = String(body?.order_id ?? "").trim();
+  if (!/^[A-Za-z0-9_-]{4,180}$/.test(orderId)) throw new ApiError("invalid-argument", "Oda ya malipo si sahihi.");
+  const ref = db.collection("privateServicePayments").doc(orderId);
+  const snapshot = await ref.get();
+  if (!snapshot.exists || String(snapshot.data()?.userId ?? "") !== auth.uid) throw new ApiError("not-found", "Oda ya malipo haikupatikana.");
+  const saved = snapshot.data()!;
+  if (String(saved.status).toUpperCase() === "PAID" && typeof saved.confirmationCode === "string") {
+    return json({ data: { order_id: orderId, payment_status: "COMPLETED", paid: true, confirmation_code: saved.confirmationCode, amount: Number(saved.amount), currency: "TZS" } });
+  }
+  if (String(saved.environment).toUpperCase() !== "LIVE") throw new ApiError("failed-precondition", "Oda hii si ya mazingira ya LIVE.");
+  const verification = await verifyProviderOrder(orderId, Number(saved.amount));
+  if (!verification.confirmed) {
+    if (["FAILED", "CANCELLED", "USER_CANCELLED", "REJECTED", "EXPIRED"].includes(verification.status)) {
+      await ref.set({ status: verification.status, paymentStatus: verification.status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
+    return json({ data: { order_id: orderId, payment_status: verification.status || "PENDING", paid: false, amount: Number(saved.amount), currency: "TZS" } });
+  }
+  const paid = await markPrivateServicePaymentPaid(orderId, verification.data);
+  return json({ data: { order_id: orderId, payment_status: "COMPLETED", paid: true, duplicate: paid.duplicate, confirmation_code: paid.confirmation_code, amount: Number(saved.amount), currency: "TZS" } });
+}
+
+export async function lookupPrivateServicePayment(request: Request) {
+  const auth = await verifyOwner(request);
+  const profileSnapshot = await db.collection("users").doc(auth.uid).get();
+  const profile = profileSnapshot.data() ?? {};
+  const role = String(profile.role ?? "");
+  const perms = profile.permissions && typeof profile.permissions === "object" ? profile.permissions as Record<string, unknown> : {};
+  if (role !== "super_admin" && !(["admin", "moderator", "support"].includes(role)
+    && (perms.manageTokens === true || perms.manageReports === true || perms.manageServices === true))) {
+    throw new ApiError("permission-denied", "Huna ruhusa ya kuangalia malipo binafsi.");
+  }
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const code = String(body?.confirmation_code ?? "").trim().toUpperCase();
+  if (!/^SSP-[A-HJ-NP-Z2-9]{10}$/.test(code)) throw new ApiError("invalid-argument", "Namba ya utambulisho si sahihi.");
+  const match = await db.collection("privateServicePayments").where("confirmationCode", "==", code).limit(1).get();
+  if (!match.docs.length) return json({ data: { found: false } });
+  const record = match.docs[0].data()!;
+  return json({ data: {
+    found: true, confirmation_code: code, status: String(record.status ?? ""),
+    amount: Number(record.amount ?? 0), currency: String(record.currency ?? "TZS"),
+    buyer_phone: String(record.buyerPhone ?? ""), user_id: String(record.userId ?? ""),
+    order_id: String(record.orderId ?? match.docs[0].id),
+    provider_transaction_id: String(record.providerTransactionId ?? ""),
+    paid_at: record.paidAt instanceof Date ? record.paidAt.toISOString() : null,
+  } });
+}
