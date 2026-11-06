@@ -272,6 +272,21 @@ export async function listFimipayMobileOrders() {
   return result.orders ?? [];
 }
 
+export type PrivateFimipayPaymentResult = {
+  order_id: string; payment_status: string; paid?: boolean; confirmation_code?: string;
+  amount?: number; currency?: string; buyer_phone?: string; provider_transaction_id?: string;
+  found?: boolean; status?: string; user_id?: string; paid_at?: string | null;
+};
+export function createPrivateFimipayOrder(input: { amount: number; phone: string }) {
+  return fimipayRequest<PrivateFimipayPaymentResult>("private/create-order", input);
+}
+export function checkPrivateFimipayOrder(order_id: string) {
+  return fimipayRequest<PrivateFimipayPaymentResult>("private/status", { order_id });
+}
+export function adminLookupPrivateFimipayPayment(confirmation_code: string) {
+  return fimipayRequest<PrivateFimipayPaymentResult>("private/admin-lookup", { confirmation_code });
+}
+
 function createWorkerCall<TRequest = unknown, TResponse = unknown>(name: string) {
   return async (data?: TRequest): Promise<{ data: TResponse }> => ({ data: await invokeWorker<TResponse>(name, data ?? {}) });
 }
