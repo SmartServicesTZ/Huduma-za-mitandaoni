@@ -33,7 +33,7 @@ function recordValues(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
-type Profile = { createdAt?: unknown; role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBalanceBonus?: number; tokenBalancePayment?: number; tokenBonusRegistrationGranted?: boolean; dailyBonusDaysGranted?: number; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; firstName?: string; phone?: string; profileImageUrl?: string; mustChangePassword?: boolean };
+type Profile = { uid?: string; createdAt?: unknown; role?: Role; permissions?: Partial<Record<(typeof permissions)[number], boolean>>; tokenBalance?: number; tokenBalanceNida?: number; tokenBalanceOther?: number; tokenBalanceBonus?: number; tokenBalancePayment?: number; tokenBonusRegistrationGranted?: boolean; dailyBonusDaysGranted?: number; lastDailyTokenBonusDate?: string; verificationStatus?: string; accountStatus?: string; accessMode?: string; allowedActions?: string[]; restrictionReason?: string; restrictionMessage?: string; name?: string; firstName?: string; phone?: string; profileImageUrl?: string; mustChangePassword?: boolean };
 
 function authUid(request: ApiRequest<unknown>) {
   if (!request.auth?.uid) throw new ApiError("unauthenticated", "Ingia kwanza.");
@@ -190,7 +190,8 @@ export const sendRegistrationWelcome = callable(async (request) => {
   const profileSnapshot = await profileRef.get();
   if (!profileSnapshot.exists) throw new ApiError("failed-precondition", "Wasifu wa akaunti haujakamilika.");
   const profile = profileSnapshot.data() as Profile;
-  const createdAt = profile.createdAt instanceof Date ? profile.createdAt.getTime() : 0;
+  if (profile.uid !== undefined && profile.uid !== uid) throw new ApiError("permission-denied", "UID ya wasifu haiendani na akaunti iliyothibitishwa.");
+  const createdAt = profile.createdAt instanceof Date ? profile.createdAt.getTime() : typeof profile.createdAt === "string" || typeof profile.createdAt === "number" ? new Date(profile.createdAt).getTime() : 0;
   // This endpoint is only valid immediately after a first-time profile is created.
   if (!createdAt || Date.now() - createdAt > 30 * 60 * 1000 || createdAt > Date.now() + 60_000) {
     throw new ApiError("failed-precondition", "Ujumbe wa karibu hutumwa wakati wa usajili mpya pekee.");
@@ -217,17 +218,22 @@ export const sendRegistrationWelcome = callable(async (request) => {
         target_channel: "push",
         headings: { en: "Karibu SmartServicesTZ!" },
         contents: { en: "Asante kwa kujisajili. Tunafurahi kuwa nawe. Anza kutumia huduma zetu sasa." },
-        idempotency_key: randomUUID(),
+        idempotency_key: `registration-welcome-${uid}`,
       }),
       signal: AbortSignal.timeout(15000),
     });
     const result = await response.json().catch(() => null) as { id?: unknown; errors?: unknown } | null;
-    if (!response.ok) throw new Error(`OneSignal HTTP ${response.status}`);
+    if (!response.ok) {
+      console.error("OneSignal registration welcome rejected", { status: response.status, errors: result?.errors ?? null });
+      throw new Error(`OneSignal HTTP ${response.status}`);
+    }
     if (typeof result?.id !== "string" || !result.id) {
+      console.warn("OneSignal registration welcome accepted without message ID", { status: response.status, errors: result?.errors ?? null });
       await markerRef.delete();
       return { sent: false, reason: "not-subscribed" };
     }
     await markerRef.update({ status: "sent", notificationId: result.id, sentAt: FieldValue.serverTimestamp() });
+    console.info("OneSignal registration welcome accepted", { status: response.status, notificationId: result.id, uid });
     return { sent: true };
   } catch (error) {
     await markerRef.delete().catch(() => undefined);

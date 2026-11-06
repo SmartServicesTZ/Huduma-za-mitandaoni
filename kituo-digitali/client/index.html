@@ -13,11 +13,23 @@
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function (OneSignal) {
-        await OneSignal.init({
-          appId: "adfb1cbb-bb91-4813-b2c8-c57453319649",
-          serviceWorkerPath: "/Huduma-za-mitandaoni/OneSignalSDKWorker.js",
-          serviceWorkerParam: { scope: "/Huduma-za-mitandaoni/" }
+      window.__smartServicesOneSignalReady = new Promise(function (resolve, reject) {
+        var timeout = window.setTimeout(function () {
+          reject(new Error("OneSignal SDK haikukamilisha ku-load kwa wakati."));
+        }, 15000);
+        window.OneSignalDeferred.push(async function (OneSignal) {
+          try {
+            await OneSignal.init({
+              appId: "adfb1cbb-bb91-4813-b2c8-c57453319649",
+              serviceWorkerPath: "/Huduma-za-mitandaoni/OneSignalSDKWorker.js",
+              serviceWorkerParam: { scope: "/Huduma-za-mitandaoni/" }
+            });
+            window.clearTimeout(timeout);
+            resolve(OneSignal);
+          } catch (error) {
+            window.clearTimeout(timeout);
+            reject(error);
+          }
         });
       });
     </script>
