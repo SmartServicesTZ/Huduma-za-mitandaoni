@@ -8,9 +8,11 @@ type Position = { x: number; y: number; size: number };
 const WIDTH = 1000;
 const HEIGHT = 630;
 
+// Picha zinachukuliwa kwenye kituo-digitali/client/public/
+// BASE_URL huhakikisha zinafunguka pia kwenye GitHub Pages ya /Huduma-za-mitandaoni/.
 const TEMPLATE_URLS: Record<Side, string> = {
-  front: "https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/Dada.png",
-  back: "https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/Kaka.png",
+  front: `${import.meta.env.BASE_URL}Dada.png`,
+  back: `${import.meta.env.BASE_URL}Kaka.png`,
 };
 
 /*
