@@ -560,8 +560,8 @@ export async function createPrivateServicePaymentOrder(request: Request) {
   if (credentials.environment !== "LIVE") throw new ApiError("failed-precondition", "Malipo binafsi yanahitaji FimiPay LIVE key.");
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const amount = Number(body?.amount);
-  if (!Number.isSafeInteger(amount) || amount < 1000 || amount > 20_000_000) {
-    throw new ApiError("invalid-argument", "Weka kiasi kamili kuanzia TSh 1,000 hadi TSh 20,000,000.");
+  if (!Number.isSafeInteger(amount) || amount < 200 || amount > 20_000_000) {
+    throw new ApiError("invalid-argument", "Weka kiasi kamili kuanzia TSh 200 hadi TSh 20,000,000.");
   }
   let phone = "";
   try { phone = normalizeTanzaniaPhone(String(body?.phone ?? "")) ?? ""; } catch { /* invalid phone */ }
