@@ -1,211 +1,225 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download, ImagePlus, RotateCcw } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { useLocation } from "wouter";
 
 type Side = "front" | "back";
-type Field = "firstName" | "middleName" | "lastName" | "reference" | "birthDate" | "gender" | "signature";
+type Field = "name1" | "name2" | "name3" | "nida" | "birthDate" | "gender";
 type Position = { x: number; y: number; size: number };
-const W = 1000, H = 630;
-const TEMPLATE_URLS = {
+const WIDTH = 1000;
+const HEIGHT = 630;
+
+const TEMPLATE_URLS: Record<Side, string> = {
   front: "https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/Dada.png",
   back: "https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/Kaka.png",
 };
-// BADILISHA HAPA ili kubadilisha nafasi za mwanzo za maandishi.
-const DEFAULT_POSITIONS: Record<string, Position> = {
-  "front.firstName": { x: 110, y: 205, size: 32 },
-  "front.middleName": { x: 110, y: 260, size: 30 },
-  "front.lastName": { x: 110, y: 315, size: 30 },
-  "front.reference": { x: 110, y: 390, size: 26 },
-  "front.birthDate": { x: 110, y: 445, size: 26 },
-  "front.gender": { x: 110, y: 500, size: 26 },
-  "front.signature": { x: 110, y: 565, size: 28 },
-  "back.firstName": { x: 100, y: 210, size: 28 },
-  "back.reference": { x: 100, y: 285, size: 26 },
-  "back.birthDate": { x: 100, y: 360, size: 26 },
-  "back.signature": { x: 100, y: 445, size: 28 },
+
+/*
+ * ============================================================
+ * SEHEMU YA KUBADILISHA CODE: NAFASI ZA TAARIFA KWENYE PICHA
+ * ============================================================
+ * x = kushoto/kulia; ongeza x kwenda kulia, punguza x kwenda kushoto.
+ * y = juu/chini; ongeza y kwenda chini, punguza y kwenda juu.
+ * size = ukubwa wa maandishi.
+ * Badilisha namba hapa tu; hakuna setting ya kusogeza kwenye website.
+ */
+const TEXT_POSITIONS: Record<Side, Partial<Record<Field, Position>>> = {
+  front: {
+    name1: { x: 110, y: 205, size: 32 },
+    name2: { x: 110, y: 260, size: 30 },
+    name3: { x: 110, y: 315, size: 30 },
+    nida: { x: 110, y: 390, size: 26 },
+    birthDate: { x: 110, y: 445, size: 26 },
+    gender: { x: 110, y: 500, size: 26 },
+  },
+  back: {
+    name1: { x: 100, y: 210, size: 28 },
+    nida: { x: 100, y: 285, size: 26 },
+    birthDate: { x: 100, y: 360, size: 26 },
+    gender: { x: 100, y: 415, size: 26 },
+  },
 };
-const LABELS: Record<Field, string> = {
-  firstName: "Jina la kwanza", middleName: "Jina la kati", lastName: "Jina la mwisho",
-  reference: "Namba ya kumbukumbu", birthDate: "Tarehe ya kuzaliwa", gender: "Jinsia", signature: "Sahihi",
+
+const FIELD_LABELS: Record<Field, string> = {
+  name1: "Jina la 1",
+  name2: "Jina la 2",
+  name3: "Jina la 3",
+  nida: "Namba ya NIDA",
+  birthDate: "Tarehe ya kuzaliwa",
+  gender: "Jinsia",
 };
+
+function formatNida(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 20);
+  return [digits.slice(0, 8), digits.slice(8, 13), digits.slice(13, 18), digits.slice(18, 20)]
+    .filter(Boolean).join("-");
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    if (/^https?:/.test(src)) img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Picha haijapatikana"));
-    img.src = src;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Picha haijapatikana"));
+    image.src = src;
   });
 }
 
 export default function DadaPage() {
   const [, navigate] = useLocation();
-  const frontCanvas = useRef<HTMLCanvasElement>(null), backCanvas = useRef<HTMLCanvasElement>(null);
+  const frontCanvas = useRef<HTMLCanvasElement>(null);
+  const backCanvas = useRef<HTMLCanvasElement>(null);
   const [frontTemplate, setFrontTemplate] = useState<HTMLImageElement | null>(null);
   const [backTemplate, setBackTemplate] = useState<HTMLImageElement | null>(null);
-  const [message, setMessage] = useState("Subiri Dada.png na Kaka.png zipakiwe kutoka GitHub.");
-  const [portrait, setPortrait] = useState<HTMLImageElement | null>(null);
-  const [firstName, setFirstName] = useState(""), [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState(""), [reference, setReference] = useState("");
-  const [birthDate, setBirthDate] = useState(""), [gender, setGender] = useState("");
-  const [signature, setSignature] = useState("");
-  const [positions, setPositions] = useState(DEFAULT_POSITIONS);
-  const [side, setSide] = useState<Side>("front");
-  const [field, setField] = useState<Field>("firstName");
-
-  useEffect(() => {
-    let alive = true;
-    Promise.allSettled([loadImage(TEMPLATE_URLS.front), loadImage(TEMPLATE_URLS.back)]).then(([a, b]) => {
-      if (!alive) return;
-      if (a.status === "fulfilled") setFrontTemplate(a.value);
-      if (b.status === "fulfilled") setBackTemplate(b.value);
-      setMessage(a.status === "fulfilled" && b.status === "fulfilled" ? "" :
-        "Template haijaonekana. Weka Dada.png na Kaka.png ndani ya public/ kwenye repository ya wakala-point, kisha refresh.");
-    });
-    return () => { alive = false; };
-  }, []);
+  const [message, setMessage] = useState("Inapakia picha za template...");
+  const [name1, setName1] = useState("");
+  const [name2, setName2] = useState("");
+  const [name3, setName3] = useState("");
+  const [nida, setNida] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [gender, setGender] = useState("");
 
   const values = useMemo<Record<Field, string>>(() => ({
-    firstName: firstName.toUpperCase(), middleName: middleName.toUpperCase(), lastName: lastName.toUpperCase(),
-    reference, birthDate, gender, signature,
-  }), [firstName, middleName, lastName, reference, birthDate, gender, signature]);
+    name1: name1.toUpperCase(),
+    name2: name2.toUpperCase(),
+    name3: name3.toUpperCase(),
+    nida: formatNida(nida),
+    birthDate,
+    gender,
+  }), [name1, name2, name3, nida, birthDate, gender]);
 
-  function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, currentSide: Side) {
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-    ctx.clearRect(0, 0, W, H);
-    if (!template) return; // Canvas hubaki tupu mpaka template ipatikane.
-    ctx.drawImage(template, 0, 0, W, H);
-    const fields: Field[] = currentSide === "front"
-      ? ["firstName", "middleName", "lastName", "reference", "birthDate", "gender", "signature"]
-      : ["firstName", "reference", "birthDate", "signature"];
-    ctx.fillStyle = "#111827"; ctx.textAlign = "left";
-    fields.forEach((key) => {
-      if (!values[key]) return;
-      const p = positions[currentSide + "." + key];
-      if (!p) return;
-      ctx.font = key === "signature" ? "italic " + p.size + "px cursive" : "600 " + p.size + "px Arial";
-      ctx.fillText(values[key], p.x, p.y, 760);
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([loadImage(TEMPLATE_URLS.front), loadImage(TEMPLATE_URLS.back)]).then(([front, back]) => {
+      if (!active) return;
+      if (front.status === "fulfilled") setFrontTemplate(front.value);
+      if (back.status === "fulfilled") setBackTemplate(back.value);
+      setMessage(front.status === "fulfilled" && back.status === "fulfilled"
+        ? ""
+        : "Picha ya template haijapakia. Hakikisha Dada.png na Kaka.png zipo kwenye repository, kisha refresh.");
     });
-    if (currentSide === "front" && portrait) ctx.drawImage(portrait, 735, 205, 170, 220);
-    ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(-Math.PI / 7);
-    ctx.globalAlpha = 0.22; ctx.fillStyle = "#b91c1c"; ctx.font = "bold 48px Arial"; ctx.textAlign = "center";
-    ctx.fillText("SAMPLE • SI KITAMBULISHO RASMI", 0, 0); ctx.restore();
+    return () => { active = false; };
+  }, []);
+
+  function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, WIDTH, HEIGHT);
+    if (!template) return;
+    context.drawImage(template, 0, 0, WIDTH, HEIGHT);
+    context.fillStyle = "#111827";
+    context.textAlign = "left";
+
+    (Object.keys(FIELD_LABELS) as Field[]).forEach((field) => {
+      const position = TEXT_POSITIONS[side][field];
+      const value = values[field];
+      if (!position || !value) return;
+      context.font = "600 " + position.size + "px Arial";
+      context.fillText(value, position.x, position.y, 760);
+    });
+
+    // Alama hii hubaki wazi kwenye kila picha ya mfano.
+    context.save();
+    context.translate(WIDTH / 2, HEIGHT / 2);
+    context.rotate(-Math.PI / 7);
+    context.globalAlpha = 0.28;
+    context.fillStyle = "#b91c1c";
+    context.font = "bold 48px Arial";
+    context.textAlign = "center";
+    context.fillText("SAMPLE • SI KITAMBULISHO RASMI", 0, 0);
+    context.restore();
   }
 
   useEffect(() => {
     draw(frontCanvas.current, frontTemplate, "front");
     draw(backCanvas.current, backTemplate, "back");
-  }, [frontTemplate, backTemplate, portrait, values, positions]);
+  }, [frontTemplate, backTemplate, values]);
 
-  async function chooseTemplate(which: Side, file?: File) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { setMessage("Chagua picha ya PNG au JPG."); return; }
-    try {
-      const img = await loadImage(URL.createObjectURL(file));
-      if (which === "front") setFrontTemplate(img); else setBackTemplate(img);
-      setMessage("");
-    } catch { setMessage("Imeshindikana kufungua picha hiyo."); }
-  }
-  async function choosePortrait(file?: File) {
-    if (!file) return;
-    try { setPortrait(await loadImage(URL.createObjectURL(file))); }
-    catch { setMessage("Picha ya mfano haijafunguka."); }
-  }
-  function updatePosition(patch: Partial<Position>) {
-    const key = side + "." + field;
-    setPositions((old) => ({ ...old, [key]: { ...old[key], ...patch } }));
-  }
-  function move(dx: number, dy: number) {
-    const key = side + "." + field;
-    setPositions((old) => ({ ...old, [key]: {
-      ...old[key], x: Math.max(0, Math.min(W, old[key].x + dx)), y: Math.max(20, Math.min(H, old[key].y + dy)),
-    } }));
-  }
-  function download(which: Side) {
-    const canvas = which === "front" ? frontCanvas.current : backCanvas.current;
-    const template = which === "front" ? frontTemplate : backTemplate;
-    if (!canvas || !template) { setMessage("Weka template kwanza kabla ya kupakua."); return; }
+  function download(side: Side) {
+    const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
+    const template = side === "front" ? frontTemplate : backTemplate;
+    if (!canvas || !template) {
+      setMessage("Subiri template ipakie kwanza.");
+      return;
+    }
     const link = document.createElement("a");
-    link.download = which === "front" ? "DADA-mbele-sample.png" : "KAKA-nyuma-sample.png";
-    link.href = canvas.toDataURL("image/png"); link.click();
+    link.download = side === "front" ? "DADA-sample-mbele.png" : "DADA-sample-nyuma.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   }
 
-  const fields: Field[] = side === "front"
-    ? ["firstName", "middleName", "lastName", "reference", "birthDate", "gender", "signature"]
-    : ["firstName", "reference", "birthDate", "signature"];
-  const current = positions[side + "." + field];
+  const nidaDigits = nida.replace(/\D/g, "").length;
 
-  return <main style={{ maxWidth: 1180, margin: "0 auto", padding: 18, color: "var(--foreground, #172033)" }}>
-    <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 16 }}><ArrowLeft size={16} /> Rudi kwenye huduma</button>
-    <header style={{ marginBottom: 18 }}>
-      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, color: "#64748b" }}>SMARTSERVICESTZ • DESIGN TOOL</div>
-      <h1 style={{ margin: "5px 0", fontSize: 30 }}>DADA</h1>
-      <p style={{ margin: 0, color: "#64748b" }}>Pakia templates zako, jaza taarifa na rekebisha sehemu ya maandishi.</p>
-    </header>
+  return (
+    <main style={{ maxWidth: 980, margin: "0 auto", padding: "20px 16px 36px", color: "var(--foreground, #172033)" }}>
+      <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 18 }}>
+        <ArrowLeft size={16} /> Rudi kwenye vipengele vingine
+      </button>
 
-    <section style={grid2}>
-      <label style={uploadBox}><ImagePlus size={20} /><b>Template ya mbele — Dada.png</b><small>Itajipakia kutoka GitHub; unaweza pia kuchagua faili hapa.</small>
-        <input type="file" accept="image/*" onChange={(e) => chooseTemplate("front", e.target.files?.[0])} /></label>
-      <label style={uploadBox}><ImagePlus size={20} /><b>Template ya nyuma — Kaka.png</b><small>Itajipakia kutoka GitHub; unaweza pia kuchagua faili hapa.</small>
-        <input type="file" accept="image/*" onChange={(e) => chooseTemplate("back", e.target.files?.[0])} /></label>
-    </section>
-    {message && <p role="status" style={warning}>{message}</p>}
+      <header style={{ marginBottom: 22 }}>
+        <span style={{ color: "#7c3aed", fontSize: 11, fontWeight: 900, letterSpacing: 1.8 }}>SMARTSERVICESTZ • ZANA YA PICHA</span>
+        <h1 style={{ margin: "6px 0", fontSize: 30 }}>DADA</h1>
+        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>Jaza taarifa kwenye fomu hapa chini. Nafasi za maandishi zinadhibitiwa ndani ya code ya GitHub.</p>
+      </header>
 
-    <section style={panel}>
-      <h2 style={heading}>1. Jaza taarifa</h2>
-      <div style={formGrid}>
-        <label>Jina la kwanza<input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></label>
-        <label>Jina la kati<input className="input" value={middleName} onChange={(e) => setMiddleName(e.target.value)} /></label>
-        <label>Jina la mwisho<input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} /></label>
-        <label>Namba ya kumbukumbu<input className="input" value={reference} onChange={(e) => setReference(e.target.value)} /></label>
-        <label>Tarehe ya kuzaliwa<input className="input" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /></label>
-        <label>Jinsia<select className="input" value={gender} onChange={(e) => setGender(e.target.value)}><option value="">Chagua</option><option value="ME">ME</option><option value="KE">KE</option></select></label>
-        <label>Sahihi<input className="input" value={signature} onChange={(e) => setSignature(e.target.value)} /></label>
-        <label>Picha ya mfano<input className="input" type="file" accept="image/*" onChange={(e) => choosePortrait(e.target.files?.[0])} /></label>
-      </div>
-    </section>
+      <section style={formPanel}>
+        <div style={sectionHeading}><span style={stepBadge}>1</span><div><h2 style={h2}>Taarifa za majina</h2><p style={subText}>Jaza majina yote matatu.</p></div></div>
+        <div style={formGrid}>
+          <label style={fieldLabel}>Jina la 1<input className="input" autoComplete="off" value={name1} onChange={(event) => setName1(event.target.value)} placeholder="Andika jina la kwanza" /></label>
+          <label style={fieldLabel}>Jina la 2<input className="input" autoComplete="off" value={name2} onChange={(event) => setName2(event.target.value)} placeholder="Andika jina la pili" /></label>
+          <label style={fieldLabel}>Jina la 3<input className="input" autoComplete="off" value={name3} onChange={(event) => setName3(event.target.value)} placeholder="Andika jina la tatu" /></label>
+        </div>
+      </section>
 
-    <section style={panel}>
-      <h2 style={heading}>2. Rekebisha sehemu za taarifa</h2>
-      <p style={{ marginTop: 0, color: "#64748b", fontSize: 13 }}>Chagua upande na taarifa. X/Y hubadilisha nafasi; mishale husogeza kwa hatua za pointi 5.</p>
-      <div style={formGrid}>
-        <label>Upande<select className="input" value={side} onChange={(e) => { setSide(e.target.value as Side); setField("firstName"); }}><option value="front">Mbele — Dada.png</option><option value="back">Nyuma — Kaka.png</option></select></label>
-        <label>Taarifa<select className="input" value={field} onChange={(e) => setField(e.target.value as Field)}>{fields.map((f) => <option key={f} value={f}>{LABELS[f]}</option>)}</select></label>
-        <label>X — kushoto/kulia<input className="input" type="number" value={current.x} onChange={(e) => updatePosition({ x: Number(e.target.value) })} /></label>
-        <label>Y — juu/chini<input className="input" type="number" value={current.y} onChange={(e) => updatePosition({ y: Number(e.target.value) })} /></label>
-        <label>Ukubwa wa maandishi<input className="input" type="number" min="8" max="100" value={current.size} onChange={(e) => updatePosition({ size: Number(e.target.value) })} /></label>
-      </div>
-      <div style={buttons}>
-        <button className="button button--secondary" type="button" onClick={() => move(-5, 0)}>← Kushoto</button>
-        <button className="button button--secondary" type="button" onClick={() => move(5, 0)}>Kulia →</button>
-        <button className="button button--secondary" type="button" onClick={() => move(0, -5)}>↑ Juu</button>
-        <button className="button button--secondary" type="button" onClick={() => move(0, 5)}>↓ Chini</button>
-        <button className="button button--secondary" type="button" onClick={() => setPositions(DEFAULT_POSITIONS)}><RotateCcw size={15} /> Rudisha nafasi</button>
-      </div>
-    </section>
+      <section style={formPanel}>
+        <div style={sectionHeading}><span style={stepBadge}>2</span><div><h2 style={h2}>Namba ya NIDA</h2><p style={subText}>Ingiza tarakimu 20. Mfumo utaweka alama za mistari wenyewe.</p></div></div>
+        <label style={fieldLabel}>Namba ya NIDA
+          <input className="input" inputMode="numeric" autoComplete="off" value={formatNida(nida)} maxLength={23}
+            onChange={(event) => setNida(event.target.value.replace(/\D/g, "").slice(0, 20))}
+            placeholder="12345678-12345-12345-12" style={{ fontVariantNumeric: "tabular-nums", letterSpacing: 1.1 }} />
+        </label>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 7, color: "#64748b", fontSize: 12 }}>
+          <span>Muundo: 8-5-5-2</span><strong style={{ color: nidaDigits === 20 ? "#15803d" : "#64748b" }}>{nidaDigits}/20</strong>
+        </div>
+      </section>
 
-    <section style={panel}>
-      <h2 style={heading}>3. Preview na kupakua</h2>
-      <div style={{ display: "grid", gap: 22 }}>
-        <div><div style={previewHead}><b>Mbele — Dada.png</b><button className="button button--green" type="button" onClick={() => download("front")} disabled={!frontTemplate}><Download size={16} /> Pakua PNG</button></div>
-          <div style={preview}><canvas ref={frontCanvas} width={W} height={H} style={canvasStyle} />{!frontTemplate && <span style={empty}>Dada.png itaonekana hapa baada ya kupakiwa</span>}</div></div>
-        <div><div style={previewHead}><b>Nyuma — Kaka.png</b><button className="button button--green" type="button" onClick={() => download("back")} disabled={!backTemplate}><Download size={16} /> Pakua PNG</button></div>
-          <div style={preview}><canvas ref={backCanvas} width={W} height={H} style={canvasStyle} />{!backTemplate && <span style={empty}>Kaka.png itaonekana hapa baada ya kupakiwa</span>}</div></div>
-      </div>
-    </section>
-    <p style={{ fontSize: 12, color: "#64748b" }}>Matokeo ni ya mfano tu, si kitambulisho rasmi wala hati ya serikali.</p>
-  </main>;
+      <section style={formPanel}>
+        <div style={sectionHeading}><span style={stepBadge}>3</span><div><h2 style={h2}>Tarehe na jinsia</h2><p style={subText}>Chagua tarehe kwenye kalenda.</p></div></div>
+        <div style={formGrid}>
+          <label style={fieldLabel}>Tarehe ya kuzaliwa<input className="input" type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} /></label>
+          <label style={fieldLabel}>Jinsia<select className="input" value={gender} onChange={(event) => setGender(event.target.value)}><option value="">Chagua jinsia</option><option value="M">Mke-M</option><option value="F">Mme-F</option></select></label>
+        </div>
+      </section>
+
+      {message && <p role="status" style={statusBox}>{message}</p>}
+
+      <section style={formPanel}>
+        <div style={sectionHeading}><span style={stepBadge}>4</span><div><h2 style={h2}>Muonekano wa mfano</h2><p style={subText}>Taarifa zinazoonekana hapa zimewekewa alama ya SAMPLE.</p></div></div>
+        <div style={previewGrid}>
+          <div>
+            <div style={previewHeader}><b>Template ya mbele — Dada.png</b><button className="button button--green" type="button" disabled={!frontTemplate} onClick={() => download("front")}><Download size={15} /> Pakua PNG</button></div>
+            <div style={previewBox}><canvas ref={frontCanvas} width={WIDTH} height={HEIGHT} style={canvasStyle} />{!frontTemplate && <span style={emptyText}>Template ya mbele itatokea ikipakia</span>}</div>
+          </div>
+          <div>
+            <div style={previewHeader}><b>Template ya nyuma — Kaka.png</b><button className="button button--green" type="button" disabled={!backTemplate} onClick={() => download("back")}><Download size={15} /> Pakua PNG</button></div>
+            <div style={previewBox}><canvas ref={backCanvas} width={WIDTH} height={HEIGHT} style={canvasStyle} />{!backTemplate && <span style={emptyText}>Template ya nyuma itatokea ikipakia</span>}</div>
+          </div>
+        </div>
+      </section>
+      <p style={{ fontSize: 12, lineHeight: 1.6, color: "#64748b" }}>Picha zinazotengenezwa ni sampuli za majaribio tu, si kitambulisho rasmi wala hati ya serikali.</p>
+    </main>
+  );
 }
 
-const panel: React.CSSProperties = { padding: 16, border: "1px solid #dbe3ee", borderRadius: 16, marginBottom: 16, background: "var(--card, #fff)" };
-const heading: React.CSSProperties = { margin: "0 0 14px", fontSize: 18 };
-const formGrid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,210px),1fr))", gap: 12 };
-const grid2: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))", gap: 14, marginBottom: 18 };
-const uploadBox: React.CSSProperties = { display: "grid", gap: 8, padding: 16, border: "1px dashed #94a3b8", borderRadius: 14, cursor: "pointer", background: "var(--card, #fff)" };
-const warning: React.CSSProperties = { padding: 12, borderRadius: 10, background: "#fff7ed", color: "#9a3412" };
-const buttons: React.CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 };
-const previewHead: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" };
-const preview: React.CSSProperties = { position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 12, overflow: "hidden" };
+const formPanel: React.CSSProperties = { padding: 18, border: "1px solid #e2e8f0", borderRadius: 18, marginBottom: 15, background: "var(--card, #fff)", boxShadow: "0 5px 20px rgba(15,23,42,.04)" };
+const sectionHeading: React.CSSProperties = { display: "flex", alignItems: "center", gap: 12, marginBottom: 16 };
+const stepBadge: React.CSSProperties = { width: 34, height: 34, borderRadius: 12, display: "grid", placeItems: "center", flexShrink: 0, color: "#fff", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", fontWeight: 900 };
+const h2: React.CSSProperties = { margin: 0, fontSize: 17, fontWeight: 850 };
+const subText: React.CSSProperties = { margin: "3px 0 0", color: "#64748b", fontSize: 12 };
+const formGrid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))", gap: 14 };
+const fieldLabel: React.CSSProperties = { display: "grid", gap: 8, fontSize: 13, fontWeight: 750 };
+const statusBox: React.CSSProperties = { padding: 12, borderRadius: 12, background: "#fff7ed", color: "#9a3412", fontSize: 13 };
+const previewGrid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,320px),1fr))", gap: 18 };
+const previewHeader: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: 9, fontSize: 13 };
+const previewBox: React.CSSProperties = { position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" };
 const canvasStyle: React.CSSProperties = { display: "block", width: "100%", height: "100%" };
-const empty: React.CSSProperties = { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 14, pointerEvents: "none" };
+const emptyText: React.CSSProperties = { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 13, pointerEvents: "none", textAlign: "center", padding: 12 };
