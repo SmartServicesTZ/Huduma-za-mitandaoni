@@ -2762,11 +2762,11 @@
 .lq-artboard.lq-no-qr-artboard--voda-reference .lq-voda-no-qr-heading {
   position: absolute !important;
   display: block !important;
-  top: 6.5% !important;
+  top: 8.4% !important;
   left: 6.5% !important;
   right: 6.5% !important;
   min-height: 0 !important;
-  height: 28% !important;
+  height: 38% !important;
 }
 .lq-artboard.lq-no-qr-artboard--voda-reference .lq-voda-no-qr-heading h2 {
   position: absolute !important;
@@ -2790,10 +2790,10 @@
 }
 .lq-artboard.lq-no-qr-artboard--voda-reference .lq-voda-no-qr-number-boxes {
   position: absolute !important;
-  top: 38.5% !important;
+  top: 49.5% !important;
   left: 6.5% !important;
   width: 87% !important;
-  height: 18.2% !important;
+  height: 23.4% !important;
   display: grid !important;
   grid-auto-rows: 100% !important;
   gap: 1.05% !important;
@@ -2816,10 +2816,10 @@
 }
 .lq-artboard.lq-no-qr-artboard--voda-reference .lq-voda-no-qr-name-row {
   position: absolute !important;
-  top: 58.0% !important;
+  top: 74.6% !important;
   left: 6.5% !important;
   width: 87% !important;
-  height: 12.5% !important;
+  height: 16.1% !important;
   min-height: 0 !important;
   margin: 0 !important;
   display: flex !important;
