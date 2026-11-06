@@ -143,9 +143,12 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
     "kitambulisho-wakala-vodacom",
     "kitambulisho-wakala-mbeya",
   ]);
-  return Array.from(merged.values()).filter((service) => !retiredLipaStickerSlugs.has(service.slug)).map((service) =>
-    agentIdNetworkSlugs.has(service.slug) ? { ...service, isVisible: false } : service
-  );
+  return Array.from(merged.values()).filter((service) => !retiredLipaStickerSlugs.has(service.slug)).map((service) => {
+    if (agentIdNetworkSlugs.has(service.slug)) return { ...service, isVisible: false };
+    // EDU-HALOTEL is a newly launched built-in tool: stale Firestore records must not hide it.
+    if (service.slug === "edu-halotel") return { ...service, active: true, isVisible: true, category: "HUDUMA ZA WAKALA" };
+    return service;
+  });
 }
 
 export function findService(slug: string) {
