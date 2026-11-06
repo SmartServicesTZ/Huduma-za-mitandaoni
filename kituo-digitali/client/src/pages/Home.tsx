@@ -241,11 +241,6 @@ function AppHeader({ onMenu, search, setSearch }: { onMenu: () => void; search: 
     }
   };
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const [toolLockOverrides, setToolLockOverrides] = useState<Record<string, boolean>>({});
-  useEffect(() => subscribeToCollection("serviceLocks", (rows) => {
-    setToolLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true])));
-  }), []);
-
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   useEffect(() => {
@@ -1217,6 +1212,11 @@ function BottomNav() {
 }
 
 export default function Home() {
+  const [toolLockOverrides, setToolLockOverrides] = useState<Record<string, boolean>>({});
+  useEffect(() => subscribeToCollection("serviceLocks", (rows) => {
+    setToolLockOverrides(Object.fromEntries(rows.map((item) => [String(item.slug ?? item.id), item.isLocked === true])));
+  }), []);
+
   const [location, navigate] = useLocation();
   useEffect(() => {
     if (location === "/login" || location === "/register") {
