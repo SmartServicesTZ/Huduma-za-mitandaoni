@@ -482,6 +482,24 @@ export async function registerFirebaseUser(input: { password: string; firstName:
     }
     registration.ready = true;
     profilesReadyInThisSession.add(credential.user.uid);
+    // Associate the newly registered Firebase UID with OneSignal, then send one
+    // server-authenticated welcome push. This runs only on successful registration,
+    // never on the ordinary sign-in path. The REST key stays on the Worker.
+    if (typeof window !== "undefined") {
+      const oneSignalWindow = window as Window & {
+        OneSignalDeferred?: Array<(oneSignal: { login: (externalId: string) => Promise<void> }) => Promise<void> | void>;
+      };
+      if (Array.isArray(oneSignalWindow.OneSignalDeferred)) {
+        oneSignalWindow.OneSignalDeferred.push(async (oneSignal) => {
+          try {
+            await oneSignal.login(credential.user.uid);
+            await invokeWorker("sendRegistrationWelcome", {}, credential.user);
+          } catch (error) {
+            console.warn("Registration welcome notification was not sent", error);
+          }
+        });
+      }
+    }
     // No email is collected, displayed, sent, or saved to the Firestore profile.
     return credential.user;
   } finally {
