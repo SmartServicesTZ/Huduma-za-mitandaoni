@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { completeOrder, isServiceLocked, moveId, orderByIds, preferredHomepageServiceSlugs, prioritizeHomepageServices } from "./serviceOrdering";
+import { completeOrder, defaultLockedServiceSlugs, isServiceLocked, moveId, orderByIds, preferredHomepageServiceSlugs, prioritizeHomepageServices } from "./serviceOrdering";
 
 describe("service ordering", () => {
   const ids = ["tin", "nida", "leseni-biashara"];
@@ -48,5 +48,13 @@ describe("service lock overrides", () => {
   it("preserves the catalog lock when no override has been saved", () => {
     expect(isServiceLocked("cheti-kuzaliwa", undefined)).toBe(true);
     expect(isServiceLocked("leseni-biashara", undefined, true)).toBe(true);
+  });
+
+  it("keeps the four requested tools locked until an administrator explicitly unlocks them", () => {
+    for (const slug of ["soft-copy-nida", "mpiga-kura", "brela", "edu-halotel"]) {
+      expect(defaultLockedServiceSlugs.has(slug)).toBe(true);
+      expect(isServiceLocked(slug, undefined)).toBe(true);
+      expect(isServiceLocked(slug, false)).toBe(false);
+    }
   });
 });
