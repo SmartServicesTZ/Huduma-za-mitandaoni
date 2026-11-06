@@ -86,6 +86,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   locked("simba-sc", "SIMBA SC WHATSAPP GROUP", "Kipengele kimefungwa kwa muda; group bado halijaandaliwa.", "trophy", "HUDUMA ZINGINE"),
   paid("yanga-africans", "YANGA SC WHATSAPP GROUP", "Jiunge na group la mashabiki wa Yanga baada ya kusoma na kukubali sheria.", "star", "HUDUMA ZINGINE"),
   paid("azam-tv", "AZAM TV", "Fungua huduma rasmi za Azam TV.", "tv", "HUDUMA ZINGINE"),
+  free("dada", "DADA", "Panga picha ya mfano, jaza taarifa na rekebisha nafasi za maandishi kwenye template.", "image-search", "HUDUMA ZINGINE"),
 ];
 export const specialServices = [
   { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4" },
@@ -124,7 +125,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
       : { ...fallback, ...service });
   });
   if (initialized) {
-    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "soft-copy-nida", "stika-lipa", "edu-halotel"];
+    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "soft-copy-nida", "stika-lipa", "edu-halotel", "dada"];
     alwaysAvailableDefaults.forEach((slug) => {
       const fallback = defaults.get(slug);
       if (fallback && !configured.some((service) => service.slug === slug)) merged.set(slug, fallback);
