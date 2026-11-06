@@ -2890,3 +2890,17 @@
 .lq-voda-template-number-boxes span{display:grid!important;place-items:center!important;min-width:0!important;height:100%!important;color:#111827!important;background:transparent!important;border:0!important;font-family:Arial,Helvetica,sans-serif!important;font-size:6.6cqw!important;line-height:1!important;font-weight:900!important;text-align:center!important}
 .lq-voda-template-name{position:absolute!important;left:18.1%!important;top:58.7%!important;width:76.5%!important;height:12.5%!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;box-sizing:border-box!important;padding:0 3.1%!important;overflow:hidden!important;color:#111827!important;background:transparent!important;font-family:Arial,Helvetica,sans-serif!important;font-size:4.15cqw!important;line-height:1!important;font-weight:800!important;letter-spacing:.01em!important;white-space:nowrap!important;text-overflow:ellipsis!important}
 @media(max-width:700px){.lq-voda-template-number-boxes{left:6.9%!important;width:87.9%!important}.lq-voda-template-number-boxes span{font-size:6.6cqw!important}.lq-voda-template-name{font-size:4.15cqw!important}}
+@media print {
+  .lq-print-root > .lq-voda-template-artboard {
+    width: 264.5833mm !important;
+    height: 181.2396mm !important;
+    max-width: none !important;
+    aspect-ratio: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-after: page;
+    page-break-after: always;
+  }
+}
