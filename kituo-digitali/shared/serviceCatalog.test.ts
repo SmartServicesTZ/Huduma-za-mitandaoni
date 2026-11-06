@@ -37,6 +37,7 @@ describe("legacy service catalogue migration fallback", () => {
       "soft-copy-nida",
       "stika-lipa",
       "edu-halotel",
+      "dada", // DADA is intentionally kept available as a standalone portal tool.
     ]);
   });
 
