@@ -10,6 +10,7 @@ export interface WorkerEnv {
   SUPER_ADMIN_PHONE?: string;
   FIMIPAY_SECRET_KEY?: string;
   FIMIPAY_WEBHOOK_SECRET?: string;
+  // App-scoped OneSignal REST key; it is configured as a Cloudflare Worker secret only.
   ONESIGNAL_REST_API_KEY?: string;
   ENABLE_LIVE_WEB_RETRIEVAL?: string;
   ALLOWED_ORIGINS?: string;
