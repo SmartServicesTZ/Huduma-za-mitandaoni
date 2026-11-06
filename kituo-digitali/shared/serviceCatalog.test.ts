@@ -36,6 +36,7 @@ describe("legacy service catalogue migration fallback", () => {
       serviceCatalog.find((service) => service.slug === "pata-till-mitandao-yote"),
       serviceCatalog.find((service) => service.slug === "soft-copy-nida"),
       serviceCatalog.find((service) => service.slug === "stika-lipa"),
+      serviceCatalog.find((service) => service.slug === "edu-halotel"),
     ]);
   });
 

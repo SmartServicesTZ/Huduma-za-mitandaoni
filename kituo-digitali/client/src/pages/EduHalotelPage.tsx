@@ -52,7 +52,8 @@ export default function EduHalotelPage(){
  const [qr,setQr]=useState("");const [busy,setBusy]=useState(false);const [paid,setPaid]=useState(false);
  const front=useRef<HTMLCanvasElement>(null),back=useRef<HTMLCanvasElement>(null),sig=useRef<HTMLCanvasElement>(null),file=useRef<HTMLInputElement>(null),drag=useRef(false),renderReady=useRef<Promise<void>>(Promise.resolve());
  const update=(key:keyof Student,value:string)=>setS(p=>({...p,[key]:value}));
- useEffect(()=>{setPaid(false)},[s]);\n const qrPayload=useMemo(()=>JSON.stringify({name:s.name, college:s.customCollege||s.college, course:s.course, regNo:s.regNo, validUntil:s.endYear}),[s]);
+ useEffect(()=>{setPaid(false)},[s]);
+ const qrPayload=useMemo(()=>JSON.stringify({name:s.name, college:s.customCollege||s.college, course:s.course, regNo:s.regNo, validUntil:s.endYear}),[s]);
  useEffect(()=>{let ok=true;QRCode.toDataURL(qrPayload,{width:280,margin:1,errorCorrectionLevel:"M"}).then(v=>{if(ok)setQr(v)});return()=>{ok=false}},[qrPayload]);
  useEffect(()=>{renderReady.current=Promise.all([front.current?drawFront(front.current,s,qr):Promise.resolve(),back.current?drawBack(back.current,s,qr):Promise.resolve()]).then(()=>undefined)},[s,qr]);
  const saveSignature=()=>{if(!sig.current)return;update("signature",sig.current.toDataURL("image/png"));toast.success("Saini limehifadhiwa.");};
