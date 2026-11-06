@@ -32,6 +32,7 @@ import {
   setServiceApplicationStatus,
   setServiceLock,
   submitLipaApplication,
+  sendRegistrationWelcome,
   syncAuthClaims,
   updateUserAccess,
   updateLipaRewardTracking,
