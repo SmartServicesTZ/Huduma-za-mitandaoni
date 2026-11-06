@@ -277,33 +277,6 @@ export async function checkFimipayOrder(request: Request) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const orderId = String(body?.order_id ?? "").trim();
   if (!orderId || orderId.length > 180) return json({ error: { message: "Oda ya malipo si sahihi." } }, 400);
-  const privateOrderSnapshot = await db.collection("privateServicePayments").doc(orderId).get();
-  if (privateOrderSnapshot.exists) {
-    const privateOrder = privateOrderSnapshot.data()!;
-    if (String(privateOrder.environment ?? "").toUpperCase() !== "LIVE") {
-      await db.collection("privateServicePayments").doc(orderId).set({ status: "NEEDS_REVIEW", paymentStatus: "NEEDS_REVIEW", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return json({ received: true, review: true });
-    }
-    if (!isFimipaySuccessEvent(payload)) {
-      const terminalStatus = fimipayTerminalStatus(payload);
-      if (terminalStatus) await db.collection("privateServicePayments").doc(orderId).set({ status: terminalStatus, paymentStatus: terminalStatus, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return json({ received: true, pending: !terminalStatus });
-    }
-    try {
-      const verification = await verifyProviderOrder(orderId, Number(privateOrder.amount));
-      if (!verification.confirmed) {
-        if (["PENDING", "INPROGRESS"].includes(verification.status)) return json({ received: false, pending: true }, 503);
-        await db.collection("privateServicePayments").doc(orderId).set({ status: "NEEDS_REVIEW", paymentStatus: "NEEDS_REVIEW", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-        return json({ received: true, review: true });
-      }
-      const settled = await markPrivateServicePaymentPaid(orderId, verification.data);
-      return json({ received: true, paid: settled.paid, duplicate: settled.duplicate });
-    } catch (error) {
-      console.error("FimiPay private payment webhook settlement failed", { orderId, code: error instanceof Error ? error.name : "unknown" });
-      return json({ received: false }, 503);
-    }
-  }
-
   const saved = await readPurchase(orderId);
   if (!saved || saved.order.userId !== auth.uid) return json({ error: { message: "Oda haijapatikana." } }, 404);
   if (String(saved.order.environment ?? "").toUpperCase() !== "LIVE") return json({ error: { message: "Oda hii si ya mazingira ya LIVE." } }, 409);
@@ -484,6 +457,33 @@ export async function handleFimipayWebhook(request: Request) {
       return json({ received: false }, 503);
     }
   }
+  const privateOrderSnapshot = await db.collection("privateServicePayments").doc(orderId).get();
+  if (privateOrderSnapshot.exists) {
+    const privateOrder = privateOrderSnapshot.data()!;
+    if (String(privateOrder.environment ?? "").toUpperCase() !== "LIVE") {
+      await db.collection("privateServicePayments").doc(orderId).set({ status: "NEEDS_REVIEW", paymentStatus: "NEEDS_REVIEW", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return json({ received: true, review: true });
+    }
+    if (!isFimipaySuccessEvent(payload)) {
+      const terminalStatus = fimipayTerminalStatus(payload);
+      if (terminalStatus) await db.collection("privateServicePayments").doc(orderId).set({ status: terminalStatus, paymentStatus: terminalStatus, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return json({ received: true, pending: !terminalStatus });
+    }
+    try {
+      const verification = await verifyProviderOrder(orderId, Number(privateOrder.amount));
+      if (!verification.confirmed) {
+        if (["PENDING", "INPROGRESS"].includes(verification.status)) return json({ received: false, pending: true }, 503);
+        await db.collection("privateServicePayments").doc(orderId).set({ status: "NEEDS_REVIEW", paymentStatus: "NEEDS_REVIEW", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        return json({ received: true, review: true });
+      }
+      const settled = await markPrivateServicePaymentPaid(orderId, verification.data);
+      return json({ received: true, paid: settled.paid, duplicate: settled.duplicate });
+    } catch (error) {
+      console.error("FimiPay private payment webhook settlement failed", { orderId, code: error instanceof Error ? error.name : "unknown" });
+      return json({ received: false }, 503);
+    }
+  }
+
   const saved = await readPurchase(orderId);
   if (!saved) {
     await markNeedsReview(orderId, "Webhook arrived without a matching stored customer order");
