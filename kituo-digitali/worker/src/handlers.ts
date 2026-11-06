@@ -92,7 +92,7 @@ const callableAccessAction: Record<string, "admin" | "read" | "profile" | "appli
   adminDelete: "admin", adminWrite: "admin", adminDeleteUserAccount: "admin", adjustTokens: "admin", resetUserPassword: "admin", seedServiceCatalog: "admin",
   setAccountStatus: "admin", setHomepageServiceOrder: "admin", setLipaApplicationStatus: "admin", setServiceApplicationStatus: "admin", replyToServiceApplication: "admin", 
   setServiceLock: "admin", updateUserAccess: "admin", verifyUser: "admin", ensureDefaultServiceCatalog: "admin",
-  changeOwnPassword: "profile", claimRegistrationPhone: "profile", claimDailyTokenBonus: "profile", consumeTokens: "services", generateBusinessLicense: "services",
+  changeOwnPassword: "profile", sendRegistrationWelcome: "profile", claimRegistrationPhone: "profile", claimDailyTokenBonus: "profile", consumeTokens: "services", generateBusinessLicense: "services",
   createPocketWifiOrder: "applications", createServiceApplication: "applications", updateServiceApplication: "applications", completeBusinessLicense: "applications", reserveBusinessLicenseNumber: "applications",
   submitLipaApplication: "applications", updateLipaApplication: "applications", markLipaApplicationViewed: "applications", markServiceApplicationViewed: "applications", listLipaApplications: "admin", listLipaApplicationsPage: "admin", getAdminApplicationCounts: "admin",
   getLipaApplicationDocument: "read", getServiceApplicationDocument: "read", listServiceApplications: "admin", listServiceApplicationsPage: "admin",
@@ -183,6 +183,58 @@ function validateConfiguredFields(value: unknown) {
   });
 }
 
+
+export const sendRegistrationWelcome = callable(async (request) => {
+  const uid = authUid(request);
+  const profileRef = db.collection("users").doc(uid);
+  const profileSnapshot = await profileRef.get();
+  if (!profileSnapshot.exists) throw new ApiError("failed-precondition", "Wasifu wa akaunti haujakamilika.");
+  const profile = profileSnapshot.data() as Profile;
+  const createdAt = profile.createdAt instanceof Date ? profile.createdAt.getTime() : 0;
+  // This endpoint is only valid immediately after a first-time profile is created.
+  if (!createdAt || Date.now() - createdAt > 30 * 60 * 1000 || createdAt > Date.now() + 60_000) {
+    throw new ApiError("failed-precondition", "Ujumbe wa karibu hutumwa wakati wa usajili mpya pekee.");
+  }
+  const env = getWorkerEnv();
+  const apiKey = typeof env.ONESIGNAL_REST_API_KEY === "string" ? env.ONESIGNAL_REST_API_KEY : "";
+  if (!apiKey) throw new ApiError("unavailable", "Huduma ya arifa haijasanidiwa.");
+  const markerRef = db.collection("registrationWelcomeNotifications").doc(uid);
+  try {
+    await markerRef.create({ uid, status: "sending", createdAt: FieldValue.serverTimestamp() });
+  } catch (error) {
+    if (error && typeof error === "object" && Number((error as { status?: unknown }).status) === 409) {
+      return { sent: false, duplicate: true };
+    }
+    throw error;
+  }
+  try {
+    const response = await fetch("https://api.onesignal.com/notifications", {
+      method: "POST",
+      headers: { Authorization: `Key ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        app_id: "adfb1cbb-bb91-4813-b2c8-c57453319649",
+        include_aliases: { external_id: [uid] },
+        target_channel: "push",
+        headings: { en: "Karibu SmartServicesTZ!" },
+        contents: { en: "Asante kwa kujisajili. Tunafurahi kuwa nawe. Anza kutumia huduma zetu sasa." },
+        idempotency_key: randomUUID(),
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const result = await response.json().catch(() => null) as { id?: unknown; errors?: unknown } | null;
+    if (!response.ok) throw new Error(`OneSignal HTTP ${response.status}`);
+    if (typeof result?.id !== "string" || !result.id) {
+      await markerRef.delete();
+      return { sent: false, reason: "not-subscribed" };
+    }
+    await markerRef.update({ status: "sent", notificationId: result.id, sentAt: FieldValue.serverTimestamp() });
+    return { sent: true };
+  } catch (error) {
+    await markerRef.delete().catch(() => undefined);
+    console.error("Registration welcome push failed", { uid, error: error instanceof Error ? error.message : "unknown" });
+    throw new ApiError("unavailable", "Arifa ya karibu haikutumwa. Akaunti yako imesajiliwa kikamilifu.");
+  }
+});
 
 export const registerFcmToken = callable(async (request) => {
   const uid = authUid(request);
