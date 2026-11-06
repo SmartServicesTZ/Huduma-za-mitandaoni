@@ -11,7 +11,7 @@ export const defaultServices: DefaultService[] = [
   paid("thibitisha-tin", "THIBITISHA TIN", "Thibitisha taarifa za TIN yako.", "badge-check", "Huduma kuu", 1),
   paid("nakala-nida", "NAKALA LAINI YA NIDA", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "Huduma kuu", 2),
   paid("stika-lipa", "STIKA ZA LIPA", "Tengeneza na pakua stika za Lipa za Airtel, Vodacom, Halotel na Yas sehemu moja.", "qr-code", "Huduma kuu", 3),
-  paid("edu-halotel", "EDU-HALOTEL", "Tengeneza kitambulisho cha mwanafunzi cha kisasa chenye pande mbili, QR na upakuaji wa PNG.", "badge-check", "Elimu", 4),
+  paid("edu-halotel", "EDU-HALOTEL", "Tengeneza kitambulisho cha mwanafunzi cha kisasa chenye pande mbili, QR na upakuaji wa PNG.", "badge-check", "HUDUMA ZA WAKALA", 4),
   paid("mpiga-kura", "MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "Huduma kuu", 4),
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "Huduma kuu", 5),
   free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia.", "landmark", "Huduma kuu", 6),
