@@ -83,7 +83,7 @@ export default function DadaPage() {
     name2: name2.toUpperCase(),
     name3: name3.toUpperCase(),
     nida: formatNida(nida),
-    birthDate,
+    birthDate: birthDate ? new Date(birthDate + "T00:00:00").toLocaleDateString("en-GB") : "",
     gender,
   }), [name1, name2, name3, nida, birthDate, gender]);
 
@@ -186,7 +186,7 @@ export default function DadaPage() {
         <div style={sectionHeading}><span style={stepBadge}>3</span><div><h2 style={h2}>Tarehe na jinsia</h2><p style={subText}>Chagua tarehe kwenye kalenda.</p></div></div>
         <div style={formGrid}>
           <label style={fieldLabel}>Tarehe ya kuzaliwa<input className="input" type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} /></label>
-          <label style={fieldLabel}>Jinsia<select className="input" value={gender} onChange={(event) => setGender(event.target.value)}><option value="">Chagua jinsia</option><option value="M">Mke-M</option><option value="F">Mme-F</option></select></label>
+          <label style={fieldLabel}>Jinsia<select className="input" value={gender} onChange={(event) => setGender(event.target.value)}><option value="">Chagua jinsia</option><option value="Mke-M">Mke-M</option><option value="Mme-F">Mme-F</option></select></label>
         </div>
       </section>
 
