@@ -46,10 +46,10 @@ const A4_WIDTH_MM = 297;
 const A4_HEIGHT_MM = 210;
 const A4_HEIGHT_PX = 2480;
 
-// Landscape export dimensions for QR-free type-2 stickers (3x reference size).
+// Landscape export dimensions for QR-free type-2 stickers.
 function getNoQrExportSpec(network: LipaNetwork) {
   return network === "voda"
-    ? { widthPx: 1000, heightPx: 674, widthMm: 264.6, heightMm: 178.4 }
+    ? { widthPx: 1000, heightPx: 685, widthMm: 264.5833, heightMm: 181.2396 }
     : { widthPx: 2208, heightPx: 1560, widthMm: 297, heightMm: 210 };
 }
 const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
@@ -423,7 +423,8 @@ export default function LipaQrStudioPage() {
     try {
       // Hakikisha faili linaweza kutengenezwa kabla ya kukata tokeni.
       for (const page of pages) {
-        const noQrSpec = page.classList.contains("lq-no-qr-artboard") ? getNoQrExportSpec(network) : null;
+        const isNoQrArtboard = page.classList.contains("lq-no-qr-artboard") || page.classList.contains("lq-voda-template-artboard");
+        const noQrSpec = isNoQrArtboard ? getNoQrExportSpec(network) : null;
         await captureArtboard(page, noQrSpec?.widthPx ?? (page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX), noQrSpec?.heightPx ?? (page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined));
       }
       if (!firebaseUser) throw new Error("Ingia kwenye akaunti yako ili kupakua.");
@@ -437,7 +438,8 @@ export default function LipaQrStudioPage() {
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const canvases: HTMLCanvasElement[] = [];
       for (const page of pages) {
-        const noQrSpec = page.classList.contains("lq-no-qr-artboard") ? getNoQrExportSpec(network) : null;
+        const isNoQrArtboard = page.classList.contains("lq-no-qr-artboard") || page.classList.contains("lq-voda-template-artboard");
+        const noQrSpec = isNoQrArtboard ? getNoQrExportSpec(network) : null;
         canvases.push(await captureArtboard(page, noQrSpec?.widthPx ?? (page.dataset.network === "airtel" ? outputWidthPx : A5_WIDTH_PX), noQrSpec?.heightPx ?? (page.dataset.network === "airtel" && page.dataset.paperSize === "A4" ? A4_HEIGHT_PX : undefined)));
       }
       const paperSuffix = network === "airtel" ? `-airtel-${airtelPaperSize.toLowerCase()}` : "";
@@ -448,7 +450,8 @@ export default function LipaQrStudioPage() {
         for (let index = 0; index < canvases.length; index += 1) {
           const canvas = canvases[index];
           const pageElement = pages[index];
-          const noQrSpec = pageElement?.classList.contains("lq-no-qr-artboard") ? getNoQrExportSpec(network) : null;
+          const isNoQrArtboard = Boolean(pageElement?.classList.contains("lq-no-qr-artboard") || pageElement?.classList.contains("lq-voda-template-artboard"));
+          const noQrSpec = isNoQrArtboard ? getNoQrExportSpec(network) : null;
           const isAirtelCard = pageElement?.dataset.network === "airtel";
           const pageWidth = (noQrSpec?.widthMm ?? (isAirtelCard ? outputWidthMm : A5_WIDTH_MM)) * 72 / 25.4;
           const pageHeight = (noQrSpec?.heightMm ?? (isAirtelCard ? outputHeightMm : A5_HEIGHT_MM)) * 72 / 25.4;
@@ -494,13 +497,13 @@ export default function LipaQrStudioPage() {
     const printStyle = document.createElement("style");
     printStyle.id = "lq-dynamic-print-size";
     printStyle.textContent = `
-      @page { size: ${noQrSpec ? "A5 portrait" : paperSize === "A4" ? "A4 landscape" : "A5 portrait"}; margin: 0; }
+      @page { size: ${noQrSpec ? `${widthMm}mm ${heightMm}mm` : paperSize === "A4" ? "A4 landscape" : "A5 portrait"}; margin: 0; }
       ${noQrSpec ? `@page lq-no-qr { size: ${widthMm}mm ${heightMm}mm; margin: 0; }` : ""}
       @media print {
         html, body { width: ${widthMm}mm !important; height: ${heightMm}mm !important; margin: 0 !important; padding: 0 !important; }
         .lq-print-root { width: ${widthMm}mm !important; }
-        .lq-print-root > .lq-artboard:not(.lq-no-qr-artboard) { width: ${noQrSpec ? "148" : widthMm}mm !important; height: ${noQrSpec ? "210" : heightMm}mm !important; aspect-ratio: auto !important; }
-        .lq-print-root > .lq-no-qr-artboard { page: lq-no-qr; width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }
+        .lq-print-root > .lq-artboard:not(.lq-no-qr-artboard):not(.lq-voda-template-artboard) { width: ${noQrSpec ? "148" : widthMm}mm !important; height: ${noQrSpec ? "210" : heightMm}mm !important; aspect-ratio: auto !important; }
+        .lq-print-root > .lq-no-qr-artboard, .lq-print-root > .lq-voda-template-artboard { page: lq-no-qr; width: ${widthMm}mm !important; height: ${heightMm}mm !important; aspect-ratio: auto !important; }
         .lq-print-root > .lq-card-artboard--airtel-a4 { width: 297mm !important; height: 210mm !important; }
       }
     `;
