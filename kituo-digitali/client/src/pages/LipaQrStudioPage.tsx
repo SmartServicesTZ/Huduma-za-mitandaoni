@@ -49,7 +49,7 @@ const A4_HEIGHT_PX = 2480;
 // Landscape export dimensions for QR-free type-2 stickers (3x reference size).
 function getNoQrExportSpec(network: LipaNetwork) {
   return network === "voda"
-    ? { widthPx: 1000, heightPx: 685, widthMm: 264.6, heightMm: 181.2 }
+    ? { widthPx: 1000, heightPx: 674, widthMm: 264.6, heightMm: 178.4 }
     : { widthPx: 2208, heightPx: 1560, widthMm: 297, heightMm: 210 };
 }
 const LIPA_ASSET_BASE = `${import.meta.env.BASE_URL}lipa-assets/`;
