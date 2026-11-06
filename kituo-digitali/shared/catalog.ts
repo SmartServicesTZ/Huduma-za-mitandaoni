@@ -64,7 +64,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   { ...paid("verify-tin", "VERIFY TIN", "Jaza taarifa zako za TIN na tengeneza mwonekano wa mfano usio uthibitisho rasmi wa TRA.", "image-search", "HUDUMA ZA WAKALA"), tokenCost: 2 },
   paid("mpiga-kura", "SOFT COPY YA MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "HUDUMA ZA WAKALA"),
   paid("stika-lipa", "STIKA ZA LIPA", "Tengeneza na pakua stika za Lipa za Airtel, Vodacom, Halotel na Yas sehemu moja.", "qr-code", "HUDUMA ZA WAKALA"),
-  paid("edu-halotel", "EDU-HALOTEL", "Tengeneza kitambulisho cha mwanafunzi cha kisasa chenye pande mbili, QR na upakuaji wa PNG.", "badge-check", "ELIMU"),
+  paid("edu-halotel", "EDU-HALOTEL", "Tengeneza kitambulisho cha mwanafunzi cha kisasa chenye pande mbili, QR na upakuaji wa PNG.", "badge-check", "HUDUMA ZA WAKALA"),
   { ...paid("stika-mawakala", "STIKA ZA MAWAKALA", "Pata stika za mawakala.", "ticket", "HUDUMA ZA WAKALA"), tokenCost: 3 },
   free("pata-lipa-namba", "PATA LIPA NAMBA", "Omba Lipa Namba ya mtandao unaotumia bila malipo.", "landmark", "HUDUMA ZA WAKALA"),
   free("access-lipa-number", "PATA ACCESS YA LIPA & USAJILI", "Omba access ya kutengeneza Lipa Namba kupitia Airtel, Yas, Vodacom au Halotel.", "wallet-cards", "HUDUMA ZA WAKALA"),
