@@ -30,13 +30,13 @@ describe("legacy service catalogue migration fallback", () => {
 
   it("does not resurrect deleted defaults after Firestore migration is marked complete", () => {
     const services = mergeServiceCatalogDefaults([], true);
-    expect(services).toEqual([
-      serviceCatalog.find((service) => service.slug === "access-lipa-number"),
-      serviceCatalog.find((service) => service.slug === "pata-pocket-wifi-mabando"),
-      serviceCatalog.find((service) => service.slug === "pata-till-mitandao-yote"),
-      serviceCatalog.find((service) => service.slug === "soft-copy-nida"),
-      serviceCatalog.find((service) => service.slug === "stika-lipa"),
-      serviceCatalog.find((service) => service.slug === "edu-halotel"),
+    expect(services.map((service) => service.slug)).toEqual([
+      "access-lipa-number",
+      "pata-pocket-wifi-mabando",
+      "pata-till-mitandao-yote",
+      "soft-copy-nida",
+      "stika-lipa",
+      "edu-halotel",
     ]);
   });
 
