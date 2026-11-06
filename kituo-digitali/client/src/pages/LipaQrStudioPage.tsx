@@ -152,33 +152,12 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   if (variant === "no-qr" && network === "voda") {
     const digits = values.lipaNumber.replace(/\D/g, "").slice(0, 12).split("");
     const boxCount = Math.max(7, digits.length);
-    return <article ref={ref} className="lq-artboard lq-no-qr-artboard lq-no-qr-artboard--voda-reference" data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
-      <section className="lq-voda-no-qr-main">
-        <header className="lq-voda-no-qr-heading">
-          <h2>Lipa kwa<br />Simu hapa</h2>
-          <span className="lq-voda-no-qr-number-label">Lipa namba</span>
-        </header>
-        <div className="lq-voda-no-qr-number-boxes" aria-label={`Namba ya Lipa: ${values.lipaNumber || "haijawekwa"}`} style={{ gridTemplateColumns: `repeat(${boxCount}, minmax(0, 1fr))` }}>
-          {Array.from({ length: boxCount }, (_, index) => <span key={index}>{digits[index] || ""}</span>)}
-        </div>
-        <div className="lq-voda-no-qr-name-row">
-          <span>Jina</span>
-          <strong>{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</strong>
-        </div>
-      </section>
-      <footer className="lq-voda-no-qr-footer">
-        <div className="lq-voda-no-qr-accepted">
-          <strong>Kutoka mitandao yote</strong>
-          <div className="lq-voda-no-qr-network-text" aria-label="Mitandao inayokubaliwa">
-            <span className="lq-footer-tigo">tigo pesa</span>
-            <span className="lq-footer-ezy">EZYPESA</span>
-            <span className="lq-footer-tpesa">T-PESA</span>
-            <span className="lq-footer-airtel">airtel <small>money</small></span>
-            <span className="lq-footer-halo">halopesa</span>
-          </div>
-        </div>
-        <img className="lq-voda-no-qr-mpesa" src={`${LIPA_ASSET_BASE}mpesa-header-reference.png`} alt="Vodacom M-Pesa" />
-      </footer>
+    return <article ref={ref} className="lq-voda-template-artboard" data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
+      <img className="lq-voda-template-background" src={`${LIPA_ASSET_BASE}vodacom-no-qr-template.png`} alt="" aria-hidden="true" />
+      <div className="lq-voda-template-number-boxes" aria-label={`Namba ya Lipa: ${values.lipaNumber || "haijawekwa"}`} style={{ gridTemplateColumns: `repeat(${boxCount}, minmax(0, 1fr))` }}>
+        {Array.from({ length: boxCount }, (_, index) => <span key={index}>{digits[index] || ""}</span>)}
+      </div>
+      <div className="lq-voda-template-name">{values.businessName.trim().toUpperCase() || "JINA LA BIASHARA"}</div>
     </article>;
   }
   if (variant === "no-qr" && network !== "airtel" && network !== "voda") {
