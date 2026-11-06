@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Download, ImagePlus, PenLine, RotateCcw, GraduationCap, CalendarDays, UserRound, Search, CheckCircle2 } from "lucide-react";
+import { Download, ImagePlus, PenLine, RotateCcw, GraduationCap, UserRound, Search, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
@@ -31,7 +31,7 @@ function drawFront(canvas: HTMLCanvasElement, s: Student, qr: string) {
   else { c.fillStyle="#e7eef4"; rounded(c,60,152,226,286,14); c.fill(); c.fillStyle="#7890a6"; c.beginPath(); c.arc(173,250,55,0,Math.PI*2); c.fill(); c.beginPath(); c.ellipse(173,390,83,92,0,Math.PI,Math.PI*2); c.fill(); }
   c.fillStyle="#163a55"; c.font="800 15px Arial"; c.textAlign="center"; c.fillText("STUDENT PHOTO",173,455); c.textAlign="left";
   const college=(s.customCollege||s.college||"College name").toUpperCase();
-  c.fillStyle="#fff"; c.font="900 35px Arial"; c.fillText(s.name.trim().toUpperCase()||"FULL STUDENT NAME",340,174,{ } as any);
+  c.fillStyle="#fff"; c.font="900 35px Arial"; c.fillText(s.name.trim().toUpperCase()||"FULL STUDENT NAME",340,174,620);
   const lines:[string,string][]=[["COURSE",s.course||"—"],["REGISTRATION NO.",s.regNo||"—"],["ISSUED",fmt(s.issueDate)],["VALID UNTIL",s.endYear||"—"],["YEAR OF STUDY",s.startYear&&s.endYear?`${s.startYear} – ${s.endYear}`:"—"]];
   let y=235; for(const [label,value] of lines){ c.fillStyle="#b8e7e7";c.font="700 14px Arial";c.fillText(label,340,y);c.fillStyle="#fff";c.font="700 21px Arial";c.fillText(value,340,y+29);y+=70; }
   c.fillStyle="#fff";c.fillRect(340,590,360,2); c.fillStyle="#e8ffff";c.font="italic 15px Arial";c.fillText("Signature of Bearer",340,615);
@@ -61,7 +61,7 @@ export default function EduHalotelPage(){
  const [qr,setQr]=useState("");const [busy,setBusy]=useState(false);const [paid,setPaid]=useState(false);
  const front=useRef<HTMLCanvasElement>(null),back=useRef<HTMLCanvasElement>(null),sig=useRef<HTMLCanvasElement>(null),file=useRef<HTMLInputElement>(null),drag=useRef(false);
  const update=(key:keyof Student,value:string)=>setS(p=>({...p,[key]:value}));
- const qrPayload=useMemo(()=>JSON.stringify({name:s.name, college:s.customCollege||s.college, course:s.course, regNo:s.regNo, validUntil:s.endYear}),[s]);
+ useEffect(()=>{setPaid(false)},[s]);\n const qrPayload=useMemo(()=>JSON.stringify({name:s.name, college:s.customCollege||s.college, course:s.course, regNo:s.regNo, validUntil:s.endYear}),[s]);
  useEffect(()=>{let ok=true;QRCode.toDataURL(qrPayload,{width:280,margin:1,errorCorrectionLevel:"M"}).then(v=>{if(ok)setQr(v)});return()=>{ok=false}},[qrPayload]);
  useEffect(()=>{if(front.current)drawFront(front.current,s,qr);if(back.current)drawBack(back.current,s,qr)},[s,qr]);
  const saveSignature=()=>{if(!sig.current)return;update("signature",sig.current.toDataURL("image/png"));toast.success("Saini limehifadhiwa.");};
