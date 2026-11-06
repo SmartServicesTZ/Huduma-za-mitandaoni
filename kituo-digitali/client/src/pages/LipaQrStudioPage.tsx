@@ -67,8 +67,45 @@ function makeFileStem(name: string, number: string) {
   return `${safeName || "lipa-kadi"}-${number}`;
 }
 
+async function composeVodacomTemplate(element: HTMLElement) {
+  const background = element.querySelector<HTMLImageElement>(".lq-voda-template-background");
+  if (!background) throw new Error("Template ya Vodacom haijapatikana.");
+  if (!background.complete) await new Promise<void>((resolve) => background.addEventListener("load", () => resolve(), { once: true }));
+  if (typeof background.decode === "function") await background.decode().catch(() => undefined);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1000;
+  canvas.height = 685;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Imeshindikana kuandaa template ya Vodacom.");
+  context.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+  const digitCells = Array.from(element.querySelectorAll<HTMLElement>(".lq-voda-template-number-boxes > span"));
+  const left = 0.069 * canvas.width;
+  const top = 0.391 * canvas.height;
+  const width = 0.879 * canvas.width;
+  const height = 0.187 * canvas.height;
+  const gap = 0.0105 * canvas.width;
+  const cellWidth = (width - gap * Math.max(0, digitCells.length - 1)) / Math.max(1, digitCells.length);
+  context.fillStyle = "#111827";
+  context.font = "900 66px Arial, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  digitCells.forEach((cell, index) => {
+    const value = cell.textContent?.trim();
+    if (value) context.fillText(value, left + index * (cellWidth + gap) + cellWidth / 2, top + height / 2);
+  });
+
+  const name = element.querySelector<HTMLElement>(".lq-voda-template-name")?.textContent?.trim() || "JINA LA BIASHARA";
+  context.textAlign = "left";
+  context.font = "800 41.5px Arial, sans-serif";
+  context.fillText(name, 0.181 * canvas.width + 0.031 * canvas.width, 0.587 * canvas.height + 0.0625 * canvas.height);
+  return canvas;
+}
+
 async function captureArtboard(element: HTMLElement, outputWidthPx = A5_WIDTH_PX, outputHeightPx?: number) {
   await document.fonts?.ready;
+  if (element.classList.contains("lq-voda-template-artboard")) return composeVodacomTemplate(element);
   const width = element.getBoundingClientRect().width;
   if (!width) throw new Error("Hakikisho halijawa tayari.");
 
