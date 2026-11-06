@@ -41,8 +41,8 @@ export default function PrivatePaymentsPage() {
       <div style={{padding:"28px 25px 24px"}}>
         <div style={{fontSize:12,fontWeight:800,letterSpacing:1,color:"#b9f4e3"}}>🔒 MALIPO SALAMA</div>
         <h1 style={{fontSize:30,margin:"13px 0 8px"}}>Fanya Malipo</h1>
-        <p style={{color:"#e0f1f5",lineHeight:1.6,margin:0}}>Lipa kiasi unachohitaji. Baada ya kulipa, utapokea namba ya utambulisho wa muamala wako. Ihifadhi na ulete kwetu ili tuthibitishe malipo kwenye dashboard ya Admin.</p>
-        <div style={{display:"flex",gap:9,flexWrap:"wrap",marginTop:18}}><span style={{background:"#ffffff20",padding:"8px 11px",borderRadius:9,fontSize:12}}>✓ Uthibitisho wa malipo</span><span style={{background:"#ffffff20",padding:"8px 11px",borderRadius:9,fontSize:12}}>✓ Hakuna tokeni</span></div>
+        <p style={{color:"#e0f1f5",lineHeight:1.6,margin:0}}>Baada ya kufanya malipo, utapokea namba ya utambulisho wa muamala wako. Ihifadhi kisha uilete kwetu. Tutaingiza namba hiyo kwenye dashboard ya Admin ili kuthibitisha malipo na kuona taarifa za muamala wako.</p>
+        <div style={{display:"flex",gap:9,flexWrap:"wrap",marginTop:18}}><span style={{background:"#ffffff20",padding:"8px 11px",borderRadius:9,fontSize:12}}>✓ Uthibitisho wa malipo</span></div>
       </div>
       <div style={{background:"#fff",color:"#17344b",padding:"24px 22px"}}>
       {!orderId && <>
@@ -62,7 +62,7 @@ export default function PrivatePaymentsPage() {
       {message && <p role="status" style={{padding:12,borderRadius:10,background:"#fff7e8",color:"#79591e",fontSize:13}}>{message}</p>}
       </div>
     </section>
-    <p style={{textAlign:"center",fontSize:12,color:"#7a8b99",marginTop:16}}>Malipo hayaongezi tokeni. Namba ya utambulisho hutolewa baada ya malipo kuthibitishwa.</p>
+    <p style={{textAlign:"center",fontSize:12,color:"#7a8b99",marginTop:16}}>Hakikisha unahifadhi namba ya utambulisho utakayopewa baada ya malipo kuthibitishwa.</p>
   </main>;
 }
 
@@ -70,5 +70,5 @@ export function PrivatePaymentsAdminPage() {
  const {isAuthenticated}=useAuth(); const [code,setCode]=useState(""); const [result,setResult]=useState<any>(null); const [message,setMessage]=useState(""); const [busy,setBusy]=useState(false);
  const lookup=async()=>{setBusy(true);setMessage("");try{const r=await adminLookupPrivateFimipayPayment(code);setResult(r);if(!r.found)setMessage("Namba haijapatikana.");}catch(e){setMessage(e instanceof Error?e.message:"Imeshindikana.");}finally{setBusy(false);}};
  if(!isAuthenticated)return <main className="portal-main">Ingia kwanza.</main>;
- return <main className="portal-main" style={{maxWidth:650,margin:"0 auto"}}><h1>Malipo Binafsi</h1><p>Thibitisha namba ya utambulisho ya mteja.</p><input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="SSP-XXXXXXXXXX"/><button className="button button--green" disabled={busy||!code} onClick={()=>void lookup()}>{busy?"INATAFUTA...":"THIBITISHA"}</button>{message&&<p>{message}</p>}{result?.found&&<section className="license-form-card"><h2>Malipo yamethibitishwa</h2><p>Namba: {result.confirmation_code}</p><p>Kiasi: TSh {Number(result.amount).toLocaleString("en-US")}</p><p>Simu: {result.buyer_phone}</p><p>Rejea ya malipo: {result.order_id}</p><p>Muamala: {result.provider_transaction_id||"—"}</p><b>HAKUNA TOKENI ZILIZOTOLEWA</b></section>}</main>;
+ return <main className="portal-main" style={{maxWidth:650,margin:"0 auto"}}><h1>Malipo Binafsi</h1><p>Thibitisha namba ya utambulisho ya mteja.</p><input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="SSP-XXXXXXXXXX"/><button className="button button--green" disabled={busy||!code} onClick={()=>void lookup()}>{busy?"INATAFUTA...":"THIBITISHA"}</button>{message&&<p>{message}</p>}{result?.found&&<section className="license-form-card"><h2>Malipo yamethibitishwa</h2><p>Namba: {result.confirmation_code}</p><p>Kiasi: TSh {Number(result.amount).toLocaleString("en-US")}</p><p>Simu: {result.buyer_phone}</p><p>Rejea ya malipo: {result.order_id}</p><p>Namba ya muamala: {result.provider_transaction_id||"—"}</p><b>HAKUNA TOKENI ZILIZOTOLEWA</b></section>}</main>;
 }
