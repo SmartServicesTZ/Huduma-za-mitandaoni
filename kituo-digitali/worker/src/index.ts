@@ -54,7 +54,7 @@ const callableRoutes: Record<string, CallableRoute> = {
   generateBusinessLicense, getLipaApplicationDocument, getServiceApplicationDocument,
   listAdminUsers, listServiceApplications, listServiceApplicationsPage, getAdminApplicationCounts, replyToLipaApplication, replyToServiceApplication,
   listLipaApplications, listLipaApplicationsPage, markLipaApplicationViewed, markServiceApplicationViewed, reserveBusinessLicenseNumber,
-  resetUserPassword, seedServiceCatalog, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
+  resetUserPassword, seedServiceCatalog, sendRegistrationWelcome, setAccountStatus, setHomepageServiceOrder, setLipaApplicationStatus,
   setServiceApplicationStatus, setServiceLock, submitLipaApplication, updateLipaApplication, syncAuthClaims, updateUserAccess, updateLipaRewardTracking, verifyUser,
 };
 function allowedOrigins(env: Env) {
