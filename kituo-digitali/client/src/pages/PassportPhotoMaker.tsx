@@ -14,7 +14,7 @@ export default function PassportPhotoMaker() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
-  const processPhoto = async (file?: File) => {
+  const processPhoto = async (file?: File, selectedBackground = background) => {
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setError("Chagua picha ya JPG, PNG au WebP.");
@@ -86,7 +86,7 @@ export default function PassportPhotoMaker() {
       output.height = PHOTO_H;
       const outputContext = output.getContext("2d");
       if (!outputContext) throw new Error("Imeshindikana kuandaa picha ya mwisho.");
-      outputContext.fillStyle = background === "transparent" ? "rgba(0,0,0,0)" : background;
+      outputContext.fillStyle = selectedBackground === "transparent" ? "rgba(0,0,0,0)" : selectedBackground;
       outputContext.fillRect(0, 0, PHOTO_W, PHOTO_H);
       outputContext.drawImage(inputCanvas, sx, sy, cropW, cropH, 0, 0, PHOTO_W, PHOTO_H);
       const blob = await new Promise<Blob>((resolve, reject) => output.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kuhifadhi PNG.")), "image/png"));
@@ -120,7 +120,7 @@ export default function PassportPhotoMaker() {
     </label>
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
       <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700 }}>Rangi ya background
-        <select value={background} disabled={busy} onChange={(e) => setBackground(e.target.value)} style={{ padding: 8, border: "1px solid #cbd5e1", borderRadius: 8, background: "#fff" }}>
+        <select value={background} disabled={busy} onChange={(e) => { const nextBackground = e.target.value; setBackground(nextBackground); const selectedFile = inputRef.current?.files?.[0]; if (selectedFile) void processPhoto(selectedFile, nextBackground); }} style={{ padding: 8, border: "1px solid #cbd5e1", borderRadius: 8, background: "#fff" }}>
           <option value="#ffffff">Nyeupe</option><option value="#dbeafe">Bluu hafifu</option><option value="#2563eb">Bluu</option><option value="#dcfce7">Kijani hafifu</option><option value="transparent">Transparent</option>
         </select>
       </label>
