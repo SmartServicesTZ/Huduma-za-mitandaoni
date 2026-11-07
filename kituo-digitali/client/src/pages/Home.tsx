@@ -1130,7 +1130,7 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     services: <ServiceGrid title="HUDUMA ZA WAKALA" services={main} onUse={onUse} />,
     locked: null,
     special: null,
-    tools: (category === "Zote" || category === "HUDUMA ZINGINE") ? <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>HUDUMA ZINGINE</h2></div><span className="section-count">{other.length + specialServices.length + 1}</span></div><div className="portal-service-grid">{other.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}<button type="button" className="portal-service-card" onClick={() => navigate("/nida-soft-copy")} style={{ textAlign: "left", cursor: "pointer", border: "1px solid #c4b5fd", background: "linear-gradient(135deg,#f5f3ff,#fff)" }}><span className="portal-service-card__icon" style={{ color: "#7c3aed" }}>✦</span><span className="portal-service-card__title">NIDA SOFT COPY</span><span className="portal-service-card__description">Tengeneza NIDA SOFT COPY kwa kujaza taarifa zako.</span><span className="portal-service-card__action">Fungua NIDA SOFT COPY <ChevronRight size={15} /></span></button></div><SpecialSection /></section> : null,
+    tools: (category === "Zote" || category === "HUDUMA ZINGINE") ? <section className="portal-section"><div className="section-title"><div><span className="overline">Mkusanyiko wa huduma</span><h2>HUDUMA ZINGINE</h2></div><span className="section-count">{other.length + specialServices.length}</span></div><div className="portal-service-grid">{other.map((service) => <ServiceCard key={service.slug} service={service} onUse={onUse} />)}</div><SpecialSection /></section> : null,
     tutorials: null,
   };
   const orderedSections = completeOrder([...defaultHomepageSectionOrder], homepageSectionOrder);
@@ -1145,6 +1145,8 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
     {!allServicesPage && <TokenPaymentAd onClick={() => { if (isAuthenticated) navigate("/tokens"); else window.dispatchEvent(new CustomEvent("smartservicestz-open-auth")); }} />}
 
     {allServicesPage && <TokenCard />}
+
+    {!allServicesPage && <section className="portal-section nida-soft-copy-feature" aria-label="NIDA SOFT COPY"><div className="portal-service-grid"><button type="button" className="portal-service-card" onClick={() => navigate("/nida-soft-copy")} style={{ textAlign: "left", cursor: "pointer", border: "1px solid #c4b5fd", background: "linear-gradient(135deg,#f5f3ff,#fff)" }}><span className="portal-service-card__icon" style={{ color: "#7c3aed", fontSize: 27 }}>🪪</span><span className="portal-service-card__title">NIDA SOFT COPY</span><span className="portal-service-card__description">Tengeneza NIDA SOFT COPY kwa kujaza taarifa zako.</span><span className="portal-service-card__action">Fungua NIDA SOFT COPY <ChevronRight size={15} /></span></button></div></section>}
 
     {!allServicesPage && <section className="home-category-panel" aria-label="Chagua kundi la huduma">
       <div className="home-category-panel__heading"><div><span className="overline">ANZA HAPA</span><h2>Unatafuta huduma gani?</h2></div><span>{matches.length} matokeo</span></div>
