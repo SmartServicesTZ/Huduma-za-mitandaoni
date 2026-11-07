@@ -50,8 +50,8 @@ describe("service lock overrides", () => {
     expect(isServiceLocked("leseni-biashara", undefined, true)).toBe(true);
   });
 
-  it("keeps the four requested tools locked until an administrator explicitly unlocks them", () => {
-    for (const slug of ["soft-copy-nida", "mpiga-kura", "brela", "edu-halotel"]) {
+  it("keeps the remaining restricted tools locked until an administrator explicitly unlocks them", () => {
+    for (const slug of ["mpiga-kura", "brela", "edu-halotel"]) {
       expect(defaultLockedServiceSlugs.has(slug)).toBe(true);
       expect(isServiceLocked(slug, undefined)).toBe(true);
       expect(isServiceLocked(slug, false)).toBe(false);
