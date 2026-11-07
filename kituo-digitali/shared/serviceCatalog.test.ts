@@ -34,10 +34,9 @@ describe("legacy service catalogue migration fallback", () => {
       "access-lipa-number",
       "pata-pocket-wifi-mabando",
       "pata-till-mitandao-yote",
-      "soft-copy-nida",
       "stika-lipa",
       "edu-halotel",
-      "dada", // DADA is intentionally kept available as a standalone portal tool.
+      "dada", // NIDA SOFT COPY is the renamed standalone portal tool.
     ]);
   });
 
