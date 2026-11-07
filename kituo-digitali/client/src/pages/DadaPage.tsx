@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, Eraser, BadgeCheck, ClipboardList, UserRound, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import JsBarcode from "jsbarcode";
-import { removeBackground } from "@imgly/background-removal";
+import { removePhotoBackground } from "../lib/removePhotoBackground";
 
 type Side = "front" | "back";
 const WIDTH = 1000;
@@ -130,7 +130,7 @@ export default function DadaPage() {
     setSignatureImage(null);
   }
 
-  // Kupakia picha na kuondoa background moja kwa moja kwa kutumia @imgly/background-removal
+  // Kupakia picha na kuondoa background moja kwa moja kwa kutumia AI background removal
   async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -140,7 +140,7 @@ export default function DadaPage() {
     setMessage("Inaondoa background... subiri kidogo.");
 
     try {
-      const blob = await removeBackground(originalUrl);
+      const blob = await removePhotoBackground(file);
       const bgRemovedUrl = URL.createObjectURL(blob);
 
       const img = new Image();
