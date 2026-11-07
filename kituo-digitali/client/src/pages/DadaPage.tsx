@@ -11,8 +11,8 @@ const HEIGHT = 630;
 // Picha zinachukuliwa kwenye kituo-digitali/client/public/
 // BASE_URL huhakikisha zinafunguka pia kwenye GitHub Pages ya /Huduma-za-mitandaoni/.
 const TEMPLATE_URLS: Record<Side, string> = {
-  front: `${import.meta.env.BASE_URL}Dada.png`,
-  back: `${import.meta.env.BASE_URL}Kaka.png`,
+  front: `${import.meta.env.BASE_URL}id-mbele.png`,
+  back: `${import.meta.env.BASE_URL}id-nyuma.png`,
 };
 
 /*
