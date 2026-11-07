@@ -1,29 +1,6 @@
 import { useRef, useState } from "react";
 import { Download, ImagePlus, LoaderCircle, Sparkles } from "lucide-react";
-
-declare global {
-  interface Window { SelfieSegmentation?: any; }
-}
-
-let mediapipePromise: Promise<any> | null = null;
-
-function loadSelfieSegmentation() {
-  if (window.SelfieSegmentation) return Promise.resolve(window.SelfieSegmentation);
-  if (!mediapipePromise) {
-    mediapipePromise = new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
-      script.async = true;
-      script.onload = () => window.SelfieSegmentation ? resolve(window.SelfieSegmentation) : reject(new Error("AI ya kuondoa background haikupakia."));
-      script.onerror = () => reject(new Error("Imeshindikana kupakua mfumo wa AI. Angalia intaneti ujaribu tena."));
-      document.head.appendChild(script);
-    }).catch((error) => {
-      mediapipePromise = null;
-      throw error;
-    });
-  }
-  return mediapipePromise;
-}
+import { removePhotoBackground } from "../lib/removePhotoBackground";
 
 const PHOTO_W = 413;
 const PHOTO_H = 531;
@@ -57,63 +34,36 @@ export default function PassportPhotoMaker() {
     setResultUrl("");
 
     try {
-      const Segmentation = await loadSelfieSegmentation();
-      const image = new Image();
-      image.src = originalUrl;
+      setStatus("AI inaondoa background ya picha...");
+      const cutoutBlob = await removePhotoBackground(file);
+      const cutoutUrl = URL.createObjectURL(cutoutBlob);
+      const cutoutImage = new Image();
+      cutoutImage.src = cutoutUrl;
       await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve();
-        image.onerror = () => reject(new Error("Picha haijasomeka. Chagua picha nyingine."));
+        cutoutImage.onload = () => resolve();
+        cutoutImage.onerror = () => reject(new Error("Picha iliyosafishwa haijasomeka."));
       });
-
-      const scale = Math.min(1, 1400 / Math.max(image.naturalWidth, image.naturalHeight));
-      const width = Math.max(1, Math.round(image.naturalWidth * scale));
-      const height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const width = cutoutImage.naturalWidth;
+      const height = cutoutImage.naturalHeight;
       const inputCanvas = document.createElement("canvas");
       inputCanvas.width = width;
       inputCanvas.height = height;
       const inputContext = inputCanvas.getContext("2d", { willReadFrequently: true });
-      if (!inputContext) throw new Error("Imeshindikana kusoma picha.");
-      inputContext.drawImage(image, 0, 0, width, height);
-
-      const maskCanvas = document.createElement("canvas");
-      maskCanvas.width = width;
-      maskCanvas.height = height;
-      const maskContext = maskCanvas.getContext("2d", { willReadFrequently: true });
-      if (!maskContext) throw new Error("Imeshindikana kuandaa picha.");
-
-      setStatus("AI inaondoa background ya picha...");
-      const segmenter = new Segmentation({ locateFile: (fileName: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${fileName}` });
-      segmenter.setOptions({ modelSelection: 1 });
-      const maskPromise = new Promise<void>((resolve, reject) => {
-        segmenter.onResults((results: any) => {
-          try {
-            maskContext.clearRect(0, 0, width, height);
-            maskContext.drawImage(results.segmentationMask, 0, 0, width, height);
-            resolve();
-          } catch (e) { reject(e); }
-        });
-      });
-      await segmenter.send({ image: inputCanvas });
-      await maskPromise;
-      if (typeof segmenter.close === "function") segmenter.close();
-
-      const originalPixels = inputContext.getImageData(0, 0, width, height);
-      const maskPixels = maskContext.getImageData(0, 0, width, height);
+      if (!inputContext) throw new Error("Imeshindikana kuandaa picha.");
+      inputContext.drawImage(cutoutImage, 0, 0, width, height);
+      URL.revokeObjectURL(cutoutUrl);
+      const pixels = inputContext.getImageData(0, 0, width, height);
       let minX = width, minY = height, maxX = -1, maxY = -1;
       for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
           const i = (y * width + x) * 4;
-          const alpha = maskPixels.data[i];
-          originalPixels.data[i + 3] = alpha;
-          if (alpha > 48) {
+          if (pixels.data[i + 3] > 48) {
             minX = Math.min(minX, x); minY = Math.min(minY, y);
             maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
           }
         }
       }
       if (maxX < minX || maxY < minY) throw new Error("AI haikuona mtu kwenye picha. Tumia picha inayoonyesha uso na mabega vizuri.");
-      inputContext.putImageData(originalPixels, 0, 0);
-
       const subjectW = maxX - minX + 1;
       const subjectH = maxY - minY + 1;
       const padX = subjectW * 0.12;
