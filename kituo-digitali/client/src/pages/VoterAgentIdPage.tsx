@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, ImagePlus, RotateCcw, ShieldAlert } from "lucide-react";
 import { useLocation } from "wouter";
+import PassportPhotoMaker from "./PassportPhotoMaker";
 
 type CardFields = {
   fullName: string;
@@ -244,6 +245,7 @@ export default function VoterAgentIdPage() {
         </div>
         {error && <p role="alert" style={{ color: "#b91c1c", fontSize: 13, marginBottom: 0 }}>{error}</p>}
       </section>
+      <PassportPhotoMaker />
       <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} style={{ display: "none" }} />
     </main>
   );
