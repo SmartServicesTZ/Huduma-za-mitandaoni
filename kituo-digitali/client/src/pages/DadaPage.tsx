@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download, Eraser, BadgeCheck, ClipboardList, UserRound, Hash, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, Eraser, BadgeCheck, ClipboardList, UserRound, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import JsBarcode from "jsbarcode";
+import { removeBackground } from "@imgly/background-removal";
 
 type Side = "front" | "back";
 const WIDTH = 1000;
@@ -129,30 +130,36 @@ export default function DadaPage() {
     setSignatureImage(null);
   }
 
-  function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  // Kupakia picha na kuondoa background moja kwa moja kwa kutumia @imgly/background-removal
+  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
+
+    const originalUrl = URL.createObjectURL(file);
+    setIsRemovingBg(true);
+    setMessage("Inaondoa background... subiri kidogo.");
+
+    try {
+      const blob = await removeBackground(originalUrl);
+      const bgRemovedUrl = URL.createObjectURL(blob);
+
+      const img = new Image();
+      img.onload = () => {
+        setPortraitImage(img);
+        setIsRemovingBg(false);
+        setMessage("Background imeondolewa kikamilifu!");
+      };
+      img.src = bgRemovedUrl;
+    } catch (err) {
+      console.error(err);
+      setIsRemovingBg(false);
+      setMessage("Imeshindikana kuondoa background. Inatumia picha ya kawaida.");
+      
+      // Fallback: Tumia picha ya kawaida kama background removal ikisumbua
       const img = new Image();
       img.onload = () => setPortraitImage(img);
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function removeBackground() {
-    if (!portraitImage) {
-      alert("Tafadhali pakia picha ya kwanza!");
-      return;
+      img.src = originalUrl;
     }
-    setIsRemovingBg(true);
-    setMessage("Inaondoa background ya picha...");
-
-    setTimeout(() => {
-      setIsRemovingBg(false);
-      setMessage("Background imeondolewa kikamilifu!");
-    }, 1500);
   }
 
   function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
@@ -190,7 +197,7 @@ export default function DadaPage() {
         context.fillText(gender.toUpperCase(), 170, 452, 100);
       }
 
-      // UWIANO SAHIHI WA PICHA YA PASIPOTI (Imeboreshwa ikae sawa na picha za vielelezo)
+      // Ukubwa sahihi wa picha ya pasipoti (Bust shot) kwenye kadi
       const photoBox = { x: 585, y: 260, width: 330, height: 320 };
       if (portraitImage) {
         context.drawImage(portraitImage, photoBox.x, photoBox.y, photoBox.width, photoBox.height);
@@ -285,12 +292,10 @@ export default function DadaPage() {
 
         <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
           <label style={field}>
-            <span>Picha ya Uso & Ondoa Background</span>
-            <div style={{display: "flex", gap: 8}}>
+            <span>Picha ya Uso (Inaondoa background yenyewe)</span>
+            <div style={{display: "flex", gap: 8, alignItems: "center"}}>
               <input style={{...input, padding: "6px", flex: 1}} type="file" accept="image/*" onChange={handlePhotoUpload} />
-              <button type="button" onClick={removeBackground} disabled={isRemovingBg} className="button button--secondary" style={{fontSize: 12, padding: "0 12px", borderRadius: 10, display: "flex", gap: 4, alignItems: "center", whiteSpace: "nowrap"}}>
-                <Sparkles size={14} color="#2563eb" /> {isRemovingBg ? "Inasafisha..." : "Ondoa Background"}
-              </button>
+              {isRemovingBg && <span style={{fontSize: 12, color: "#2563eb", display: "flex", alignItems: "center", gap: 4}}><Sparkles size={14} /> Inasafisha...</span>}
             </div>
           </label>
           
@@ -345,5 +350,4 @@ export default function DadaPage() {
       <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
-                           }
-                                                                                                               
+                                                 }
