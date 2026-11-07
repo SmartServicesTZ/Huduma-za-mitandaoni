@@ -52,6 +52,8 @@ export default function NidaTemplatePage() {
   const [frontTemplate, setFrontTemplate] = useState<HTMLImageElement | null>(null);
   const [backTemplate, setBackTemplate] = useState<HTMLImageElement | null>(null);
   const [portraitImage, setPortraitImage] = useState<HTMLImageElement | null>(null);
+  const [portraitFile, setPortraitFile] = useState<File | Blob | null>(null);
+  const portraitObjectUrl = useRef<string | null>(null);
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState("");
@@ -62,6 +64,7 @@ export default function NidaTemplatePage() {
   const [phone, setPhone] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [message, setMessage] = useState("Inapakia templates za kitambulisho...");
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
 
   const cleanNida = nida.replace(/\D/g, "").slice(0, 20);
@@ -81,6 +84,10 @@ export default function NidaTemplatePage() {
         : "Templates hazikupatikana. Hakikisha id-mbele.png na id-nyuma.png zipo kwenye public folda.");
     });
     return () => { active = false; };
+  }, []);
+
+  useEffect(() => () => {
+    if (portraitObjectUrl.current) URL.revokeObjectURL(portraitObjectUrl.current);
   }, []);
 
   // Signature Pad Handlers
@@ -137,6 +144,11 @@ export default function NidaTemplatePage() {
   function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (portraitObjectUrl.current) {
+      URL.revokeObjectURL(portraitObjectUrl.current);
+      portraitObjectUrl.current = null;
+    }
+    setPortraitFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
@@ -144,6 +156,33 @@ export default function NidaTemplatePage() {
       img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
+  }
+
+  async function removeBackground() {
+    if (!portraitFile) {
+      setMessage("Tafadhali pakia picha ya uso kwanza.");
+      return;
+    }
+    setMessage("Inaondoa background kwenye kifaa chako. Mara ya kwanza inaweza kuchukua muda kupakua model...");
+    setIsRemovingBg(true);
+    try {
+      const { removeBackground: removeImageBackground } = await import("@imgly/background-removal");
+      const transparentBlob = await removeImageBackground(portraitFile, {
+        model: "isnet_quint8",
+        output: { format: "image/png" },
+      });
+      const objectUrl = URL.createObjectURL(transparentBlob);
+      const image = await loadImage(objectUrl);
+      if (portraitObjectUrl.current) URL.revokeObjectURL(portraitObjectUrl.current);
+      portraitObjectUrl.current = objectUrl;
+      setPortraitFile(transparentBlob);
+      setPortraitImage(image);
+      setMessage("Background imeondolewa kikamilifu. Picha ya mtu pekee itaonekana kwenye kitambulisho.");
+    } catch (error) {
+      setMessage(error instanceof Error ? `Imeshindikana kuondoa background: ${error.message}` : "Imeshindikana kuondoa background. Jaribu picha nyingine.");
+    } finally {
+      setIsRemovingBg(false);
+    }
   }
 
   function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
@@ -294,6 +333,10 @@ export default function NidaTemplatePage() {
           <div style={{marginTop:16}}>
             <label style={field}>Picha ya Uso (Passport Size)</label>
             <input style={{...input, padding: "10px"}} type="file" accept="image/*" onChange={handlePhotoUpload} />
+            <button type="button" onClick={removeBackground} disabled={!portraitFile || isRemovingBg} className="button button--secondary" style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 8 }}>
+              {isRemovingBg ? "Inaondoa background..." : "Ondoa background ya picha"}
+            </button>
+            <p style={{ margin: "8px 0 0", fontSize: 11, color: "#64748b" }}>Usindikaji unafanyika kwenye kifaa chako; picha haitumwi kwenye server.</p>
           </div>
 
           <div style={{marginTop:18}}>
