@@ -1104,13 +1104,14 @@ function PortalHome({ search, onUse, services, userName, isAuthenticated, allSer
   }, []);
   const displayedServices = orderByIds(services.filter((service) => service.active !== false && service.isVisible !== false).sort((a: any, b: any) => Number(a.order ?? 9999) - Number(b.order ?? 9999)).map((service) => {
     const override = serviceLockOverrides[service.slug];
-    // STIKA ZA LIPA: hali ya wazi iliyohifadhiwa na Admin kwenye serviceLocks
-    // ndiyo mamlaka. Usirithi "locked" ya cache/catalog ya zamani kwa watumiaji.
-    const recordLocked = service.slug === "stika-lipa" ? service.isLocked === true : service.kind === "locked";
+    // STIKA ZA LIPA na MPIGA KURA: hali ya Admin kwenye serviceLocks ndiyo mamlaka.
+    // Usirithi "locked" ya cache/catalog ya zamani kwa watumiaji.
+    const adminControlledLock = ["stika-lipa", "mpiga-kura"].includes(service.slug);
+    const recordLocked = adminControlledLock ? service.isLocked === true : service.kind === "locked";
     if (isServiceLocked(service.slug, override, recordLocked)) return { ...service, kind: "locked" as const, description: service.maintenanceMessage || "Huduma hii inafanyiwa maboresho kwa sasa. Jaribu tena baadaye." };
     // Admin akifungua huduma, override=false lazima iondoe pia kind="locked"
     // iliyobaki kwenye catalog ya zamani; vinginevyo kadi huendelea kuonekana imefungwa.
-    if (override === false && (service.kind === "locked" || service.slug === "stika-lipa")) return { ...service, kind: Number(service.tokenCost ?? 0) <= 0 ? "free" as const : "paid" as const };
+    if (override === false && (service.kind === "locked" || adminControlledLock)) return { ...service, kind: Number(service.tokenCost ?? 0) <= 0 ? "free" as const : "paid" as const };
     return service;
   }), serviceOrder);
   const lower = search.toLowerCase();
