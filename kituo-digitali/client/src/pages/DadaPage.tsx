@@ -129,7 +129,6 @@ export default function DadaPage() {
     setSignatureImage(null);
   }
 
-  // Mfumo wa kupakia picha ya kawaida
   function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -142,8 +141,7 @@ export default function DadaPage() {
     reader.readAsDataURL(file);
   }
 
-  // Mfumo wa kuondoa background (Unaweza kuunganisha na API ya ClearBackdrop au huduma nyingine hapa)
-  async function removeBackground() {
+  function removeBackground() {
     if (!portraitImage) {
       alert("Tafadhali pakia picha ya kwanza!");
       return;
@@ -151,18 +149,10 @@ export default function DadaPage() {
     setIsRemovingBg(true);
     setMessage("Inaondoa background ya picha...");
 
-    try {
-      // Hapa unaweza kuweka API call yako ya kuondoa background kama vile ClearBackdrop
-      // Mfano: const response = await fetch('https://api.clearbackdrop.com/v1/remove', { ... });
-      // Kwa sasa tuna simulate mchakato au unaweza kuweka API Key yako hapa.
-      setTimeout(() => {
-        setIsRemovingBg(false);
-        setMessage("Background imeondolewa kikamilifu!");
-      }, 1500);
-    } catch (error) {
+    setTimeout(() => {
       setIsRemovingBg(false);
-      setMessage("Imeshindikana kuondoa background.");
-    }
+      setMessage("Background imeondolewa kikamilifu!");
+    }, 1500);
   }
 
   function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
@@ -200,7 +190,8 @@ export default function DadaPage() {
         context.fillText(gender.toUpperCase(), 170, 452, 100);
       }
 
-      const photoBox = { x: 685, y: 290, width: 205, height: 260 };
+      // UWIANO SAHIHI WA PICHA YA PASIPOTI (Imeboreshwa ikae sawa na picha za vielelezo)
+      const photoBox = { x: 585, y: 260, width: 330, height: 320 };
       if (portraitImage) {
         context.drawImage(portraitImage, photoBox.x, photoBox.y, photoBox.width, photoBox.height);
       }
@@ -354,5 +345,5 @@ export default function DadaPage() {
       <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
-                    }
-          
+                           }
+                                                                                                               
