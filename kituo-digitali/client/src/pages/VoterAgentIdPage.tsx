@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, ImagePlus, RotateCcw, ShieldAlert } from "lucide-react";
 import { useLocation } from "wouter";
 import PassportPhotoMaker from "./PassportPhotoMaker";
@@ -170,6 +170,10 @@ export default function VoterAgentIdPage() {
     ctx.restore();
   };
 
+  useEffect(() => {
+    drawCard();
+  }, [fields, photoImage, reference]);
+
   const downloadPng = async () => {
     if (!fields.fullName.trim() || !fields.party.trim() || !fields.station.trim() || !fields.ward.trim() || !fields.constituency.trim() || !fields.region.trim() || !fields.phone.trim() || !photoImage) {
       setError("Jaza taarifa zote na pakia picha ya wakala kabla ya kutengeneza PNG.");
@@ -246,7 +250,14 @@ export default function VoterAgentIdPage() {
         {error && <p role="alert" style={{ color: "#b91c1c", fontSize: 13, marginBottom: 0 }}>{error}</p>}
       </section>
       <PassportPhotoMaker />
-      <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} style={{ display: "none" }} />
+      <section style={{ background: "#fff", border: "1px solid #dbe4ee", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          <h2 style={{ margin: 0, fontSize: 17 }}>Live Preview — Kitambulisho cha Wakala</h2>
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#0f766e", background: "#ccfbf1", borderRadius: 20, padding: "5px 9px" }}>HUBADILIKA MOJA KWA MOJA</span>
+        </div>
+        <p style={{ margin: "0 0 10px", color: "#64748b", fontSize: 12 }}>Muonekano huu unasasishwa unapoandika taarifa au kubadilisha picha.</p>
+        <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} aria-label="Live preview ya mfano wa kitambulisho cha wakala" style={{ display: "block", width: "100%", height: "auto", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f1f5f9" }} />
+      </section>
     </main>
   );
 }
