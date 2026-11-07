@@ -1,48 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Eraser } from "lucide-react";
 import { useLocation } from "wouter";
 
 type Side = "front" | "back";
-type Field = "name1" | "name2" | "name3" | "nida" | "birthDate" | "gender";
-type Position = { x: number; y: number; size: number };
-
 const WIDTH = 1000;
 const HEIGHT = 630;
 
-// Inachukua templates kutoka kwenye public folda au repo yako
 const TEMPLATE_URLS: Record<Side, string> = {
   front: `${import.meta.env.BASE_URL}id-mbele.png`,
   back: `${import.meta.env.BASE_URL}id-nyuma.png`,
-};
-
-// Nafasi na ukubwa wa maandishi kwenye canvas kwa kila upande
-const TEXT_POSITIONS: Record<Side, Partial<Record<Field, Position>>> = {
-  front: {
-    name1: { x: 190, y: 272, size: 28 },
-    name2: { x: 190, y: 326, size: 28 },
-    name3: { x: 290, y: 326, size: 28 },
-    nida: { x: 70, y: 215, size: 44 },
-    birthDate: { x: 430, y: 394, size: 28 },
-    gender: { x: 170, y: 452, size: 28 },
-  },
-  back: {
-    nida: { x: 500, y: 200, size: 38 }, // Sehemu ya namba nyuma ya kadi kama ipo kwenye template
-  },
-};
-
-const FIELD_LABELS: Record<Field, string> = {
-  name1: "Jina la Kwanza",
-  name2: "Jina la Kati",
-  name3: "Jina la Mwisho",
-  nida: "Namba ya NIDA",
-  birthDate: "Tarehe ya Kuzaliwa",
-  gender: "Jinsia",
 };
 
 function formatNida(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 20);
   return [digits.slice(0, 8), digits.slice(8, 13), digits.slice(13, 18), digits.slice(18, 20)]
     .filter(Boolean).join("-");
+}
+
+// Inasoma tarakimu 8 za mwanzo za NIDA na kutengeneza tarehe (Mfano: 05 JUN 2000)
+function parseDateFromNida(nidaVal: string): string {
+  const clean = nidaVal.replace(/\D/g, "");
+  if (clean.length < 8) return "";
+  
+  const year = clean.slice(0, 4);
+  const monthNum = parseInt(clean.slice(4, 6), 10);
+  const day = clean.slice(6, 8);
+
+  const months = ["", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const monthStr = months[monthNum] || "JAN";
+
+  return `${day} ${monthStr} ${year}`;
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -59,27 +46,23 @@ export default function NidaTemplatePage() {
   const [, navigate] = useLocation();
   const frontCanvas = useRef<HTMLCanvasElement>(null);
   const backCanvas = useRef<HTMLCanvasElement>(null);
+  const signatureCanvas = useRef<HTMLCanvasElement>(null);
   
   const [frontTemplate, setFrontTemplate] = useState<HTMLImageElement | null>(null);
   const [backTemplate, setBackTemplate] = useState<HTMLImageElement | null>(null);
   const [portraitImage, setPortraitImage] = useState<HTMLImageElement | null>(null);
+  const [signatureImage, setSignatureImage] = useState<string | null>(null);
   
   const [message, setMessage] = useState("Inapakia template za kitambulisho...");
-  const [name1, setName1] = useState("");
-  const [name2, setName2] = useState("");
-  const [name3, setName3] = useState("");
+  const [firstNameMiddle, setFirstNameMiddle] = useState("");
+  const [lastName, setLastName] = useState("");
   const [nida, setNida] = useState("");
-  const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
 
-  const values = useMemo<Record<Field, string>>(() => ({
-    name1: name1.toUpperCase(),
-    name2: name2.toUpperCase(),
-    name3: name3.toUpperCase(),
-    nida: formatNida(nida),
-    birthDate: birthDate ? birthDate.toUpperCase() : "",
-    gender: gender.toUpperCase(),
-  }), [name1, name2, name3, nida, birthDate, gender]);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const formattedNida = useMemo(() => formatNida(nida), [nida]);
+  const calculatedBirthDate = useMemo(() => parseDateFromNida(nida), [nida]);
 
   // Kupakia templates za id-mbele.png na id-nyuma.png
   useEffect(() => {
@@ -95,7 +78,58 @@ export default function NidaTemplatePage() {
     return () => { active = false; };
   }, []);
 
-  // Kupakia picha ya uso (Passport size)
+  // Signature Pad Handlers
+  useEffect(() => {
+    const canvas = signatureCanvas.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+  }, []);
+
+  function startDrawing(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
+    setIsDrawing(true);
+    drawSignature(e);
+  }
+
+  function stopDrawing() {
+    setIsDrawing(false);
+    const canvas = signatureCanvas.current;
+    if (canvas) {
+      setSignatureImage(canvas.toDataURL("image/png"));
+    }
+  }
+
+  function drawSignature(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
+    if (!isDrawing) return;
+    const canvas = signatureCanvas.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = ("touches" in e ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = ("touches" in e ? e.touches[0].clientY : e.clientY) - rect.top;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  function clearSignature() {
+    const canvas = signatureCanvas.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    setSignatureImage(null);
+  }
+
+  // Kupakia picha ya uso
   function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -108,44 +142,69 @@ export default function NidaTemplatePage() {
     reader.readAsDataURL(file);
   }
 
-  // Kuchora taarifa kwenye Canvas kutumia template halisi
+  // Kuchora kwenye Canvas
   function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
     context.clearRect(0, 0, WIDTH, HEIGHT);
     if (!template) return;
 
-    // 1. Chora template tupu kama msingi
     context.drawImage(template, 0, 0, WIDTH, HEIGHT);
+    context.fillStyle = "#000000";
 
-    // 2. Chora maandishi ya fomu kwenye upande wa mbele
     if (side === "front") {
-      context.fillStyle = "#000000";
-      
-      (Object.keys(FIELD_LABELS) as Field[]).forEach((field) => {
-        const position = TEXT_POSITIONS.front[field];
-        const value = values[field];
-        if (!position || !value) return;
-        
-        context.font = `bold ${position.size}px Arial`;
-        context.fillText(value, position.x, position.y, 700);
-      });
+      // NIN / Namba ya NIDA Juu
+      if (formattedNida) {
+        context.font = "bold 44px monospace";
+        context.fillText(formattedNida, 70, 215, 900);
+      }
 
-      // Chora Picha ya Uso kwenye eneo lake maalum upande wa mbele
+      // Jina la Kwanza na la Kati (Sehemu 1)
+      if (firstNameMiddle) {
+        context.font = "bold 28px Arial";
+        context.fillText(firstNameMiddle.toUpperCase(), 190, 272, 700);
+      }
+
+      // Jina la Mwisho / Ukoo
+      if (lastName) {
+        context.font = "bold 28px Arial";
+        context.fillText(lastName.toUpperCase(), 290, 326, 600);
+      }
+
+      // Tarehe ya Kuzaliwa (Inajaza yenyewe kutoka NIDA)
+      if (calculatedBirthDate) {
+        context.font = "bold 28px Arial";
+        context.fillText(calculatedBirthDate, 430, 394, 400);
+      }
+
+      // Jinsia
+      if (gender) {
+        context.font = "bold 28px Arial";
+        context.fillText(gender.toUpperCase(), 170, 452, 100);
+      }
+
+      // Picha ya Uso
       const photoBox = { x: 685, y: 290, width: 205, height: 260 };
       if (portraitImage) {
         context.drawImage(portraitImage, photoBox.x, photoBox.y, photoBox.width, photoBox.height);
       }
+
+      // Saini Iliyochorwa
+      if (signatureImage) {
+        const sigImg = new Image();
+        sigImg.onload = () => {
+          context.drawImage(sigImg, 220, 505, 180, 65);
+        };
+        sigImg.src = signatureImage;
+      }
     } 
-    
-    // 3. Chora upande wa nyuma kama kuna taarifa husika
+
     if (side === "back") {
-      const nidaVal = values["nida"];
-      if (nidaVal) {
-        context.fillStyle = "#000000";
+      const cleanNida = formattedNida.replace(/-/g, "");
+      if (cleanNida) {
         context.font = "bold 38px monospace";
         context.textAlign = "center";
-        context.fillText(nidaVal.replace(/-/g, ""), 500, 200);
+        context.fillText(cleanNida, 500, 215); // Imepandishwa juu kidogo kama ulivyoomba
       }
     }
   }
@@ -153,7 +212,7 @@ export default function NidaTemplatePage() {
   useEffect(() => {
     draw(frontCanvas.current, frontTemplate, "front");
     draw(backCanvas.current, backTemplate, "back");
-  }, [frontTemplate, backTemplate, values, portraitImage]);
+  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage]);
 
   function download(side: Side) {
     const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
@@ -179,47 +238,64 @@ export default function NidaTemplatePage() {
       <header style={{ marginBottom: 22 }}>
         <span style={{ color: "#059669", fontSize: 11, fontWeight: 900, letterSpacing: 1.8 }}>WAKALA POINT • JENERETA YA VITAMBULISHO</span>
         <h1 style={{ margin: "6px 0", fontSize: 30 }}>Kitambulisho cha Taifa (NIDA)</h1>
-        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>Jaza taarifa sahihi kwenye fomu ili zijae moja kwa moja kwenye templates za id-mbele.png na id-nyuma.png.</p>
+        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>Jaza taarifa sahihi. Tarehe inajaza yenyewe kutoka kwenye NIDA na unaweza kuchora saini yako.</p>
       </header>
 
       {/* SEHEMU YA 1: MAJINA */}
       <section style={formPanel}>
-        <div style={sectionHeading}><span style={stepBadge}>1</span><div><h2 style={h2}>Taarifa za Majina</h2><p style={subText}>Jaza majina kulingana na maelezo ya kitambulisho.</p></div></div>
+        <div style={sectionHeading}><span style={stepBadge}>1</span><div><h2 style={h2}>Taarifa za Majina</h2><p style={subText}>Jina la kwanza na la kati viwe sehemu moja.</p></div></div>
         <div style={formGrid}>
-          <label style={fieldLabel}>Jina la Kwanza<input className="input" autoComplete="off" value={name1} onChange={(e) => setName1(e.target.value)} placeholder="Mfano: JOSEPH" /></label>
-          <label style={fieldLabel}>Jina la Kati<input className="input" autoComplete="off" value={name2} onChange={(e) => setName2(e.target.value)} placeholder="Mfano: BAKARI" /></label>
-          <label style={fieldLabel}>Jina la Mwisho<input className="input" autoComplete="off" value={name3} onChange={(e) => setName3(e.target.value)} placeholder="Mfano: JUMA" /></label>
+          <label style={fieldLabel}>Jina la Kwanza & la Kati<input className="input" autoComplete="off" value={firstNameMiddle} onChange={(e) => setFirstNameMiddle(e.target.value)} placeholder="Mfano: JOSEPH BAKARI" /></label>
+          <label style={fieldLabel}>Jina la Mwisho / Ukoo<input className="input" autoComplete="off" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Mfano: JUMA" /></label>
         </div>
       </section>
 
       {/* SEHEMU YA 2: NAMBA YA NIDA */}
       <section style={formPanel}>
-        <div style={sectionHeading}><span style={stepBadge}>2</span><div><h2 style={h2}>Namba ya NIDA</h2><p style={subText}>Weka tarakimu 20 za namba ya kitambulisho.</p></div></div>
+        <div style={sectionHeading}><span style={stepBadge}>2</span><div><h2 style={h2}>Namba ya NIDA (Tarehe Inajaza Yenyewe)</h2><p style={subText}>Weka tarakimu 20. Tarehe itajisoma yenyewe hapa chini.</p></div></div>
         <label style={fieldLabel}>Namba ya Kitambulisho (NIN)
-          <input className="input" inputMode="numeric" autoComplete="off" value={formatNida(nida)} maxLength={23}
+          <input className="input" inputMode="numeric" autoComplete="off" value={formattedNida} maxLength={23}
             onChange={(e) => setNida(e.target.value.replace(/\D/g, "").slice(0, 20))}
-            placeholder="20000506-27520-00001-11" style={{ fontVariantNumeric: "tabular-nums", letterSpacing: 1.1 }} />
+            placeholder="19950405-27520-00001-33" style={{ fontVariantNumeric: "tabular-nums", letterSpacing: 1.1 }} />
         </label>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 7, color: "#64748b", fontSize: 12 }}>
-          <span>Muundo: 8-5-5-2</span><strong style={{ color: nidaDigits === 20 ? "#15803d" : "#64748b" }}>{nidaDigits}/20</strong>
+          <span>Tarehe Iliyosomwa: <strong style={{ color: "#059669" }}>{calculatedBirthDate || "Weka NIDA yenye tarakimu 8 za mwanzo"}</strong></span>
+          <strong style={{ color: nidaDigits === 20 ? "#15803d" : "#64748b" }}>{nidaDigits}/20</strong>
         </div>
       </section>
 
-      {/* SEHEMU YA 3: TAREHE, JINSIA NA PICHA */}
+      {/* SEHEMU YA 3: JINSIA NA PICHA */}
       <section style={formPanel}>
-        <div style={sectionHeading}><span style={stepBadge}>3</span><div><h2 style={h2}>Taarifa za Ziada & Picha</h2><p style={subText}>Weka tarehe ya kuzaliwa, jinsia, na pakia picha ya uso.</p></div></div>
+        <div style={sectionHeading}><span style={stepBadge}>3</span><div><h2 style={h2}>Jinsia na Picha ya Uso</h2><p style={subText}>Weka jinsia na pakia picha ya passport size.</p></div></div>
         <div style={formGrid}>
-          <label style={fieldLabel}>Tarehe ya Kuzaliwa<input className="input" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} placeholder="Mfano: 05 JUN 2000" /></label>
           <label style={fieldLabel}>Jinsia (Sex)<input className="input" value={gender} onChange={(e) => setGender(e.target.value)} placeholder="Mfano: M au F" /></label>
           <label style={fieldLabel}>Picha ya Uso (Passport Size)<input className="input" type="file" accept="image/*" onChange={handlePhotoUpload} /></label>
         </div>
       </section>
 
+      {/* SEHEMU YA 4: SEHEMU YA KUCHORA SAINI */}
+      <section style={formPanel}>
+        <div style={sectionHeading}><span style={stepBadge}>4</span><div><h2 style={h2}>Saini ya Mtu (Digital Signature Pad)</h2><p style={subText}>Chora saini yako ndani ya kisanduku hiki kwa kidole au kipanya.</p></div></div>
+        <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ position: "relative", border: "2px dashed #cbd5e1", borderRadius: 12, background: "#f8fafc", overflow: "hidden", cursor: "crosshair", width: "100%", maxWidth: 400, height: 130, margin: "0 auto" }}>
+            <canvas ref={signatureCanvas} width={400} height={130}
+              onMouseDown={startDrawing} onMouseMove={drawSignature} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+              onTouchStart={startDrawing} onTouchMove={drawSignature} onTouchEnd={stopDrawing}
+              style={{ display: "block", width: "100%", height: "100%" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <button type="button" onClick={clearSignature} className="button button--secondary" style={{ fontSize: 12, padding: "6px 14px", display: "flex", gap: 6, alignItems: "center" }}>
+              <Eraser size={14} /> Futa Saini
+            </button>
+          </div>
+        </div>
+      </section>
+
       {message && <p role="status" style={statusBox}>{message}</p>}
 
-      {/* SEHEMU YA 4: PREVIEW NA KUPAKUA */}
+      {/* SEHEMU YA 5: PREVIEW NA KUPAKUA */}
       <section style={formPanel}>
-        <div style={sectionHeading}><span style={stepBadge}>4</span><div><h2 style={h2}>Muonekano wa Kitambulisho (Preview)</h2><p style={subText}>Angalia jinsi kinavyosomeka kwenye template kabla ya kupakua.</p></div></div>
+        <div style={sectionHeading}><span style={stepBadge}>5</span><div><h2 style={h2}>Muonekano wa Kitambulisho (Preview)</h2><p style={subText}>Angalia matokeo ya mwisho kabla ya kupakua picha.</p></div></div>
         <div style={previewGrid}>
           <div>
             <div style={previewHeader}><b>Template ya Mbele (id-mbele.png)</b><button className="button button--green" type="button" disabled={!frontTemplate} onClick={() => download("front")}><Download size={15} /> Pakua Mbele</button></div>
@@ -248,3 +324,4 @@ const previewHeader: React.CSSProperties = { display: "flex", alignItems: "cente
 const previewBox: React.CSSProperties = { position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" };
 const canvasStyle: React.CSSProperties = { display: "block", width: "100%", height: "100%" };
 const emptyText: React.CSSProperties = { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 13, pointerEvents: "none", textAlign: "center", padding: 12 };
+              
