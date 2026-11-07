@@ -1,263 +1,350 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download, ImagePlus, RotateCcw, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Download, Eraser, BadgeCheck, ClipboardList, UserRound } from "lucide-react";
 import { useLocation } from "wouter";
-import PassportPhotoMaker from "./PassportPhotoMaker";
+import JsBarcode from "jsbarcode";
 
-type CardFields = {
-  fullName: string;
-  party: string;
-  phone: string;
-  station: string;
-  ward: string;
-  constituency: string;
-  region: string;
+type Side = "front" | "back";
+const WIDTH = 1000;
+const HEIGHT = 630;
+
+const GITHUB_TEMPLATE_BASE = "https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/";
+
+const TEMPLATE_URLS: Record<Side, string> = {
+  front: `${GITHUB_TEMPLATE_BASE}kura-mbele.png`,
+  back: `${GITHUB_TEMPLATE_BASE}kura-nyuma.png`,
 };
 
-const initialFields: CardFields = {
-  fullName: "",
-  party: "",
-  phone: "",
-  station: "",
-  ward: "",
-  constituency: "",
-  region: "",
-};
-
-const CARD_WIDTH = 1200;
-const CARD_HEIGHT = 760;
-
-export default function VoterAgentIdPage() {
-  const [, navigate] = useLocation();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [fields, setFields] = useState<CardFields>(initialFields);
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [photoImage, setPhotoImage] = useState<HTMLImageElement | null>(null);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const reference = useMemo(() => `SS-VAK-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`, []);
-
-  const update = (key: keyof CardFields, value: string) => {
-    setFields((current) => ({ ...current, [key]: value }));
-    setError("");
-  };
-
-  const uploadPhoto = (file?: File) => {
-    if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Tumia picha ya JPG, PNG au WebP.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Picha isizidi MB 5.");
-      return;
-    }
-    const url = URL.createObjectURL(file);
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
     const image = new Image();
-    image.onload = () => {
-      if (photoUrl) URL.revokeObjectURL(photoUrl);
-      setPhotoUrl(url);
-      setPhotoImage(image);
-      setError("");
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      setError("Imeshindikana kusoma picha uliyochagua.");
-    };
-    image.src = url;
-  };
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Imeshindikana kupakia template: ${src}`));
+    image.src = src;
+  });
+}
 
-  const drawCard = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) throw new Error("Canvas haijapatikana.");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Imeshindikana kuandaa picha.");
-    ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+export default function VoterIdPage() {
+  const [, navigate] = useLocation();
+  const frontCanvas = useRef<HTMLCanvasElement>(null);
+  const backCanvas = useRef<HTMLCanvasElement>(null);
+  const signatureCanvas = useRef<HTMLCanvasElement>(null);
+  const tempBarcodeCanvas = useRef<HTMLCanvasElement>(null);
 
-    const bg = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    bg.addColorStop(0, "#102a43");
-    bg.addColorStop(0.58, "#164e63");
-    bg.addColorStop(1, "#0f766e");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+  const [frontTemplate, setFrontTemplate] = useState<HTMLImageElement | null>(null);
+  const [backTemplate, setBackTemplate] = useState<HTMLImageElement | null>(null);
+  const [portraitImage, setPortraitImage] = useState<HTMLImageElement | null>(null);
+  const [signatureImage, setSignatureImage] = useState<string | null>(null);
 
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(28, 28, CARD_WIDTH - 56, CARD_HEIGHT - 56);
-    ctx.fillStyle = "#123b52";
-    ctx.fillRect(28, 28, CARD_WIDTH - 56, 142);
+  const [firstNameMiddle, setFirstNameMiddle] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState("MALE");
+  const [day, setDay] = useState("");
+  const [month, setMonth] = useState("");
+  const [year, setYear] = useState("");
+  const [ward, setWard] = useState("");
+  const [street, setStreet] = useState("");
+  const [centre, setCentre] = useState("");
+  const [message, setMessage] = useState("Inavuta templates za Kadi ya Mpiga Kura kutoka GitHub...");
+  const [isDrawing, setIsDrawing] = useState(false);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "800 43px Arial";
-    ctx.fillText("KITAMBULISHO CHA WAKALA WA CHAMA", 70, 92, 1040);
-    ctx.font = "700 23px Arial";
-    ctx.fillStyle = "#c9f4ed";
-    ctx.fillText("TAARIFA ZA UTAMBULISHO WA NDANI", 72, 132);
+  // Kutengeneza Namba ya Mpiga Kura kiotomatiki
+  const voterIdNumber = useMemo(() => {
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const middleDigits = Math.floor(1000 + Math.random() * 9000);
+    const endDigits = Math.floor(100 + Math.random() * 900);
+    return `T-${randomDigits}-${middleDigits}-${endDigits}-0`;
+  }, []);
 
-    ctx.fillStyle = "#fff1c2";
-    ctx.fillRect(70, 190, 1060, 62);
-    ctx.fillStyle = "#7c2d12";
-    ctx.font = "900 29px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("MFANO — SI KITAMBULISHO RASMI CHA TUME", CARD_WIDTH / 2, 230);
-    ctx.textAlign = "left";
+  const formattedDob = useMemo(() => {
+    if (!day || !month || !year) return "";
+    return `${day} ${month} ${year}`;
+  }, [day, month, year]);
 
-    const photoX = 850;
-    const photoY = 290;
-    const photoW = 250;
-    const photoH = 300;
-    ctx.fillStyle = "#e2e8f0";
-    ctx.fillRect(photoX, photoY, photoW, photoH);
-    if (photoImage) {
-      const scale = Math.max(photoW / photoImage.width, photoH / photoImage.height);
-      const sw = photoW / scale;
-      const sh = photoH / scale;
-      const sx = (photoImage.width - sw) / 2;
-      const sy = (photoImage.height - sh) / 2;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(photoX, photoY, photoW, photoH);
-      ctx.clip();
-      ctx.drawImage(photoImage, sx, sy, sw, sh, photoX, photoY, photoW, photoH);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = "#64748b";
-      ctx.font = "700 24px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("PICHA YA WAKALA", photoX + photoW / 2, photoY + photoH / 2);
-      ctx.textAlign = "left";
-    }
-
-    const rows: Array<[string, string]> = [
-      ["JINA KAMILI", fields.fullName],
-      ["CHAMA / TAASISI", fields.party],
-      ["KITUO CHA KUPIGIA KURA", fields.station],
-      ["KATA", fields.ward],
-      ["JIMBO", fields.constituency],
-      ["MKOA", fields.region],
-      ["SIMU", fields.phone],
-      ["NAMBARI YA REJEA", reference],
-    ];
-    let y = 315;
-    for (const [label, value] of rows) {
-      ctx.fillStyle = "#64748b";
-      ctx.font = "700 18px Arial";
-      ctx.fillText(label, 85, y);
-      ctx.fillStyle = "#102a43";
-      ctx.font = "800 28px Arial";
-      ctx.fillText(value.trim() || "—", 85, y + 34, 710);
-      y += 76;
-    }
-
-    ctx.fillStyle = "#0f766e";
-    ctx.fillRect(28, 655, CARD_WIDTH - 56, 105);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 20px Arial";
-    ctx.fillText("HATI HII NI MFANO WA UTAMBULISHO WA NDANI TU.", 72, 700);
-    ctx.font = "500 17px Arial";
-    ctx.fillText("Haithibitishi uteuzi, idhini, au kibali cha Tume ya Uchaguzi.", 72, 733);
-    ctx.textAlign = "right";
-    ctx.font = "600 18px Arial";
-    ctx.fillText(new Date().toLocaleDateString("sw-TZ"), 1110, 733);
-    ctx.textAlign = "left";
-
-    ctx.save();
-    ctx.translate(CARD_WIDTH / 2, CARD_HEIGHT / 2);
-    ctx.rotate(-0.35);
-    ctx.globalAlpha = 0.075;
-    ctx.fillStyle = "#b91c1c";
-    ctx.font = "900 100px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("MFANO TU", 0, 0);
-    ctx.restore();
-  };
+  const complete = firstNameMiddle.trim() && lastName.trim() && day && month && year;
 
   useEffect(() => {
-    drawCard();
-  }, [fields, photoImage, reference]);
+    let active = true;
+    Promise.allSettled([loadImage(TEMPLATE_URLS.front), loadImage(TEMPLATE_URLS.back)]).then(([front, back]) => {
+      if (!active) return;
+      if (front.status === "fulfilled") setFrontTemplate(front.value);
+      if (back.status === "fulfilled") setBackTemplate(back.value);
+      setMessage(front.status === "fulfilled" && back.status === "fulfilled"
+        ? ""
+        : "Imeshindikana kuvuta kura-mbele.png au kura-nyuma.png kutoka GitHub.");
+    });
+    return () => { active = false; };
+  }, []);
 
-  const downloadPng = async () => {
-    if (!fields.fullName.trim() || !fields.party.trim() || !fields.station.trim() || !fields.ward.trim() || !fields.constituency.trim() || !fields.region.trim() || !fields.phone.trim() || !photoImage) {
-      setError("Jaza taarifa zote na pakia picha ya wakala kabla ya kutengeneza PNG.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      drawCard();
-      const canvas = canvasRef.current;
-      if (!canvas) throw new Error("Picha haijaandaliwa.");
-      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Imeshindikana kutengeneza PNG.")), "image/png"));
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `mfano-kitambulisho-wakala-${reference.toLowerCase()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Imeshindikana kutengeneza PNG.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  useEffect(() => {
+    const canvas = signatureCanvas.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+  }, []);
 
-  const fieldStyle: React.CSSProperties = { display: "grid", gap: 6, fontSize: 13, fontWeight: 750, color: "#26364b" };
-  const inputStyle: React.CSSProperties = { width: "100%", minHeight: 44, border: "1px solid #d8e1ec", borderRadius: 10, padding: "10px 12px", background: "#fff", color: "#172033", fontSize: 14, boxSizing: "border-box" };
+  function startDrawing(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
+    setIsDrawing(true);
+    drawSignature(e);
+  }
+
+  function stopDrawing() {
+    setIsDrawing(false);
+    const canvas = signatureCanvas.current;
+    if (canvas) {
+      setSignatureImage(canvas.toDataURL("image/png"));
+    }
+  }
+
+  function drawSignature(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
+    if (!isDrawing) return;
+    const canvas = signatureCanvas.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = ("touches" in e ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = ("touches" in e ? e.touches[0].clientY : e.clientY) - rect.top;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  function clearSignature() {
+    const canvas = signatureCanvas.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    setSignatureImage(null);
+  }
+
+  function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => setPortraitImage(img);
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, WIDTH, HEIGHT);
+    if (!template) return;
+
+    context.drawImage(template, 0, 0, WIDTH, HEIGHT);
+    context.fillStyle = "#000000";
+
+    if (side === "front") {
+      // Jina Kamili (Jina la Kwanza + Kati & Jina la Mwisho)
+      const fullNamesText = [firstNameMiddle, lastName].filter(Boolean).join(" ").toUpperCase();
+      if (fullNamesText) {
+        context.font = "bold 24px Arial";
+        context.fillText(fullNamesText, 310, 242, 650);
+      }
+
+      // Tarehe ya Kuzaliwa
+      if (formattedDob) {
+        context.font = "bold 22px Arial";
+        context.fillText(formattedDob, 310, 362, 400);
+      }
+
+      // Jinsia
+      if (gender) {
+        context.font = "bold 22px Arial";
+        context.fillText(gender, 500, 424, 200);
+      }
+
+      // Kata - Ward
+      if (ward) {
+        context.font = "bold 22px Arial";
+        context.fillText(ward.toUpperCase(), 310, 508, 400);
+      }
+
+      // Mtaa / Kijiji
+      if (street) {
+        context.font = "bold 22px Arial";
+        context.fillText(street.toUpperCase(), 310, 610, 400);
+      }
+
+      // Kituo cha Kuandikisha
+      if (centre) {
+        context.font = "bold 22px Arial";
+        context.fillText(centre.toUpperCase(), 310, 712, 400);
+      }
+
+      // Picha ya Uso (Passport Size upande wa kushoto)
+      const photoBox = { x: 30, y: 220, width: 250, height: 350 };
+      if (portraitImage) {
+        context.drawImage(portraitImage, photoBox.x, photoBox.y, photoBox.width, photoBox.height);
+      }
+
+      // Saini ndogo chini kushoto
+      if (signatureImage) {
+        const sigImg = new Image();
+        sigImg.onload = () => {
+          context.drawImage(sigImg, 190, 770, 140, 50);
+        };
+        sigImg.src = signatureImage;
+      }
+    } 
+
+    if (side === "back") {
+      // Barcode chini
+      if (voterIdNumber && tempBarcodeCanvas.current) {
+        try {
+          JsBarcode(tempBarcodeCanvas.current, voterIdNumber, {
+            format: "CODE128",
+            width: 3,
+            height: 80,
+            displayValue: false,
+            background: "transparent",
+            lineColor: "#000000",
+          });
+          context.drawImage(tempBarcodeCanvas.current, 310, 780, 580, 85);
+        } catch (e) {
+          console.error(e);
+        }
+
+        context.font = "bold 26px monospace";
+        context.fillText(voterIdNumber, 310, 900);
+      }
+    }
+  }
+
+  useEffect(() => {
+    draw(frontCanvas.current, frontTemplate, "front");
+    draw(backCanvas.current, backTemplate, "back");
+  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedDob, gender, ward, street, centre, portraitImage, signatureImage, voterIdNumber]);
+
+  function download(side: Side) {
+    const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
+    const template = side === "front" ? frontTemplate : backTemplate;
+    if (!canvas || !template) return;
+    const link = document.createElement("a");
+    link.download = side === "front" ? "kura_mbele.png" : "kura_nyuma.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
+  const field: React.CSSProperties = { display: "grid", gap: 6, fontSize: 13, fontWeight: 750, color: "#26364b" };
+  const input: React.CSSProperties = { width: "100%", minHeight: 42, border: "1px solid #d8e1ec", borderRadius: 10, padding: "10px 12px", background: "#fff", color: "#172033", fontSize: 14, outlineColor: "#2563eb", boxSizing: "border-box" };
+  const panel: React.CSSProperties = { background: "#fff", border: "1px solid #e4eaf2", borderRadius: 14, padding: 16, marginBottom: 14, boxShadow: "0 4px 16px rgba(15,23,42,.03)" };
+  const heading: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px", fontSize: 16, fontWeight: 800, color: "#172b4d" };
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "18px 14px 40px", color: "#172033" }}>
-      <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 7 }}>
-        <ArrowLeft size={16} /> Rudi kwenye huduma
+    <main style={{ maxWidth: 860, margin: "0 auto", padding: "16px 12px 36px", color: "#172033" }}>
+      <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", fontSize: 13 }}>
+        <ArrowLeft size={15} /> Rudi kwenye huduma
       </button>
-      <header style={{ borderRadius: 18, padding: "22px", color: "#fff", background: "linear-gradient(120deg,#102a43,#0f766e)", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 800, letterSpacing: 1 }}><ImagePlus size={17} /> MPIGA KURA</div>
-        <h1 style={{ margin: "8px 0 6px", fontSize: "clamp(22px,4vw,30px)" }}>Tengeneza Mfano wa Kitambulisho cha Wakala</h1>
-        <p style={{ margin: 0, color: "#d8f3ee", fontSize: 13 }}>Jaza taarifa za wakala na pakua muundo wa PNG kwa matumizi ya ndani ya chama/taasisi.</p>
+
+      <header style={{ borderRadius: 16, padding: "18px 20px", marginBottom: 14, color: "#fff", background: "linear-gradient(120deg,#123c70,#2563eb 62%,#4f46e5)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 800, letterSpacing: 1.2, opacity: .9 }}><ClipboardList size={16}/> FOMU YA UCHAGUZI</div>
+        <h1 style={{ margin: "6px 0 4px", fontSize: "clamp(22px,4vw,28px)", letterSpacing: "-.5px" }}>Kadi ya Mpiga Kura</h1>
       </header>
-      <div style={{ border: "1px solid #fed7aa", background: "#fff7ed", borderRadius: 12, padding: 13, display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16 }}>
-        <ShieldAlert size={20} color="#c2410c" />
-        <p style={{ margin: 0, fontSize: 13, color: "#7c2d12" }}>Huu ni mfano wa utambulisho wa ndani tu. Hauwezi kuchukua nafasi ya kibali au kitambulisho rasmi kinachotolewa na chama au Tume ya Uchaguzi. Muundo una alama ya MFANO isiyoweza kufichwa.</p>
-      </div>
-      <section style={{ background: "#fff", border: "1px solid #dbe4ee", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0, fontSize: 17 }}>Live Preview — Kitambulisho cha Wakala</h2>
-          <span style={{ fontSize: 11, fontWeight: 800, color: "#0f766e", background: "#ccfbf1", borderRadius: 20, padding: "5px 9px" }}>HUBADILIKA MOJA KWA MOJA</span>
+
+      {/* FOMU YA KUJAZA */}
+      <section style={panel}>
+        <h2 style={heading}><UserRound size={17} color="#2563eb"/> Taarifa za Mwombaji</h2>
+        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12}}>
+          <label style={field}>Jina la Kwanza na la Kati *<input style={input} value={firstNameMiddle} onChange={e=>setFirstNameMiddle(e.target.value)} placeholder="SALIM M." required /></label>
+          <label style={field}>Jina la Mwisho / Ukoo *<input style={input} value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="SWALEH" required /></label>
         </div>
-        <p style={{ margin: "0 0 10px", color: "#64748b", fontSize: 12 }}>Muonekano huu unasasishwa unapoandika taarifa au kubadilisha picha.</p>
-        <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} aria-label="Live preview ya mfano wa kitambulisho cha wakala" style={{ display: "block", width: "100%", height: "auto", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f1f5f9" }} />
-      </section>
-      <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-        <h2 style={{ margin: "0 0 14px", fontSize: 17 }}>Taarifa za wakala</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,250px),1fr))", gap: 12 }}>
-          {([
-            ["fullName", "Jina kamili la wakala", "Mfano: Juma Abdallah"],
-            ["party", "Jina la chama / taasisi", "Andika jina la chama/taasisi"],
-            ["phone", "Namba ya simu", "07XXXXXXXX"],
-            ["station", "Kituo cha kupigia kura", "Jina la kituo"],
-            ["ward", "Kata", "Jina la kata"],
-            ["constituency", "Jimbo", "Jina la jimbo"],
-            ["region", "Mkoa", "Jina la mkoa"],
-          ] as Array<[keyof CardFields, string, string]>).map(([key, label, placeholder]) => (
-            <label key={key} style={fieldStyle}>{label}
-              <input style={inputStyle} value={fields[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} maxLength={100} />
-            </label>
-          ))}
-          <label style={fieldStyle}>Picha ya wakala (JPG, PNG au WebP; hadi MB 5)
-            <input style={{ ...inputStyle, padding: 8 }} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => uploadPhoto(event.target.files?.[0])} />
+
+        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
+          <label style={field}>Tarehe ya Kuzaliwa *
+            <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6}}>
+              <input style={input} value={day} onChange={e=>setDay(e.target.value)} placeholder="Tarehe" maxLength={2} required />
+              <input style={input} value={month} onChange={e=>setMonth(e.target.value)} placeholder="Mwezi" maxLength={3} required />
+              <input style={input} value={year} onChange={e=>setYear(e.target.value)} placeholder="Mwaka" maxLength={4} required />
+            </div>
+          </label>
+
+          <label style={field}>Jinsia *
+            <select style={input} value={gender} onChange={e=>setGender(e.target.value)}>
+              <option value="MALE">MALE</option>
+              <option value="FEMALE">FEMALE</option>
+            </select>
           </label>
         </div>
-        {photoUrl && <img src={photoUrl} alt="Picha ya wakala" style={{ width: 104, height: 124, objectFit: "cover", borderRadius: 10, marginTop: 12, border: "1px solid #cbd5e1" }} />}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
-          <button type="button" className="button button--green" onClick={() => void downloadPng()} disabled={busy} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Download size={16} /> {busy ? "Inatengeneza PNG..." : "TENGENEZA NA PAKUA PNG"}
-          </button>
-          <button type="button" className="button button--secondary" onClick={() => { setFields(initialFields); setPhotoUrl(""); setPhotoImage(null); setError(""); }} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <RotateCcw size={15} /> Futa taarifa
-          </button>
+
+        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))", gap: 12, marginTop: 12}}>
+          <label style={field}>Kata - Ward<input style={input} value={ward} onChange={e=>setWard(e.target.value)} placeholder="UNGA LIMITED" /></label>
+          <label style={field}>Mtaa / Kijiji<input style={input} value={street} onChange={e=>setStreet(e.target.value)} placeholder="MAKABURI YA BANIANI" /></label>
+          <label style={field}>Kituo cha Kuandikisha<input style={input} value={centre} onChange={e=>setCentre(e.target.value)} placeholder="OFISI YA AFISA MTENDAJI KATA" /></label>
         </div>
-        {error && <p role="alert" style={{ color: "#b91c1c", fontSize: 13, marginBottom: 0 }}>{error}</p>}
+
+        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
+          <label style={field}>Ambatisha Picha Yako<input style={{...input, padding: "6px"}} type="file" accept="image/*" onChange={handlePhotoUpload} /></label>
+          
+          <div style={field}>
+            <span>Saini Yako (Wino Mweusi)</span>
+            <div style={{display: "flex", gap: 8, alignItems: "center"}}>
+              <div style={{ position: "relative", border: "1.5px dashed #cbd5e1", borderRadius: 10, background: "#f8fafc", overflow: "hidden", cursor: "crosshair", width: 220, height: 42 }}>
+                <canvas ref={signatureCanvas} width={220} height={42}
+                  onMouseDown={startDrawing} onMouseMove={drawSignature} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing} onTouchMove={drawSignature} onTouchEnd={stopDrawing}
+                  style={{ display: "block", width: "100%", height: "100%" }} />
+              </div>
+              <button type="button" onClick={clearSignature} className="button button--secondary" style={{ fontSize: 11, padding: "8px 10px", borderRadius: 8, display: "flex", gap: 4, alignItems: "center", height: 42 }}>
+                <Eraser size={13} /> Futa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{marginTop: 12}}>
+          <label style={field}>Namba ya Mpiga Kura (Inajitengeneza Yenyewe)
+            <input style={{...input, background: "#f8fafc", color: "#475569"}} value={voterIdNumber} readOnly />
+          </label>
+        </div>
       </section>
-      <PassportPhotoMaker />
+
+      {message && <p role="status" style={{padding: 10, borderRadius: 10, background: "#fff7ed", color: "#9a3412", fontSize: 12, marginBottom: 12}}>{message}</p>}
+
+      {/* LIVE PREVIEW YA KADI */}
+      <section style={{...panel, borderColor: "#cbd5e1", background: "#f8fafc"}}>
+        <h2 style={{...heading, color: "#1e293b"}}><BadgeCheck size={17} color="#059669"/> Muonekano wa Kadi (Live Preview)</h2>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: 14 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
+              <b>Upande wa Mbele</b>
+              <button className="button button--green" type="button" disabled={!frontTemplate} onClick={() => download("front")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> Pakua Mbele</button>
+            </div>
+            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
+              <canvas ref={frontCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
+              {!frontTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 12 }}>Inapakia...</span>}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
+              <b>Upande wa Nyuma</b>
+              <button className="button button--green" type="button" disabled={!backTemplate} onClick={() => download("back")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> Pakua Nyuma</button>
+            </div>
+            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
+              <canvas ref={backCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
+              {!backTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 12 }}>Inapakia...</span>}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
-}
+  }
+                                                     
