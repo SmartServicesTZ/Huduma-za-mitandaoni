@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, Eraser } from "lucide-react";
 import { useLocation } from "wouter";
-
-type BarcodeOptions = { format: string; width?: number; height?: number; displayValue?: boolean };
-type BarcodeGenerator = (canvas: HTMLCanvasElement, value: string, options: BarcodeOptions) => void;
-declare global { interface Window { JsBarcode?: BarcodeGenerator } }
+import JsBarcode from "jsbarcode";
 
 type Side = "front" | "back";
 const WIDTH = 1000;
@@ -21,7 +18,6 @@ function formatNida(value: string): string {
     .filter(Boolean).join("-");
 }
 
-// Inasoma tarakimu 8 za mwanzo za NIDA na kutengeneza tarehe (Mfano: 01 MAY 2005)
 function parseDateFromNida(nidaVal: string): string {
   const clean = nidaVal.replace(/\D/g, "");
   if (clean.length < 8) return "";
@@ -65,12 +61,10 @@ export default function NidaTemplatePage() {
   const [gender, setGender] = useState("");
 
   const [isDrawing, setIsDrawing] = useState(false);
-  const [barcodeReady, setBarcodeReady] = useState(false);
 
   const formattedNida = useMemo(() => formatNida(nida), [nida]);
   const calculatedBirthDate = useMemo(() => parseDateFromNida(nida), [nida]);
 
-  // Kupakia templates za id-mbele.png na id-nyuma.png
   useEffect(() => {
     let active = true;
     Promise.allSettled([loadImage(TEMPLATE_URLS.front), loadImage(TEMPLATE_URLS.back)]).then(([front, back]) => {
@@ -84,25 +78,6 @@ export default function NidaTemplatePage() {
     return () => { active = false; };
   }, []);
 
-  // Pakia JsBarcode kutoka CDN ili kuepuka dependency isiyopo kwenye lockfile.
-  useEffect(() => {
-    if (window.JsBarcode) {
-      setBarcodeReady(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/jsbarcode@3.12.3/dist/JsBarcode.all.min.js";
-    script.async = true;
-    script.onload = () => setBarcodeReady(true);
-    script.onerror = () => setMessage("Barcode haikupakia. Angalia muunganisho wa intaneti.");
-    document.head.appendChild(script);
-    return () => {
-      script.onload = null;
-      script.onerror = null;
-    };
-  }, []);
-
-  // Signature Pad Handlers
   useEffect(() => {
     const canvas = signatureCanvas.current;
     if (!canvas) return;
@@ -153,7 +128,6 @@ export default function NidaTemplatePage() {
     setSignatureImage(null);
   }
 
-  // Kupakia picha ya uso
   function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -166,7 +140,6 @@ export default function NidaTemplatePage() {
     reader.readAsDataURL(file);
   }
 
-  // Kuchora kwenye Canvas
   function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
@@ -177,43 +150,36 @@ export default function NidaTemplatePage() {
     context.fillStyle = "#000000";
 
     if (side === "front") {
-      // NIN / Namba ya NIDA Juu
       if (formattedNida) {
         context.font = "bold 44px monospace";
         context.fillText(formattedNida, 70, 215, 900);
       }
 
-      // Jina la Kwanza na la Kati (Sehemu 1)
       if (firstNameMiddle) {
         context.font = "bold 28px Arial";
         context.fillText(firstNameMiddle.toUpperCase(), 190, 272, 700);
       }
 
-      // Jina la Mwisho / Ukoo
       if (lastName) {
         context.font = "bold 28px Arial";
         context.fillText(lastName.toUpperCase(), 290, 326, 600);
       }
 
-      // Tarehe ya Kuzaliwa (Inajaza yenyewe kutoka NIDA)
       if (calculatedBirthDate) {
         context.font = "bold 28px Arial";
         context.fillText(calculatedBirthDate, 430, 394, 400);
       }
 
-      // Jinsia
       if (gender) {
         context.font = "bold 28px Arial";
         context.fillText(gender.toUpperCase(), 170, 452, 100);
       }
 
-      // Picha ya Uso
       const photoBox = { x: 685, y: 290, width: 205, height: 260 };
       if (portraitImage) {
         context.drawImage(portraitImage, photoBox.x, photoBox.y, photoBox.width, photoBox.height);
       }
 
-      // Saini Iliyochorwa
       if (signatureImage) {
         const sigImg = new Image();
         sigImg.onload = () => {
@@ -226,21 +192,21 @@ export default function NidaTemplatePage() {
     if (side === "back") {
       const cleanNida = formattedNida.replace(/-/g, "");
       if (cleanNida && tempBarcodeCanvas.current) {
-        // Tengeneza Barcode halisi kwa kutumia JsBarcode
         try {
-          window.JsBarcode?.(tempBarcodeCanvas.current, cleanNida, {
+          // Imewekwa background transparent ili kuzuia lile eneo jeupe nyuma ya barcode
+          JsBarcode(tempBarcodeCanvas.current, cleanNida, {
             format: "CODE128",
             width: 3,
             height: 90,
             displayValue: false,
+            background: "transparent",
+            lineColor: "#000000",
           });
-          // Chora Barcode juu ya template upande wa nyuma (sehemu yake sahihi juu)
           context.drawImage(tempBarcodeCanvas.current, 120, 70, 760, 95);
         } catch (e) {
           console.error(e);
         }
 
-        // Chora namba ya NIDA chini ya barcode upande wa nyuma
         context.font = "bold 38px monospace";
         context.textAlign = "center";
         context.fillText(cleanNida, 500, 205); 
@@ -251,7 +217,7 @@ export default function NidaTemplatePage() {
   useEffect(() => {
     draw(frontCanvas.current, frontTemplate, "front");
     draw(backCanvas.current, backTemplate, "back");
-  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage, barcodeReady]);
+  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage]);
 
   function download(side: Side) {
     const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
@@ -280,7 +246,6 @@ export default function NidaTemplatePage() {
         <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>Jaza taarifa sahihi. Tarehe inajaza yenyewe kutoka kwenye NIDA na unaweza kuchora saini yako.</p>
       </header>
 
-      {/* SEHEMU YA 1: MAJINA */}
       <section style={formPanel}>
         <div style={sectionHeading}><span style={stepBadge}>1</span><div><h2 style={h2}>Taarifa za Majina</h2><p style={subText}>Jina la kwanza na la kati viwe sehemu moja.</p></div></div>
         <div style={formGrid}>
@@ -289,7 +254,6 @@ export default function NidaTemplatePage() {
         </div>
       </section>
 
-      {/* SEHEMU YA 2: NAMBA YA NIDA */}
       <section style={formPanel}>
         <div style={sectionHeading}><span style={stepBadge}>2</span><div><h2 style={h2}>Namba ya NIDA (Tarehe Inajaza Yenyewe)</h2><p style={subText}>Weka tarakimu 20. Tarehe itajisoma yenyewe hapa chini.</p></div></div>
         <label style={fieldLabel}>Namba ya Kitambulisho (NIN)
@@ -303,7 +267,6 @@ export default function NidaTemplatePage() {
         </div>
       </section>
 
-      {/* SEHEMU YA 3: JINSIA NA PICHA */}
       <section style={formPanel}>
         <div style={sectionHeading}><span style={stepBadge}>3</span><div><h2 style={h2}>Jinsia na Picha ya Uso</h2><p style={subText}>Weka jinsia na pakia picha ya passport size.</p></div></div>
         <div style={formGrid}>
@@ -312,7 +275,6 @@ export default function NidaTemplatePage() {
         </div>
       </section>
 
-      {/* SEHEMU YA 4: SEHEMU YA KUCHORA SAINI */}
       <section style={formPanel}>
         <div style={sectionHeading}><span style={stepBadge}>4</span><div><h2 style={h2}>Saini ya Mtu (Digital Signature Pad)</h2><p style={subText}>Chora saini yako ndani ya kisanduku hiki kwa kidole au kipanya.</p></div></div>
         <div style={{ display: "grid", gap: 8 }}>
@@ -332,7 +294,6 @@ export default function NidaTemplatePage() {
 
       {message && <p role="status" style={statusBox}>{message}</p>}
 
-      {/* SEHEMU YA 5: PREVIEW NA KUPAKUA */}
       <section style={formPanel}>
         <div style={sectionHeading}><span style={stepBadge}>5</span><div><h2 style={h2}>Muonekano wa Kitambulisho (Preview)</h2><p style={subText}>Angalia matokeo ya mwisho kabla ya kupakua picha.</p></div></div>
         <div style={previewGrid}>
@@ -347,7 +308,6 @@ export default function NidaTemplatePage() {
         </div>
       </section>
 
-      {/* Hidden element for generating barcode */}
       <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
@@ -366,4 +326,4 @@ const previewHeader: React.CSSProperties = { display: "flex", alignItems: "cente
 const previewBox: React.CSSProperties = { position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" };
 const canvasStyle: React.CSSProperties = { display: "block", width: "100%", height: "100%" };
 const emptyText: React.CSSProperties = { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 13, pointerEvents: "none", textAlign: "center", padding: 12 };
-              
+            
