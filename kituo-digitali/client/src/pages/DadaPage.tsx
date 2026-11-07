@@ -245,12 +245,26 @@ export default function DadaPage() {
         context.fillText(cleanNidaDigits, 500, 205); 
       }
     }
+
+    // Watermark huongezwa kwenye soft copy baada tu ya malipo kuthibitishwa.
+    if (paid) {
+      context.save();
+      context.globalAlpha = 0.24;
+      context.fillStyle = "#1e3a8a";
+      context.font = "bold 46px Arial";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.translate(WIDTH / 2, HEIGHT / 2);
+      context.rotate(-Math.PI / 7);
+      context.fillText("SMART SERVICES TZ", 0, 0);
+      context.restore();
+    }
   }
 
   useEffect(() => {
     draw(frontCanvas.current, frontTemplate, "front");
     draw(backCanvas.current, backTemplate, "back");
-  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage]);
+  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage, paid]);
 
   async function ensurePaid() {
     if (paid) return;
