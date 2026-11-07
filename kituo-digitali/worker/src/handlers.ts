@@ -525,7 +525,7 @@ export const consumeTokens = callable(async (request) => {
     const profile = userSnapshot.data() as Profile | undefined;
     if (!profile || profile.accountStatus === "blocked" || profile.accountStatus === "deleted") throw new ApiError("permission-denied", "Akaunti hii haiwezi kutumia huduma.");
     if (profile.verificationStatus !== "approved") throw new ApiError("permission-denied", "Akaunti yako haijathibitishwa na admin.");
-    const effectiveTokenType = service.tokenType === "nida" || serviceId === "nakala-nida" || serviceId === "utafutaji-nida" ? "nida" : "huduma";
+    const effectiveTokenType = serviceId === "nakala-nida" ? "huduma" : service.tokenType === "nida" || serviceId === "utafutaji-nida" ? "nida" : "huduma";
     const legacyOther = profile.tokenBalanceOther === undefined ? Number(profile.tokenBalance ?? 0) : Number(profile.tokenBalanceOther);
     const tokenField = effectiveTokenType === "nida" ? "tokenBalanceNida" : "tokenBalanceOther";
     const before = Number(effectiveTokenType === "nida" ? (profile.tokenBalanceNida ?? 0) : legacyOther);
