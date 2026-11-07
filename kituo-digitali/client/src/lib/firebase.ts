@@ -614,7 +614,7 @@ export async function consumeFirebaseTokens(uid: string, service: { slug: string
       if (!Number.isSafeInteger(configuredCost) || configuredCost < 0 || configuredCost > 100000) {
         throw new Error("Gharama ya huduma haijawekwa sawa kwenye Dashboard ya Admin. Wasiliana na admin.");
       }
-      currentCost = service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : service.slug === "stika-mawakala" ? Math.max(3, configuredCost) : configuredCost;
+      currentCost = service.slug === "nakala-nida" ? 3 : service.agentType ? Number((row.agentTypeTokenCosts as Record<string, unknown> | undefined)?.[service.agentType] ?? service.tokenCost) : service.slug === "stika-mawakala" ? Math.max(3, configuredCost) : configuredCost;
       currentIsFree = service.slug !== "stika-mawakala" && !service.agentType && row.isFree === true && configuredCost === 0;
     }
   } catch (error) {
