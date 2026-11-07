@@ -9,7 +9,7 @@ const locked = (slug: string, name: string, description: string, icon: string, o
 export const defaultServices: DefaultService[] = [
   paid("cheti-tin", "TIN CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "Huduma kuu", 0),
   paid("thibitisha-tin", "THIBITISHA TIN", "Thibitisha taarifa za TIN yako.", "badge-check", "Huduma kuu", 1),
-  { ...paid("nakala-nida", "NAKALA LAINI YA NIDA", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "Huduma kuu", 2), tokenCost: 3 },
+  { ...paid("nakala-nida", "NAKALA LAINI YA NIDA", "Omba nakala laini ya kitambulisho cha NIDA.", "contact", "Huduma kuu", 2), tokenCost: 3, tokenType: "nida" },
   paid("stika-lipa", "STIKA ZA LIPA", "Tengeneza na pakua stika za Lipa za Airtel, Vodacom, Halotel na Yas sehemu moja.", "qr-code", "Huduma kuu", 3),
   paid("edu-halotel", "EDU-HALOTEL", "Tengeneza kitambulisho cha mwanafunzi cha kisasa chenye pande mbili, QR na upakuaji wa PNG.", "badge-check", "HUDUMA ZA WAKALA", 4),
   paid("mpiga-kura", "MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "Huduma kuu", 4),
