@@ -3,6 +3,8 @@ import { ArrowLeft, Download, Eraser, BadgeCheck, ClipboardList, UserRound, Spar
 import { useLocation } from "wouter";
 import JsBarcode from "jsbarcode";
 import { removePhotoBackground } from "../lib/removePhotoBackground";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
 
 type Side = "front" | "back";
 const WIDTH = 1000;
@@ -45,6 +47,10 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 export default function DadaPage() {
   const [, navigate] = useLocation();
+  const { firebaseUser } = useAuth();
+  const [paid, setPaid] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const frontCanvas = useRef<HTMLCanvasElement>(null);
   const backCanvas = useRef<HTMLCanvasElement>(null);
   const signatureCanvas = useRef<HTMLCanvasElement>(null);
@@ -79,6 +85,11 @@ export default function DadaPage() {
     });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    setPaid(false);
+    setRequestId(crypto.randomUUID());
+  }, [firstNameMiddle, lastName, nida, gender, portraitImage, signatureImage]);
 
   useEffect(() => {
     const canvas = signatureCanvas.current;
@@ -241,14 +252,45 @@ export default function DadaPage() {
     draw(backCanvas.current, backTemplate, "back");
   }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage]);
 
-  function download(side: Side) {
+  async function ensurePaid() {
+    if (paid) return;
+    if (!firebaseUser?.uid) throw new Error("Ingia kwanza ili kutumia NIDA SOFT COPY.");
+    const config = await getServiceTokenConfig("nakala-nida");
+    if (!Number.isSafeInteger(config.tokenCost) || config.tokenCost <= 0) {
+      throw new Error("Gharama ya NIDA SOFT COPY haijawekwa. Admin aweke tokeni 3 kwenye Dashboard.");
+    }
+    await consumeFirebaseTokens(firebaseUser.uid, {
+      slug: "nakala-nida",
+      name: config.name || "NIDA SOFT COPY",
+      tokenCost: config.tokenCost,
+      kind: "paid",
+      tokenType: "nida",
+    }, requestId);
+    setPaid(true);
+    setMessage(`Tokeni ${config.tokenCost} zimekatwa. Unaweza kupakua pande zote mbili za kitambulisho.`);
+  }
+
+  async function download(side: Side) {
+    if (busy) return;
     const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
     const template = side === "front" ? frontTemplate : backTemplate;
-    if (!canvas || !template) return;
-    const link = document.createElement("a");
-    link.download = side === "front" ? "kitambulisho_mbele.png" : "kitambulisho_nyuma.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    if (!canvas || !template) {
+      setMessage("Picha ya kitambulisho bado haijapakiwa. Subiri kidogo kisha jaribu tena.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await ensurePaid();
+      const link = document.createElement("a");
+      link.download = side === "front" ? "kitambulisho_mbele.png" : "kitambulisho_nyuma.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      setMessage(paid ? "Upakuaji umeanza. Tokeni 3 zimeshatumika kwa kitambulisho hiki." : "Upakuaji umeanza. Tokeni zimekatwa kwa kitambulisho hiki.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Imeshindikana kulipia au kupakua NIDA SOFT COPY.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const field: React.CSSProperties = { display: "grid", gap: 6, fontSize: 13, fontWeight: 750, color: "#26364b" };
