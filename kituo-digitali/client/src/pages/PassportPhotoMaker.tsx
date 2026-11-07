@@ -15,7 +15,7 @@ export default function PassportPhotoMaker() {
   const [error, setError] = useState("");
 
   const processPhoto = async (file?: File, selectedBackground = background) => {
-    if (!file) return;
+    if (!file) { setError("Kwanza chagua picha, kisha bonyeza Ondoa background tena."); setStatus(""); return; }
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setError("Chagua picha ya JPG, PNG au WebP.");
       return;
@@ -124,7 +124,7 @@ export default function PassportPhotoMaker() {
           <option value="#ffffff">Nyeupe</option><option value="#dbeafe">Bluu hafifu</option><option value="#2563eb">Bluu</option><option value="#dcfce7">Kijani hafifu</option><option value="transparent">Transparent</option>
         </select>
       </label>
-      <button type="button" disabled={busy || !sourceUrl} onClick={() => void processPhoto(inputRef.current?.files?.[0])} style={{ border: 0, borderRadius: 9, padding: "10px 14px", color: "#fff", background: "#0f766e", fontWeight: 800, display: "inline-flex", gap: 7, alignItems: "center" }}>
+      <button type="button" disabled={busy} onClick={() => { setError(""); setStatus("Inaanza kuondoa background..."); void processPhoto(inputRef.current?.files?.[0]); }} style={{ border: 0, borderRadius: 9, padding: "10px 14px", color: "#fff", background: "#0f766e", fontWeight: 800, display: "inline-flex", gap: 7, alignItems: "center" }}>
         {busy ? <LoaderCircle size={16} /> : <Sparkles size={16} />} {busy ? "Inasafisha..." : "Ondoa background tena"}
       </button>
     </div>
@@ -134,6 +134,6 @@ export default function PassportPhotoMaker() {
       {sourceUrl && <div><strong style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Picha ya awali</strong><img src={sourceUrl} alt="Picha ya awali" style={{ width: 120, height: 154, objectFit: "contain", background: "#f1f5f9", borderRadius: 8 }} /></div>}
       {resultUrl && <div><strong style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Pasipoti size (35 × 45 mm)</strong><img src={resultUrl} alt="Picha ya pasipoti size iliyosafishwa" style={{ width: 124, height: 160, objectFit: "contain", background: "repeating-conic-gradient(#eee 0% 25%, white 0% 50%) 50% / 16px 16px", border: "1px solid #cbd5e1", borderRadius: 8 }} /><button type="button" onClick={download} style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 8, border: 0, borderRadius: 8, padding: "9px 12px", background: "#166534", color: "#fff", fontWeight: 800 }}><Download size={15} /> Pakua PNG</button></div>}
     </div>
-    <small style={{ display: "block", color: "#64748b", marginTop: 12 }}>Faragha: picha inachakatwa kwenye browser yako. Modeli ya AI pekee ndiyo inapakuliwa kutoka CDN; picha yako haitumwi kwenye server.</small>
+    <small style={{ display: "block", color: "#64748b", marginTop: 12 }}>Ikiwa AI itashindwa, ujumbe wa sababu utaonekana hapa. Faragha: picha inachakatwa kwenye browser yako. Modeli ya AI pekee ndiyo inapakuliwa kutoka CDN; picha yako haitumwi kwenye server.</small>
   </section>;
 }
