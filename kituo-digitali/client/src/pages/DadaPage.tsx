@@ -7,11 +7,10 @@ type Side = "front" | "back";
 const WIDTH = 1000;
 const HEIGHT = 630;
 
-const GITHUB_TEMPLATE_BASE = "https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/";
-
+// Kutumia picha zilizopo moja kwa moja kwenye folda ya public ya mradi wako
 const TEMPLATE_URLS: Record<Side, string> = {
-  front: `${GITHUB_TEMPLATE_BASE}id-mbele.png`,
-  back: `${GITHUB_TEMPLATE_BASE}id-nyuma.png`,
+  front: `${import.meta.env.BASE_URL}id-mbele.png`,
+  back: `${import.meta.env.BASE_URL}id-nyuma.png`,
 };
 
 function formatNida(value: string): string {
@@ -63,7 +62,7 @@ export default function DadaPage() {
   const [gender, setGender] = useState<"M" | "F" | "">("");
   const [phone, setPhone] = useState("");
   const [showPreview, setShowPreview] = useState(false);
-  const [message, setMessage] = useState("Inavuta templates kutoka GitHub...");
+  const [message, setMessage] = useState("Inapakia templates kutoka folda ya public...");
   const [isDrawing, setIsDrawing] = useState(false);
 
   const cleanNida = nida.replace(/\D/g, "").slice(0, 20);
@@ -80,7 +79,7 @@ export default function DadaPage() {
       if (back.status === "fulfilled") setBackTemplate(back.value);
       setMessage(front.status === "fulfilled" && back.status === "fulfilled"
         ? ""
-        : "Imeshindikana kuvuta id-mbele.png au id-nyuma.png kutoka GitHub.");
+        : "Imeshindikana kupakia id-mbele.png au id-nyuma.png kutoka folda ya public.");
     });
     return () => { active = false; };
   }, []);
@@ -262,7 +261,7 @@ export default function DadaPage() {
       <header style={{ borderRadius: 22, padding: "24px 22px", marginBottom: 18, color: "#fff", background: "linear-gradient(120deg,#123c70,#2563eb 62%,#4f46e5)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, fontWeight: 850, letterSpacing: 1.4, opacity: .9 }}><ClipboardList size={18}/> FOMU YA TAARIFA</div>
         <h1 style={{ margin: "10px 0 6px", fontSize: "clamp(25px,5vw,34px)", letterSpacing: "-.7px" }}>JENERETA YA KITAMBULISHO</h1>
-        <p style={{ margin: 0, lineHeight: 1.6, maxWidth: 600, color: "#e5efff", fontSize: 14 }}>Jaza taarifa zako. Template zinavutwa moja kwa moja kutoka GitHub.</p>
+        <p style={{ margin: 0, lineHeight: 1.6, maxWidth: 600, color: "#e5efff", fontSize: 14 }}>Jaza taarifa zako. Template zinachukuliwa moja kwa moja kutoka kwenye folda ya public.</p>
       </header>
 
       <form onSubmit={submit}>
@@ -362,4 +361,4 @@ export default function DadaPage() {
       <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
-                                                                                                                                                                                                                             }
+                                                                                                                                                                              }
