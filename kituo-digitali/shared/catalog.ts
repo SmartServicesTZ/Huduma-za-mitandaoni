@@ -60,7 +60,6 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   paid("leseni-biashara", "LESENI YA BIASHARA", "Anza mchakato wa leseni ya biashara.", "store", "HUDUMA ZA WAKALA"),
   paid("cheti-tin", "TIN CERTIFICATE", "Pata cheti cha TIN kwa hatua rahisi.", "file-badge", "HUDUMA ZA WAKALA"),
   paid("leseni-udereva", "LESENI YA UDEREVA", "Msaada wa huduma za leseni ya udereva.", "car-front", "HUDUMA ZA WAKALA"),
-  paid("soft-copy-nida", "SOFT COPY NIDA", "Tengeneza kadi binafsi ya mfano yenye alama DEMO – NOT OFFICIAL.", "id-card", "HUDUMA ZA WAKALA"),
   { ...paid("verify-tin", "VERIFY TIN", "Jaza taarifa zako za TIN na tengeneza mwonekano wa mfano usio uthibitisho rasmi wa TRA.", "image-search", "HUDUMA ZA WAKALA"), tokenCost: 2 },
   paid("mpiga-kura", "SOFT COPY YA MPIGA KURA", "Huduma na taarifa za mpiga kura.", "vote", "HUDUMA ZA WAKALA"),
   paid("stika-lipa", "STIKA ZA LIPA", "Tengeneza na pakua stika za Lipa za Airtel, Vodacom, Halotel na Yas sehemu moja.", "qr-code", "HUDUMA ZA WAKALA"),
@@ -86,7 +85,7 @@ export const serviceCatalog: ServiceCatalogItem[] = [
   locked("simba-sc", "SIMBA SC WHATSAPP GROUP", "Kipengele kimefungwa kwa muda; group bado halijaandaliwa.", "trophy", "HUDUMA ZINGINE"),
   paid("yanga-africans", "YANGA SC WHATSAPP GROUP", "Jiunge na group la mashabiki wa Yanga baada ya kusoma na kukubali sheria.", "star", "HUDUMA ZINGINE"),
   paid("azam-tv", "AZAM TV", "Fungua huduma rasmi za Azam TV.", "tv", "HUDUMA ZINGINE"),
-  free("dada", "DADA", "Fomu ya majina, namba, tarehe na jinsia; zana ya picha ya mfano.", "id-card", "HUDUMA ZINGINE"),
+  free("dada", "NIDA SOFT COPY", "Tengeneza picha ya mfano yenye alama SAMPLE — NOT AN OFFICIAL ID.", "id-card", "HUDUMA ZINGINE"),
 ];
 export const specialServices = [
   { slug: "tic-tech", name: "JIUNGE NA KIKUNDI CHA SMARTSERVICES TZ", tone: "green", action: "external", url: "https://chat.whatsapp.com/H1Bvu253n9NK7c4agRgOX4" },
@@ -125,7 +124,7 @@ export function mergeServiceCatalogDefaults(configured: ServiceCatalogItem[], in
       : { ...fallback, ...service });
   });
   if (initialized) {
-    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "soft-copy-nida", "stika-lipa", "edu-halotel", "dada"];
+    const alwaysAvailableDefaults = ["access-lipa-number", "pata-pocket-wifi-mabando", "pata-till-mitandao-yote", "stika-lipa", "edu-halotel", "dada"];
     alwaysAvailableDefaults.forEach((slug) => {
       const fallback = defaults.get(slug);
       if (fallback && !configured.some((service) => service.slug === slug)) merged.set(slug, fallback);
