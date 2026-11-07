@@ -14,7 +14,7 @@ import { ServiceApplicationsPanel } from "./ServiceApplicationsPanel";
 import { UnifiedApplicationsInbox } from "./UnifiedApplicationsInbox";
 import { getRecentSecurityLogs } from "@/lib/securityLogs";
 
-type Panel = "overview" | "softCopyNida" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages" | "cms" | "templates" | "appearance" | "announcements" | "videos" | "ads" | "licenses";
+type Panel = "overview" | "users" | "agents" | "tokens" | "services" | "serviceControl" | "applications" | "lipa" | "lipaReport" | "transactions" | "reports" | "security" | "messages" | "cms" | "templates" | "appearance" | "announcements" | "videos" | "ads" | "licenses";
 const nav: Array<[Panel, string, typeof LayoutDashboard]> = [
   // Orodha fupi iliyopangwa kwa kazi: mwanzo, maombi, usimamizi, fedha, kisha mfumo.
   ["overview", "Muhtasari", LayoutDashboard],
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
   const canManage = isAuthenticated && (isSuper || isAdmin || Object.values(permissions).some(Boolean));
   const rawPanel = location.split("/admin/")[1]?.split("/")[0] || "overview";
   const panel = ((nav.some(([key]) => key === rawPanel)) ? rawPanel : rawPanel === "settings" ? "cms" : rawPanel === "licenses" ? "templates" : rawPanel === "audit" ? "security" : rawPanel === "analytics" ? "reports" : rawPanel === "videos" || rawPanel === "announcements" || rawPanel === "ads" || rawPanel === "roles" ? "overview" : "overview") as Panel;
-  const visibleNav = nav.filter(([key]) => key === "overview" || (key === "softCopyNida" ? hasPermission("manageServices") : !panelPermission[key] || hasPermission(panelPermission[key]!)));
+  const visibleNav = nav.filter(([key]) => key === "overview" || !panelPermission[key] || hasPermission(panelPermission[key]!));
 
   // Keep the admin drawer transient on mobile and never let its open state
   // survive navigation, Escape, or switching to the desktop layout.
@@ -372,9 +372,9 @@ export default function AdminDashboard() {
       {panel === "tokens" && <TokensPanel users={users} form={tokenForm} setForm={setTokenForm} onRun={run} adminId={firebaseUser!.uid} busy={busy} bonusConfig={tokenBonusConfig} setBonusConfig={setTokenBonusConfig} />}
       {panel === "services" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} />}
       {panel === "serviceControl" && <ServicesPanel services={services} serviceLocks={serviceLocks} service={service} setService={setService} onRun={run} adminId={firebaseUser!.uid} busy={busy} isSuper={isSuper} controlOnly onEdit={() => navigate("/admin/services")} />}
-      {(panel === "applications" || panel === "softCopyNida") && <section className="admin-card admin-unified-applications">
-        <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU</span><h2>{panel === "softCopyNida" ? "MAOMBI YA SOFT COPY NIDA" : "MAOMBI YA HUDUMA"}</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>{panel === "softCopyNida" ? "Maombi ya huduma ya Soft Copy NIDA pekee." : "Maombi ya huduma na LIPA NAMBA yameunganishwa kwenye list moja. Kila ombi lina aina yake na linafunguka kwa vitendo vyake maalum."}</p></div><ClipboardList size={22}/></div>
-        <UnifiedApplicationsInbox serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} networks={lipaServices} serviceFilter={panel === "softCopyNida" ? "SOFT_COPY_NIDA" : undefined} onSelect={(kind, id) => { setSelectedInboxApplication({ kind, id }); setSelectedInboxSession((value) => value + 1); }} />
+      {panel === "applications" && <section className="admin-card admin-unified-applications">
+        <div className="admin-card-heading"><div><span className="admin-kicker">INBOX KUU</span><h2>MAOMBI YA HUDUMA</h2><p style={{margin:"5px 0 0",color:"var(--muted,#64748b)"}}>Maombi ya huduma na LIPA NAMBA yameunganishwa kwenye list moja. Kila ombi lina aina yake na linafunguka kwa vitendo vyake maalum.</p></div><ClipboardList size={22}/></div>
+        <UnifiedApplicationsInbox serviceApplications={serviceApplications} lipaApplications={lipaApplications} services={services} networks={lipaServices} onSelect={(kind, id) => { setSelectedInboxApplication({ kind, id }); setSelectedInboxSession((value) => value + 1); }} />
         {(serviceApplicationsHaveMore || lipaApplicationsHaveMore) && <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>{serviceApplicationsHaveMore && <button type="button" className="button button--secondary button--small" onClick={() => void loadMoreApplications("SERVICE")}>Pakia maombi mengine ya huduma</button>}{lipaApplicationsHaveMore && <button type="button" className="button button--secondary button--small" onClick={() => void loadMoreApplications("LIPA")}>Pakia maombi mengine ya Lipa</button>}</div>}
         {selectedInboxApplication && <div style={{marginTop:16}}>
           <button type="button" className="button button--secondary button--small" onClick={() => { setSelectedInboxApplication(null); setSelectedInboxSession((value) => value + 1); }} style={{marginBottom:12}}>← Rudi kwenye list ya maombi</button>
@@ -423,7 +423,7 @@ const permissionOptions = [
   ["viewAuditLogs", "Audit logs: kuona historia ya actions"],
 ] as const;
 
-const panelPermission: Partial<Record<Panel, string>> = { softCopyNida: "manageServices", agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", lipa: "manageLipaApplications", transactions: "manageReports", reports: "manageReports", security: "viewAuditLogs", messages: "manageMessages", cms: "manageSettings", templates: "manageSettings", appearance: "manageSettings", announcements: "manageContent", videos: "manageContent", ads: "manageContent", licenses: "manageLicenses" };
+const panelPermission: Partial<Record<Panel, string>> = { agents: "manageUsers", lipaReport: "manageLipaApplications", users: "viewUsers", tokens: "manageTokens", services: "manageServices", serviceControl: "manageServices", applications: "manageServices", lipa: "manageLipaApplications", transactions: "manageReports", reports: "manageReports", security: "viewAuditLogs", messages: "manageMessages", cms: "manageSettings", templates: "manageSettings", appearance: "manageSettings", announcements: "manageContent", videos: "manageContent", ads: "manageContent", licenses: "manageLicenses" };
 
 function BusinessReport({ transactions, users, serviceApplications, lipaApplications, services }: { transactions: any[]; users: any[]; serviceApplications: ServiceApplication[]; lipaApplications: LipaApplication[]; services: any[] }) {
   const [from, setFrom] = useState("");
@@ -634,8 +634,6 @@ function ServicesPanel({ services, serviceLocks, service, setService, onRun, adm
   const configuredServices = mergeServiceCatalogDefaults(normalizedServiceRecords, false).filter((item: any) => {
     const slug = String(item.slug ?? item.id ?? "").toLowerCase();
     if (slug === "utafutaji-nida") return false;
-    // SOFT COPY NIDA lazima ibaki kwenye orodha ya Funga/Fungua; ficha huduma nyingine za NIDA tu.
-    if (slug === "soft-copy-nida") return true;
     return !/\\bnida\\b/i.test(`${item.name ?? ""} ${slug}`);
   });
   // Dedupe kwa slug: TAFUTA NIDA ilikuwa inaonekana mara mbili ndani ya Funga/Fungua Huduma.
