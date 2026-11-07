@@ -44,18 +44,15 @@ export default function VoterIdPage() {
   const [street, setStreet] = useState("");
   const [centre, setCentre] = useState("");
   
-  // Namba ya mpiga kura inaweza kuandikwa au kubadilishwa
-  const [voterIdNumber, setVoterIdNumber] = useState("T-1804-3676-092-0");
-
+  const [voterIdNumber, setVoterIdNumber] = useState("T-9312-3008-864-8");
   const [message, setMessage] = useState("Inapakia templates za Kadi ya Mpiga Kura...");
   
-  // Hali ya Modal ya Saini Kubwa
   const [isSignModalOpen, setIsSignModalOpen] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
 
   const formattedDob = useMemo(() => {
     if (!day || !month || !year) return "";
-    return `${day} ${month} ${year}`;
+    return `${day}/${month}/${year}`;
   }, [day, month, year]);
 
   useEffect(() => {
@@ -149,46 +146,54 @@ export default function VoterIdPage() {
     context.fillStyle = "#000000";
 
     if (side === "front") {
-      const fullNamesText = [firstNameMiddle, lastName].filter(Boolean).join(" ").toUpperCase();
-      if (fullNamesText) {
-        context.font = "bold 24px Arial";
-        context.fillText(fullNamesText, 310, 242, 650);
-      }
-
-      if (formattedDob) {
-        context.font = "bold 22px Arial";
-        context.fillText(formattedDob, 310, 362, 400);
-      }
-
-      if (gender) {
-        context.font = "bold 22px Arial";
-        context.fillText(gender, 500, 424, 200);
-      }
-
-      if (ward) {
-        context.font = "bold 22px Arial";
-        context.fillText(ward.toUpperCase(), 310, 508, 400);
-      }
-
-      if (street) {
-        context.font = "bold 22px Arial";
-        context.fillText(street.toUpperCase(), 310, 610, 400);
-      }
-
-      if (centre) {
-        context.font = "bold 22px Arial";
-        context.fillText(centre.toUpperCase(), 310, 712, 400);
-      }
-
-      const photoBox = { x: 30, y: 220, width: 250, height: 350 };
+      // 1. Picha ya Uso (Kwenye boksi la kushoto)[span_6](start_span)[span_6](end_span)
+      const photoBox = { x: 30, y: 222, width: 275, height: 335 };
       if (portraitImage) {
         context.drawImage(portraitImage, photoBox.x, photoBox.y, photoBox.width, photoBox.height);
       }
 
+      // 2. Jina Kamili (Jina la kwanza/kati + Jina la Mwisho)[span_7](start_span)[span_7](end_span)
+      const fullNamesText = [firstNameMiddle, lastName].filter(Boolean).join(" ").toUpperCase();
+      if (fullNamesText) {
+        context.font = "bold 23px Arial";
+        context.fillText(fullNamesText, 315, 260, 360);
+      }
+
+      // 3. Tarehe ya Kuzaliwa[span_8](start_span)[span_8](end_span)
+      if (formattedDob) {
+        context.font = "bold 21px Arial";
+        context.fillText(formattedDob, 315, 372, 220);
+      }
+
+      // 4. Jinsia[span_9](start_span)[span_9](end_span)
+      if (gender) {
+        context.font = "bold 21px Arial";
+        context.fillText(gender, 520, 372, 120);
+      }
+
+      // 5. Kata - Ward[span_10](start_span)[span_10](end_span)
+      if (ward) {
+        context.font = "bold 21px Arial";
+        context.fillText(ward.toUpperCase(), 315, 482, 300);
+      }
+
+      // 6. Mtaa / Kijiji[span_11](start_span)[span_11](end_span)
+      if (street) {
+        context.font = "bold 21px Arial";
+        context.fillText(street.toUpperCase(), 315, 592, 300);
+      }
+
+      // 7. Kituo cha Kuandikisha[span_12](start_span)[span_12](end_span)
+      if (centre) {
+        context.font = "bold 21px Arial";
+        context.fillText(centre.toUpperCase(), 315, 702, 350);
+      }
+
+      // 8. Saini ya Mtu (Chini ya picha kushoto)[span_13](start_span)[span_13](end_span)
       if (signatureImage) {
         const sigImg = new Image();
         sigImg.onload = () => {
-          context.drawImage(sigImg, 190, 770, 140, 50);
+          context.drawImage(sigImg, 195, 775, 120, 45);
         };
         sigImg.src = signatureImage;
       }
@@ -205,13 +210,13 @@ export default function VoterIdPage() {
             background: "transparent",
             lineColor: "#000000",
           });
-          context.drawImage(tempBarcodeCanvas.current, 310, 780, 580, 85);
+          context.drawImage(tempBarcodeCanvas.current, 310, 785, 580, 80);
         } catch (e) {
           console.error(e);
         }
 
-        context.font = "bold 26px monospace";
-        context.fillText(voterIdNumber, 310, 900);
+        context.font = "bold 24px monospace";
+        context.fillText(voterIdNumber, 705, 902);
       }
     }
   }
@@ -232,7 +237,6 @@ export default function VoterIdPage() {
       link.href = canvas.toDataURL("image/png");
       link.click();
     } else {
-      // Pakua kama PDF kupitia print window au image embedding
       const dataUrl = canvas.toDataURL("image/png");
       const win = window.open("");
       if (win) {
@@ -262,16 +266,16 @@ export default function VoterIdPage() {
       <section style={panel}>
         <h2 style={heading}><UserRound size={17} color="#2563eb"/> Taarifa za Mwombaji</h2>
         <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12}}>
-          <label style={field}>Jina la Kwanza na la Kati *<input style={input} value={firstNameMiddle} onChange={e=>setFirstNameMiddle(e.target.value)} placeholder="SALIM M." required /></label>
-          <label style={field}>Jina la Mwisho / Ukoo *<input style={input} value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="SWALEH" required /></label>
+          <label style={field}>Jina la Kwanza na la Kati *<input style={input} value={firstNameMiddle} onChange={e=>setFirstNameMiddle(e.target.value)} placeholder="JOSEPH BAKARI" required /></label>
+          <label style={field}>Jina la Mwisho / Ukoo *<input style={input} value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="JUMA" required /></label>
         </div>
 
         <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
           <label style={field}>Tarehe ya Kuzaliwa *
             <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6}}>
-              <input style={input} value={day} onChange={e=>setDay(e.target.value)} placeholder="Tarehe" maxLength={2} required />
-              <input style={input} value={month} onChange={e=>setMonth(e.target.value)} placeholder="Mwezi" maxLength={3} required />
-              <input style={input} value={year} onChange={e=>setYear(e.target.value)} placeholder="Mwaka" maxLength={4} required />
+              <input style={input} value={day} onChange={e=>setDay(e.target.value)} placeholder="08" maxLength={2} required />
+              <input style={input} value={month} onChange={e=>setMonth(e.target.value)} placeholder="08" maxLength={3} required />
+              <input style={input} value={year} onChange={e=>setYear(e.target.value)} placeholder="2001" maxLength={4} required />
             </div>
           </label>
 
@@ -284,15 +288,14 @@ export default function VoterIdPage() {
         </div>
 
         <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))", gap: 12, marginTop: 12}}>
-          <label style={field}>Kata - Ward<input style={input} value={ward} onChange={e=>setWard(e.target.value)} placeholder="UNGA LIMITED" /></label>
-          <label style={field}>Mtaa / Kijiji<input style={input} value={street} onChange={e=>setStreet(e.target.value)} placeholder="MAKABURI YA BANIANI" /></label>
-          <label style={field}>Kituo cha Kuandikisha<input style={input} value={centre} onChange={e=>setCentre(e.target.value)} placeholder="OFISI YA AFISA MTENDAJI KATA" /></label>
+          <label style={field}>Kata - Ward<input style={input} value={ward} onChange={e=>setWard(e.target.value)} placeholder="KAWE" /></label>
+          <label style={field}>Mtaa / Kijiji<input style={input} value={street} onChange={e=>setStreet(e.target.value)} placeholder="KAWE" /></label>
+          <label style={field}>Kituo cha Kuandikisha<input style={input} value={centre} onChange={e=>setCentre(e.target.value)} placeholder="MBEZI" /></label>
         </div>
 
         <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
           <label style={field}>Ambatisha Picha Yako<input style={{...input, padding: "6px"}} type="file" accept="image/*" onChange={handlePhotoUpload} /></label>
           
-          {/* KITUFE CHA KUGUSA ILI KUWEKA SAINI KWENYE DIRISHA KUBWA */}
           <div style={field}>
             <span>Saini Yako (Wino Mweusi)</span>
             <button
@@ -318,7 +321,7 @@ export default function VoterIdPage() {
 
         <div style={{marginTop: 12}}>
           <label style={field}>Namba ya Mpiga Kura (Unaweza kubadili kama unataka)
-            <input style={input} value={voterIdNumber} onChange={e => setVoterIdNumber(e.target.value)} placeholder="T-1804-3676-092-0" />
+            <input style={input} value={voterIdNumber} onChange={e => setVoterIdNumber(e.target.value)} placeholder="T-9312-3008-864-8" />
           </label>
         </div>
       </section>
@@ -429,6 +432,8 @@ export default function VoterIdPage() {
           </div>
         </div>
       </section>
+
+      <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
 }
