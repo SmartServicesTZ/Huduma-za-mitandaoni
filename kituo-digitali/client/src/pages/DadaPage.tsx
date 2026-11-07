@@ -17,7 +17,7 @@ function formatNida(value: string): string {
     .filter(Boolean).join("-");
 }
 
-// Inasoma tarakimu 8 za mwanzo za NIDA na kutengeneza tarehe (Mfano: 05 JUN 2000)
+// Inasoma tarakimu 8 za mwanzo za NIDA na kutengeneza tarehe (Mfano: 01 MAY 2005)
 function parseDateFromNida(nidaVal: string): string {
   const clean = nidaVal.replace(/\D/g, "");
   if (clean.length < 8) return "";
@@ -204,7 +204,8 @@ export default function NidaTemplatePage() {
       if (cleanNida) {
         context.font = "bold 38px monospace";
         context.textAlign = "center";
-        context.fillText(cleanNida, 500, 215); // Imepandishwa juu kidogo kama ulivyoomba
+        // Imepandishwa juu vizuri ikae kwenye eneo lake sahihi (y = 125)
+        context.fillText(cleanNida, 500, 125); 
       }
     }
   }
@@ -256,7 +257,7 @@ export default function NidaTemplatePage() {
         <label style={fieldLabel}>Namba ya Kitambulisho (NIN)
           <input className="input" inputMode="numeric" autoComplete="off" value={formattedNida} maxLength={23}
             onChange={(e) => setNida(e.target.value.replace(/\D/g, "").slice(0, 20))}
-            placeholder="19950405-27520-00001-33" style={{ fontVariantNumeric: "tabular-nums", letterSpacing: 1.1 }} />
+            placeholder="20050501-41210-00001-80" style={{ fontVariantNumeric: "tabular-nums", letterSpacing: 1.1 }} />
         </label>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 7, color: "#64748b", fontSize: 12 }}>
           <span>Tarehe Iliyosomwa: <strong style={{ color: "#059669" }}>{calculatedBirthDate || "Weka NIDA yenye tarakimu 8 za mwanzo"}</strong></span>
@@ -324,4 +325,3 @@ const previewHeader: React.CSSProperties = { display: "flex", alignItems: "cente
 const previewBox: React.CSSProperties = { position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" };
 const canvasStyle: React.CSSProperties = { display: "block", width: "100%", height: "100%" };
 const emptyText: React.CSSProperties = { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 13, pointerEvents: "none", textAlign: "center", padding: 12 };
-              
