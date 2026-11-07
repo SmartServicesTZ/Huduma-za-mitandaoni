@@ -217,16 +217,6 @@ export default function NidaTemplatePage() {
       }
     }
 
-    // Alama ya lazima ili picha hii isichanganywe na kitambulisho rasmi.
-    context.save();
-    context.globalAlpha = 0.62;
-    context.fillStyle = "#b91c1c";
-    context.font = "bold 48px Arial";
-    context.textAlign = "center";
-    context.translate(WIDTH / 2, HEIGHT / 2);
-    context.rotate(-Math.PI / 7);
-    context.fillText("SAMPLE — NOT AN OFFICIAL ID", 0, 0);
-    context.restore();
   }
 
   // Pakia JsBarcode kutoka CDN ili kuepuka dependency isiyopo kwenye lockfile.
@@ -268,9 +258,9 @@ export default function NidaTemplatePage() {
       </button>
 
       <header style={{ marginBottom: 22 }}>
-        <span style={{ color: "#059669", fontSize: 11, fontWeight: 900, letterSpacing: 1.8 }}>NIDA SOFT COPY • SAMPLE TOOL</span>
+        <span style={{ color: "#059669", fontSize: 11, fontWeight: 900, letterSpacing: 1.8 }}>NIDA SOFT COPY</span>
         <h1 style={{ margin: "6px 0", fontSize: 30 }}>NIDA SOFT COPY</h1>
-        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>Tengeneza picha ya mfano kwa mazoezi pekee. Si kitambulisho rasmi cha NIDA; alama SAMPLE — NOT AN OFFICIAL ID itaonekana kwenye picha utakayopakua.</p>
+        <p style={{ margin: 0, color: "#64748b", lineHeight: 1.6 }}>Jaza taarifa zako. Tarehe inajaza yenyewe na unaweza kuchora saini yako.</p>
       </header>
 
       <section style={formPanel}>
