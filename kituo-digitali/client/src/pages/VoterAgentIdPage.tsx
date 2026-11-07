@@ -1,439 +1,308 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Download, Eraser, BadgeCheck, ClipboardList, UserRound, PenTool, X, FileText } from "lucide-react";
+import { ArrowLeft, Download, Image as ImageIcon, Printer, UserRound } from "lucide-react";
 import { useLocation } from "wouter";
-import JsBarcode from "jsbarcode";
+import {
+  DEMO_NOTICE,
+  DEMO_REFERENCE,
+  VOTER_DEMO_HEIGHT,
+  VOTER_DEMO_WIDTH,
+  formatVoterDemoDate,
+} from "../lib/voterCardDemo";
 
 type Side = "front" | "back";
-const WIDTH = 1000;
-const HEIGHT = 630;
+type ExportFormat = "png" | "jpg";
 
-const TEMPLATE_URLS: Record<Side, string> = {
-  front: `${import.meta.env.BASE_URL}kura-mbele.png`,
-  back: `${import.meta.env.BASE_URL}kura-nyuma.png`,
-};
+const DESIGN_WIDTH = 1000;
+const DESIGN_HEIGHT = 625;
+const SCALE = VOTER_DEMO_WIDTH / DESIGN_WIDTH;
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Imeshindikana kupakia template: ${src}`));
-    image.src = src;
-  });
+interface CardData {
+  fullName: string;
+  dateOfBirth: string;
+  gender: string;
+  ward: string;
+  street: string;
+  centre: string;
+  portrait: HTMLImageElement | null;
+}
+
+function drawLabelValue(
+  context: CanvasRenderingContext2D,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+) {
+  context.textAlign = "left";
+  context.fillStyle = "#475569";
+  context.font = "600 13px Arial, sans-serif";
+  context.fillText(label.toUpperCase(), x, y);
+
+  const safeValue = value.trim() || "SAMPLE DATA";
+  let fontSize = 25;
+  context.font = `700 ${fontSize}px Arial, sans-serif`;
+  while (context.measureText(safeValue).width > maxWidth && fontSize > 15) {
+    fontSize -= 1;
+    context.font = `700 ${fontSize}px Arial, sans-serif`;
+  }
+  context.fillStyle = "#111827";
+  context.fillText(safeValue, x, y + 31, maxWidth);
+}
+
+function drawWatermark(context: CanvasRenderingContext2D) {
+  context.save();
+  context.translate(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
+  context.rotate(-Math.PI / 7);
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = "900 66px Arial, sans-serif";
+  context.fillStyle = "rgba(185, 28, 28, 0.24)";
+  context.fillText("DEMO • SI RASMI", 0, 0);
+  context.restore();
+
+  context.fillStyle = "#991b1b";
+  context.fillRect(0, DESIGN_HEIGHT - 48, DESIGN_WIDTH, 48);
+  context.fillStyle = "#ffffff";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = "800 18px Arial, sans-serif";
+  context.fillText(DEMO_NOTICE, DESIGN_WIDTH / 2, DESIGN_HEIGHT - 24);
+}
+
+function drawFrame(context: CanvasRenderingContext2D) {
+  context.fillStyle = "#f8fafc";
+  context.fillRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+  context.strokeStyle = "#1e3a5f";
+  context.lineWidth = 5;
+  context.strokeRect(4, 4, DESIGN_WIDTH - 8, DESIGN_HEIGHT - 8);
+  context.strokeStyle = "#93c5fd";
+  context.lineWidth = 2;
+  context.strokeRect(13, 13, DESIGN_WIDTH - 26, DESIGN_HEIGHT - 26);
+  context.fillStyle = "#123b63";
+  context.fillRect(18, 18, DESIGN_WIDTH - 36, 88);
+  context.fillStyle = "#f59e0b";
+  context.fillRect(18, 106, DESIGN_WIDTH - 36, 6);
+}
+
+function drawFront(context: CanvasRenderingContext2D, data: CardData) {
+  drawFrame(context);
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+  context.fillStyle = "#ffffff";
+  context.font = "800 27px Arial, sans-serif";
+  context.fillText("SOFT COPY YA MPIGA KURA", 42, 58);
+  context.fillStyle = "#dbeafe";
+  context.font = "700 14px Arial, sans-serif";
+  context.fillText("SAMPLE CARD • HAITAMBULISHI MPIGA KURA", 43, 84);
+
+  const photo = { x: 42, y: 142, width: 274, height: 354 };
+  context.fillStyle = "#dbeafe";
+  context.fillRect(photo.x, photo.y, photo.width, photo.height);
+  if (data.portrait) {
+    const image = data.portrait;
+    const scale = Math.max(photo.width / image.width, photo.height / image.height);
+    const width = image.width * scale;
+    const height = image.height * scale;
+    context.save();
+    context.beginPath();
+    context.rect(photo.x, photo.y, photo.width, photo.height);
+    context.clip();
+    context.drawImage(image, photo.x + (photo.width - width) / 2, photo.y + (photo.height - height) / 2, width, height);
+    context.restore();
+  } else {
+    context.fillStyle = "#1e3a5f";
+    context.textAlign = "center";
+    context.font = "700 16px Arial, sans-serif";
+    context.fillText("SAMPLE PHOTO", photo.x + photo.width / 2, photo.y + photo.height / 2);
+    context.fillStyle = "#475569";
+    context.font = "13px Arial, sans-serif";
+    context.fillText("Upload a fictional image", photo.x + photo.width / 2, photo.y + photo.height / 2 + 24);
+  }
+  context.strokeStyle = "#1e3a5f";
+  context.lineWidth = 3;
+  context.strokeRect(photo.x, photo.y, photo.width, photo.height);
+
+  const x = 352;
+  const width = 590;
+  drawLabelValue(context, "Jina kamili / Full name", data.fullName, x, 171, width);
+  drawLabelValue(context, "Tarehe ya kuzaliwa / Date of birth", formatVoterDemoDate(data.dateOfBirth), x, 246, 340);
+  drawLabelValue(context, "Jinsia / Gender", data.gender, 720, 246, 220);
+  drawLabelValue(context, "Kata / Ward", data.ward, x, 328, width);
+  drawLabelValue(context, "Mtaa / Kijiji / Street / Village", data.street, x, 405, width);
+  drawLabelValue(context, "Kituo / Registration centre", data.centre, x, 482, width);
+
+  context.fillStyle = "#e2e8f0";
+  context.fillRect(352, 526, 590, 31);
+  context.fillStyle = "#334155";
+  context.textAlign = "left";
+  context.font = "800 15px Arial, sans-serif";
+  context.fillText(`DEMO REFERENCE: ${DEMO_REFERENCE}`, 366, 547);
+  drawWatermark(context);
+}
+
+function drawBack(context: CanvasRenderingContext2D) {
+  drawFrame(context);
+  context.textAlign = "center";
+  context.fillStyle = "#ffffff";
+  context.font = "800 27px Arial, sans-serif";
+  context.fillText("DEMO CARD — REVERSE SIDE", DESIGN_WIDTH / 2, 58);
+  context.fillStyle = "#dbeafe";
+  context.font = "700 14px Arial, sans-serif";
+  context.fillText("NOT ISSUED BY ANY ELECTION AUTHORITY", DESIGN_WIDTH / 2, 84);
+
+  context.fillStyle = "#ffffff";
+  context.strokeStyle = "#cbd5e1";
+  context.lineWidth = 2;
+  context.fillRect(62, 150, 876, 300);
+  context.strokeRect(62, 150, 876, 300);
+  context.fillStyle = "#991b1b";
+  context.font = "900 32px Arial, sans-serif";
+  context.fillText("DEMO • SI KITAMBULISHO RASMI", DESIGN_WIDTH / 2, 220);
+  context.fillStyle = "#334155";
+  context.font = "600 20px Arial, sans-serif";
+  context.fillText("This sample is for layout preview only.", DESIGN_WIDTH / 2, 280);
+  context.fillText("No voter number, barcode, or verification QR is generated.", DESIGN_WIDTH / 2, 316);
+  context.fillStyle = "#e2e8f0";
+  context.fillRect(272, 355, 456, 58);
+  context.fillStyle = "#475569";
+  context.font = "800 18px Arial, sans-serif";
+  context.fillText("CODE DISABLED • SAMPLE ONLY", DESIGN_WIDTH / 2, 390);
+  context.fillStyle = "#334155";
+  context.font = "700 16px Arial, sans-serif";
+  context.fillText(`REFERENCE: ${DEMO_REFERENCE}`, DESIGN_WIDTH / 2, 500);
+  drawWatermark(context);
+}
+
+function drawCard(canvas: HTMLCanvasElement | null, side: Side, data: CardData) {
+  if (!canvas) return;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  context.clearRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+  if (side === "front") drawFront(context, data);
+  else drawBack(context);
 }
 
 export default function VoterIdPage() {
   const [, navigate] = useLocation();
   const frontCanvas = useRef<HTMLCanvasElement>(null);
   const backCanvas = useRef<HTMLCanvasElement>(null);
-  const modalSignatureCanvas = useRef<HTMLCanvasElement>(null);
-  const tempBarcodeCanvas = useRef<HTMLCanvasElement>(null);
-
-  const [frontTemplate, setFrontTemplate] = useState<HTMLImageElement | null>(null);
-  const [backTemplate, setBackTemplate] = useState<HTMLImageElement | null>(null);
-  const [portraitImage, setPortraitImage] = useState<HTMLImageElement | null>(null);
-  const [signatureImage, setSignatureImage] = useState<string | null>(null);
-
   const [firstNameMiddle, setFirstNameMiddle] = useState("");
   const [lastName, setLastName] = useState("");
-  const [gender, setGender] = useState("MALE");
-  const [day, setDay] = useState("");
-  const [month, setMonth] = useState("");
-  const [year, setYear] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("SAMPLE");
   const [ward, setWard] = useState("");
   const [street, setStreet] = useState("");
   const [centre, setCentre] = useState("");
-  
-  const [voterIdNumber, setVoterIdNumber] = useState("T-9312-3008-864-8");
-  const [message, setMessage] = useState("Inapakia templates za Kadi ya Mpiga Kura...");
-  
-  const [isSignModalOpen, setIsSignModalOpen] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [portrait, setPortrait] = useState<HTMLImageElement | null>(null);
 
-  const formattedDob = useMemo(() => {
-    if (!day || !month || !year) return "";
-    return `${day}/${month}/${year}`;
-  }, [day, month, year]);
-
-  useEffect(() => {
-    let active = true;
-    Promise.allSettled([loadImage(TEMPLATE_URLS.front), loadImage(TEMPLATE_URLS.back)]).then(([front, back]) => {
-      if (!active) return;
-      if (front.status === "fulfilled") setFrontTemplate(front.value);
-      if (back.status === "fulfilled") setBackTemplate(back.value);
-      setMessage(front.status === "fulfilled" && back.status === "fulfilled"
-        ? ""
-        : "Imeshindikana kupakia kura-mbele.png au kura-nyuma.png kutoka folda ya public.");
-    });
-    return () => { active = false; };
-  }, []);
+  const data = useMemo<CardData>(() => ({
+    fullName: [firstNameMiddle, lastName].map((part) => part.trim()).filter(Boolean).join(" ").toUpperCase(),
+    dateOfBirth,
+    gender,
+    ward: ward.toUpperCase(),
+    street: street.toUpperCase(),
+    centre: centre.toUpperCase(),
+    portrait,
+  }), [firstNameMiddle, lastName, dateOfBirth, gender, ward, street, centre, portrait]);
 
   useEffect(() => {
-    if (!isSignModalOpen) return;
-    const timer = setTimeout(() => {
-      const canvas = modalSignatureCanvas.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [isSignModalOpen]);
-
-  function startDrawing(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
-    setIsDrawing(true);
-    drawSignature(e);
-  }
-
-  function stopDrawing() {
-    setIsDrawing(false);
-  }
-
-  function drawSignature(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
-    if (!isDrawing) return;
-    const canvas = modalSignatureCanvas.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = ("touches" in e ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = ("touches" in e ? e.touches[0].clientY : e.clientY) - rect.top;
-
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  }
-
-  function clearModalSignature() {
-    const canvas = modalSignatureCanvas.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-  }
-
-  function saveModalSignature() {
-    const canvas = modalSignatureCanvas.current;
-    if (!canvas) return;
-    setSignatureImage(canvas.toDataURL("image/png"));
-    setIsSignModalOpen(false);
-  }
+    drawCard(frontCanvas.current, "front", data);
+    drawCard(backCanvas.current, "back", data);
+  }, [data]);
 
   function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    setPortrait(null);
+    if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => setPortraitImage(img);
-      img.src = e.target?.result as string;
+    reader.onload = (result) => {
+      const image = new Image();
+      image.onload = () => setPortrait(image);
+      image.src = String(result.target?.result ?? "");
     };
     reader.readAsDataURL(file);
   }
 
-  function draw(canvas: HTMLCanvasElement | null, template: HTMLImageElement | null, side: Side) {
-    const context = canvas?.getContext("2d");
-    if (!canvas || !context) return;
-    context.clearRect(0, 0, WIDTH, HEIGHT);
-    if (!template) return;
-
-    context.drawImage(template, 0, 0, WIDTH, HEIGHT);
-    context.fillStyle = "#000000";
-
-    if (side === "front") {
-      // 1. Picha ya Uso (Kwenye boksi la kushoto)[span_6](start_span)[span_6](end_span)
-      const photoBox = { x: 30, y: 222, width: 275, height: 335 };
-      if (portraitImage) {
-        context.drawImage(portraitImage, photoBox.x, photoBox.y, photoBox.width, photoBox.height);
-      }
-
-      // 2. Jina Kamili (Jina la kwanza/kati + Jina la Mwisho)[span_7](start_span)[span_7](end_span)
-      const fullNamesText = [firstNameMiddle, lastName].filter(Boolean).join(" ").toUpperCase();
-      if (fullNamesText) {
-        context.font = "bold 23px Arial";
-        context.fillText(fullNamesText, 315, 260, 360);
-      }
-
-      // 3. Tarehe ya Kuzaliwa[span_8](start_span)[span_8](end_span)
-      if (formattedDob) {
-        context.font = "bold 21px Arial";
-        context.fillText(formattedDob, 315, 372, 220);
-      }
-
-      // 4. Jinsia[span_9](start_span)[span_9](end_span)
-      if (gender) {
-        context.font = "bold 21px Arial";
-        context.fillText(gender, 520, 372, 120);
-      }
-
-      // 5. Kata - Ward[span_10](start_span)[span_10](end_span)
-      if (ward) {
-        context.font = "bold 21px Arial";
-        context.fillText(ward.toUpperCase(), 315, 482, 300);
-      }
-
-      // 6. Mtaa / Kijiji[span_11](start_span)[span_11](end_span)
-      if (street) {
-        context.font = "bold 21px Arial";
-        context.fillText(street.toUpperCase(), 315, 592, 300);
-      }
-
-      // 7. Kituo cha Kuandikisha[span_12](start_span)[span_12](end_span)
-      if (centre) {
-        context.font = "bold 21px Arial";
-        context.fillText(centre.toUpperCase(), 315, 702, 350);
-      }
-
-      // 8. Saini ya Mtu (Chini ya picha kushoto)[span_13](start_span)[span_13](end_span)
-      if (signatureImage) {
-        const sigImg = new Image();
-        sigImg.onload = () => {
-          context.drawImage(sigImg, 195, 775, 120, 45);
-        };
-        sigImg.src = signatureImage;
-      }
-    } 
-
-    if (side === "back") {
-      if (voterIdNumber && tempBarcodeCanvas.current) {
-        try {
-          JsBarcode(tempBarcodeCanvas.current, voterIdNumber, {
-            format: "CODE128",
-            width: 3,
-            height: 80,
-            displayValue: false,
-            background: "transparent",
-            lineColor: "#000000",
-          });
-          context.drawImage(tempBarcodeCanvas.current, 310, 785, 580, 80);
-        } catch (e) {
-          console.error(e);
-        }
-
-        context.font = "bold 24px monospace";
-        context.fillText(voterIdNumber, 705, 902);
-      }
-    }
-  }
-
-  useEffect(() => {
-    draw(frontCanvas.current, frontTemplate, "front");
-    draw(backCanvas.current, backTemplate, "back");
-  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedDob, gender, ward, street, centre, portraitImage, signatureImage, voterIdNumber]);
-
-  function download(side: Side, format: "png" | "pdf") {
+  function download(side: Side, format: ExportFormat) {
     const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
-    const template = side === "front" ? frontTemplate : backTemplate;
-    if (!canvas || !template) return;
-
-    if (format === "png") {
-      const link = document.createElement("a");
-      link.download = side === "front" ? "kura_mbele.png" : "kura_nyuma.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } else {
-      const dataUrl = canvas.toDataURL("image/png");
-      const win = window.open("");
-      if (win) {
-        win.document.write(`<html><head><title>Kadi ya Mpiga Kura - ${side.toUpperCase()}</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#000;"><img src="${dataUrl}" style="max-width:100%;height:auto;" onload="window.print();window.close();"/></body></html>`);
-        win.document.close();
-      }
-    }
+    if (!canvas) return;
+    const mime = format === "jpg" ? "image/jpeg" : "image/png";
+    const link = document.createElement("a");
+    link.download = `mpiga-kura-demo-${side}.${format}`;
+    link.href = canvas.toDataURL(mime, format === "jpg" ? 0.94 : undefined);
+    link.click();
   }
 
-  const field: React.CSSProperties = { display: "grid", gap: 6, fontSize: 13, fontWeight: 750, color: "#26364b" };
-  const input: React.CSSProperties = { width: "100%", minHeight: 42, border: "1px solid #d8e1ec", borderRadius: 10, padding: "10px 12px", background: "#fff", color: "#172033", fontSize: 14, outlineColor: "#2563eb", boxSizing: "border-box" };
-  const panel: React.CSSProperties = { background: "#fff", border: "1px solid #e4eaf2", borderRadius: 14, padding: 16, marginBottom: 14, boxShadow: "0 4px 16px rgba(15,23,42,.03)" };
-  const heading: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px", fontSize: 16, fontWeight: 800, color: "#172b4d" };
+  function print(side: Side) {
+    const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
+    if (!canvas) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.opener = null;
+    const imageUrl = canvas.toDataURL("image/png");
+    win.document.write(`<!doctype html><html><head><title>Demo voter card</title><style>html,body{margin:0;background:#eef2f7}main{padding:18px;text-align:center}img{width:min(100%,1000px);height:auto}</style></head><body><main><img src="${imageUrl}" alt="${DEMO_NOTICE}" /></main><script>window.onload=()=>window.print()<\/script></body></html>`);
+    win.document.close();
+  }
+
+  const fieldStyle: React.CSSProperties = { display: "grid", gap: 6, fontSize: 13, fontWeight: 750, color: "#26364b" };
+  const inputStyle: React.CSSProperties = { width: "100%", minHeight: 42, border: "1px solid #d8e1ec", borderRadius: 10, padding: "10px 12px", background: "#fff", color: "#172033", fontSize: 14, boxSizing: "border-box" };
 
   return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: "16px 12px 36px", color: "#172033" }}>
+    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "16px 12px 36px", color: "#172033" }}>
       <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", fontSize: 13 }}>
         <ArrowLeft size={15} /> Rudi kwenye huduma
       </button>
 
-      <header style={{ borderRadius: 16, padding: "18px 20px", marginBottom: 14, color: "#fff", background: "linear-gradient(120deg,#123c70,#2563eb 62%,#4f46e5)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 800, letterSpacing: 1.2, opacity: .9 }}><ClipboardList size={16}/> FOMU YA UCHAGUZI</div>
-        <h1 style={{ margin: "6px 0 4px", fontSize: "clamp(22px,4vw,28px)", letterSpacing: "-.5px" }}>Kadi ya Mpiga Kura</h1>
+      <header style={{ borderRadius: 14, padding: "16px 18px", marginBottom: 14, color: "#fff", background: "#123b63" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.2 }}>SOFT COPY YA MPIGA KURA</div>
+        <h1 style={{ margin: "6px 0 0", fontSize: "clamp(21px,4vw,28px)" }}>Kadi ya mfano — DEMO</h1>
       </header>
 
-      {/* FOMU YA KUJAZA */}
-      <section style={panel}>
-        <h2 style={heading}><UserRound size={17} color="#2563eb"/> Taarifa za Mwombaji</h2>
-        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12}}>
-          <label style={field}>Jina la Kwanza na la Kati *<input style={input} value={firstNameMiddle} onChange={e=>setFirstNameMiddle(e.target.value)} placeholder="JOSEPH BAKARI" required /></label>
-          <label style={field}>Jina la Mwisho / Ukoo *<input style={input} value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="JUMA" required /></label>
-        </div>
+      <div role="alert" style={{ border: "2px solid #b91c1c", borderRadius: 12, padding: 14, marginBottom: 14, color: "#7f1d1d", background: "#fef2f2", fontWeight: 800 }}>
+        {DEMO_NOTICE}. Tumia taarifa na picha za kubuniwa pekee. Hakuna namba halisi ya mpiga kura, QR, au barcode inayotengenezwa.
+      </div>
 
-        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
-          <label style={field}>Tarehe ya Kuzaliwa *
-            <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6}}>
-              <input style={input} value={day} onChange={e=>setDay(e.target.value)} placeholder="08" maxLength={2} required />
-              <input style={input} value={month} onChange={e=>setMonth(e.target.value)} placeholder="08" maxLength={3} required />
-              <input style={input} value={year} onChange={e=>setYear(e.target.value)} placeholder="2001" maxLength={4} required />
-            </div>
-          </label>
-
-          <label style={field}>Jinsia *
-            <select style={input} value={gender} onChange={e=>setGender(e.target.value)}>
-              <option value="MALE">MALE</option>
-              <option value="FEMALE">FEMALE</option>
-            </select>
-          </label>
+      <section style={{ background: "#fff", border: "1px solid #e4eaf2", borderRadius: 14, padding: 16, marginBottom: 14 }}>
+        <h2 style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px", fontSize: 16, fontWeight: 800, color: "#172b4d" }}><UserRound size={17} /> Taarifa za mfano</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,260px),1fr))", gap: 12 }}>
+          <label style={fieldStyle}>Jina la kwanza na la kati<input style={inputStyle} value={firstNameMiddle} onChange={(e) => setFirstNameMiddle(e.target.value)} placeholder="SAMPLE NAME" /></label>
+          <label style={fieldStyle}>Jina la mwisho<input style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="EXAMPLE" /></label>
+          <label style={fieldStyle}>Tarehe ya kuzaliwa<input style={inputStyle} type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} /></label>
+          <label style={fieldStyle}>Jinsia ya mfano<select style={inputStyle} value={gender} onChange={(e) => setGender(e.target.value)}><option value="SAMPLE">SAMPLE</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option></select></label>
+          <label style={fieldStyle}>Kata<input style={inputStyle} value={ward} onChange={(e) => setWard(e.target.value)} placeholder="SAMPLE WARD" /></label>
+          <label style={fieldStyle}>Mtaa / Kijiji<input style={inputStyle} value={street} onChange={(e) => setStreet(e.target.value)} placeholder="SAMPLE STREET" /></label>
+          <label style={fieldStyle}>Kituo cha mfano<input style={inputStyle} value={centre} onChange={(e) => setCentre(e.target.value)} placeholder="SAMPLE CENTRE" /></label>
+          <label style={fieldStyle}>Picha ya mfano<input style={{ ...inputStyle, padding: 6 }} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoUpload} /></label>
         </div>
-
-        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))", gap: 12, marginTop: 12}}>
-          <label style={field}>Kata - Ward<input style={input} value={ward} onChange={e=>setWard(e.target.value)} placeholder="KAWE" /></label>
-          <label style={field}>Mtaa / Kijiji<input style={input} value={street} onChange={e=>setStreet(e.target.value)} placeholder="KAWE" /></label>
-          <label style={field}>Kituo cha Kuandikisha<input style={input} value={centre} onChange={e=>setCentre(e.target.value)} placeholder="MBEZI" /></label>
-        </div>
-
-        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
-          <label style={field}>Ambatisha Picha Yako<input style={{...input, padding: "6px"}} type="file" accept="image/*" onChange={handlePhotoUpload} /></label>
-          
-          <div style={field}>
-            <span>Saini Yako (Wino Mweusi)</span>
-            <button
-              type="button"
-              onClick={() => setIsSignModalOpen(true)}
-              style={{
-                ...input,
-                background: signatureImage ? "#f0fdf4" : "#f8fafc",
-                color: signatureImage ? "#15803d" : "#64748b",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                cursor: "pointer",
-                fontWeight: 700,
-                border: signatureImage ? "1.5px solid #16a34a" : "1px solid #d8e1ec"
-              }}
-            >
-              <span>{signatureImage ? "✓ Saini Imewekwa (Gusa Kubadili)" : "Gusa hapa kuweka saini"}</span>
-              <PenTool size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div style={{marginTop: 12}}>
-          <label style={field}>Namba ya Mpiga Kura (Unaweza kubadili kama unataka)
-            <input style={input} value={voterIdNumber} onChange={e => setVoterIdNumber(e.target.value)} placeholder="T-9312-3008-864-8" />
-          </label>
-        </div>
+        <p style={{ margin: "12px 0 0", fontSize: 12, color: "#475569" }}>Picha hubaki kwenye kivinjari hiki kwa ajili ya preview; haipelekwi kwenye server na haijahifadhiwa.</p>
       </section>
 
-      {/* MODAL YA KUCHORA SAINI KUBWA */}
-      {isSignModalOpen && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 1000,
-          background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)",
-          display: "flex", alignItems: "center", justifyContent: "center", padding: 16
-        }}>
-          <div style={{
-            background: "#fff", width: "100%", maxWidth: 500, borderRadius: 20,
-            padding: 20, boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)"
-          }}>
-            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14}}>
-              <h3 style={{margin: 0, fontSize: 17, fontWeight: 800, color: "#1e293b"}}>Chora Saini Yako</h3>
-              <button onClick={() => setIsSignModalOpen(false)} style={{background: "none", border: "none", cursor: "pointer", color: "#64748b"}}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <p style={{fontSize: 13, color: "#64748b", marginBottom: 12}}>Tumia kidole au kalamu kuchora saini yako vizuri kwenye eneo hili kubwa:</p>
-
-            <div style={{
-              position: "relative", border: "2px dashed #94a3b8", borderRadius: 12,
-              background: "#f8fafc", overflow: "hidden", cursor: "crosshair", width: "100%", height: 200
-            }}>
-              <canvas
-                ref={modalSignatureCanvas}
-                width={460}
-                height={200}
-                onMouseDown={startDrawing}
-                onMouseMove={drawSignature}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing}
-                onTouchMove={drawSignature}
-                onTouchEnd={stopDrawing}
-                style={{ display: "block", width: "100%", height: "100%" }}
-              />
-            </div>
-
-            <div style={{display: "flex", justifyContent: "space-between", marginTop: 16}}>
-              <button
-                type="button"
-                onClick={clearModalSignature}
-                className="button button--secondary"
-                style={{fontSize: 13, padding: "8px 14px", borderRadius: 10, display: "flex", gap: 6, alignItems: "center"}}
-              >
-                <Eraser size={15} /> Futa Yote
-              </button>
-
-              <div style={{display: "flex", gap: 8}}>
-                <button
-                  type="button"
-                  onClick={() => setIsSignModalOpen(false)}
-                  style={{fontSize: 13, padding: "8px 14px", borderRadius: 10, background: "#e2e8f0", border: "none", fontWeight: 700, cursor: "pointer"}}
-                >
-                  Ghairi
-                </button>
-                <button
-                  type="button"
-                  onClick={saveModalSignature}
-                  style={{fontSize: 13, padding: "8px 16px", borderRadius: 10, background: "#2563eb", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer"}}
-                >
-                  Hifadhi Saini
-                </button>
+      <section style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 14, padding: 16 }}>
+        <h2 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 800 }}>Preview ya mfano</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,360px),1fr))", gap: 14 }}>
+          {(["front", "back"] as const).map((side) => {
+            const canvasRef = side === "front" ? frontCanvas : backCanvas;
+            const sideLabel = side === "front" ? "Mbele" : "Nyuma";
+            return (
+              <div key={side}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 7 }}>
+                  <strong>{sideLabel} — DEMO</strong>
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    <button type="button" className="button button--green" onClick={() => download(side, "png")}><Download size={14} /> PNG</button>
+                    <button type="button" className="button button--secondary" onClick={() => download(side, "jpg")}><ImageIcon size={14} /> JPG</button>
+                    <button type="button" className="button button--secondary" onClick={() => print(side)}><Printer size={14} /> Chapisha</button>
+                  </div>
+                </div>
+                <div style={{ width: "100%", aspectRatio: `${VOTER_DEMO_WIDTH} / ${VOTER_DEMO_HEIGHT}`, overflow: "hidden", borderRadius: 10, background: "#e2e8f0", boxShadow: "0 2px 8px rgba(15,23,42,.12)" }}>
+                  <canvas ref={canvasRef} width={VOTER_DEMO_WIDTH} height={VOTER_DEMO_HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {message && <p role="status" style={{padding: 10, borderRadius: 10, background: "#fff7ed", color: "#9a3412", fontSize: 12, marginBottom: 12}}>{message}</p>}
-
-      {/* LIVE PREVIEW YA KADI (KWA PICHA NA PDF) */}
-      <section style={{...panel, borderColor: "#cbd5e1", background: "#f8fafc"}}>
-        <h2 style={{...heading, color: "#1e293b"}}><BadgeCheck size={17} color="#059669"/> Muonekano wa Kadi (Live Preview)</h2>
-        
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: 14 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12, flexWrap: "wrap", gap: 4 }}>
-              <b>Upande wa Mbele</b>
-              <div style={{display: "flex", gap: 4}}>
-                <button className="button button--green" type="button" disabled={!frontTemplate} onClick={() => download("front", "png")} style={{padding: "5px 8px", fontSize: 11}}><Download size={12} /> PNG</button>
-                <button className="button button--secondary" type="button" disabled={!frontTemplate} onClick={() => download("front", "pdf")} style={{padding: "5px 8px", fontSize: 11, background: "#dc2626", color: "#fff", border: "none"}}><FileText size={12} /> PDF</button>
-              </div>
-            </div>
-            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
-              <canvas ref={frontCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
-              {!frontTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 12 }}>Inapakia...</span>}
-            </div>
-          </div>
-
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12, flexWrap: "wrap", gap: 4 }}>
-              <b>Upande wa Nyuma</b>
-              <div style={{display: "flex", gap: 4}}>
-                <button className="button button--green" type="button" disabled={!backTemplate} onClick={() => download("back", "png")} style={{padding: "5px 8px", fontSize: 11}}><Download size={12} /> PNG</button>
-                <button className="button button--secondary" type="button" disabled={!backTemplate} onClick={() => download("back", "pdf")} style={{padding: "5px 8px", fontSize: 11, background: "#dc2626", color: "#fff", border: "none"}}><FileText size={12} /> PDF</button>
-              </div>
-            </div>
-            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
-              <canvas ref={backCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
-              {!backTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 12 }}>Inapakia...</span>}
-            </div>
-          </div>
+            );
+          })}
         </div>
       </section>
-
-      <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
 }
