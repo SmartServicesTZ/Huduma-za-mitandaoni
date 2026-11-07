@@ -7,8 +7,6 @@ type Side = "front" | "back";
 const WIDTH = 1000;
 const HEIGHT = 630;
 
-// Unganisha na kiungo chako cha GitHub Raw ambapo picha za id-mbele.png na id-nyuma.png zipo
-// Mfano: https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/
 const GITHUB_TEMPLATE_BASE = "https://raw.githubusercontent.com/steward-tz/wakala-point/main/public/";
 
 const TEMPLATE_URLS: Record<Side, string> = {
@@ -46,7 +44,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export default function NidaTemplatePage() {
+export default function DadaPage() {
   const [, navigate] = useLocation();
   const frontCanvas = useRef<HTMLCanvasElement>(null);
   const backCanvas = useRef<HTMLCanvasElement>(null);
@@ -74,7 +72,6 @@ export default function NidaTemplatePage() {
 
   const complete = firstName.trim() && lastName.trim() && cleanNida.length === 20 && gender;
 
-  // Kupakia templates moja kwa moja kutoka GitHub
   useEffect(() => {
     let active = true;
     Promise.allSettled([loadImage(TEMPLATE_URLS.front), loadImage(TEMPLATE_URLS.back)]).then(([front, back]) => {
@@ -83,12 +80,11 @@ export default function NidaTemplatePage() {
       if (back.status === "fulfilled") setBackTemplate(back.value);
       setMessage(front.status === "fulfilled" && back.status === "fulfilled"
         ? ""
-        : "Imeshindikana kuvuta id-mbele.png au id-nyuma.png kutoka GitHub. Hakikisha URL na majina ya picha ziko sahihi.");
+        : "Imeshindikana kuvuta id-mbele.png au id-nyuma.png kutoka GitHub.");
     });
     return () => { active = false; };
   }, []);
 
-  // Signature Pad Handlers
   useEffect(() => {
     const canvas = signatureCanvas.current;
     if (!canvas) return;
@@ -265,6 +261,105 @@ export default function NidaTemplatePage() {
 
       <header style={{ borderRadius: 22, padding: "24px 22px", marginBottom: 18, color: "#fff", background: "linear-gradient(120deg,#123c70,#2563eb 62%,#4f46e5)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, fontWeight: 850, letterSpacing: 1.4, opacity: .9 }}><ClipboardList size={18}/> FOMU YA TAARIFA</div>
-        <h1 style={{ margin: "10px 0 6px", fontSize: "clamp(25px,5vw,34px)", letterSpacing: "-.7px" }}>JENERETA YA KITAMBULISHO (GITHUB TEMPLATE)</h1>
-        <p style={{ margin: 0, lineHeight: 1.6, maxWidth: 600, color: "#e5efff", fontSize: 14 }}>
-      
+        <h1 style={{ margin: "10px 0 6px", fontSize: "clamp(25px,5vw,34px)", letterSpacing: "-.7px" }}>JENERETA YA KITAMBULISHO</h1>
+        <p style={{ margin: 0, lineHeight: 1.6, maxWidth: 600, color: "#e5efff", fontSize: 14 }}>Jaza taarifa zako. Template zinavutwa moja kwa moja kutoka GitHub.</p>
+      </header>
+
+      <form onSubmit={submit}>
+        <section style={panel}>
+          <h2 style={heading}><UserRound size={19} color="#2563eb"/> Taarifa za majina</h2>
+          <div style={grid}>
+            <label style={field}>Jina la kwanza *<input style={input} value={firstName} onChange={e=>{setFirstName(e.target.value);setShowPreview(false)}} placeholder="Andika jina la kwanza" required /></label>
+            <label style={field}>Jina la kati<input style={input} value={middleName} onChange={e=>{setMiddleName(e.target.value);setShowPreview(false)}} placeholder="Andika jina la kati (si lazima)" /></label>
+            <label style={field}>Jina la mwisho / ukoo *<input style={input} value={lastName} onChange={e=>{setLastName(e.target.value);setShowPreview(false)}} placeholder="Andika jina la ukoo" required /></label>
+          </div>
+        </section>
+
+        <section style={panel}>
+          <h2 style={heading}><Hash size={19} color="#2563eb"/> Namba ya NIDA na Ziada</h2>
+          <div style={grid}>
+            <label style={field}>Namba ya NIDA (NIN) *
+              <input style={{...input, fontVariantNumeric: "tabular-nums", letterSpacing: 1.1}} inputMode="numeric" value={formattedNida} onChange={e=>{setNida(e.target.value);setShowPreview(false)}} placeholder="20050501-41210-00001-80" maxLength={23} required />
+              <span style={{fontSize:12, color:nidaDigits===20?"#15803d":"#64748b"}}>{nidaDigits}/20 tarakimu</span>
+            </label>
+            
+            <label style={field}>Tarehe ya kuzaliwa (Inajaza yenyewe)
+              <input style={{...input, background: "#f8fafc", color: "#475569"}} value={calculatedBirthDate || "Weka NIDA yenye tarakimu 8 za kwanza"} readOnly />
+            </label>
+
+            <label style={field}>Namba ya simu
+              <input style={input} type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Mfano: 07XXXXXXXX" />
+            </label>
+          </div>
+
+          <div style={{marginTop:16}}>
+            <label style={field}>Picha ya Uso (Passport Size)</label>
+            <input style={{...input, padding: "10px"}} type="file" accept="image/*" onChange={handlePhotoUpload} />
+          </div>
+
+          <div style={{marginTop:18}}>
+            <div style={{fontSize:13,fontWeight:750,marginBottom:10,color:"#26364b"}}>Jinsia *</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:12}}>
+              {(["M","F"] as const).map(value=><button key={value} type="button" onClick={()=>{setGender(value);setShowPreview(false)}} aria-pressed={gender===value} style={{minHeight:58,borderRadius:13,border:gender===value?"2px solid #2563eb":"1px solid #d8e1ec",background:gender===value?"#eff6ff":"#fff",color:gender===value?"#1d4ed8":"#334155",fontSize:15,fontWeight:850,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:9}}><span style={{width:25,height:25,borderRadius:8,display:"grid",placeItems:"center",background:gender===value?"#2563eb":"#eef2f7",color:gender===value?"#fff":"#475569"}}>{value}</span>{value==="M"?"ME (M)":"KE (F)"}</button>)}
+            </div>
+          </div>
+        </section>
+
+        <section style={panel}>
+          <h2 style={heading}><ClipboardList size={19} color="#2563eb"/> Saini ya Mtu (Digital Signature Pad)</h2>
+          <p style={{fontSize: 12, color: "#64748b", marginBottom: 12}}>Chora saini yako kwenye kisanduku hapa chini kwa kidole au kipanya:</p>
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ position: "relative", border: "2px dashed #cbd5e1", borderRadius: 12, background: "#f8fafc", overflow: "hidden", cursor: "crosshair", width: "100%", maxWidth: 400, height: 130, margin: "0 auto" }}>
+              <canvas ref={signatureCanvas} width={400} height={130}
+                onMouseDown={startDrawing} onMouseMove={drawSignature} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing} onTouchMove={drawSignature} onTouchEnd={stopDrawing}
+                style={{ display: "block", width: "100%", height: "100%" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <button type="button" onClick={clearSignature} className="button button--secondary" style={{ fontSize: 12, padding: "6px 14px", display: "flex", gap: 6, alignItems: "center" }}>
+                <Eraser size={14} /> Futa Saini
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center", marginBottom: 20}}>
+          <button className="button button--green" type="submit" disabled={!complete} style={{minHeight:48,padding:"0 22px",borderRadius:12,display:"inline-flex",alignItems:"center",gap:9,opacity:complete?1:.5}}><BadgeCheck size={17}/> Hakiki na Onyesha Kitambulisho</button>
+          <button className="button button--secondary" type="reset" onClick={()=>{setFirstName("");setMiddleName("");setLastName("");setNida("");setGender("");setPhone("");setShowPreview(false);clearSignature()}} style={{minHeight:48,borderRadius:12}}>Futa taarifa</button>
+        </div>
+      </form>
+
+      {message && <p role="status" style={{padding: 12, borderRadius: 12, background: "#fff7ed", color: "#9a3412", fontSize: 13, marginBottom: 16}}>{message}</p>}
+
+      {showPreview && (
+        <section style={{...panel, borderColor: "#bbf7d0", background: "#f0fdf4"}} aria-live="polite">
+          <h2 style={{...heading, color: "#166534"}}><BadgeCheck size={19}/> Muonekano wa Kitambulisho (Preview)</h2>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,320px),1fr))", gap: 18, marginTop: 14 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
+                <b>Template ya Mbele (id-mbele.png)</b>
+                <button className="button button--green" type="button" disabled={!frontTemplate} onClick={() => download("front")}><Download size={15} /> Pakua Mbele</button>
+              </div>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" }}>
+                <canvas ref={frontCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
+                <b>Template ya Nyuma (id-nyuma.png)</b>
+                <button className="button button--green" type="button" disabled={!backTemplate} onClick={() => download("back")}><Download size={15} /> Pakua Nyuma</button>
+              </div>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" }}>
+                <canvas ref={backCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
+    </main>
+  );
+                                                                                                                                                                                                                             }
