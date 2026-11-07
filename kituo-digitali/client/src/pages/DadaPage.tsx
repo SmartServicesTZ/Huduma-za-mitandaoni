@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, Eraser } from "lucide-react";
 import { useLocation } from "wouter";
+import JsBarcode from "jsbarcode";
 
 type Side = "front" | "back";
 const WIDTH = 1000;
@@ -47,6 +48,7 @@ export default function NidaTemplatePage() {
   const frontCanvas = useRef<HTMLCanvasElement>(null);
   const backCanvas = useRef<HTMLCanvasElement>(null);
   const signatureCanvas = useRef<HTMLCanvasElement>(null);
+  const tempBarcodeCanvas = useRef<HTMLCanvasElement>(null);
   
   const [frontTemplate, setFrontTemplate] = useState<HTMLImageElement | null>(null);
   const [backTemplate, setBackTemplate] = useState<HTMLImageElement | null>(null);
@@ -201,11 +203,25 @@ export default function NidaTemplatePage() {
 
     if (side === "back") {
       const cleanNida = formattedNida.replace(/-/g, "");
-      if (cleanNida) {
+      if (cleanNida && tempBarcodeCanvas.current) {
+        // Tengeneza Barcode halisi kwa kutumia JsBarcode
+        try {
+          JsBarcode(tempBarcodeCanvas.current, cleanNida, {
+            format: "CODE128",
+            width: 3,
+            height: 90,
+            displayValue: false,
+          });
+          // Chora Barcode juu ya template upande wa nyuma (sehemu yake sahihi juu)
+          context.drawImage(tempBarcodeCanvas.current, 120, 70, 760, 95);
+        } catch (e) {
+          console.error(e);
+        }
+
+        // Chora namba ya NIDA chini ya barcode upande wa nyuma
         context.font = "bold 38px monospace";
         context.textAlign = "center";
-        // Imepandishwa juu vizuri ikae kwenye eneo lake sahihi (y = 125)
-        context.fillText(cleanNida, 500, 125); 
+        context.fillText(cleanNida, 500, 205); 
       }
     }
   }
@@ -308,6 +324,9 @@ export default function NidaTemplatePage() {
           </div>
         </div>
       </section>
+
+      {/* Hidden element for generating barcode */}
+      <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
     </main>
   );
 }
@@ -325,3 +344,4 @@ const previewHeader: React.CSSProperties = { display: "flex", alignItems: "cente
 const previewBox: React.CSSProperties = { position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" };
 const canvasStyle: React.CSSProperties = { display: "block", width: "100%", height: "100%" };
 const emptyText: React.CSSProperties = { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 13, pointerEvents: "none", textAlign: "center", padding: 12 };
+              
