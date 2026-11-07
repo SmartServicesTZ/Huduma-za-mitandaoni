@@ -1,7 +1,7 @@
 export const homepageSectionIds = ["services", "locked", "special", "tools", "tutorials"] as const;
 export type HomepageSectionId = (typeof homepageSectionIds)[number];
 export const defaultHomepageSectionOrder: HomepageSectionId[] = [...homepageSectionIds];
-export const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara", "mpiga-kura", "brela", "edu-halotel"]);
+export const defaultLockedServiceSlugs = new Set(["cheti-kuzaliwa", "visa-pasipoti", "cheti-ndoa", "ripoti-hasara", "brela", "edu-halotel"]);
 export const preferredHomepageServiceSlugs = [
   "cheti-tin",
   "leseni-biashara",
