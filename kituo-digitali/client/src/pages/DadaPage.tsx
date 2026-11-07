@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import JsBarcode from "jsbarcode";
 import { removePhotoBackground } from "../lib/removePhotoBackground";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { consumeFirebaseTokens, getServiceTokenConfig } from "@/lib/firebase";
+import { consumeFirebaseTokens } from "@/lib/firebase";
 
 type Side = "front" | "back";
 const WIDTH = 1000;
@@ -49,6 +49,7 @@ export default function DadaPage() {
   const [, navigate] = useLocation();
   const { firebaseUser } = useAuth();
   const [paid, setPaid] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const frontCanvas = useRef<HTMLCanvasElement>(null);
@@ -85,11 +86,6 @@ export default function DadaPage() {
     });
     return () => { active = false; };
   }, []);
-
-  useEffect(() => {
-    setPaid(false);
-    setRequestId(crypto.randomUUID());
-  }, [firstNameMiddle, lastName, nida, gender, portraitImage, signatureImage]);
 
   useEffect(() => {
     const canvas = signatureCanvas.current;
@@ -256,19 +252,28 @@ export default function DadaPage() {
   async function ensurePaid() {
     if (paid) return;
     if (!firebaseUser?.uid) throw new Error("Ingia kwanza ili kutumia NIDA SOFT COPY.");
-    const config = await getServiceTokenConfig("nakala-nida");
-    if (!Number.isSafeInteger(config.tokenCost) || config.tokenCost <= 0) {
-      throw new Error("Gharama ya NIDA SOFT COPY haijawekwa. Admin aweke tokeni 3 kwenye Dashboard.");
-    }
     await consumeFirebaseTokens(firebaseUser.uid, {
       slug: "nakala-nida",
-      name: config.name || "NIDA SOFT COPY",
-      tokenCost: config.tokenCost,
+      name: "NIDA SOFT COPY",
+      tokenCost: 3,
       kind: "paid",
       tokenType: "nida",
     }, requestId);
     setPaid(true);
-    setMessage(`Tokeni ${config.tokenCost} zimekatwa. Unaweza kupakua pande zote mbili za kitambulisho.`);
+    setMessage("Tokeni 3 zimekatwa. Huduma ya NIDA SOFT COPY imefunguliwa.");
+  }
+
+  async function acceptService() {
+    if (busy || accessGranted) return;
+    setBusy(true);
+    try {
+      await ensurePaid();
+      setAccessGranted(true);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Imeshindikana kukata tokeni. Jaribu tena.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function download(side: Side) {
@@ -303,6 +308,18 @@ export default function DadaPage() {
 
   return (
     <main style={{ maxWidth: 860, margin: "0 auto", padding: "16px 12px 36px", color: "#172033" }}>
+      {!accessGranted && <div role="dialog" aria-modal="true" aria-labelledby="nida-payment-title" style={{ position: "fixed", inset: 0, zIndex: 9999, display: "grid", placeItems: "center", padding: 20, background: "rgba(15,23,42,.72)" }}>
+        <section style={{ width: "100%", maxWidth: 390, borderRadius: 18, padding: 22, background: "#fff", boxShadow: "0 20px 60px rgba(0,0,0,.28)", textAlign: "center" }}>
+          <h2 id="nida-payment-title" style={{ margin: "0 0 12px", color: "#172b4d", fontSize: 20 }}>Uthibitisho wa Tokeni</h2>
+          <p style={{ margin: "0 0 22px", color: "#334155", fontSize: 16, lineHeight: 1.6 }}>Kufungua huduma hii utakatwa Tokeni 3</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button type="button" disabled={busy} onClick={() => navigate("/")} style={{ minHeight: 46, border: "1px solid #cbd5e1", borderRadius: 10, background: "#f8fafc", color: "#334155", fontWeight: 800, cursor: "pointer" }}>Kataa</button>
+            <button type="button" disabled={busy} onClick={acceptService} style={{ minHeight: 46, border: 0, borderRadius: 10, background: "#2563eb", color: "#fff", fontWeight: 800, cursor: busy ? "wait" : "pointer", opacity: busy ? .7 : 1 }}>{busy ? "Inafungua..." : "Kubali"}</button>
+          </div>
+          {message && <p role="status" style={{ margin: "14px 0 0", color: "#b45309", fontSize: 12 }}>{message}</p>}
+        </section>
+      </div>}
+      {accessGranted && <>
       <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", fontSize: 13 }}>
         <ArrowLeft size={15} /> Rudi kwenye huduma
       </button>
@@ -391,6 +408,7 @@ export default function DadaPage() {
       </section>
 
       <canvas ref={tempBarcodeCanvas} style={{ display: "none" }}></canvas>
+      </>}
     </main>
   );
                                                  }
