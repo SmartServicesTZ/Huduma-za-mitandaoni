@@ -285,7 +285,7 @@ export default function DadaPage() {
       link.download = side === "front" ? "kitambulisho_mbele.png" : "kitambulisho_nyuma.png";
       link.href = canvas.toDataURL("image/png");
       link.click();
-      setMessage(paid ? "Upakuaji umeanza. Tokeni 3 zimeshatumika kwa kitambulisho hiki." : "Upakuaji umeanza. Tokeni zimekatwa kwa kitambulisho hiki.");
+      setMessage(paid ? "Upakuaji umeanza. Tokeni za kitambulisho hiki zimeshatumika." : "Upakuaji umeanza. Tokeni zimekatwa kwa kitambulisho hiki.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Imeshindikana kulipia au kupakua NIDA SOFT COPY.");
     } finally {
@@ -368,7 +368,7 @@ export default function DadaPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
               <b>Upande wa Mbele</b>
-              <button className="button button--green" type="button" disabled={!frontTemplate} onClick={() => download("front")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> Pakua Mbele</button>
+              <button className="button button--green" type="button" disabled={!frontTemplate || busy} onClick={() => download("front")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> {busy ? "Inalipia..." : "Pakua Mbele"}</button>
             </div>
             <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
               <canvas ref={frontCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
@@ -379,7 +379,7 @@ export default function DadaPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
               <b>Upande wa Nyuma</b>
-              <button className="button button--green" type="button" disabled={!backTemplate} onClick={() => download("back")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> Pakua Nyuma</button>
+              <button className="button button--green" type="button" disabled={!backTemplate || busy} onClick={() => download("back")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> {busy ? "Inalipia..." : "Pakua Nyuma"}</button>
             </div>
             <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
               <canvas ref={backCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
