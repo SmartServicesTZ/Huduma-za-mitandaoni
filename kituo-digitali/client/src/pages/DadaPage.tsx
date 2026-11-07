@@ -257,7 +257,7 @@ export default function DadaPage() {
       name: "NIDA SOFT COPY",
       tokenCost: 3,
       kind: "paid",
-      tokenType: "nida",
+      tokenType: "huduma",
     }, requestId);
     setPaid(true);
     setMessage("Tokeni 3 zimekatwa. Huduma ya NIDA SOFT COPY imefunguliwa.");
