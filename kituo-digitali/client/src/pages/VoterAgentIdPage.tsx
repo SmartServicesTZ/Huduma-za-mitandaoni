@@ -422,4 +422,13 @@ export default function VoterIdPage() {
                 <button className="button button--secondary" type="button" disabled={!backTemplate} onClick={() => download("back", "pdf")} style={{padding: "5px 8px", fontSize: 11, background: "#dc2626", color: "#fff", border: "none"}}><FileText size={12} /> PDF</button>
               </div>
             </div>
-            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e
+            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
+              <canvas ref={backCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
+              {!backTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 12 }}>Inapakia...</span>}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
