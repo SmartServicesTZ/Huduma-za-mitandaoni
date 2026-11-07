@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, Eraser } from "lucide-react";
 import { useLocation } from "wouter";
-import JsBarcode from "jsbarcode";
+
+type BarcodeOptions = { format: string; width?: number; height?: number; displayValue?: boolean };
+type BarcodeGenerator = (canvas: HTMLCanvasElement, value: string, options: BarcodeOptions) => void;
+declare global { interface Window { JsBarcode?: BarcodeGenerator } }
 
 type Side = "front" | "back";
 const WIDTH = 1000;
@@ -62,6 +65,7 @@ export default function NidaTemplatePage() {
   const [gender, setGender] = useState("");
 
   const [isDrawing, setIsDrawing] = useState(false);
+  const [barcodeReady, setBarcodeReady] = useState(false);
 
   const formattedNida = useMemo(() => formatNida(nida), [nida]);
   const calculatedBirthDate = useMemo(() => parseDateFromNida(nida), [nida]);
@@ -78,6 +82,24 @@ export default function NidaTemplatePage() {
         : "Templates hazikupatikana. Hakikisha id-mbele.png na id-nyuma.png zipo kwenye public folda.");
     });
     return () => { active = false; };
+  }, []);
+
+  // Pakia JsBarcode kutoka CDN ili kuepuka dependency isiyopo kwenye lockfile.
+  useEffect(() => {
+    if (window.JsBarcode) {
+      setBarcodeReady(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/jsbarcode@3.12.3/dist/JsBarcode.all.min.js";
+    script.async = true;
+    script.onload = () => setBarcodeReady(true);
+    script.onerror = () => setMessage("Barcode haikupakia. Angalia muunganisho wa intaneti.");
+    document.head.appendChild(script);
+    return () => {
+      script.onload = null;
+      script.onerror = null;
+    };
   }, []);
 
   // Signature Pad Handlers
@@ -206,7 +228,7 @@ export default function NidaTemplatePage() {
       if (cleanNida && tempBarcodeCanvas.current) {
         // Tengeneza Barcode halisi kwa kutumia JsBarcode
         try {
-          JsBarcode(tempBarcodeCanvas.current, cleanNida, {
+          window.JsBarcode?.(tempBarcodeCanvas.current, cleanNida, {
             format: "CODE128",
             width: 3,
             height: 90,
@@ -229,7 +251,7 @@ export default function NidaTemplatePage() {
   useEffect(() => {
     draw(frontCanvas.current, frontTemplate, "front");
     draw(backCanvas.current, backTemplate, "back");
-  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage]);
+  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage, barcodeReady]);
 
   function download(side: Side) {
     const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
