@@ -157,9 +157,6 @@ importers:
       html2canvas:
         specifier: ^1.4.1
         version: 1.4.1
-      jsbarcode:
-        specifier: ^3.12.3
-        version: 3.12.3
       input-otp:
         specifier: ^1.4.2
         version: 1.4.2(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -4415,9 +4412,6 @@ packages:
 
   jose@6.1.0:
     resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
-
-  jsbarcode@3.12.3:
-    resolution: {tarball: https://registry.npmjs.org/jsbarcode/-/jsbarcode-3.12.3.tgz}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -10362,8 +10356,6 @@ snapshots:
   jose@4.15.9: {}
 
   jose@6.1.0: {}
-
-  jsbarcode@3.12.3: {}
 
   js-tokens@4.0.0: {}
 
