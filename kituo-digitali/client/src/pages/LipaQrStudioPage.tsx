@@ -188,7 +188,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
     : `${import.meta.env.BASE_URL}${network === "yas" ? "stika-yas/mixx-yas-logo.png" : network === "airtel" ? "airtel-logo.png" : "halopesa-logo.png"}`;
   if (variant === "no-qr" && network === "voda") {
     const digits = values.lipaNumber.replace(/\D/g, "").slice(0, 12).split("");
-    const boxCount = Math.max(7, digits.length);
+    const boxCount = Math.max(1, digits.length);
     return <article ref={ref} className="lq-voda-template-artboard" data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
       <img className="lq-voda-template-background" src={`${LIPA_ASSET_BASE}vodacom-no-qr-template.png`} alt="" aria-hidden="true" />
       <div className="lq-voda-template-number-boxes" aria-label={`Namba ya Lipa: ${values.lipaNumber || "haijawekwa"}`} style={{ gridTemplateColumns: `repeat(${boxCount}, minmax(0, 1fr))` }}>
@@ -199,7 +199,7 @@ const CardArtboard = forwardRef<HTMLElement, { values: LipaCardValues; qrDataUrl
   }
   if (variant === "no-qr" && network !== "airtel" && network !== "voda") {
     const digits = values.lipaNumber.replace(/\D/g, "").slice(0, 12).split("");
-    const boxCount = Math.max(7, digits.length);
+    const boxCount = Math.max(1, digits.length);
     return <article ref={ref} className={`lq-artboard lq-no-qr-artboard lq-no-qr-artboard--${network}`} data-lipa-export-page="card" data-network={network} data-watermarked={watermarked} data-paper-size={paperSize}>
       <header className="lq-no-qr-header">
         <h2>LIPA KWA SIMU HAPA</h2>
