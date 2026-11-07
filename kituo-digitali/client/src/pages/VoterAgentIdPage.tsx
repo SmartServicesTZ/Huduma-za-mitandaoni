@@ -218,6 +218,14 @@ export default function VoterAgentIdPage() {
         <ShieldAlert size={20} color="#c2410c" />
         <p style={{ margin: 0, fontSize: 13, color: "#7c2d12" }}>Huu ni mfano wa utambulisho wa ndani tu. Hauwezi kuchukua nafasi ya kibali au kitambulisho rasmi kinachotolewa na chama au Tume ya Uchaguzi. Muundo una alama ya MFANO isiyoweza kufichwa.</p>
       </div>
+      <section style={{ background: "#fff", border: "1px solid #dbe4ee", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          <h2 style={{ margin: 0, fontSize: 17 }}>Live Preview — Kitambulisho cha Wakala</h2>
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#0f766e", background: "#ccfbf1", borderRadius: 20, padding: "5px 9px" }}>HUBADILIKA MOJA KWA MOJA</span>
+        </div>
+        <p style={{ margin: "0 0 10px", color: "#64748b", fontSize: 12 }}>Muonekano huu unasasishwa unapoandika taarifa au kubadilisha picha.</p>
+        <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} aria-label="Live preview ya mfano wa kitambulisho cha wakala" style={{ display: "block", width: "100%", height: "auto", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f1f5f9" }} />
+      </section>
       <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, marginBottom: 16 }}>
         <h2 style={{ margin: "0 0 14px", fontSize: 17 }}>Taarifa za wakala</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,250px),1fr))", gap: 12 }}>
@@ -250,14 +258,6 @@ export default function VoterAgentIdPage() {
         {error && <p role="alert" style={{ color: "#b91c1c", fontSize: 13, marginBottom: 0 }}>{error}</p>}
       </section>
       <PassportPhotoMaker />
-      <section style={{ background: "#fff", border: "1px solid #dbe4ee", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0, fontSize: 17 }}>Live Preview — Kitambulisho cha Wakala</h2>
-          <span style={{ fontSize: 11, fontWeight: 800, color: "#0f766e", background: "#ccfbf1", borderRadius: 20, padding: "5px 9px" }}>HUBADILIKA MOJA KWA MOJA</span>
-        </div>
-        <p style={{ margin: "0 0 10px", color: "#64748b", fontSize: 12 }}>Muonekano huu unasasishwa unapoandika taarifa au kubadilisha picha.</p>
-        <canvas ref={canvasRef} width={CARD_WIDTH} height={CARD_HEIGHT} aria-label="Live preview ya mfano wa kitambulisho cha wakala" style={{ display: "block", width: "100%", height: "auto", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f1f5f9" }} />
-      </section>
     </main>
   );
 }
