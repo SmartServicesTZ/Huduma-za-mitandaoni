@@ -33,6 +33,12 @@ describe("service ordering", () => {
   it("lets an administrator move a service directly to the first position", () => {
     expect(moveId(ids, "leseni-biashara", 0)).toEqual(["leseni-biashara", "tin", "nida"]);
   });
+
+  it("keeps MPIGA KURA available by default unless an administrator explicitly locks it", () => {
+    expect(defaultLockedServiceSlugs.has("mpiga-kura")).toBe(false);
+    expect(isServiceLocked("mpiga-kura", undefined)).toBe(false);
+    expect(isServiceLocked("mpiga-kura", true)).toBe(true);
+  });
 });
 
 
@@ -51,7 +57,7 @@ describe("service lock overrides", () => {
   });
 
   it("keeps the remaining restricted tools locked until an administrator explicitly unlocks them", () => {
-    for (const slug of ["mpiga-kura", "brela", "edu-halotel"]) {
+    for (const slug of ["brela", "edu-halotel"]) {
       expect(defaultLockedServiceSlugs.has(slug)).toBe(true);
       expect(isServiceLocked(slug, undefined)).toBe(true);
       expect(isServiceLocked(slug, false)).toBe(false);
