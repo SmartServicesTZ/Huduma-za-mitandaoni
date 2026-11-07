@@ -54,20 +54,16 @@ export default function DadaPage() {
   const [portraitImage, setPortraitImage] = useState<HTMLImageElement | null>(null);
   const [signatureImage, setSignatureImage] = useState<string | null>(null);
 
-  const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
+  const [firstNameMiddle, setFirstNameMiddle] = useState("");
   const [lastName, setLastName] = useState("");
   const [nida, setNida] = useState("");
   const [gender, setGender] = useState<"M" | "F" | "">("");
-  const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("Inapakia templates kutoka folda ya public...");
+  const [message, setMessage] = useState("");
   const [isDrawing, setIsDrawing] = useState(false);
 
   const cleanNida = nida.replace(/\D/g, "").slice(0, 20);
   const formattedNida = useMemo(() => formatNida(cleanNida), [cleanNida]);
   const calculatedBirthDate = useMemo(() => parseDateFromNida(cleanNida), [cleanNida]);
-
-  const complete = firstName.trim() && lastName.trim() && cleanNida.length === 20 && gender;
 
   useEffect(() => {
     let active = true;
@@ -88,7 +84,7 @@ export default function DadaPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
   }, []);
 
@@ -153,17 +149,15 @@ export default function DadaPage() {
     context.drawImage(template, 0, 0, WIDTH, HEIGHT);
     context.fillStyle = "#000000";
 
-    const fullNameFirstMid = [firstName, middleName].filter(Boolean).join(" ");
-
     if (side === "front") {
       if (formattedNida) {
         context.font = "bold 44px monospace";
         context.fillText(formattedNida, 70, 215, 900);
       }
 
-      if (fullNameFirstMid) {
+      if (firstNameMiddle) {
         context.font = "bold 28px Arial";
-        context.fillText(fullNameFirstMid.toUpperCase(), 190, 272, 700);
+        context.fillText(firstNameMiddle.toUpperCase(), 190, 272, 700);
       }
 
       if (lastName) {
@@ -222,7 +216,7 @@ export default function DadaPage() {
   useEffect(() => {
     draw(frontCanvas.current, frontTemplate, "front");
     draw(backCanvas.current, backTemplate, "back");
-  }, [frontTemplate, backTemplate, firstName, middleName, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage]);
+  }, [frontTemplate, backTemplate, firstNameMiddle, lastName, formattedNida, calculatedBirthDate, gender, portraitImage, signatureImage]);
 
   function download(side: Side) {
     const canvas = side === "front" ? frontCanvas.current : backCanvas.current;
@@ -234,113 +228,93 @@ export default function DadaPage() {
     link.click();
   }
 
-  const field: React.CSSProperties = { display: "grid", gap: 8, fontSize: 13, fontWeight: 750, color: "#26364b" };
-  const input: React.CSSProperties = { width: "100%", minHeight: 48, border: "1px solid #d8e1ec", borderRadius: 12, padding: "12px 14px", background: "#fff", color: "#172033", fontSize: 15, outlineColor: "#2563eb", boxSizing: "border-box" };
-  const panel: React.CSSProperties = { background: "#fff", border: "1px solid #e4eaf2", borderRadius: 18, padding: 20, marginBottom: 16, boxShadow: "0 8px 24px rgba(15,23,42,.045)" };
-  const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))", gap: 16 };
-  const heading: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, margin: "0 0 16px", fontSize: 17, fontWeight: 850, color: "#172b4d" };
+  const field: React.CSSProperties = { display: "grid", gap: 6, fontSize: 13, fontWeight: 750, color: "#26364b" };
+  const input: React.CSSProperties = { width: "100%", minHeight: 42, border: "1px solid #d8e1ec", borderRadius: 10, padding: "10px 12px", background: "#fff", color: "#172033", fontSize: 14, outlineColor: "#2563eb", boxSizing: "border-box" };
+  const panel: React.CSSProperties = { background: "#fff", border: "1px solid #e4eaf2", borderRadius: 14, padding: 16, marginBottom: 14, boxShadow: "0 4px 16px rgba(15,23,42,.03)" };
+  const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))", gap: 12 };
+  const heading: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px", fontSize: 16, fontWeight: 800, color: "#172b4d" };
 
   const nidaDigits = cleanNida.length;
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "18px 14px 40px", color: "#172033" }}>
-      <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>
-        <ArrowLeft size={16} /> Rudi kwenye huduma
+    <main style={{ maxWidth: 860, margin: "0 auto", padding: "16px 12px 36px", color: "#172033" }}>
+      <button type="button" onClick={() => navigate("/services")} className="button button--secondary" style={{ marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", fontSize: 13 }}>
+        <ArrowLeft size={15} /> Rudi kwenye huduma
       </button>
 
-      <header style={{ borderRadius: 22, padding: "24px 22px", marginBottom: 18, color: "#fff", background: "linear-gradient(120deg,#123c70,#2563eb 62%,#4f46e5)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, fontWeight: 850, letterSpacing: 1.4, opacity: .9 }}><ClipboardList size={18}/> FOMU YA TAARIFA</div>
-        <h1 style={{ margin: "10px 0 6px", fontSize: "clamp(25px,5vw,34px)", letterSpacing: "-.7px" }}>JENERETA YA KITAMBULISHO</h1>
-        <p style={{ margin: 0, lineHeight: 1.6, maxWidth: 600, color: "#e5efff", fontSize: 14 }}>Jaza taarifa zako hapa chini na zitaonekana moja kwa moja kwenye templates za kitambulisho.</p>
+      <header style={{ borderRadius: 16, padding: "18px 20px", marginBottom: 14, color: "#fff", background: "linear-gradient(120deg,#123c70,#2563eb 62%,#4f46e5)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 800, letterSpacing: 1.2, opacity: .9 }}><ClipboardList size={16}/> FOMU YA NIDA</div>
+        <h1 style={{ margin: "6px 0 4px", fontSize: "clamp(22px,4vw,28px)", letterSpacing: "-.5px" }}>JENERETA YA KITAMBULISHO</h1>
       </header>
 
-      {/* SEHEMU YA MAJINA */}
+      {/* FOMU YA KUJAZA */}
       <section style={panel}>
-        <h2 style={heading}><UserRound size={19} color="#2563eb"/> Taarifa za majina</h2>
-        <div style={grid}>
-          <label style={field}>Jina la kwanza *<input style={input} value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="Andika jina la kwanza" required /></label>
-          <label style={field}>Jina la kati<input style={input} value={middleName} onChange={e=>setMiddleName(e.target.value)} placeholder="Andika jina la kati (si lazima)" /></label>
-          <label style={field}>Jina la mwisho / ukoo *<input style={input} value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Andika jina la ukoo" required /></label>
+        <h2 style={heading}><UserRound size={17} color="#2563eb"/> Taarifa za Msingi</h2>
+        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12}}>
+          <label style={field}>Jina la Kwanza na la Kati *<input style={input} value={firstNameMiddle} onChange={e=>setFirstNameMiddle(e.target.value)} placeholder="Mfano: JOSEPH BAKARI" required /></label>
+          <label style={field}>Jina la Mwisho / Ukoo *<input style={input} value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Mfano: JUMA" required /></label>
         </div>
-      </section>
 
-      {/* SEHEMU YA NIDA NA ZIADA */}
-      <section style={panel}>
-        <h2 style={heading}><Hash size={19} color="#2563eb"/> Namba ya NIDA na Ziada</h2>
-        <div style={grid}>
+        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
           <label style={field}>Namba ya NIDA (NIN) *
-            <input style={{...input, fontVariantNumeric: "tabular-nums", letterSpacing: 1.1}} inputMode="numeric" value={formattedNida} onChange={e=>setNida(e.target.value)} placeholder="20050501-41210-00001-80" maxLength={23} required />
-            <span style={{fontSize:12, color:nidaDigits===20?"#15803d":"#64748b"}}>{nidaDigits}/20 tarakimu</span>
+            <input style={{...input, fontVariantNumeric: "tabular-nums", letterSpacing: 1}} inputMode="numeric" value={formattedNida} onChange={e=>setNida(e.target.value)} placeholder="20050501-41210-00001-80" maxLength={23} required />
+            <span style={{fontSize:11, color:nidaDigits===20?"#15803d":"#64748b"}}>{nidaDigits}/20 tarakimu (Tarehe inajaza yenyewe: {calculatedBirthDate || "—"})</span>
           </label>
+
+          <label style={field}>Jinsia *
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8}}>
+              {(["M","F"] as const).map(value=><button key={value} type="button" onClick={()=>setGender(value)} aria-pressed={gender===value} style={{minHeight:42,borderRadius:10,border:gender===value?"2px solid #2563eb":"1px solid #d8e1ec",background:gender===value?"#eff6ff":"#fff",color:gender===value?"#1d4ed8":"#334155",fontSize:14,fontWeight:800,cursor:"pointer"}}>{value==="M"?"ME (M)":"KE (F)"}</button>)}
+            </div>
+          </label>
+        </div>
+
+        <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 12, marginTop: 12}}>
+          <label style={field}>Picha ya Uso (Passport Size)<input style={{...input, padding: "6px"}} type="file" accept="image/*" onChange={handlePhotoUpload} /></label>
           
-          <label style={field}>Tarehe ya kuzaliwa (Inajaza yenyewe)
-            <input style={{...input, background: "#f8fafc", color: "#475569"}} value={calculatedBirthDate || "Weka NIDA yenye tarakimu 8 za kwanza"} readOnly />
-          </label>
-
-          <label style={field}>Namba ya simu
-            <input style={input} type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Mfano: 07XXXXXXXX" />
-          </label>
-        </div>
-
-        <div style={{marginTop:16}}>
-          <label style={field}>Picha ya Uso (Passport Size)</label>
-          <input style={{...input, padding: "10px"}} type="file" accept="image/*" onChange={handlePhotoUpload} />
-        </div>
-
-        <div style={{marginTop:18}}>
-          <div style={{fontSize:13,fontWeight:750,marginBottom:10,color:"#26364b"}}>Jinsia *</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:12}}>
-            {(["M","F"] as const).map(value=><button key={value} type="button" onClick={()=>setGender(value)} aria-pressed={gender===value} style={{minHeight:58,borderRadius:13,border:gender===value?"2px solid #2563eb":"1px solid #d8e1ec",background:gender===value?"#eff6ff":"#fff",color:gender===value?"#1d4ed8":"#334155",fontSize:15,fontWeight:850,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:9}}><span style={{width:25,height:25,borderRadius:8,display:"grid",placeItems:"center",background:gender===value?"#2563eb":"#eef2f7",color:gender===value?"#fff":"#475569"}}>{value}</span>{value==="M"?"ME (M)":"KE (F)"}</button>)}
+          {/* ENEO LA SAINI LIMEPOFUSIWA/LIMEBORESHWA LIKAWA DOGO NA SAFI */}
+          <div style={field}>
+            <span>Saini ya Mtu (Digital Signature)</span>
+            <div style={{display: "flex", gap: 8, alignItems: "center"}}>
+              <div style={{ position: "relative", border: "1.5px dashed #cbd5e1", borderRadius: 10, background: "#f8fafc", overflow: "hidden", cursor: "crosshair", width: 220, height: 42 }}>
+                <canvas ref={signatureCanvas} width={220} height={42}
+                  onMouseDown={startDrawing} onMouseMove={drawSignature} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing} onTouchMove={drawSignature} onTouchEnd={stopDrawing}
+                  style={{ display: "block", width: "100%", height: "100%" }} />
+              </div>
+              <button type="button" onClick={clearSignature} className="button button--secondary" style={{ fontSize: 11, padding: "8px 10px", borderRadius: 8, display: "flex", gap: 4, alignItems: "center", height: 42 }}>
+                <Eraser size={13} /> Futa
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SEHEMU YA SAINI */}
-      <section style={panel}>
-        <h2 style={heading}><ClipboardList size={19} color="#2563eb"/> Saini ya Mtu (Digital Signature Pad)</h2>
-        <p style={{fontSize: 12, color: "#64748b", marginBottom: 12}}>Chora saini yako kwenye kisanduku hapa chini kwa kidole au kipanya:</p>
-        <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ position: "relative", border: "2px dashed #cbd5e1", borderRadius: 12, background: "#f8fafc", overflow: "hidden", cursor: "crosshair", width: "100%", maxWidth: 400, height: 130, margin: "0 auto" }}>
-            <canvas ref={signatureCanvas} width={400} height={130}
-              onMouseDown={startDrawing} onMouseMove={drawSignature} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
-              onTouchStart={startDrawing} onTouchMove={drawSignature} onTouchEnd={stopDrawing}
-              style={{ display: "block", width: "100%", height: "100%" }} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <button type="button" onClick={clearSignature} className="button button--secondary" style={{ fontSize: 12, padding: "6px 14px", display: "flex", gap: 6, alignItems: "center" }}>
-              <Eraser size={14} /> Futa Saini
-            </button>
-          </div>
-        </div>
-      </section>
+      {message && <p role="status" style={{padding: 10, borderRadius: 10, background: "#fff7ed", color: "#9a3412", fontSize: 12, marginBottom: 12}}>{message}</p>}
 
-      {message && <p role="status" style={{padding: 12, borderRadius: 12, background: "#fff7ed", color: "#9a3412", fontSize: 13, marginBottom: 16}}>{message}</p>}
-
-      {/* MUONEKANO WA KADI (LIVE PREVIEW) - INAONYESHA TEMPLATE MOJA KWA MOJA */}
+      {/* LIVE PREVIEW YA KADI */}
       <section style={{...panel, borderColor: "#cbd5e1", background: "#f8fafc"}}>
-        <h2 style={{...heading, color: "#1e293b"}}><BadgeCheck size={19} color="#059669"/> Muonekano wa Kitambulisho (Live Preview)</h2>
-        <p style={{fontSize: 13, color: "#64748b", marginBottom: 16}}>Kadi hapa chini zinabadilika na kujaza taarifa zako kwa wakati halisi kutoka kwenye template za folda ya public.</p>
+        <h2 style={{...heading, color: "#1e293b"}}><BadgeCheck size={17} color="#059669"/> Muonekano wa Kitambulisho (Live Preview)</h2>
         
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,320px),1fr))", gap: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: 14 }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
-              <b>Template ya Mbele (id-mbele.png)</b>
-              <button className="button button--green" type="button" disabled={!frontTemplate || !complete} onClick={() => download("front")}><Download size={15} /> Pakua Mbele</button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
+              <b>Upande wa Mbele</b>
+              <button className="button button--green" type="button" disabled={!frontTemplate} onClick={() => download("front")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> Pakua Mbele</button>
             </div>
-            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" }}>
+            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
               <canvas ref={frontCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
-              {!frontTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b" }}>Inapakia id-mbele.png...</span>}
+              {!frontTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 12 }}>Inapakia...</span>}
             </div>
           </div>
 
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
-              <b>Template ya Nyuma (id-nyuma.png)</b>
-              <button className="button button--green" type="button" disabled={!backTemplate || !complete} onClick={() => download("back")}><Download size={15} /> Pakua Nyuma</button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
+              <b>Upande wa Nyuma</b>
+              <button className="button button--green" type="button" disabled={!backTemplate} onClick={() => download("back")} style={{padding: "6px 10px", fontSize: 12}}><Download size={13} /> Pakua Nyuma</button>
             </div>
-            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 13, overflow: "hidden" }}>
+            <div style={{ position: "relative", width: "100%", aspectRatio: "1000 / 630", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 10, overflow: "hidden" }}>
               <canvas ref={backCanvas} width={WIDTH} height={HEIGHT} style={{ display: "block", width: "100%", height: "100%" }} />
-              {!backTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b" }}>Inapakia id-nyuma.png...</span>}
+              {!backTemplate && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#64748b", fontSize: 12 }}>Inapakia...</span>}
             </div>
           </div>
         </div>
@@ -350,4 +324,4 @@ export default function DadaPage() {
     </main>
   );
       }
-              
+        
